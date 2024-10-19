@@ -1,0 +1,4 @@
+#Files to ignore from running migrations in django
+codepop_backend/backend/__pycache__
+codepop_backend/backend/migrations/
+codepop_backend/codepop_backend/__pycache__
