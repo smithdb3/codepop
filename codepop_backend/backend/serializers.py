@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from .models import Preference
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -18,3 +19,8 @@ class CreateUserSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+
+class PreferenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Preference
+        fields = ['PreferenceID', 'UserID', 'Preference']
