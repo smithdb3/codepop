@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from .models import Preference
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -18,3 +19,38 @@ class CreateUserSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+
+class PreferenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Preference
+        fields = ['PreferenceID', 'UserID', 'Preference']
+
+    # Custom validation for the Preference field
+    def validate_Preference(self, value):
+        # Convert the value to lowercase for consistent validation
+        value = value.lower()
+
+        # Define the allowed preference values (in lowercase for consistency)
+        allowed_preferences = [
+            "mtn. dew", "diet mtn. dew", "dr. pepper", "diet dr. pepper", "dr. pepper zero",
+            "dr pepper cream soda", "sprite", "sprite zero", "coke", "diet coke", "coke zero", 
+            "pepsi", "diet pepsi", "rootbeer", "fanta", "big red", "powerade", "lemonade", 
+            "light lemonade", "coconut", "pineapple", "strawberry", "raspberry", "blackberry", 
+            "blue curacao", "passion fruit", "vanilla", "pomegranate", "peach", "grapefruit", 
+            "green apple", "pear", "cherry", "cupcake", "orange", "blood orange", "mango", 
+            "cranberry", "blue raspberry", "grape", "sour", "kiwi", "chocolate", "milano", 
+            "huckleberry", "sweetened lime", "mojito", "lemon lime", "cinnamon", "watermelon", 
+            "guava", "banana", "lavender", "cucumber", "salted caramel", "choc chip cookie dough", 
+            "brown sugar cinnamon", "hazelnut", "pumpkin spice", "peppermint", "irish cream", 
+            "gingerbread", "white chocolate", "butterscotch", "bubble gum", "cotton candy", 
+            "butterbrew", "mix", "cream", "coconut cream", "whip", "lemon wedge", "lime wedge", 
+            "french vanilla creamer", "candy sprinkles", "strawberry puree", "peach puree", 
+            "mango puree", "raspberry puree"
+        ]
+
+        # Check if the value is in the allowed preferences
+        if value not in allowed_preferences:
+            raise serializers.ValidationError(f"{value} is not a valid preference. Allowed preferences are: {allowed_preferences}.")
+
+        # Return the lowercase value for saving
+        return value
