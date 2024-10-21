@@ -1,5 +1,9 @@
+import 'react-native-gesture-handler'
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import AppNavigator from './navigation/AppNavigator';
+
 
 const App = () => {
   const [username, setUsername] = useState('');
@@ -8,7 +12,7 @@ const App = () => {
   const [message, setMessage] = useState('');
 
   // Single variable to store the base URL
-  const BASE_URL = 'http://172.20.5.200:8000'; // Replace with your actual backend URL
+  const BASE_URL = 'http://172.20.10.4:8000'; // Replace with your actual backend URL
 
   const handleRegister = async () => {
     try {
@@ -80,7 +84,12 @@ const App = () => {
       <Button title="Login" onPress={handleLogin} />
       {token && <Text>Your token: {token}</Text>}
       {message && <Text>{message}</Text>}
-    </View>
+
+      <NavigationContainer>
+        <AppNavigator />
+      </NavigationContainer>
+
+//     </View>
   );
 };
 
