@@ -1,5 +1,3 @@
-// src/screens/HomeScreen.js
-
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import NavBar from '../components/NavBar';
@@ -7,7 +5,7 @@ import NavBar from '../components/NavBar';
 const HomePage = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to the Soda App!</Text>
+      <Text style={styles.title}>Welcome to the CodePop App!</Text>
       {/* Add more content here */}
       <NavBar />
     </View>

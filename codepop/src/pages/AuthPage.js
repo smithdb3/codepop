@@ -1,6 +1,5 @@
-// src/screens/AuthScreen.js
-
 import React, { useState } from 'react';
+import { TouchableOpacity } from 'react-native';
 import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
 
 const AuthPage = ({ navigation }) => {
@@ -38,8 +37,14 @@ const AuthPage = ({ navigation }) => {
         onChangeText={setPassword}
         style={styles.input}
       />
-      <Button title="Register" onPress={handleRegister} />
-      <Button title="Login" onPress={handleLogin} />
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={styles.mediumButton} onPress={handleRegister}>
+          <Text style={styles.buttonText}>Create Account</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.mediumButton} onPress={handleLogin}>
+          <Text style={styles.buttonText}>Login</Text>
+        </TouchableOpacity>
+      </View>
       {token && <Text>Your token: {token}</Text>}
       {message && <Text>{message}</Text>}
     </View>
@@ -59,6 +64,19 @@ const styles = StyleSheet.create({
     padding: 5,
     width: '100%',
   },
+  buttonContainer: {
+    flexDirection: 'row',
+  },
+  mediumButton: {
+    margin: 10,
+    padding: 15,
+    backgroundColor: '#8df1d3',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontSize: 16,
+  }
 });
 
 export default AuthPage;

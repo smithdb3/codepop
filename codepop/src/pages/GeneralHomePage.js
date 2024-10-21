@@ -1,10 +1,8 @@
-// src/pages/DrinkPage.js
-
 import React, { useState } from 'react';
 import { View, Text, Button, StyleSheet, Dimensions } from 'react-native';
-// import Carousel from 'react-native-snap-carousel';
 import NavBar from '../components/NavBar';
-// import NavBar from '../components/NavBar';
+import { useNavigation } from '@react-navigation/native';
+import { TouchableOpacity } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -17,12 +15,7 @@ const drinks = [
 const GeneralHomePage = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
-//   const renderDrinkItem = ({ item }) => (
-//     <View style={styles.carouselItem}>
-//       <Text style={styles.drinkName}>{item.name}</Text>
-//       <Text style={styles.drinkDescription}>{item.description}</Text>
-//     </View>
-//   );
+  const navigation = useNavigation();
 
   const generateDrinks = () => {
     console.log('Generating drinks...');
@@ -30,19 +23,19 @@ const GeneralHomePage = () => {
 
   const createAccount = () => {
     console.log('Navigating to account creation...');
+    navigation.navigate('Auth');
   };
 
   return (
     <View style={styles.container}>
-      {/* <Carousel
-        data={drinks}
-        renderItem={renderDrinkItem}
-        sliderWidth={screenWidth}
-        itemWidth={screenWidth * 0.8}
-        onSnapToItem={(index) => setCurrentIndex(index)}
-      /> */}
-      <Button title="Generate Drinks" onPress={generateDrinks} />
-      <Button title="Create Account" onPress={createAccount} />
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity onPress={generateDrinks} style={styles.mediumButton}>
+          <Text style={styles.buttonText}>Generate Drinks</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={createAccount} style={styles.mediumButton}>
+          <Text style={styles.buttonText}>Create Account</Text>
+        </TouchableOpacity>
+      </View>
       <NavBar />
     </View>
   );
@@ -62,7 +55,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    elevation: 3, // For Android shadow
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -76,39 +69,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
+  mediumButton: {
+    margin: 20,
+    padding: 15,
+    backgroundColor: '#8df1d3',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontSize: 16,
+  }
 });
 
 export default GeneralHomePage;
-
-
-
-// src/screens/HomeScreen.js
-
-// import React from 'react';
-// import { View, Text, StyleSheet } from 'react-native';
-// import NavBar from '../components/NavBar';
-
-// const GeneralHomePage = () => {
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.title}>Welcome to the Soda App!</Text>
-//       {/* Add more content here */}
-//       <NavBar />
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     padding: 0,
-//   },
-//   title: {
-//     fontSize: 24,
-//     fontWeight: 'bold',
-//   },
-// });
-
-// export default GeneralHomePage;
