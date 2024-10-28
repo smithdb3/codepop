@@ -4,6 +4,8 @@ from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken
 from .views import UserPreferenceLookup, PreferencesOperations
 from .views import DrinkOperations, UserDrinksLookup
 from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdateAPIView
+from .views import OrderOperations
+
 
 #this ensures that the url calls the right function from the views for each type of request
 preferences_list = PreferencesOperations.as_view({
@@ -28,7 +30,16 @@ drink_detail = DrinkOperations.as_view({
     'delete': 'destroy'
 })
 
+order_list = OrderOperations.as_view({
+    'get': 'list',
+    'post': 'create'
+})
 
+order_detail = OrderOperations.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'delete': 'destroy'
+})
 
 urlpatterns = [
     #Authentication related urls
@@ -57,4 +68,8 @@ urlpatterns = [
     path('inventory/', InventoryListAPIView.as_view(), name='inventory_list'),
     path('inventory/report/', InventoryReportAPIView.as_view(), name='inventory_report'),
     path('inventory/<int:pk>/', InventoryUpdateAPIView.as_view(), name='inventory_update'),
+
+
+    path('orders/', order_list, name='order_list_create'),
+    path('orders/<int:pk>/', order_detail, name='order_detail'),
 ]

@@ -10,8 +10,8 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory
-from .serializers import CreateUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer
+from .models import Preference, Drink, Inventory, Order
+from .serializers import CreateUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, OrderSerializer
 from rest_framework.permissions import IsAuthenticated
 
 #Custom login to so that it get's a token but also the user's first name and the user id
@@ -194,3 +194,22 @@ class InventoryUpdateAPIView(RetrieveUpdateAPIView):
 
         return Response(response_data, status=status.HTTP_200_OK)
     
+
+class OrderOperations(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+    def get_permissions(self):
+        """Only authenticated users can create, update, or delete orders."""
+        if self.action in ['create', 'update', 'destroy']:
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)

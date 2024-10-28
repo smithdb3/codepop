@@ -51,3 +51,28 @@ class Inventory(models.Model):
 
     def __str__(self):
         return f"{self.ItemName} - {self.ItemType} (Qty: {self.Quantity})"
+
+class Order(models.Model):
+    ORDER_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('paid', 'Paid'),
+        ('failed', 'Failed'),
+    ]
+
+    OrderID = models.AutoField(primary_key=True)
+    UserID = models.ForeignKey(User, on_delete=models.CASCADE)
+    Drinks = models.ManyToManyField(Drink)
+    OrderStatus = models.CharField(max_length=50, choices=ORDER_STATUS_CHOICES, default='pending')
+    PaymentStatus = models.CharField(max_length=50, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    PickupTime = models.DateTimeField(null=True, blank=True)
+    CreationTime = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Order {self.OrderID} by User {self.UserID.username}"
