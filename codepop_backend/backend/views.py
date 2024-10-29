@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.db.models import F
 from django.db import models
+from django.utils import timezone
 from django.contrib.auth.models import User
 from rest_framework.generics import CreateAPIView, ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny
@@ -199,22 +200,29 @@ class InventoryUpdateAPIView(RetrieveUpdateAPIView):
 class NotificationOperations(viewsets.ModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user_id = self.request.user.id
+        user = get_object_or_404(User, pk=user_id)
+        # Filter notifications that are either global or specific to the user
+        return Notification.objects.filter(models.Q(Global=True) | models.Q(UserID=user_id))
 
     def create(self, request, *args, **kwargs):
-        # Custom logic for creating a drink can go here
+        # Custom logic for creating a notification can go here
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
-        # Custom logic for updating a drink can go here
+        # Custom logic for updating a notification can go here
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
-        # Custom logic for deleting a drink can go here
+        # Custom logic for deleting a notification can go here
         return super().destroy(request, *args, **kwargs)
     
     def filter_by_time(self, request):
         """
-        Custom endpoint to filter notifications within a specific time range.
+        Custom endpoint to filter notifications within a specific time range for the authenticated user.
         Accepts 'start' and 'end' parameters in ISO 8601 format.
         """
         start = request.query_params.get('start')
@@ -224,6 +232,12 @@ class NotificationOperations(viewsets.ModelViewSet):
         start_time = parse_datetime(start) if start else None
         end_time = parse_datetime(end) if end else None
 
+        # Check and convert to timezone-aware if necessary
+        if start_time and timezone.is_naive(start_time):
+            start_time = timezone.make_aware(start_time)
+        if end_time and timezone.is_naive(end_time):
+            end_time = timezone.make_aware(end_time)
+
         # Validate parameters
         if not start_time or not end_time:
             return Response(
@@ -231,18 +245,31 @@ class NotificationOperations(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Filter notifications by time range
-        notifications = Notification.objects.filter(Timestamp__range=(start_time, end_time))
-        serializer = self.get_serializer(notifications, many=True)
+        # Filter notifications by time range and for the authenticated user
+        user = request.user
+        notifications = Notification.objects.filter(
+            Timestamp__range=(start_time, end_time),
+            UserID=user
+        )
+
+        # Include global notifications if they fall within the time range
+        global_notifications = Notification.objects.filter(
+            Timestamp__range=(start_time, end_time),
+            Global=True
+        )
+        notifications = notifications | global_notifications
+
+        # Serialize and return the notifications
+        serializer = self.get_serializer(notifications.distinct(), many=True)
         return Response(serializer.data)
     
 class UserNotificationLookup(ListAPIView):
     serializer_class = NotificationSerializer
-    permission_classes = []
+    permission_classes = [IsAuthenticated]
 
     # Override get_queryset to filter preferences by the provided UserID
     def get_queryset(self):
         user_id = self.kwargs['user_id']  # Retrieve the 'user_id' from the URL
         # Check if the user exists first, and raise a 404 if not
         user = get_object_or_404(User, pk=user_id)
-        return Notification.objects.filter(userID=user_id)
+        return Notification.objects.filter(UserID=user_id)

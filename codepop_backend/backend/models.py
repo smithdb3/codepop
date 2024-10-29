@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
+from django.utils import timezone
 
 class Preference(models.Model):
     # Primary key will be automatically created as 'id' unless you specify otherwise
@@ -56,8 +57,9 @@ class Notification(models.Model):
     NotificationID = models.AutoField(primary_key=True)
     UserID = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     Message = models.CharField(max_length=500)  # Adjust max_length as needed
-    Timestamp = models.DateTimeField(auto_now_add=True)  # Sets timestamp to the creation date/time
+    Timestamp = models.DateTimeField(default=timezone.now)  # Sets timestamp to the creation date/time
     Type = models.CharField(max_length=50)  # Adjust max_length as needed
+    Global = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Notification for {self.UserID.username}: {self.Message[:50]}"
+        return f"Notification for {self.UserID.username}: {self.Message[:50]} at time {self.Timestamp}"

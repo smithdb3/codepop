@@ -79,7 +79,8 @@ urlpatterns = [
     path('users/<int:user_id>/notifications/', UserNotificationLookup.as_view(), name='user notifications list'),
     
      # Custom time-based notification filter
-     # the get request sent in this format /notifications/filter_by_time/?start=2023-10-21T12:00:00Z&end=2023-10-21T18:00:00Z
+     # The request should have a start and end time specified in the params as follows
+     # /backend/notifications/filter_by_time/?start=<start time in ISO 8601 format>&end=<end time in ISO 8601 format>
      # the date should be in ISO 8601 format
     path('notifications/filter_by_time/', notification_filter_by_time, name='notification filter by time'),
 ]
