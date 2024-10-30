@@ -475,6 +475,8 @@ The CodePop interface is carefully designed to support both usability and access
 | AddIns | List\[Strings\] |None |
 | Rating | double | Default NULL |
 | Price | double | Required |
+| Size  | String | Required, Must be [s, m, l] |
+| Ice   | String | Required, Must be [none, light, regular, extra]|
 | User_Created | Boolean | Required|
 | Favorite | UserID | |
 
