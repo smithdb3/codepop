@@ -63,7 +63,7 @@ class DrinkSerializer(serializers.ModelSerializer):
     def validate_Size(self, value):
         value = value.lower()
 
-        allowed_size = ['s','m','l']
+        allowed_size = ['16oz', '24oz','32oz']
 
         if value not in allowed_size:
             raise serializers.ValidationError(f"{value} is not a valid drink size. Allowed sizes are: {allowed_size}")
@@ -72,6 +72,9 @@ class DrinkSerializer(serializers.ModelSerializer):
     
     def validate_Ice(self, value):
         value = value.lower()
+
+        if value == "no ice":
+            value = 'none'
 
         allowed_ice = ['none', 'light', 'regular', 'extra']
 

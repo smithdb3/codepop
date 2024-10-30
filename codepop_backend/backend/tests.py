@@ -145,9 +145,9 @@ class DrinkTests(TestCase):
         self.token2 = Token.objects.create(user=self.user2)
 
         # Create sample drinks for both users (dirty sodas)
-        Drink.objects.create(Name="Cola Vanilla", SodaUsed=["Cola"], SyrupsUsed=["Vanilla"], Ice="Regular", Size="M", User_Created=False, Price=1.99, Favorite=self.user1)
-        Drink.objects.create(Name="Lemonade Mint", SodaUsed=["Lemonade"], AddIns=["Mint"], Ice="None", Size="S", User_Created=False, Price=2.50, Favorite=self.user2)
-        Drink.objects.create(Name="Custom Cherry Soda", SodaUsed=["Cherry Soda"], Ice="Light", Size="L", User_Created=True, Price=3.50, Favorite=self.user2)
+        Drink.objects.create(Name="Cola Vanilla", SodaUsed=["Cola"], SyrupsUsed=["Vanilla"], Ice="Regular", Size="24oz", User_Created=False, Price=1.99, Favorite=self.user1)
+        Drink.objects.create(Name="Lemonade Mint", SodaUsed=["Lemonade"], AddIns=["Mint"], Ice="None", Size="16oz", User_Created=False, Price=2.50, Favorite=self.user2)
+        Drink.objects.create(Name="Custom Cherry Soda", SodaUsed=["Cherry Soda"], Ice="Light", Size="32oz", User_Created=True, Price=3.50, Favorite=self.user2)
 
         # Set up the API client
         self.client = APIClient()
@@ -179,7 +179,7 @@ class DrinkTests(TestCase):
             "SodaUsed": ["Strawberry Soda"],
             "SyrupsUsed": ["Vanilla"],
             "Ice": "Light",
-            "Size": "L",
+            "Size": "32oz",
             "User_Created": False,
             "Price": 2.99,
             "Favorite": self.user1.id
@@ -193,7 +193,7 @@ class DrinkTests(TestCase):
         drink = Drink.objects.get(Name="Strawberry Soda")
         self.assertEqual(drink.Price, 2.99)
         self.assertEqual(drink.Ice, "light")
-        self.assertEqual(drink.Size, "l")
+        self.assertEqual(drink.Size, "32oz")
 
     def test_update_existing_drink(self):
         """Test updating the price of an existing drink, and set Ice and Size"""
@@ -208,7 +208,7 @@ class DrinkTests(TestCase):
             "SodaUsed": drink.SodaUsed,
             "SyrupsUsed": drink.SyrupsUsed,
             "Ice": "None",
-            "Size": "S",
+            "Size": "16oz",
             "Price": 4.50,  # Updated price
             "User_Created": drink.User_Created,
             "Favorite": self.user1.id
@@ -222,7 +222,7 @@ class DrinkTests(TestCase):
         drink.refresh_from_db()
         self.assertEqual(drink.Price, 4.50)
         self.assertEqual(drink.Ice, "none")
-        self.assertEqual(drink.Size, "s")
+        self.assertEqual(drink.Size, "16oz")
 
     def test_delete_drink(self):
         """Test deleting a drink"""
@@ -246,7 +246,7 @@ class DrinkTests(TestCase):
             "User_Created": False,
             "Price": 2.00,
             "Ice": "Regular",
-            "Size": "M"
+            "Size": "24oz"
         }
 
         # Send a POST request without authentication
@@ -290,7 +290,7 @@ class DrinkTests(TestCase):
             Name="Orange Soda",
             SodaUsed=["Fanta"],
             Ice="Regular",
-            Size="M",
+            Size="24oz",
             User_Created=True,
             Price=2.00,
             Favorite=self.user1
