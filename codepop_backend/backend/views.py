@@ -90,6 +90,8 @@ class DrinkOperations(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Modify the basic GET request behavior so it only returns drinks not user created
+        if(self.action == 'update' or self.action == 'retrieve' or self.action == 'destroy'):
+            return Drink.objects.all()
         return Drink.objects.filter(User_Created=False)
 
     def get_permissions(self):

@@ -25,6 +25,8 @@ class Drink(models.Model):
     AddIns = ArrayField(models.CharField(max_length=255), blank=True, null=True)
     Rating = models.FloatField(null=True, blank=True)
     Price = models.FloatField()
+    Size = models.CharField(default="m")
+    Ice = models.CharField(default="normal")
     User_Created = models.BooleanField()
     Favorite = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True, blank=True)
 

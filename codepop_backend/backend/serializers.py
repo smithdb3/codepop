@@ -60,6 +60,26 @@ class DrinkSerializer(serializers.ModelSerializer):
         model = Drink
         fields = '__all__'
 
+    def validate_Size(self, value):
+        value = value.lower()
+
+        allowed_size = ['s','m','l']
+
+        if value not in allowed_size:
+            raise serializers.ValidationError(f"{value} is not a valid drink size. Allowed sizes are: {allowed_size}")
+        
+        return value
+    
+    def validate_Ice(self, value):
+        value = value.lower()
+
+        allowed_ice = ['none', 'light', 'regular', 'extra']
+
+        if value not in allowed_ice:
+            raise serializers.ValidationError(f"{value} is not a valid ice amount. Allowed amounts are: {allowed_ice}")
+
+        return value
+
 class InventorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Inventory
