@@ -12,7 +12,10 @@ Follow these instructions to set up the CodePop project on your machine.
    - This will create a folder in the root directory titled codepop_virtual_enviroment
    - This command activates the virtual enviroment(Note this must be run in either git bash or in a bash shell, i.e. mac terminal):
      ```bash
+     #WINDOWS command using git bash
      source codepop_virtual_enviroment/Scripts/activate
+     #Mac and Linux version
+     source codepop_virtual_enviroment/bin/activate
      ```
     - run the following command once the virtual enviroment has been activated to install dependencies
       ```bash
@@ -59,7 +62,7 @@ Follow these instructions to set up the CodePop project on your machine.
       python -m pip freeze > requirements.txt
       ```
     - also please update what the expected output for the python -m pip list when you add new packages
-    
+
     - git ignores the virtual enviroment directory but not the requirements.txt file. This is because the requirements.txt will be used by all developers to ensure proper dependancies are installed. So be sure to push your requirements.txt file when you make changes
 2. **Download and Install PostgreSQL**
    - Download PostgreSQL from the following link:
