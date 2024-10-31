@@ -5,15 +5,24 @@ Follow these instructions to set up the CodePop project on your machine.
 ## Backend Setup
 
 1. **Install Dependencies**
-   - Navigate to the base directory of your project and run the following command (Note this must be run in either git bash or in a bash shell, i.e. mac terminal) This command activates the virtual enviroment:
+   - Navigate to the base directory of your project and run the following command to create the virtual enviroment for the backend
+      ```bash
+      python -m venv codepop_virtual_enviroment  
+      ``` 
+   - This will create a folder in the root directory titled codepop_virtual_enviroment
+   - This command activates the virtual enviroment(Note this must be run in either git bash or in a bash shell, i.e. mac terminal):
      ```bash
      source codepop_virtual_enviroment/Scripts/activate
      ```
-   - Run the following command 
+    - run the following command once the virtual enviroment has been activated to install dependencies
+      ```bash
+      python -m pip install -r requirements.txt
+      ```
+   - Run the following command to confirm you have the proper dependencies installed 
       ```bash
       python -m pip list
       ```
-   - If your output doesn't look like the following
+   - your output should look like the following
       ```bash
       Package             Version
       ------------------- -----------
@@ -37,11 +46,6 @@ Follow these instructions to set up the CodePop project on your machine.
       typing_extensions   4.12.2
       tzdata              2024.2
       ```
-
-    - run the following command
-      ```bash
-      python -m pip install -r requirements.txt
-      ```
     - to deactivate the virtual enviroment run the following command
       ```bash
       deactivate
@@ -55,6 +59,8 @@ Follow these instructions to set up the CodePop project on your machine.
       python -m pip freeze > requirements.txt
       ```
     - also please update what the expected output for the python -m pip list when you add new packages
+    
+    - git ignores the virtual enviroment directory but not the requirements.txt file. This is because the requirements.txt will be used by all developers to ensure proper dependancies are installed. So be sure to push your requirements.txt file when you make changes
 2. **Download and Install PostgreSQL**
    - Download PostgreSQL from the following link:
      [PostgreSQL Downloads](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
