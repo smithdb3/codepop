@@ -56,7 +56,7 @@ Follow these instructions to set up the CodePop project on your machine.
      [Android Studio Downloads](https://developer.android.com/studio)
 
 3. **Start the React Native App**
-   - Navigate to the `codepop` directory and edit the base URL in `app.js` to match your IP address and port.
+   - Navigate to the `codepop` directory and edit the base URL in `ip_address.js` to match your IP address and port.
    - Install dependancies by running the following command:
       ```bash
       npm install
