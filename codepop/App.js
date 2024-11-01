@@ -9,6 +9,10 @@ import PreferencesPage from './src/pages/PreferencesPage';
 import GeneralHomePage from './src/pages/GeneralHomePage';
 import CreateAccountPage from './src/pages/CreateAccountPage';
 import PaymentPage from './src/pages/PaymentPage';
+import ComplaintsPage from './src/pages/ComplaintsPage';
+import UpdateDrink from './src/pages/UpdateDrink';
+import ManagerDash from './src/pages/ManagerDash';
+import AdminDash from './src/pages/AdminDash';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Stack = createNativeStackNavigator();
@@ -61,6 +65,11 @@ const App = () => {
           options={{ title: 'Create Drink' }}
         />
         <Stack.Screen
+          name="ComplaintsPage"
+          component={ComplaintsPage}
+          options={{ title: 'ComplaintsPage' }}
+        />
+        <Stack.Screen
           name="Preferences"
           component={PreferencesPage}
           options={{ title: 'Preferences' }}
@@ -74,6 +83,21 @@ const App = () => {
           name="payment"
           component={PaymentPage}
           options={{ title: 'Payment' }}
+        />
+        <Stack.Screen
+          name="UpdateDrink"
+          component={PaymentPage}
+          options={{ title: 'UpdateDrink' }}
+        />
+        <Stack.Screen
+          name="ManagerDash"
+          component={PaymentPage}
+          options={{ title: 'ManagerDash' }}
+        />
+        <Stack.Screen
+          name="AdminDash"
+          component={PaymentPage}
+          options={{ title: 'AdminDash' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

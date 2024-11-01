@@ -6,10 +6,6 @@ const DropDown = ({ title, options = [], onSelect, isOpen, setOpen}) => {
   // const [isOpen, setIsOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState({});
 
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-  };
-
   const toggleItemSelection = (item) => {
     setSelectedItems((prevSelectedItems) => ({
       ...prevSelectedItems,
@@ -58,7 +54,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderColor: '#6FD9BB',
-    // backgroundColor: '#E8F5E9',
     backgroundColor: '#C8E6C9',
     padding: 18,
     width: '100%',

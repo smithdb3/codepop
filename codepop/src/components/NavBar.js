@@ -18,21 +18,24 @@ const NavBar = () => {
 
   return (
     <View style={styles.navbar}>
-      <TouchableOpacity onPress={() => navigation.navigate('Home')}>
-        <Icon name="home-outline" size={24} color="#000" />
-        {/* <Text style={styles.navItem}>Home</Text> */}
+      <TouchableOpacity onPress={() => navigation.navigate('GeneralHome')}>
+        <Icon name="home" size={24} color="#000" />
+        {/* <Text style={styles.navItem}>Cart</Text> */}
       </TouchableOpacity>
+
       <TouchableOpacity onPress={() => navigation.navigate('CreateDrink')}>
         <Icon name="cafe-outline" size={24} color="#000" />
         {/* <Text style={styles.navItem}>Create Drink</Text> */}
       </TouchableOpacity>
+
       <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
         <Icon name="cart-outline" size={24} color="#000" />
         {/* <Text style={styles.navItem}>Cart</Text> */}
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('GeneralHome')}>
-        <Icon name="home" size={24} color="#000" />
-        {/* <Text style={styles.navItem}>Cart</Text> */}
+      
+      <TouchableOpacity onPress={() => navigation.navigate('ComplaintsPage')}>
+        <Icon name="chatbubbles-outline" size={24} color="#000" />
+        {/* <Text style={styles.navItem}>Home</Text> */}
       </TouchableOpacity>
 
       {/* Add more navigation items as needed */}

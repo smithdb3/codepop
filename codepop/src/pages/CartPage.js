@@ -9,8 +9,8 @@ import axios from 'axios';
 
 // to do:
 // fetch drinks function may not properly update checkoutlist?
-// be able to delete drinks
-// fix cart total
+// be able to edit the drinks
+  // take you back to a pre-populated create drink page and deletes the current drink object to that the drink can be updated
 
 const CartPage = () => {
   const navigation = useNavigation();
@@ -106,32 +106,66 @@ const CartPage = () => {
     setTotalPrice(total); // Update the total price state
   };
 
+  // const removeDrink = async (drinkId) => {
+  //   try {
+  //     const cartList = await AsyncStorage.getItem('checkoutList');
+  //     const currentList = cartList ? JSON.parse(cartList) : [];
+  //     const token = await AsyncStorage.getItem('userToken');
+  //     // deletes drink from database
+  //     const response = await fetch(`${BASE_URL}/backend/drinks/${drinkId}`, {
+  //       method: 'DELETE',
+  //       headers: {
+  //           'Content-Type': 'application/json',
+  //           'Authorization': `Token ${token}`,
+  //       },
+  //   });
+
+  //   // deltes it from being shown on the cart page
+  //   setDrinks(drinks.filter(data => data.DrinkID !== drinkId));
+
+  //   // delete it from phone storage
+  //   const updatedList = currentList.filter(item => item !== drinkId);
+  //   await AsyncStorage.setItem("checkoutList", updatedList);
+
+
+  //   } catch (error) {
+  //     console.error('Error removing drink:', error);
+  //   }
+  // };
+
   const removeDrink = async (drinkId) => {
     try {
       const cartList = await AsyncStorage.getItem('checkoutList');
       const currentList = cartList ? JSON.parse(cartList) : [];
       const token = await AsyncStorage.getItem('userToken');
-      // deletes drink from database
-      const response = await fetch(`${BASE_URL}/backend/drinks/${drinkId}`, {
+  
+      // Delete the drink from the backend database
+      await fetch(`${BASE_URL}/backend/drinks/${drinkId}`, {
         method: 'DELETE',
         headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
         },
-    });
-
-    // deltes it from being shown on the cart page
-    setDrinks(drinks.filter(data => data.DrinkID !== drinkId));
-
-    // delete it from phone storage
-    const updatedList = currentList.filter(item => item !== drinkId);
-    await AsyncStorage.setItem("checkoutList", updatedList);
-
-
+      });
+  
+      // Update the local state to remove the drink from the cart page
+      const updatedDrinks = drinks.filter(data => data.DrinkID !== drinkId);
+      setDrinks(updatedDrinks);
+  
+      // Update the AsyncStorage to remove the drink ID from the checkout list
+      const updatedList = currentList.filter(item => item !== drinkId);
+      await AsyncStorage.setItem("checkoutList", JSON.stringify(updatedList));
+  
+      // Recalculate the total price with the updated drinks list
+      calculateTotalPrice(updatedDrinks);
+  
+      console.log('Drink removed and total price recalculated successfully');
     } catch (error) {
       console.error('Error removing drink:', error);
     }
   };
+  
+  
 
   const renderDrinkItem = (drink) => (
     <View style={styles.drinkContainer}>
