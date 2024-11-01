@@ -1,6 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
+import React, { useEffect } from 'react';
 import AuthPage from './src/pages/AuthPage';
 import HomePage from './src/pages/HomePage';
 import CartPage from './src/pages/CartPage';
@@ -9,11 +9,30 @@ import PreferencesPage from './src/pages/PreferencesPage';
 import GeneralHomePage from './src/pages/GeneralHomePage';
 import CreateAccountPage from './src/pages/CreateAccountPage';
 import PaymentPage from './src/pages/PaymentPage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Stack = createNativeStackNavigator();
 const title = 'CodePop' 
 
+
 const App = () => {
+  // initialize cart list 
+  const initCart = async () => {
+    try{
+      const checkoutList = await AsyncStorage.getItem('checkoutList')
+      if (checkoutList === null){
+        const initialList = [];
+        await AsyncStorage.setItem("checkoutList", JSON.stringify(initialList));
+      }
+    }catch(error){
+      console.error("error with initializing cart list", error);
+    }
+  };
+  
+  useEffect(() => {
+    initCart()
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="GeneralHome">

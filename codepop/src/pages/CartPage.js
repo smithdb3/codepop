@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native
 import NavBar from '../components/NavBar';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import {BASE_URL} from '../../ip_address'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 const CartPage = () => {
@@ -16,11 +18,35 @@ const CartPage = () => {
 
   const fetchDrinks = async () => {
     try {
-      const response = await axios.get('http://users/<int:user_id>/drinks/');
-      setDrinks(response.data);
-      calculateTotalPrice(response.data);
+      // gets list of cart drinkIDs from storage
+      const cartList = await AsyncStorage.getItem('checkoutList');
+      const currentList = cartList ? JSON.parse(cartList) : [];
+
+      const token = await AsyncStorage.getItem('userToken');
+
+      setDrinks([]);
+
+      for(let i = 0; i < currentList.length; i++){
+        const response = await fetch(`${BASE_URL}/backend/drinks/${currentList[i]}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Token ${token}`,
+            },
+        });
+        const data = await response.json();
+        if(data != null){
+          setDrinks(drinks.push(data));
+        }
+        
+      };
+
+      for(let i = 0; i < drinks.length; i++){
+        console.log(drinks[i].SyrupsUsed)
+      }
+      
     } catch (error) {
-      console.error('Error fetching drinks:', error);
+      console.error('Failed to get drinks: ', error);
     }
   };
 
@@ -36,9 +62,23 @@ const CartPage = () => {
 
   const removeDrink = async (drinkId) => {
     try {
-      await axios.delete(`http://users/<int:user_id>/drinks/${drinkId}/`);
-      setDrinks((prevDrinks) => prevDrinks.filter((drink) => drink.id !== drinkId));
-      calculateTotalPrice(drinks.filter((drink) => drink.id !== drinkId));
+      // deletes drink from database
+      const response = await fetch(`${BASE_URL}/backend/drinks/${drinkId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`,
+        },
+    });
+
+    // deltes it from being shown on the cart page
+    setDrinks(drinks.filter(data => data.DrinkID !== drinkId));
+
+    // delete it from phone storage
+    const updatedList = currentList.filter(item => item !== drinkId);
+    await AsyncStorage.setItem("checkoutList", updatedList);
+
+
     } catch (error) {
       console.error('Error removing drink:', error);
     }

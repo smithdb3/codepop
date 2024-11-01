@@ -23,10 +23,10 @@ END \$\$;
 
 # Step 2: Run Django migrations to recreate schema
 echo "Running Django migrations..."
-python manage.py makemigrations
-python manage.py migrate
+python3 manage.py makemigrations
+python3 manage.py migrate
 echo "Database cleaned and migrations applied."
 
-python manage.py populate_db
+python3 manage.py populate_db
 
 

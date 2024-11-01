@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
 import { useNavigation } from '@react-navigation/native';
 import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
 import {BASE_URL} from '../../ip_address'
-import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// to do:
+// create drink gif
+// finish price calculator
+// generate drink from AI
 
 const CreateDrinkPage = () => {
   const navigation = useNavigation();
@@ -17,49 +22,61 @@ const CreateDrinkPage = () => {
   });
 
   // variables to add to drink object
-  const [SodaUsed, setSoda] = useState(null);
-  const [SyrupsUsed, setSyrups] = useState(null);
-  const [AddIns, setAddIns] = useState(null);
+  const [SodaUsed, setSoda] = useState([]);
+  const [SyrupsUsed, setSyrups] = useState([]);
+  const [AddIns, setAddIns] = useState([]);
   const [Price, setPrice] = useState(null);
-  const [User, setUser] = useState(null);
   const [selectedSize, setSize] = useState(null);
   const [selectedIce, setIce] = useState(null);
   
-  
-  // create drink object in database and navigate to cart page
+
   const addToCart = async () => {
     try {
+      const token = await AsyncStorage.getItem('userToken');
+  
       const response = await fetch(`${BASE_URL}/backend/drinks/`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
         },
         body: JSON.stringify({ 
-          SodaUsed, 
-          SyrupsUsed, 
-          AddIns, 
-          Price, 
-          User, 
-          Size: selectedSize, 
+          Name: "Drink in User Cart",  // Example name for the drink
+          SodaUsed: SodaUsed,  // Default value if SodaUsed is null
+          SyrupsUsed: SyrupsUsed,
+          AddIns: AddIns,
+          Price: 2.00,
+          User_Created: true,    // Assuming the user is creating the drink
+          Size: selectedSize,
           Ice: selectedIce,
         })
       });
-
+  
       if (!response.ok) {
-        // Log the error if the response is not ok (status code outside 2xx)
         throw new Error(`Failed to add drink. Status: ${response.status}`);
       }
-      // if sucessful navigate to cart page
+      // add drink item (the drinks ID) to the checkout list from App.js
+      try{
+        // gets list of out of storage on your phone
+        cartList = await AsyncStorage.getItem("checkoutList");
+        const currentList = cartList ? JSON.parse(cartList) : [];
+        // takes the response (what we get after we create a drink) and extracts the drinkID
+        const data = await response.json();
+        const drinkID = data.DrinkID;
+        // add the drinkID to the checkoutList
+        const updatedList = [...currentList, drinkID]
+        // Saves the checkoutlist back into the storage on the phone
+        await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
+      }catch (error){
+        console.log(error)
+      }
+      
       navigation.navigate('Cart');
     } catch (error) {
       console.error('Error adding drink to cart:', error);
     }
-  };
-
-  // // functions to add ingredients to drink object lists
-  // const addItemToDrinkObject = () => {
-  //   // Your logic here
-  // };
+  };  
+  
 
   const handleSizeSelection = (size) => {
     setSize(size);
@@ -69,40 +86,56 @@ const CreateDrinkPage = () => {
     setIce(ice);
   };
 
-  const handleSodaSelection = (sodaList) => {
-    setSoda(sodaList);
+  const handleSodaSelection = (soda) => {
+    setSoda((prevSodas) => {
+      if (prevSodas.includes(soda)) {
+        // If soda is already selected, remove it
+        return prevSodas.filter((item) => item !== soda);
+      } else {
+        // Otherwise, add the soda to the list
+        return [...prevSodas, soda];
+      }
+    });
   };
   
-  const handleSyrupSelection = (SyrupList) => {
-    setSyrups(SyrupList);
+  
+  const handleSyrupSelection = (syrup) => {
+    setSyrups((prevSyrups) => {
+      if (prevSyrups.includes(syrup)) {
+        // If soda is already selected, remove it
+        return prevSyrups.filter((item) => item !== syrup);
+      } else {
+        // Otherwise, add the soda to the list
+        return [...prevSyrups, syrup];
+      }
+    });
   };
 
-  const handleAddInSelection = (AddInList) => {
-    setAddIns(AddInList);
+  const handleAddInSelection = (addIn) => {
+    setAddIns((prevAdd) => {
+      if (prevAdd.includes(addIn)) {
+        // If soda is already selected, remove it
+        return prevAdd.filter((item) => item !== addIn);
+      } else {
+        // Otherwise, add the soda to the list
+        return [...prevAdd, addIn];
+      }
+    });
   };
-  const HandleUser = (user) => {
-    setUser(user);
-  }
 
-
+  const calculatePrice = (drink) => {
+    // $2 base price + $0.30 per ingredient
+    sodaLen = sodaList
+    price = 2 + drink.ingredients.length * 0.3;
+    setPrice();
+  };
+  
   // search and list stiff
   const filterOptions = (options = []) => {
     return options.filter((option) =>
       option.label.toLowerCase().includes(searchText.toLowerCase())
     );
   };
-
-  
-
-  // const updateSelections = (ingredient) => {
-  //   setSelectedIngredients((prev) => {
-  //     if (prev.includes(ingredient)) {
-  //       return prev.filter((item) => item !== ingredient);
-  //     }
-  //     return [...prev, ingredient];
-  //   });
-  // };
-  
 
   const handleSearch = (text) => {
     setSearchText(text);
@@ -121,6 +154,7 @@ const CreateDrinkPage = () => {
   return (
     <View style={styles.wholePage}>
 
+      <ScrollView>
       <View style={styles.rowContainer}>
         {/* Size buttons on the left */}
         <View style={styles.buttonContainerLeft}>
@@ -206,7 +240,7 @@ const CreateDrinkPage = () => {
           setOpen={() => setOpenDropdown(prev => ({ ...prev, juices: !prev.juices }))}
         />
       </View>
-
+      </ScrollView>
       <NavBar/>
     </View>
   );
