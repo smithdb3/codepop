@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ScrollView } from 'react-native';
 import NavBar from '../components/NavBar';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -17,9 +17,9 @@ const CartPage = () => {
   const [drinks, setDrinks] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
 
-  useEffect(() => {
+  useFocusEffect(React.useCallback(() => {
     fetchDrinks();
-  }, []);
+  }, []));
 
   // const fetchDrinks = async () => {
   //   try {
@@ -67,7 +67,7 @@ const CartPage = () => {
       const fetchedDrinks = []; // Temporary array to collect drinks
   
       for (let i = 0; i < currentList.length; i++) {
-        const response = await fetch(`${BASE_URL}/backend/drinks/${currentList[i]}`, {
+        const response = await fetch(`${BASE_URL}/backend/drinks/${currentList[i]}/`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -140,7 +140,7 @@ const CartPage = () => {
       const token = await AsyncStorage.getItem('userToken');
   
       // Delete the drink from the backend database
-      await fetch(`${BASE_URL}/backend/drinks/${drinkId}`, {
+      await fetch(`${BASE_URL}/backend/drinks/${drinkId}/`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

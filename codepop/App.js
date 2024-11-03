@@ -48,7 +48,7 @@ const App = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="GeneralHome">
+      <Stack.Navigator initialRouteName="GeneralHome" screenOptions={{headerStyle: {backgroundColor: '#c8c8ee'}}}>
         <Stack.Screen 
           name="Auth" 
           component={AuthPage} 
