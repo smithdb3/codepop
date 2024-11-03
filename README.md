@@ -33,6 +33,9 @@ Follow these instructions to set up the CodePop project on your machine.
      CREATE DATABASE codepop_database;
      ```
 
+5. **Install Stripe**
+   - pip install stripe (Windows)
+
 5. **Run Migrations and Start the Server**
    - Run the following commands to apply migrations and start the server:
      ```bash
@@ -50,6 +53,10 @@ Follow these instructions to set up the CodePop project on your machine.
 2. **Install Android Studio**
    - Download and install Android Studio, then set up a virtual Android device:
      [Android Studio Downloads](https://developer.android.com/studio)
+
+3. **Install Stripe Library for React Native**
+   - npm install react@18.2.0
+   - npm install @stripe/stripe-react-native
 
 3. **Start the React Native App**
    - Navigate to the `codepop` directory and edit the base URL in `app.js` to match your IP address and port.
@@ -82,3 +89,5 @@ Once everything has been installed you should be able to run the code using the 
     ```
 ## Troubleshooting
 If you encounter any issues while setting up or running the application, feel free to reach out to Wesley for help!
+
+
