@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ScrollView } from 'react-native';
 import NavBar from '../components/NavBar';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, NavigationContainer } from '@react-navigation/native';
+import { useStripe, StripeProvider } from '@stripe/stripe-react-native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -21,42 +23,6 @@ const CartPage = () => {
     fetchDrinks();
   }, []));
 
-  // const fetchDrinks = async () => {
-  //   try {
-  //     // gets list of cart drinkIDs from storage
-  //     const cartList = await AsyncStorage.getItem('checkoutList');
-  //     const currentList = cartList ? JSON.parse(cartList) : [];
-
-  //     const token = await AsyncStorage.getItem('userToken');
-
-  //     setDrinks([]);
-
-  //     for(let i = 0; i < currentList.length; i++){
-  //       const response = await fetch(`${BASE_URL}/backend/drinks/${currentList[i]}`, {
-  //           method: 'GET',
-  //           headers: {
-  //               'Content-Type': 'application/json',
-  //               'Authorization': `Token ${token}`,
-  //           },
-  //       });
-  //       const data = await response.json();
-  //       if(data != null){
-  //         setDrinks(drinks.push(data));
-  //       }
-        
-  //     };
-  //     console.log(drinks)
-
-  //     for(let i = 0; i < drinks.length; i++){
-  //       console.log(drinks[i].SyrupsUsed)
-  //     }
-
-  //     // return drinks
-      
-  //   } catch (error) {
-  //     console.error('Failed to get drinks: ', error);
-  //   }
-  // };
 
   const fetchDrinks = async () => {
     try {
@@ -105,33 +71,6 @@ const CartPage = () => {
     }
     setTotalPrice(total); // Update the total price state
   };
-
-  // const removeDrink = async (drinkId) => {
-  //   try {
-  //     const cartList = await AsyncStorage.getItem('checkoutList');
-  //     const currentList = cartList ? JSON.parse(cartList) : [];
-  //     const token = await AsyncStorage.getItem('userToken');
-  //     // deletes drink from database
-  //     const response = await fetch(`${BASE_URL}/backend/drinks/${drinkId}`, {
-  //       method: 'DELETE',
-  //       headers: {
-  //           'Content-Type': 'application/json',
-  //           'Authorization': `Token ${token}`,
-  //       },
-  //   });
-
-  //   // deltes it from being shown on the cart page
-  //   setDrinks(drinks.filter(data => data.DrinkID !== drinkId));
-
-  //   // delete it from phone storage
-  //   const updatedList = currentList.filter(item => item !== drinkId);
-  //   await AsyncStorage.setItem("checkoutList", updatedList);
-
-
-  //   } catch (error) {
-  //     console.error('Error removing drink:', error);
-  //   }
-  // };
 
   const removeDrink = async (drinkId) => {
     try {
@@ -186,10 +125,15 @@ const CartPage = () => {
       </View>
     </View>
   );
+
+  const goToCheckout = () => {
+    navigation.navigate('Checkout');
+  };
   
 
   return (
-    <View style={styles.container}>
+    <StripeProvider publishableKey="pk_test_51QEDP7HwEWxwIyaLoeRGprLwnn6Fj7jZljzxglWudPSTSe6sMyFPAjHZsnMOy1HuwZhUYT9JGZbOsxhXxkFTJp9700JSZTZKIz">
+        <View style={styles.container}>
         <Text style={styles.headerText}>Your Drinks</Text>
 
         <FlatList style={styles.padding}
@@ -201,14 +145,15 @@ const CartPage = () => {
         <View style={styles.padding}>
           <Text style={styles.totalText}>Cart Total: ${totalPrice.toFixed(2)}</Text>
 
-          <TouchableOpacity onPress={() => navigation.navigate('payment')} style={styles.payButton}>
+          <TouchableOpacity onPress={goToCheckout} style={styles.payButton}>
             <Icon name="card-outline" size={24} color="#fff" />
             <Text style={styles.payButtonText}>Pay Now</Text>
           </TouchableOpacity>
         </View>
 
-      <NavBar />
-    </View>
+        <NavBar />
+        </View>
+    </StripeProvider>
   );
 };
 

@@ -13,6 +13,8 @@ import AdminDash from './src/pages/AdminDash';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CreateDrinkPage from './src/pages/CreateDrinkPage';
 import GeneralHomePage from './src/pages/GeneralHomePage';
+import CompletePage from './src/pages/CompletePage';
+import CheckoutForm from './src/pages/CheckoutForm';
 import PreferencesPage from './src/pages/PreferencesPage';
 
 const Stack = createNativeStackNavigator();
@@ -127,6 +129,16 @@ const App = () => {
           name="AdminDash"
           component={PaymentPage}
           options={{ title: 'AdminDash' }}
+        />
+        <Stack.Screen
+          name="Complete"
+          component={CompletePage}
+          options={{ title: 'Complete' }}
+        />
+        <Stack.Screen
+          name="Checkout"
+          component={CheckoutForm}
+          options={{ title: 'Checkout Form' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

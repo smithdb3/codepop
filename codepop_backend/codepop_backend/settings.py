@@ -22,6 +22,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-20c3kbxd-=q$-6^1^i@6u)jklu(js%g87$9sko85kirto!8afv'
 
+# Stripe Configuration
+STRIPE_SECRET_KEY = 'TODO: get a new secret stripe key'
+STRIPE_PUBLISHABLE_KEY = 'TODO: get a new publishable stripe key'
+
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 

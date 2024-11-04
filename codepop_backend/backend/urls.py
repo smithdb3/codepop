@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.authtoken.views import obtain_auth_token
 from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken
+from .views import StripePaymentIntentView
 from .views import UserPreferenceLookup, PreferencesOperations
 from .views import DrinkOperations, UserDrinksLookup
 from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdateAPIView
@@ -104,6 +105,9 @@ urlpatterns = [
     # Endpoint to list all drinks created by a specific user identified by their user ID.
     # - GET: Retrieve a list of drinks for the specified user.
     path('users/<int:user_id>/drinks/', UserDrinksLookup.as_view(), name='user_preferences_list'),
+
+    # Stripe payment
+    path('create-payment-intent/', StripePaymentIntentView.as_view(), name='create-payment-intent'),
 
     # Inventory URLs
     # Endpoint to list all inventory items

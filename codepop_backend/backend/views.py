@@ -14,8 +14,17 @@ from rest_framework.views import APIView
 from .models import Preference, Drink, Inventory, Notification, Order
 from .serializers import CreateUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer
 from rest_framework.permissions import IsAuthenticated
+import stripe
+from django.conf import settings
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views import View #maybe delete these three?
+from django.utils.decorators import method_decorator
+import json
 from rest_framework.decorators import action
 from django.utils.dateparse import parse_datetime
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 #Custom login to so that it get's a token but also the user's first name and the user id
 class CustomAuthToken(ObtainAuthToken):
@@ -326,3 +335,39 @@ class UserOrdersLookup(ListCreateAPIView):
         user_id = self.kwargs['user_id']
         user = get_object_or_404(User, pk=user_id)
         serializer.save(UserID=user)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class StripePaymentIntentView(View):
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            amount = int(data.get("amount") * 100)  # Stripe uses cents, so multiply dollars by 100
+            if amount is None:
+                return JsonResponse({'error': 'Amount is required.'}, status=400)
+
+            # Create a new customer
+            customer = stripe.Customer.create()
+
+            # Create an ephemeral key for the customer
+            ephemeral_key = stripe.EphemeralKey.create(
+                customer=customer['id'],
+                stripe_version='2024-09-30.acacia',
+            )
+
+            # Create a payment intent
+            payment_intent = stripe.PaymentIntent.create(
+                amount=amount,
+                currency='usd',
+                customer=customer['id'],
+                payment_method_types=['card'],  # Accept only card payments
+            )
+
+            # Respond with the required information
+            return JsonResponse({
+                'paymentIntent': payment_intent.client_secret,
+                'ephemeralKey': ephemeral_key.secret,
+                'customer': customer.id,
+                'publishableKey': 'TODO: get a new publishable stripe key'
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
