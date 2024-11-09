@@ -37,6 +37,8 @@ class CustomAuthToken(ObtainAuthToken):
             'token': token.key,
             'user_id': user.pk,
             'first_name': user.first_name,
+            'is_admin' : user.is_superuser,
+            'is_manager' : user.is_staff,
             
         })
 
@@ -213,7 +215,6 @@ class InventoryUpdateAPIView(RetrieveUpdateAPIView):
 class NotificationOperations(viewsets.ModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
-    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user_id = self.request.user.id
