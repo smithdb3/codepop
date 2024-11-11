@@ -37,6 +37,8 @@ class CustomAuthToken(ObtainAuthToken):
             'token': token.key,
             'user_id': user.pk,
             'first_name': user.first_name,
+            'is_admin' : user.is_superuser,
+            'is_manager' : user.is_staff,
             
         })
 
@@ -70,6 +72,7 @@ class LogoutUserAPIView(APIView):
 class PreferencesOperations(viewsets.ModelViewSet):
     queryset = Preference.objects.all()
     serializer_class = PreferenceSerializer
+    permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         # Custom logic for creating a drink can go here
@@ -85,6 +88,7 @@ class PreferencesOperations(viewsets.ModelViewSet):
 
 class UserPreferenceLookup(ListAPIView):
     serializer_class = PreferenceSerializer
+    permission_classes = [IsAuthenticated]
 
     # Override get_queryset to filter preferences by the provided UserID
     def get_queryset(self):
@@ -110,7 +114,7 @@ class DrinkOperations(viewsets.ModelViewSet):
         """
         if self.action in ['create', 'update', 'destroy']:
             # Require authentication for create, update, and destroy actions
-            return [IsAuthenticated()]
+            return [AllowAny()]
         return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
@@ -211,7 +215,6 @@ class InventoryUpdateAPIView(RetrieveUpdateAPIView):
 class NotificationOperations(viewsets.ModelViewSet):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
-    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user_id = self.request.user.id
@@ -288,6 +291,7 @@ class UserNotificationLookup(ListAPIView):
 class OrderOperations(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    permission_classes = [AllowAny]
 
     def patch(self, request, *args, **kwargs):
         order = self.get_object()
@@ -305,11 +309,11 @@ class OrderOperations(viewsets.ModelViewSet):
         serializer = self.get_serializer(order)
         return Response(serializer.data, status=status.HTTP_200_OK)
         
-    def get_permissions(self):
-        """Only authenticated users can create, update, or delete orders."""
-        if self.action in ['create', 'update', 'destroy']:
-            return [IsAuthenticated()]
-        return super().get_permissions()
+    # def get_permissions(self):
+    #     """Only authenticated users can create, update, or delete orders."""
+    #     if self.action in ['create', 'update', 'destroy']:
+    #         return [IsAuthenticated()]
+    #     return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
@@ -338,6 +342,7 @@ class UserOrdersLookup(ListCreateAPIView):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class StripePaymentIntentView(View):
+
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body)

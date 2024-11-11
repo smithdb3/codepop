@@ -122,12 +122,12 @@ const App = () => {
         />
         <Stack.Screen
           name="ManagerDash"
-          component={PaymentPage}
+          component={ManagerDash}
           options={{ title: 'ManagerDash' }}
         />
         <Stack.Screen
           name="AdminDash"
-          component={PaymentPage}
+          component={AdminDash}
           options={{ title: 'AdminDash' }}
         />
         <Stack.Screen

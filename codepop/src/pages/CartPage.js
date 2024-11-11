@@ -42,7 +42,6 @@ const CartPage = () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`,
           },
         });
         const data = await response.json();
@@ -88,7 +87,6 @@ const CartPage = () => {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`,
         },
       });
   

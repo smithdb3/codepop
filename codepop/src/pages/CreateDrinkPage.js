@@ -36,7 +36,6 @@ const CreateDrinkPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`,
         },
         body: JSON.stringify({ 
           Name: "Drink in User Cart",  // Example name for the drink
