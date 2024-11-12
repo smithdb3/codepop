@@ -9,9 +9,7 @@ import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // to do:
-// be able to edit the drinks
-  // take you back to a pre-populated create drink page and deletes the current drink object to that the drink can be updated
-// add ice ammount and drink size to cart object
+// fix wording for drinks in the car - "none ice" doesn't make sense
 
 const CartPage = () => {
   const navigation = useNavigation();
@@ -51,18 +49,6 @@ const CartPage = () => {
 
       const fetchedDrinks = [];
       for (let i = 0; i < currentList.length; i++) {
-<<<<<<< HEAD
-        const response = await fetch(`${BASE_URL}/backend/drinks/${currentList[i]}/`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        const data = await response.json();
-        if (data != null) {
-          fetchedDrinks.push(data); // Add each drink to the temporary array
-        }
-=======
           const response = await fetch(`${BASE_URL}/backend/drinks/${currentList[i]}/`, {
               method: 'GET',
               headers: {
@@ -75,7 +61,6 @@ const CartPage = () => {
           if (data && data.Size && data.SodaUsed && data.Ice) {
               fetchedDrinks.push(data);
           }
->>>>>>> 570f5247f45cb50ba32e5db70a2ad415281afa41
       }
 
   

@@ -5,7 +5,7 @@ const Gif = ({ layers }) => {
   return (
     <View style={styles.container}>
       {/* Straw positioned above the drink container */}
-      {/* <View style={styles.straw}></View> */}
+      <View style={styles.straw}></View>
       
       {/* Drink container */}
       <View style={styles.gifContainer}>
@@ -32,17 +32,17 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
   },
-  // straw: {
-  //   position: 'absolute',
-  //   top: -60, // Position the straw above the cup
-  //   left: '50%',
-  //   width: 10,
-  //   height: 80,
-  //   backgroundColor: 'gray',  // Straw color
-  //   borderRadius: 5,
-  //   transform: [{ translateX: -5 }],  // Center the straw horizontally
-  //   zIndex: 1, // Ensure straw appears on top of the drink container
-  // },
+  straw: {
+    position: 'absolute',
+    top: 10, // Position the straw above the cup
+    left: '50%',
+    width: 10,
+    height: 210,
+    backgroundColor: '#8DF1D3',  // Straw color
+    borderRadius: 5,
+    transform: [{ translateX: -5 }],  // Center the straw horizontally
+    zIndex: 1, // Ensure straw appears on top of the drink container
+  },
   gifContainer: {
     width: 150,  // Top width of the cup
     height: 250,

@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // to do:
 // generate drink from AI
+// add an error message that pops up if the user hasnt selected a size or ice ammount
 
 
 const CreateDrinkPage = () => {
