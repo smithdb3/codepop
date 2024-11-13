@@ -3,13 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 
 import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
+import Gif from '../components/Gif';
 import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // to do:
-// create drink gif
 // generate drink from AI
+
 
 const CreateDrinkPage = () => {
   const route = useRoute();
@@ -45,7 +46,6 @@ const CreateDrinkPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`,
         },
         body: JSON.stringify({ 
           Name: "Drink in User Cart",  // Example name for the drink
@@ -147,6 +147,7 @@ const CreateDrinkPage = () => {
   };
   
   // function for generate drink button which generates a drink with AI
+<<<<<<< codepop/src/pages/CreateDrinkPage.js
   const GenerateAI = async () => {
     try {
       const user_id = await AsyncStorage.getItem('userId');
@@ -176,7 +177,47 @@ const CreateDrinkPage = () => {
     catch (error) {
       console.error('Error when trying to generate AI drink:', error);
     }
+=======
+  const GenerateAI = () => {
+    // logic to generate an AI drink
+    // get request from a backend veiw which should return a json object
+    // backend endpoint should be like /backend/AI
+>>>>>>> codepop/src/pages/CreateDrinkPage.js
   };
+
+  // reactive gif stuff
+  const getLayers = (soda, syrups, addins) => {
+    const layers = [];
+    const totalItems = soda.length + syrups.length + addins.length;
+  
+    soda.forEach((sodaName) => {
+      const sodaOption = sodaOptions.find((opt) => opt.label === sodaName);
+      if (sodaOption) {
+        layers.push({ color: sodaOption.color, height: 100 / totalItems });
+      } else {
+      }
+    });
+  
+    syrups.forEach((syrupName) => {
+      const syrupOption = syrupOptions.find((opt) => opt.label === syrupName);
+      if (syrupOption) {
+        layers.push({ color: syrupOption.color, height: 100 / totalItems });
+      } else {
+      }
+    });
+  
+    addins.forEach((addinName) => {
+      const addInOption = syrupOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
+      if (addInOption) {
+        layers.push({ color: addInOption.color, height: 100 / totalItems });
+      } else {
+      }
+    });
+    return layers;
+  };  
+  
+  const layers = getLayers(SodaUsed, SyrupsUsed, AddIns);
+  
 
   return (
     <View style={styles.wholePage}>
@@ -203,9 +244,9 @@ const CreateDrinkPage = () => {
 
         
         <View style={styles.graphicContainer}>
+          <View style={styles.straw}></View>
           {/* Drink graphic in the center */}
-          <Text style={styles.drinkGraphicText}>Drink GIF goes here</Text>
-          {/* {gifUrl && <Image source={{ uri: gifUrl }} style={styles.gifImage} />} */}
+          <Gif layers={layers}/>
 
           {/* Button to generate drinks */}
           <TouchableOpacity onPress={GenerateAI} style={styles.button}>
@@ -359,6 +400,17 @@ const styles = StyleSheet.create({
     marginVertical: 15,
     borderRadius: 5,
     alignSelf: 'center', // Center the search input
+  },
+  straw: {
+    position: 'absolute',
+    top: 10, // Position the straw above the cup
+    left: '50%',
+    width: 10,
+    height: 240,
+    backgroundColor: 'F92758',  // Straw color
+    borderRadius: 5,
+    transform: [{ translateX: -5 }],  // Center the straw horizontally
+    zIndex: 1, // Ensure straw appears on top of the drink container
   },
 });
 

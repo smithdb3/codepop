@@ -8,6 +8,7 @@ from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdate
 from .views import NotificationOperations, UserNotificationLookup
 from .views import OrderOperations, UserOrdersLookup
 from .views import GenerateAIDrink
+from .views import RevenueViewSet
 
 #this ensures that the url calls the right function from the views for each type of request
 preferences_list = PreferencesOperations.as_view({
@@ -55,6 +56,10 @@ order_detail = OrderOperations.as_view({
     'put': 'update',
     'delete': 'destroy'
 })
+
+revenue_list = RevenueViewSet.as_view({'get': 'list', 'post': 'create'})
+
+revenue_details = RevenueViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
 
 
 urlpatterns = [
@@ -173,4 +178,16 @@ urlpatterns = [
     
     # For general users: no user_id provided
     path('generate/', GenerateAIDrink.as_view(), name='general_ai_drink'),
+
+    # Revenue related URLs
+    # Endpoint to list all revenues or create a new revenue.
+    # - GET: Retrieve a list of all revenues.
+    # - POST: Create a new revenue. Requires authentication and revenue details in the request body.
+    path('revenues/', revenue_list, name='revenue_list_create'),
+
+    # Endpoint to retrieve, update, or delete a specific revenue by its primary key (ID).
+    # - GET: Retrieve details of a specific revenue.
+    # - PUT: Update the specific revenue.
+    # - DELETE: Remove the specific revenue from the database.
+    path('revenues/<int:pk>/', revenue_details, name='revenue_detail'),
 ]
