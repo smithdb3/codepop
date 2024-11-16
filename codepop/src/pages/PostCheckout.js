@@ -12,6 +12,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // add randomly generated code for locker combination
   // right now the locker combo changes untill the timer runs out
 
+// make the size of the drink gif a parameter that gets passed into the gif function
+
 // test card number: 4242 4242 4242 4242
   // enter a date in the future like 12/34
   // for everything else, just add random numbers

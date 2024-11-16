@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import { View, StyleSheet, TouchableOpacity, FlatList, Text, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, FlatList, Text, Dimensions, Alert } from 'react-native';
 import StarRating from './StarRating';
 import Carousel from 'react-native-reanimated-carousel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {BASE_URL} from '../../ip_address'
 import Gif from './Gif';
 import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
 
@@ -11,6 +12,8 @@ const { width: windowWidth } = Dimensions.get('window');
 
 // todo
     // maybe think about clearing the purchased drinks list from async storage once a user navigates away from the page
+    // move all the things together
+    // fix the add to favorites and ratings stuff
 
 const RatingCarosel = ({ purchasedDrinks }) => {
     const navigation = useNavigation();
@@ -51,6 +54,8 @@ const RatingCarosel = ({ purchasedDrinks }) => {
     // Function to update the rating for a specific drink
     const handleRatingSelected = async (newRating, drinkID) => {
         try {
+            console.log("DrinkID:", drinkID);
+
         const token = await AsyncStorage.getItem('userToken');
         const response = await fetch(`${BASE_URL}/backend/drinks/${drinkID}/`, {
             method: 'PATCH',
@@ -74,6 +79,8 @@ const RatingCarosel = ({ purchasedDrinks }) => {
     // Function to add a drink to favorites
     const addToFavs = async (drinkID) => {
         try {
+            console.log("DrinkID:", drinkID);
+
         const token = await AsyncStorage.getItem('userToken');
         const response = await fetch(`${BASE_URL}/backend/drinks/${drinkID}/`, {
             method: 'PATCH',
@@ -94,26 +101,29 @@ const RatingCarosel = ({ purchasedDrinks }) => {
         }
     };
 
-    // Render function for each drink item
     const renderItem = ({ item: drink }) => {
         const layers = getLayers(drink.SodaUsed, drink.SyrupsUsed, drink.AddIns);
         return (
-        <View style={styles.carouselItem}>
-
-            <Text style={styles.drinkName}>
-            {drink.SodaUsed} with {drink.SyrupsUsed?.join(', ')} {drink.AddIns?.join(', ')}
-            </Text>
-
-            {/* <View style={styles.graphicContainer}>
-                <Gif layers={layers} />
-            </View> */}
-
-            <TouchableOpacity onPress={() => addToFavs(drink.DrinkID)} style={styles.button}>
-            <Text>Add to Favorites</Text>
-            </TouchableOpacity>
-
-            <StarRating style={styles.star} onRatingSelected={(newRating) => handleRatingSelected(newRating, drink.DrinkID)} />
-        </View>
+            <View style={styles.carouselItem}>
+                {/* Top: Drink ingredients */}
+                <Text style={styles.drinkName}>
+                    {drink.SodaUsed} with {drink.SyrupsUsed?.join(', ')} {drink.AddIns?.join(', ')}
+                </Text>
+    
+                {/* Middle: Add to Favorites and Drink GIF */}
+                <View style={styles.middleContainer}>
+                    <TouchableOpacity onPress={() => addToFavs(drink.DrinkID)} style={styles.button}>
+                        <Text>Add to Favorites</Text>
+                    </TouchableOpacity>
+                    <Gif layers={layers} height={120} width={60} />
+                </View>
+    
+                {/* Bottom: Star Rating */}
+                <StarRating
+                    style={styles.star}
+                    onRatingSelected={(newRating) => handleRatingSelected(newRating, drink.DrinkID)}
+                />
+            </View>
         );
     };
 
@@ -125,7 +135,7 @@ const RatingCarosel = ({ purchasedDrinks }) => {
             itemWidth={windowWidth * 0.8}
             height={400}
             autoPlay={true}
-            autoPlayInterval={5000} // Delay of 3 seconds between slides
+            autoPlayInterval={5000} // Delay of 5 seconds between slides
             data={purchasedDrinks}
             renderItem={renderItem}
           /> 
@@ -134,21 +144,37 @@ const RatingCarosel = ({ purchasedDrinks }) => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 0,
-        margin: 0,
-    },
     carouselItem: {
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#FFA686',
         borderRadius: 8,
-        padding: 20,
+        padding: 10,
         margin: 10,
-        alignItems: 'center',
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+    },
+    drinkName: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        textAlign: 'center', // Center align ingredients
+        marginBottom: 0,
+    },
+    middleContainer: {
+        flexDirection: 'row', // Align the button and GIF horizontally
+        alignItems: 'center', // Vertically align
+        justifyContent: 'space-between', // Space out button and GIF
+        width: '100%',
+        marginVertical: 0,
+    },
+    button: {
+        backgroundColor: '#D30C7B',
+        paddingVertical: 10,
+        paddingHorizontal: 10,
+        borderRadius: 8,
         elevation: 3,
         shadowColor: '#000',
         shadowOffset: { width: 2, height: 2 },
@@ -156,38 +182,8 @@ const styles = StyleSheet.create({
         shadowRadius: 3,
     },
     star: {
-        alignContent: 'center',
-    },
-    drinkName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    drinkPrice: {
-        fontSize: 16,
-    },
-    image: {
-        width: 150,
-        height: 150,
-        borderRadius: 10,
-      },
-    button: {
-        backgroundColor: '#D30C7B',
-        paddingVertical: 10,
-        paddingHorizontal: 10,
-        borderRadius: 8,
-            // alignItems: 'center',
-            // justifyContent: 'center',
-            elevation: 3,
-            shadowColor: '#000',
-            shadowOffset: { width: 2, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 3,
-            marginVertical: 5,
-    },
-    graphicContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 1, // Center the graphic
+        marginTop: 0, // Space the stars below the middle container
+        alignSelf: 'center', // Center stars horizontally
     },
 });
 
