@@ -33,19 +33,18 @@ class PreferenceSerializer(serializers.ModelSerializer):
         # Define the allowed preference values (in lowercase for consistency)
         allowed_preferences = [
             "mtn. dew", "diet mtn. dew", "dr. pepper", "diet dr. pepper", "dr. pepper zero",
-            "dr pepper cream soda", "sprite", "sprite zero", "coke", "diet coke", "coke zero", 
-            "pepsi", "diet pepsi", "rootbeer", "fanta", "big red", "powerade", "lemonade", 
-            "light lemonade", "coconut", "pineapple", "strawberry", "raspberry", "blackberry", 
-            "blue curacao", "passion fruit", "vanilla", "pomegranate", "peach", "grapefruit", 
-            "green apple", "pear", "cherry", "cupcake", "orange", "blood orange", "mango", 
-            "cranberry", "blue raspberry", "grape", "sour", "kiwi", "chocolate", "milano", 
-            "huckleberry", "sweetened lime", "mojito", "lemon lime", "cinnamon", "watermelon", 
-            "guava", "banana", "lavender", "cucumber", "salted caramel", "choc chip cookie dough", 
-            "brown sugar cinnamon", "hazelnut", "pumpkin spice", "peppermint", "irish cream", 
-            "gingerbread", "white chocolate", "butterscotch", "bubble gum", "cotton candy", 
-            "butterbrew", "mix", "cream", "coconut cream", "whip", "lemon wedge", "lime wedge", 
-            "french vanilla creamer", "candy sprinkles", "strawberry puree", "peach puree", 
-            "mango puree", "raspberry puree"
+            "dr pepper cream soda", "sprite", "sprite zero", "coke", "diet coke", "coke zero",
+            "pepsi", "diet pepsi", "rootbeer", "fanta", "big red", "powerade", "lemonade",
+            "light lemonade", "coconut", "pineapple", "passion fruit", "mango", "guava", "banana",
+            "strawberry", "raspberry", "blackberry", "pomegranate", "cranberry", "grape", "kiwi", 
+            "huckleberry", "peach", "watermelon", "green apple", "pear", "cherry", "orange", 
+            "blood orange", "grapefruit", "sweetened lime", "lemon", "lime", "vanilla", "cupcake",
+            "salted caramel", "chocolate milano", "cinnamon", "choc chip cookie dough", 
+            "brown sugar cinnamon", "hazelnut", "white chocolate", "butterscotch", "blue raspberry", 
+            "sour", "blue curacao", "bubble gum", "cotton candy", "mojito", "cucumber", "lavender",
+            "pumpkin spice", "peppermint", "irish cream", "gingerbread", "butterbrew mix", "cream", 
+            "coconut cream", "whip", "lemon wedge", "lime wedge", "french vanilla creamer", "candy",
+            "sprinkles", "strawberry puree", "peach puree", "mango puree", "raspberry puree"
         ]
 
         # Check if the value is in the allowed preferences

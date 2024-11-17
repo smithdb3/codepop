@@ -147,7 +147,6 @@ const CreateDrinkPage = () => {
   };
   
   // function for generate drink button which generates a drink with AI
-<<<<<<< codepop/src/pages/CreateDrinkPage.js
   const GenerateAI = async () => {
     try {
       const user_id = await AsyncStorage.getItem('userId');
@@ -177,12 +176,6 @@ const CreateDrinkPage = () => {
     catch (error) {
       console.error('Error when trying to generate AI drink:', error);
     }
-=======
-  const GenerateAI = () => {
-    // logic to generate an AI drink
-    // get request from a backend veiw which should return a json object
-    // backend endpoint should be like /backend/AI
->>>>>>> codepop/src/pages/CreateDrinkPage.js
   };
 
   // reactive gif stuff

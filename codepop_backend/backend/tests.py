@@ -9,6 +9,9 @@ from .models import Preference, Drink, Inventory, Notification, Order, Revenue
 from django.utils import timezone
 from datetime import timedelta
 from .drinkAI import generate_soda
+import csv
+import os
+from django.conf import settings
 
 class PreferenceTests(TestCase):
     def setUp(self):
@@ -993,82 +996,50 @@ class RevenueTests(TestCase):
 class AITests(TestCase):
     # Create users and add preferences
     def setUp(self):
-        preferences = [ # here as a reference; delete later
-            "mtn. dew", "diet mtn. dew", "dr. pepper", "diet dr. pepper", "dr. pepper zero",
-            "dr pepper cream soda", "sprite", "sprite zero", "coke", "diet coke", "coke zero",
-            "pepsi", "diet pepsi", "rootbeer", "fanta", "big red", "powerade", "lemonade",
-            "light lemonade", "coconut", "pineapple", "strawberry", "raspberry", "blackberry",
-            "blue curacao", "passion fruit", "vanilla", "pomegranate", "peach", "grapefruit",
-            "green apple", "pear", "cherry", "cupcake", "orange", "blood orange", "mango",
-            "cranberry", "blue raspberry", "grape", "sour", "kiwi", "chocolate", "milano",
-            "huckleberry", "sweetened lime", "mojito", "lemon lime", "cinnamon", "watermelon",
-            "guava", "banana", "lavender", "cucumber", "salted caramel", "choc chip cookie dough",
-            "brown sugar cinnamon", "hazelnut", "pumpkin spice", "peppermint", "irish cream",
-            "gingerbread", "white chocolate", "butterscotch", "bubble gum", "cotton candy",
-            "butterbrew mix", "cream", "coconut cream", "whip", "lemon wedge", "lime wedge",
-            "french vanilla creamer", "candy sprinkles", "strawberry puree", "peach puree",
-            "mango puree", "raspberry puree"
-        ]
         # Create users
         self.user1 = User.objects.create_user(username='user1', password='password123')
         self.user2 = User.objects.create_user(username='user2', password='password123')
         self.user3 = User.objects.create_user(username='user3', password='password123')
 
-
         self.user4 = User.objects.create_user(username='user4', password='password123')
         self.user5 = User.objects.create_user(username='user5', password='password123')
 
-
         self.user6 = User.objects.create_user(username='user6', password='password123')
-        self.user7 = User.objects.create_user(username='user7', password='password123')
-
 
         # Create tokens for users
         self.token1 = Token.objects.create(user=self.user1)
         self.token2 = Token.objects.create(user=self.user2)
         self.token3 = Token.objects.create(user=self.user3)
 
-
         self.token4 = Token.objects.create(user=self.user4)
         self.token5 = Token.objects.create(user=self.user5)
 
-
         self.token6 = Token.objects.create(user=self.user6)
-        self.token7 = Token.objects.create(user=self.user7)
-
 
         # Create preference list for every user (pref# corresponds to user#)
+        # Syrup test users
         pref1 = ["user", "has", "no", "valid", "prefs", "somehow"]
         pref2 = ["invalid", "prefs", "except", "mango"]
-        pref3 = ["mango", "cranberry", "blue raspberry", "grape", "sour", "kiwi", "chocolate", "milano"]
+        pref3 = ["mango", "cranberry", "blue raspberry", "grape", "sour", "kiwi", "chocolate milano"]
 
-
+        # Soda test users and Addin test users (addins added later)
         pref4 = ["vanilla", "butterscotch", "coke"]
-        pref5 =["mango", "strawberry", "vanilla", "butterscotch", "coke", "sprite"]
+        pref5 = ["mango", "strawberry", "vanilla", "butterscotch", "coke", "sprite"]
 
-
-        pref6 = ["coconut", "pineapple", "strawberry", "raspberry", "blackberry",
-            "blue curacao", "passion fruit", "vanilla", "pomegranate", "peach", "grapefruit",
-            "green apple", "pear", "cherry", "cupcake", "orange", "blood orange", "mango",
-            "cranberry", "blue raspberry", "grape", "sour", "kiwi", "chocolate", "milano",
-            "huckleberry", "sweetened lime", "mojito", "lemon lime", "cinnamon", "watermelon",
-            "guava", "banana", "lavender", "cucumber", "salted caramel", "choc chip cookie dough",
-            "brown sugar cinnamon", "hazelnut", "pumpkin spice", "peppermint", "irish cream",
-            "gingerbread", "white chocolate", "butterscotch", "bubble gum", "cotton candy",
-            "butterbrew mix"]
-        pref7 = ["mtn. dew", "diet mtn. dew", "dr. pepper", "diet dr. pepper", "dr. pepper zero",
+        # "Everything" test user
+        pref6 = ["mtn. dew", "diet mtn. dew", "dr. pepper", "diet dr. pepper", "dr. pepper zero",
             "dr pepper cream soda", "sprite", "sprite zero", "coke", "diet coke", "coke zero",
             "pepsi", "diet pepsi", "rootbeer", "fanta", "big red", "powerade", "lemonade",
-            "light lemonade", "coconut", "pineapple", "strawberry", "raspberry", "blackberry",
-            "blue curacao", "passion fruit", "vanilla", "pomegranate", "peach", "grapefruit",
-            "green apple", "pear", "cherry", "cupcake", "orange", "blood orange", "mango",
-            "cranberry", "blue raspberry", "grape", "sour", "kiwi", "chocolate", "milano",
-            "huckleberry", "sweetened lime", "mojito", "lemon lime", "cinnamon", "watermelon",
-            "guava", "banana", "lavender", "cucumber", "salted caramel", "choc chip cookie dough",
-            "brown sugar cinnamon", "hazelnut", "pumpkin spice", "peppermint", "irish cream",
-            "gingerbread", "white chocolate", "butterscotch", "bubble gum", "cotton candy",
-            "butterbrew mix"]
-
+            "light lemonade", "coconut", "pineapple", "passion fruit", "mango", "guava", "banana",
+            "strawberry", "raspberry", "blackberry", "pomegranate", "cranberry", "grape", "kiwi", 
+            "huckleberry", "peach", "watermelon", "green apple", "pear", "cherry", "orange", 
+            "blood orange", "grapefruit", "sweetened lime", "lemon", "lime", "vanilla", "cupcake",
+            "salted caramel", "chocolate milano", "cinnamon", "choc chip cookie dough", 
+            "brown sugar cinnamon", "hazelnut", "white chocolate", "butterscotch", "blue raspberry", 
+            "sour", "blue curacao", "bubble gum", "cotton candy", "mojito", "cucumber", "lavender",
+            "pumpkin spice", "peppermint", "irish cream", "gingerbread", "butterbrew mix", "cream", 
+            "coconut cream", "whip", "lemon wedge", "lime wedge", "french vanilla creamer", "candy",
+            "sprinkles", "strawberry puree", "peach puree", "mango puree", "raspberry puree"]
 
         # Create preferences for every user (if your tests are running slow, this is why)
         for pref in pref1:
@@ -1078,17 +1049,13 @@ class AITests(TestCase):
         for pref in pref3:
             Preference.objects.create(UserID=self.user3, Preference=pref)
 
-
         for pref in pref4:
             Preference.objects.create(UserID=self.user4, Preference=pref)
         for pref in pref5:
             Preference.objects.create(UserID=self.user5, Preference=pref)
 
-
         for pref in pref6:
             Preference.objects.create(UserID=self.user6, Preference=pref)
-        for pref in pref7:
-            Preference.objects.create(UserID=self.user7, Preference=pref)
 
         # Set up the API client
         self.client = APIClient()
@@ -1097,37 +1064,72 @@ class AITests(TestCase):
     def authenticate(self, token):
         """Helper method to set up token authentication"""
         self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+
+    # Used for checkOutput method
+    def getCSVLength(self, file_path):
+        with open(file_path, mode='r', newline='') as file:
+            reader = csv.reader(file)
+            rows = list(reader)  # Read all existing rows into a list
+            file.close()
+
+        return len(rows)
        
     # Authenticates user, gets preferences, and sends to AI (returns result)
     def authGetPrefAndSendToAI(self, token, user):
         # Use token authentication for user
         self.authenticate(token.key)
 
-
         # Make a request to retrieve preferences for user
         response = self.client.get(f'/backend/users/{user.id}/preferences/')
 
-
         # Check that the response status code is 200 OK
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
 
         # Get user's preferences and send to AI
         preferences = list(Preference.objects.filter(UserID=user).values_list('Preference', flat=True))
         return generate_soda(preferences) # Returns dictionary
 
 
-    # Ensure AI outputs a dictionary (assuming syrups are all valid) with an array of 2-4 syrups and 1 soda (TODO: + addins array when they get implemented)
-    # Ensures the soda is valid (not a string of 2+ sodas)
     def checkOutput(self, result):
+        # Ensure AI outputs a dictionary (assuming syrups are all valid) with an array of 2 or 4 syrups, 1 soda, and 0-2 addins
         self.assertTrue(len(result["syrups"]) == 2 or len(result["syrups"]) == 4)
         self.assertEqual(len(result["soda"]), 1)
+        self.assertTrue(len(result["addins"]) >= 0 and len(result["addins"]) < 3)
+
+        # Ensure each item in the dictionary is valid
+        syrupList = ["coconut", "pineapple", "passion fruit", "mango", "guava", "banana",
+            "strawberry", "raspberry", "blackberry", "pomegranate", "cranberry", "grape", "kiwi", 
+            "huckleberry", "peach", "watermelon", "green apple", "pear", "cherry", "orange", 
+            "blood orange", "grapefruit", "sweetened lime", "lemon", "lime", "vanilla", "cupcake",
+            "salted caramel", "chocolate milano", "cinnamon", "choc chip cookie dough", 
+            "brown sugar cinnamon", "hazelnut", "white chocolate", "butterscotch", "blue raspberry", 
+            "sour", "blue curacao", "bubble gum", "cotton candy", "mojito", "cucumber", "lavender",
+            "pumpkin spice", "peppermint", "irish cream", "gingerbread", "butterbrew mix"]
+        for i in range(len(result["syrups"])):
+            self.assertTrue(result["syrups"][i] in syrupList)
 
         sodaList = ["mtn. dew", "diet mtn. dew", "dr. pepper", "diet dr. pepper", "dr. pepper zero",
-        "dr pepper cream soda", "sprite", "sprite zero", "coke", "diet coke", "coke zero",
-        "pepsi", "diet pepsi", "rootbeer", "fanta", "big red", "powerade", "lemonade",
-        "light lemonade"]
+            "dr pepper cream soda", "sprite", "sprite zero", "coke", "diet coke", "coke zero",
+            "pepsi", "diet pepsi", "rootbeer", "fanta", "big red", "powerade", "lemonade",
+            "light lemonade"]
         self.assertTrue(result["soda"][0] in sodaList)
+
+        addInList = ["cream", "coconut cream", "whip", "lemon wedge", "lime wedge",
+            "french vanilla creamer", "candy", "sprinkles", "strawberry puree", "peach puree",
+            "mango puree", "raspberry puree"]
+        for i in range(len(result["addins"])):
+            self.assertTrue(result["addins"][i] in addInList)
+
+        # Ensure size of csv file doesn't change
+        syrup_file_path = os.path.join(settings.BASE_DIR, 'backend/Syrups.csv')
+        syrup_length = self.getCSVLength(syrup_file_path)
+        self.assertEqual(syrup_length, 49)
+        soda_file_path = os.path.join(settings.BASE_DIR, 'backend/Sodas.csv')
+        soda_length = self.getCSVLength(soda_file_path)
+        self.assertEqual(soda_length, 20)
+        addin_file_path = os.path.join(settings.BASE_DIR, 'backend/AddIns.csv')
+        addin_length = self.getCSVLength(addin_file_path)
+        self.assertEqual(addin_length, 13)
 
 
     # Different cases for inputting invalid and valid syrups into the AI
@@ -1136,12 +1138,10 @@ class AITests(TestCase):
         result1 = self.authGetPrefAndSendToAI(self.token1, self.user1)
         self.assertEqual(result1, {})
 
-
         # 1 valid syrup in pref: not empty dictionary
         result2 = self.authGetPrefAndSendToAI(self.token2, self.user2)
         self.assertFalse(result2 == {})
         self.checkOutput(result2)
-
 
         # all syrups in pref are valid: not empty dictionary
         result3 = self.authGetPrefAndSendToAI(self.token3, self.user3)
@@ -1152,32 +1152,44 @@ class AITests(TestCase):
     # Different output cases depending on # of sodas in user preferences
     def testDiffNumSodaPreferences(self):
         # no test for 0 sodas in preferences since it could literally return any soda in the csv file
+
         # 1 soda in pref: soda in output dictionary == that soda in pref
         result4 = self.authGetPrefAndSendToAI(self.token4, self.user4)
         self.assertEqual(result4["soda"][0], "coke")
         self.checkOutput(result4)
 
-
         # 2+ soda in pref: soda in output dictionary == any of the 2+ (aka, must equal one of the preference sodas)
         result5 = self.authGetPrefAndSendToAI(self.token5, self.user5)
         self.assertTrue(result5["soda"][0] == "coke" or result5["soda"][0] == "sprite")
         self.checkOutput(result5)
+        
+
+    # Different output cases depending on # of addins in user preferences
+    # Also good to test that the AI can handle newly added preferences
+    def testDiffNumAddinPreferences(self):
+        # no test for 0 addins in preferences since it could literally return any addin in the csv file
+
+        # 1 addin in pref: addin in output dictionary == that addin in pref
+        Preference.objects.create(UserID=self.user4, Preference="coconut cream")
+        result4 = self.authGetPrefAndSendToAI(self.token4, self.user4)
+        while (len(result4["addins"]) == 0): # don't want empty addin array
+            result4 = self.authGetPrefAndSendToAI(self.token4, self.user4)
+
+        self.assertTrue("coconut cream" in result4["addins"])
+        self.checkOutput(result4)
+
+        # 2+ addins in pref: addin(s) in output dictionary == any of the 2+ (assuming it isnt empty)
+        Preference.objects.create(UserID=self.user5, Preference="coconut cream")
+        Preference.objects.create(UserID=self.user5, Preference="lime wedge")
+        result5 = self.authGetPrefAndSendToAI(self.token5, self.user5)
+        while (len(result5["addins"]) == 0): # don't want empty addin array
+            result5 = self.authGetPrefAndSendToAI(self.token5, self.user5)
+
+        self.assertTrue("coconut cream" in result5["addins"] or "lime wedge" in result5["addins"])
+        self.checkOutput(result5)
 
 
-    # # TODO: def testDiffNumAddinPreferences(self):
-
-
-    # Ensure AI does not explode if it gets a list of every preference
+    # Ensure AI does not explode if it gets a preference list with literally everything in it
     def testPrefListSize(self):
-        # All syrups
         result6 = self.authGetPrefAndSendToAI(self.token6, self.user6)
         self.checkOutput(result6)
-
-
-        # All syrups and sodas -- I assume all sodas alone will work if this does
-        result7 = self.authGetPrefAndSendToAI(self.token7, self.user7)
-        self.checkOutput(result7)
-
-
-        # TODO: All syrups and add-ins
-        # Literally everything (TODO: add-ins)
