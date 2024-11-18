@@ -28,7 +28,13 @@ class Drink(models.Model):
     Size = models.CharField(default="m")
     Ice = models.CharField(default="normal")
     User_Created = models.BooleanField()
-    Favorite = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True, blank=True)
+    Favorite = models.ManyToManyField('auth.User', blank=True)
+
+    def addFavorite(self, userToAdd):
+        self.Favorite.add(User.objects.filter(id = userToAdd))
+
+    def removeFavorite(self, userToRemove):
+        self.Favorite.remove(User.objects.filter(id = userToRemove))
 
     def __str__(self):
         return self.Name
