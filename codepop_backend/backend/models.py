@@ -84,10 +84,11 @@ class Order(models.Model):
         ('pending', 'Pending'),
         ('paid', 'Paid'),
         ('failed', 'Failed'),
+        ('remade', 'Remade')
     ]
 
     OrderID = models.AutoField(primary_key=True)
-    UserID = models.ForeignKey(User, on_delete=models.CASCADE)
+    UserID = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     Drinks = models.ManyToManyField(Drink)
     OrderStatus = models.CharField(max_length=50, choices=ORDER_STATUS_CHOICES, default='pending')
     PaymentStatus = models.CharField(max_length=50, choices=PAYMENT_STATUS_CHOICES, default='pending')
