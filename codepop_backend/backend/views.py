@@ -433,7 +433,7 @@ class GenerateAIDrink(APIView):
         return {
             'SyrupsUsed': result["syrups"],
             'SodaUsed': result["soda"][0],
-            'AddIns': [],
+            'AddIns': result["addins"],
             'Size': "24oz",
             'Ice': "regular",
             "UserCreated": user_created,
