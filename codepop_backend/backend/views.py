@@ -123,8 +123,20 @@ class DrinkOperations(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
-        # Custom logic for updating a drink
-        return super().update(request, *args, **kwargs)
+        drink = self.get_object()
+        favorite_to_add = request.data.get("addFavorite", [])
+        favorite_to_remove = request.data.get("removeFavorite", [])
+        
+        # Adding drinks
+        if favorite_to_add:
+            drink.addFavorite(favorite_to_add)
+
+        # Removing drinks
+        if favorite_to_remove:
+            drink.removeFavorite(favorite_to_remove_to_remove)
+        
+        serializer = self.get_serializer(drink)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
         # Custom logic for deleting a drink
