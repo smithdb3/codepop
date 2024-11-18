@@ -23,9 +23,35 @@ from django.utils.decorators import method_decorator
 import json
 from rest_framework.decorators import action
 from django.utils.dateparse import parse_datetime
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 from .drinkAI import generate_soda
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
+# Load Flan-T5 model and tokenizer
+tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
+model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
+
+class Chatbot(APIView):
+
+    def post(self, request, *args, **kwargs):
+        user_input = request.data.get("message", "")
+        # encode the new user input, add the eos_token and return a tensor in Pytorch
+        new_user_input_ids = tokenizer.encode(user_input + tokenizer.eos_token, return_tensors='pt')
+
+        # append the new user input tokens to the chat history
+        bot_input_ids =  new_user_input_ids
+
+        # generated a response while limiting the total chat history to 1000 tokens, 
+        chat_history_ids = model.generate(bot_input_ids, max_length=1000, pad_token_id=tokenizer.eos_token_id)
+        
+
+        # Decode and print the response
+        response = tokenizer.decode(chat_history_ids[:, bot_input_ids.shape[-1]:][0], skip_special_tokens=True)
+        print("Model response:", response)
+
+        return JsonResponse({"responses": [response]})
     
 #Custom login to so that it get's a token but also the user's first name and the user id
 class CustomAuthToken(ObtainAuthToken):

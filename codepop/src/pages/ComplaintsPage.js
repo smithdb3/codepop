@@ -2,19 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import NavBar from '../components/NavBar';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
 import { BASE_URL } from '../../ip_address';  // Ensure BASE_URL is your server's base URL
-import { registerRootComponent } from 'expo';
 
 const ComplaintsPage = () => {
     const [searchText, setSearchText] = useState('');
     const [messages, setMessages] = useState([{ text: "Hi! I'm Bob. How can I help you?", isBot: true }]);
     const scrollViewRef = useRef();
-    const [refund_phase, setRefundPhase] = useState("none");
-    const [wrong_drink_phase, setWrongDrinkPhase] = useState("none");
-    const [order_num, setOrderNum] = useState("none");
-    const [drink_nums, setDrinkNums] = useState("none");
-    const navigation = useNavigation();
 
     // Function to handle message submission
     const complaintAI = async () => {
@@ -40,49 +33,20 @@ const ComplaintsPage = () => {
                 },
                 body: JSON.stringify({
                     message: userRequest,
-                    refund_phase: refund_phase,
-                    wrong_drink_phase: wrong_drink_phase,
-                    order_num: order_num,
-                    drink_nums: drink_nums
+                    grounding_info: `This is a customer support conversation for a dirty soda company. Respond helpfully to the customer's latest question.`,
+                    session_id: "default"
                 })
             });
     
             if (response.ok) {
                 const data = await response.json();
-                const botResponse = data.responses;
-                const response_refund_phase = data.refund_phase;
-                const response_wrong_drink_phase = data.wrong_drink_phase;
-                setOrderNum(data.order_num);
-                setDrinkNums(data.drink_nums);
-
-                if(response_refund_phase === "none" && response_wrong_drink_phase === "none"){
-                    setRefundPhase(null);
-                    setWrongDrinkPhase(null);
-                    // Update messages with bot's response
-                    setMessages((prevMessages) => [
-                        ...prevMessages,
-                        { text: botResponse, isBot: true }
-                    ]);
-                } else if (response_wrong_drink_phase === "4"){
-                    //I will need to go to the post order page with it processing the newly remade order
-                    // Update messages with bot's response
-                    setMessages((prevMessages) => [
-                        ...prevMessages,
-                        { text: botResponse, isBot: true }
-                    ]);
-                    setTimeout(() => {
-                        navigation.navigate("PostCheckout");
-                      }, 2000); // 2000 milliseconds = 2 seconds
-                    
-                } else {
-                    setRefundPhase(response_refund_phase);
-                    setWrongDrinkPhase(response_wrong_drink_phase);
-                    // Update messages with bot's response
-                    setMessages((prevMessages) => [
-                        ...prevMessages,
-                        { text: botResponse, isBot: true }
-                    ]);
-                }
+                const botResponse = data.responses[0];
+    
+                // Update messages with bot's response
+                setMessages((prevMessages) => [
+                    ...prevMessages,
+                    { text: botResponse, isBot: true }
+                ]);
             } else {
                 throw new Error("Failed to fetch response from chatbot");
             }

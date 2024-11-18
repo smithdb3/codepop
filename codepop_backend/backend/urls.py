@@ -7,7 +7,7 @@ from .views import DrinkOperations, UserDrinksLookup
 from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdateAPIView
 from .views import NotificationOperations, UserNotificationLookup
 from .views import OrderOperations, UserOrdersLookup
-from .customerAI import Chatbot
+from .views import Chatbot
 from .views import GenerateAIDrink
 from .views import RevenueViewSet
 
