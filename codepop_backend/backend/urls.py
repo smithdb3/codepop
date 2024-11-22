@@ -207,6 +207,6 @@ urlpatterns = [
     # - DELETE: Delete a user from the database
     # - PUT: Promote a user to manager, promote a manager to admin
     path('users/', user_operations, name='get_user_list'),
-    path('users/delete/<int:user_id>', user_operations, name='delete_user'),
-    path('users/promote/<int:user_id>', user_operations, name='promote_user'),
+    path('users/delete/<int:user_id>/', user_operations, name='delete_user'),
+    path('users/promote/<int:user_id>/', user_operations, name='promote_user'),
 ]

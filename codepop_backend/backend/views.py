@@ -493,7 +493,7 @@ class UserOperations(viewsets.ModelViewSet): # was ListAPIView
         try:
             user = User.objects.get(id=user_id)
             user.delete()
-            return JsonResponse({"User deleted successfully"}, status=status.HTTP_200_OK)
+            return JsonResponse({"message":"User deleted successfully"}, status=status.HTTP_200_OK)
         except Exception as e:
             return JsonResponse({'Error': str(e)}, status=400)
 
@@ -506,7 +506,7 @@ class UserOperations(viewsets.ModelViewSet): # was ListAPIView
             else:
                 user.is_staff = True
             user.save()
-            return JsonResponse({"User promoted successfully"}, status=status.HTTP_200_OK)
+            return JsonResponse({"message":"User promoted successfully"}, status=status.HTTP_200_OK)
         except Exception as e:
             return JsonResponse({'Error': str(e)}, status=400)
         

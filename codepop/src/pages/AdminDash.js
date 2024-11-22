@@ -49,7 +49,7 @@ const AdminDash = () => {
       }
       else {
         console.log("Deleting user...");
-        const response = await fetch(`${BASE_URL}/backend/users/delete/${Number(user.id)}`, {
+        const response = await fetch(`${BASE_URL}/backend/users/delete/${user.id}/`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -77,7 +77,7 @@ const AdminDash = () => {
       }
       else {
         console.log("Promoting user...");
-        const response = await fetch(`${BASE_URL}/backend/users/promote/${Number(user.id)}`, {
+        const response = await fetch(`${BASE_URL}/backend/users/promote/${user.id}/`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
