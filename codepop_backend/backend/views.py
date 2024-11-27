@@ -12,8 +12,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
 from .models import Preference, Drink, Inventory, Notification, Order, Revenue
-from .serializers import CreateUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer
-from rest_framework.permissions import IsAuthenticated
+from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import stripe
 from django.conf import settings
 from django.http import JsonResponse
@@ -24,8 +24,18 @@ import json
 from rest_framework.decorators import action
 from django.utils.dateparse import parse_datetime
 from .drinkAI import generate_soda
+from rest_framework.permissions import BasePermission
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
+class IsSuperUser(BasePermission):
+    """
+    Custom permission to allow access only to superusers.
+    """
+
+    def has_permission(self, request, view):
+        # Check if the user is authenticated and a superuser
+        return request.user and request.user.is_authenticated and request.user.is_superuser
     
 #Custom login to so that it get's a token but also the user's first name and the user id
 class CustomAuthToken(ObtainAuthToken):
@@ -479,3 +489,62 @@ class RevenueViewSet(viewsets.ModelViewSet):
         # Proceed with the standard update process
         return super().update(request, *args, **kwargs)
     
+class UserOperations(viewsets.ModelViewSet):
+    permission_classes = [IsSuperUser]
+    serializer_class = GetUserSerializer
+
+    def get(self, request):
+        userList = User.objects.all()
+        serializer = self.serializer_class(userList, many=True)
+        return Response(serializer.data)
+
+    def delete(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            user.delete()
+            return JsonResponse({"message":"User deleted successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return JsonResponse({'Error': str(e)}, status=400)
+
+    def edit(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+
+            data = json.loads(request.body)
+            edits = data.get('edits', {})
+
+            username = edits.get("username", None)
+            first_name = edits.get("firstName", None)
+            last_name = edits.get("lastName", None)
+            password = edits.get("password", None)
+            role = edits.get("role", None)
+
+            if (user.username != username and username != "unchanged" and username):
+                user.username = username
+
+            if (user.first_name != first_name and first_name != "unchanged" and first_name):
+                user.first_name = first_name
+
+            if (user.last_name != last_name and last_name != "unchanged" and last_name):
+                user.last_name = last_name
+
+            if (user.password != password and password != "unchanged" and password):
+                user.set_password(password)
+                print("Password updated")
+
+            if (role != "unchanged" and role):
+                if (role == "user"):
+                    user.is_staff = False
+                    user.is_superuser = False
+                elif (role == "staff"):
+                    user.is_staff = True
+                    user.is_superuser = False
+                elif (role == "admin"):
+                    user.is_staff = False
+                    user.is_superuser = True
+
+            user.save()
+            return JsonResponse({"message":"User edited successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return JsonResponse({'Error': str(e)}, status=400)
+        
