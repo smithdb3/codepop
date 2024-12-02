@@ -22,29 +22,6 @@ const PreferencesPage = () => {
   const [userPreferences, setUserPreferences] = useState([]); // To store fetched preferences
   const [isLoading, setIsLoading] = useState(true); // Add loading state
 
-
-  // useEffect( () => {
-  //   const fetchData = async () => {
-  //     const response = await fetch(`${BASE_URL}/backend/inventory/`, {
-  //       method: 'GET',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       }
-  //     });
-  //     const inventory = await response.json();
-  //     const items = inventory.map(item => ({
-  //       value: item.ItemName,
-  //       ItemType: item.ItemType
-  //     }));
-  //     setInventoryData(items);
-  //   };
-  //   fetchData();
-  //   console.log(inventoryData);
-
-  //   // fetchUserPreferences();
-  //   console.log("sodas ", SodaUsed);
-  // }, []);
-  // Check login status when the screen gains focus
   useFocusEffect(
     React.useCallback(() => {
       const checkLoginStatus = async () => {
@@ -118,9 +95,6 @@ const PreferencesPage = () => {
       };
       
       fetchUserPreferences();
-      // console.log("sodas ", SodaUsed);
-      // console.log(SodaUsed, SyrupsUsed, AddIns); // Check if these are populated after reload
-
     }, [])  // The empty array ensures this only runs when the screen is focused
   );
 
@@ -180,7 +154,9 @@ const PreferencesPage = () => {
         String(item.UserID) === String(userId) && item.Preference.toLowerCase() === pref.toLowerCase()
       );
 
+      // console.log
       for (let i = 0; i < filteredPreferences.length; i++) {
+        console.log(filteredPreferences[i].PreferenceID);
         const response = await fetch(`${BASE_URL}/backend/preferences/${filteredPreferences[i].PreferenceID}/`, {
           method: 'DELETE',
           headers: {
@@ -221,7 +197,7 @@ const PreferencesPage = () => {
 
   const handleSodaSelection = (soda) => {
     setSoda((prevSodas) => {
-      if (prevSodas.includes(soda.toLowerCase())) {
+      if (prevSodas.includes(soda)) {
         // If soda is already selected, remove it
         removePreferences(soda);
         return prevSodas.filter((item) => item !== soda);
@@ -232,9 +208,7 @@ const PreferencesPage = () => {
       }
     });
   };
-  
-  // save preferenceid in order to delete!!
-  
+    
   const handleSyrupSelection = (syrup) => {
     setSyrups((prevSyrups) => {
       if (prevSyrups.includes(syrup)) {
@@ -276,7 +250,7 @@ const PreferencesPage = () => {
               {/* Conditionally render the "Hello <username>" if username exists */}
               {name ? <Text style={styles.greeting}>{name}'s Drinks</Text> : null}
               <View style={styles.navBarSpace}>
-                <Text style={styles.subtitleText}>Saved Drinks (can be created on ratings page)</Text>
+                {/* <Text style={styles.subtitleText}>Saved Drinks (can be created on ratings page)</Text> */}
                 <Text style={styles.subtitleText}>Preferences</Text>
                 {/* <Text>{SodaUsed}</Text> */}
                 <DropDown
