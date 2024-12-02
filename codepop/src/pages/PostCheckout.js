@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Button, TouchableOpacity, FlatList } from 'react-native';
 import NavBar from '../components/NavBar';
 import RatingCarosel from '../components/RatingCarosel';
-import {BASE_URL} from '../../ip_address'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GeoMap from '../components/map';
