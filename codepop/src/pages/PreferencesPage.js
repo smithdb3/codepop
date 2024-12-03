@@ -1,3 +1,317 @@
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+// import { useFocusEffect, useNavigation } from '@react-navigation/native';
+// import { useEffect, useState } from 'react';
+// import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+// import { BASE_URL } from '../../ip_address';
+// import DropDown from '../components/DropDown';
+// import React from 'react';
+
+// const PreferencesPage = () => {
+//   const [isLoggedIn, setIsLoggedIn] = useState(false);
+//   const [name, setName] = useState(null);
+//   const [openDropdown, setOpenDropdown] = useState({
+//     sodas: false,
+//     syrups: false,
+//     juices: false,
+//   });
+//   const [SodaUsed, setSoda] = useState([]);
+//   const [SyrupsUsed, setSyrups] = useState([]);
+//   const [AddIns, setAddIns] = useState([]);
+//   const [inventoryData, setInventoryData] = useState([]);
+//   const [userPreferences, setUserPreferences] = useState([]); // To store fetched preferences
+//   const [isLoading, setIsLoading] = useState(true); // Add loading state
+//   const navigation = useNavigation();
+
+//   // useEffect to check login status once on initial load
+//   const checkLoginStatus = async () => {
+//     try {
+//       const storedName = await AsyncStorage.getItem('first_name');
+//       const token = await AsyncStorage.getItem('userToken');
+//       if (token && storedName) {
+//         setIsLoggedIn(true); // User is logged in
+//         setName(storedName); // Set username for display
+//       } else {
+//         setIsLoggedIn(false); // No user is logged in
+//       }
+//     } catch (error) {
+//       console.error('Error checking login status:', error);
+//     }
+//   };
+
+//   const fetchInventory = async () => {
+//     try {
+//       const response = await fetch(`${BASE_URL}/backend/inventory/`, {
+//         method: 'GET',
+//         headers: { 'Content-Type': 'application/json' },
+//       });
+//       const inventory = await response.json();
+//       const items = inventory.map(item => ({
+//         value: item.ItemName,
+//         ItemType: item.ItemType,
+//       }));
+//       setInventoryData(items);
+//     } catch (error) {
+//       console.error('Error fetching inventory:', error);
+//     }
+//   };
+
+//   const fetchUserPreferences = async (token, userId) => {
+//     try {
+//       const response = await fetch(`${BASE_URL}/backend/preferences/`, {
+//         method: 'GET',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'Authorization': `Token ${token}`,
+//         },
+//       });
+//       const preferences = await response.json();
+//       setUserPreferences(preferences); // Store the preferences in state
+
+//       // Preselect preferences based on the user's saved preferences
+//       const filteredSoda = preferences
+//         .filter(item => filterInventory("Soda").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
+//         .map(item => item.Preference);
+//       setSoda(filteredSoda);
+
+//       const filteredSyrups = preferences
+//         .filter(item => filterInventory("Syrup").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
+//         .map(item => item.Preference);
+//       setSyrups(filteredSyrups);
+
+//       const filteredAddIns = preferences
+//         .filter(item => filterInventory("Add In").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
+//         .map(item => item.Preference);
+//       setAddIns(filteredAddIns);
+
+//       setIsLoading(false); // Set loading to false once preferences are fetched
+//     } catch (error) {
+//       console.error("Error fetching preferences:", error);
+//     }
+//   };
+
+//   useFocusEffect(
+//     React.useCallback(() => {
+//       let isMounted = true;
+//       const loadData = async () => {
+//         await checkLoginStatus(); // Check login status
+
+//         const token = await AsyncStorage.getItem('userToken');
+//         const userId = await AsyncStorage.getItem('userId');
+
+//         if (isMounted && token && userId) {
+//           fetchInventory(); // Fetch inventory once login is successful
+//           fetchUserPreferences(isMounted && token, userId); // Fetch preferences for the user
+//         }
+//       };
+//       loadData();
+      
+//       console.log(userPreferences);
+//       return () => {
+//         isMounted = false;
+//       };
+//     }, []) // Empty dependency array ensures this only runs once when the screen is focused
+//   );
+
+//   const filterInventory = (type) => {
+//     const filteredItems = inventoryData.filter(item => item.ItemType === type);
+//     return filteredItems.map(item => ({
+//       label: item.value,
+//       value: item.value,
+//     }));
+//   };
+
+//   const handleSelection = (item, type) => {
+//     switch (type) {
+//       case 'Soda':
+//         setSoda((prevSodas) => {
+//           let soda = item;
+//           if (prevSodas.includes(soda.toLowerCase())) {
+//             // If soda is already selected, remove it
+//             removePreferences(soda);
+//             return prevSodas.filter((item) => item !== soda.toLowerCase());
+//           } else {
+//             // Otherwise, add the soda to the list and save it
+//             savePreferences(soda);
+//             return [...prevSodas, soda.toLowerCase()];
+//           }
+//         });
+//         break;
+//       case 'Syrup':
+//         setSyrups((prevSyrups) => {
+//           let syrup = item;
+//           if (prevSyrups.includes(syrup)) {
+//             // If syrup is already selected, remove it
+//             removePreferences(syrup);
+//             return prevSyrups.filter((item) => item !== syrup);
+//           } else {
+//             // Otherwise, add the syrup to the list and save it
+//             savePreferences(syrup);
+//             return [...prevSyrups, syrup];
+//           }
+//         });
+//         break;
+//       case 'AddIn':
+//         let addIn = item;
+//         setAddIns((prevAddIns) => {
+//           if (prevAddIns.includes(addIn)) {
+//             // If add-in is already selected, remove it
+//             removePreferences(addIn);
+//             return prevAddIns.filter((item) => item !== addIn);
+//           } else {
+//             // Otherwise, add the add-in to the list and save it
+//             savePreferences(addIn);
+//             return [...prevAddIns, addIn];
+//           }
+//         });
+//         break;
+//     }
+//   };
+  
+//   const savePreferencesToBackend = async () => {
+//     const token = await AsyncStorage.getItem('userToken');
+//     const userId = await AsyncStorage.getItem('userId');
+    
+//     // Save each preference to the backend
+//     for (let soda of SodaUsed) {
+//       await savePreferences(soda, 'Soda');
+//     }
+  
+//     for (let syrup of SyrupsUsed) {
+//       await savePreferences(syrup, 'Syrup');
+//     }
+  
+//     for (let addIn of AddIns) {
+//       await savePreferences(addIn, 'AddIn');
+//     }
+//   };
+
+//   const savePreferences = async (pref, type) => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       const userId = await AsyncStorage.getItem('userId');
+//       const response = await fetch(`${BASE_URL}/backend/preferences/`, {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'Authorization': `Token ${token}`,
+//         },
+//         body: JSON.stringify({
+//           UserID: userId,
+//           Preference: pref,
+//         }),
+//       });
+//       if (response.ok) {
+//         console.log(`${type} preference saved`);
+//       } else {
+//         throw new Error(`Failed to save ${type} preference`);
+//       }
+//     } catch (error) {
+//       console.error(error);
+//     }
+//   };
+
+//   const removePreferences = async (pref) => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       const userId = await AsyncStorage.getItem('userId');
+      
+//       const getResponse = await fetch(`${BASE_URL}/backend/preferences/`, {
+//         method: 'GET',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'Authorization': `Token ${token}`,
+//         },
+//       });
+  
+//       const preferences = await getResponse.json();
+  
+//       // Filter out preferences that belong to the current user and match the preference to be removed
+//       const filteredPreferences = preferences.filter(
+//         (item) => String(item.UserID) === String(userId) && item.Preference.toLowerCase() === pref.toLowerCase()
+//       );
+  
+//       for (let preference of filteredPreferences) {
+//         const deleteResponse = await fetch(`${BASE_URL}/backend/preferences/${preference.PreferenceID}/`, {
+//           method: 'DELETE',
+//           headers: {
+//             'Content-Type': 'application/json',
+//             'Authorization': `Token ${token}`,
+//           },
+//         });
+  
+//         if (!deleteResponse.ok) {
+//           const errorData = await deleteResponse.json();
+//           throw new Error(`Failed to delete preference: ${errorData}`);
+//         }
+//       }
+//     } catch (error) {
+//       console.error('Error removing preference:', error);
+//     }
+//   };
+  
+
+//   const goToLoginPage = () => {
+//     navigation.navigate('Auth');
+//   };
+
+//   return (
+//     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+//       {isLoading ? (
+//         <Text>Loading...</Text>
+//       ) : (
+//         <>
+//           {isLoggedIn ? (
+//             <>
+//               {name && <Text style={styles.greeting}>{name}'s Drinks</Text>}
+//               <View style={styles.navBarSpace}>
+//                 <Text style={styles.subtitleText}>Preferences</Text>
+//                 <DropDown
+//                   title='Sodas'
+//                   options={filterInventory("Soda")}
+//                   onSelect={(soda) => handleSelection(soda, 'Soda')}
+//                   isOpen={openDropdown.sodas}
+//                   setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
+//                   selectedValues={SodaUsed}
+//                 />
+//                 <DropDown
+//                   title='Syrups'
+//                   options={filterInventory("Syrup")}
+//                   onSelect={(syrup) => handleSelection(syrup, 'Syrup')}
+//                   isOpen={openDropdown.syrups}
+//                   setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
+//                   selectedValues={SyrupsUsed}
+//                 />
+//                 <DropDown
+//                   title='Add ins'
+//                   options={filterInventory("Add In")}
+//                   onSelect={(addIn) => handleSelection(addIn, 'AddIn')}
+//                   isOpen={openDropdown.juices}
+//                   setOpen={() => setOpenDropdown(prev => ({ ...prev, juices: !prev.juices }))}
+//                   selectedValues={AddIns}
+//                 />
+//               </View>
+//             </>
+//           ) : (
+//             <TouchableOpacity onPress={goToLoginPage}>
+//               <Text>Login</Text>
+//             </TouchableOpacity>
+//           )}
+//         </>
+//       )}
+//     </ScrollView>
+//   );
+// };
+
+// const styles = StyleSheet.create({
+//   container: { flex: 1 },
+//   contentContainer: { paddingBottom: 20 },
+//   greeting: { fontSize: 24, fontWeight: 'bold' },
+//   subtitleText: { fontSize: 18, marginVertical: 10 },
+//   navBarSpace: { marginTop: 20 },
+// });
+
+// export default PreferencesPage;
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
@@ -6,237 +320,502 @@ import { BASE_URL } from '../../ip_address';
 import DropDown from '../components/DropDown';
 import React from 'react';
 
-const PreferencesPage = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [name, setName] = useState(null);
-  const navigation = useNavigation();
-  const [openDropdown, setOpenDropdown] = useState({
-    sodas: false,
-    syrups: false,
-    juices: false,
-  });
-  const [SodaUsed, setSoda] = useState([]);
-  const [SyrupsUsed, setSyrups] = useState([]);
-  const [AddIns, setAddIns] = useState([]);
-  const [inventoryData, setInventoryData] = useState([]);
-  const [userPreferences, setUserPreferences] = useState([]); // To store fetched preferences
-  const [isLoading, setIsLoading] = useState(true); // Add loading state
+// const PreferencesPage = () => {
+//   const [isLoggedIn, setIsLoggedIn] = useState(false);
+//   const [name, setName] = useState(null);
+//   const navigation = useNavigation();
+//   const [openDropdown, setOpenDropdown] = useState({
+//     sodas: false,
+//     syrups: false,
+//     juices: false,
+//   });
+//   const [SodaUsed, setSoda] = useState([]);
+//   const [SyrupsUsed, setSyrups] = useState([]);
+//   const [AddIns, setAddIns] = useState([]);
+//   const [inventoryData, setInventoryData] = useState([]);
+//   const [userPreferences, setUserPreferences] = useState([]); // To store fetched preferences
+//   const [isLoading, setIsLoading] = useState(true); // Add loading state
 
-  useFocusEffect(
-    React.useCallback(() => {
-      const checkLoginStatus = async () => {
-        try {
-          const storedName = await AsyncStorage.getItem('first_name');
-          const token = await AsyncStorage.getItem('userToken');
-          if (token && storedName) {
-            setIsLoggedIn(true);  // User is logged in
-            setName(storedName);  // Set username for display
-          } else {
-            setIsLoggedIn(false);  // No user is logged in
-          }
-        } catch (error) {
-          console.error('Error checking login status:', error);
-        }
-      };
+//   // useEffect(() => {
+    
+//   //   // console.log("sodas ", SodaUsed);
+//   // }, [SodaUsed]);
+
+//   useFocusEffect(
+//     React.useCallback(() => {
+//       let isMounted = true;
+
+//       const checkLoginStatus = async () => {
+//         try {
+//           const storedName = await AsyncStorage.getItem('first_name');
+//           const token = await AsyncStorage.getItem('userToken');
+//           if (token && storedName) {
+//             setIsLoggedIn(true);  // User is logged in
+//             setName(storedName);  // Set username for display
+//           } else {
+//             setIsLoggedIn(false);  // No user is logged in
+//           }
+//         } catch (error) {
+//           console.error('Error checking login status:', error);
+//         }
+//       };
   
-      checkLoginStatus();
+//       checkLoginStatus();
 
 
-      const fetchData = async () => {
+//       const fetchData = async () => {
+//         const response = await fetch(`${BASE_URL}/backend/inventory/`, {
+//           method: 'GET',
+//           headers: {
+//             'Content-Type': 'application/json',
+//           }
+//         });
+//         const inventory = await response.json();
+//         const items = inventory.map(item => ({
+//           value: item.ItemName,
+//           ItemType: item.ItemType
+//         }));
+//         setInventoryData(items);
+//       };
+//       fetchData();
+  
+//       const fetchUserPreferences = async () => {
+//         if (isMounted) {
+//           const token = await AsyncStorage.getItem('userToken');
+//           const userId = await AsyncStorage.getItem('userId');
+          
+//           try {
+//             const response = await fetch(`${BASE_URL}/backend/preferences/`, {
+//               method: 'GET',
+//               headers: {
+//                 'Content-Type': 'application/json',
+//                 'Authorization': `Token ${token}`,
+//               }
+//             });
+//             const preferences = await response.json();
+//             setUserPreferences(preferences); // Store the preferences in state
+//             setIsLoading(false);
+//             // Preselect preferences based on the user's saved preferences
+//             const filteredSoda = preferences
+//               .filter(item => filterInventory("Soda").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
+//               .map(item => item.Preference);
+//             // console.log('filtered ', filteredSoda);
+//             setSoda(filteredSoda);
+            
+//             const filteredSyrups = preferences
+//             .filter(item => filterInventory("Syrup").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
+//             .map(item => item.Preference);
+//             setSyrups(filteredSyrups);
+            
+//             const filteredAddIns = preferences
+//             .filter(item => filterInventory("Add In").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
+//             .map(item => item.Preference);
+//             setAddIns(filteredAddIns);
+            
+//           } catch (error) {
+//             console.error("Error fetching preferences:", error);
+//           }
+//         } 
+//       };
+//       fetchUserPreferences();
+
+//       return () => {
+//         isMounted = false;
+//       }
+//     }, [])  // The empty array ensures this only runs when the screen is focused
+//   );
+
+//   // Login button press
+//   const goToLoginPage = () => {
+//     navigation.navigate('Auth');  // Navigate to the login page
+//   };
+
+//   const savePreferences = async (pref) => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       const userId = await AsyncStorage.getItem('userId');  // Retrieve userId from AsyncStorage
+//       const response = await fetch(`${BASE_URL}/backend/preferences/`, {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'Authorization': `Token ${token}`,
+//         },
+//         body: JSON.stringify({ 
+//           UserID: userId,
+//           Preference: pref,
+//         })
+//       });
+//       if (response.ok) {
+//         const data = await response.json();
+//       } else {
+//         // throw new Error(`Failed to add drink. Status: ${response.status} ${response.statusText}`);
+//         const errorData = await response.json();  // Get the response body
+//         throw new Error(`Failed to add drink. Status: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+//       }
+//     } catch (error) {
+//         console.error(error);
+//     } 
+//   }
+
+//   const removePreferences = async (pref) => {
+//     try {
+//       const token = await AsyncStorage.getItem('userToken');
+//       const userId = await AsyncStorage.getItem('userId');  // Retrieve userId from AsyncStorage
+//       const getResponse = await fetch(`${BASE_URL}/backend/preferences/`, {
+//         method: 'GET',
+//         headers: {
+//           'Content-Type': 'application/json',
+//           'Authorization': `Token ${token}`,
+//         }
+//       });
+
+//       const curr = await getResponse.json();
+
+//       const parsedCurr = curr.map(preferences => ({
+//         UserID: preferences.UserID,
+//         Preference: preferences.Preference,
+//         PreferenceID: preferences.PreferenceID,
+//       }));
+
+//       const filteredPreferences = parsedCurr.filter(item => 
+//         String(item.UserID) === String(userId) && item.Preference.toLowerCase() === pref.toLowerCase()
+//       );
+//       console.log('pref ', filteredPreferences);
+
+//       // console.log
+//       for (let i = 0; i < filteredPreferences.length; i++) {
+//         console.log(filteredPreferences[i].PreferenceID);
+//         const response = await fetch(`${BASE_URL}/backend/preferences/${filteredPreferences[i].PreferenceID}/`, {
+//           method: 'DELETE',
+//           headers: {
+//             'Content-Type': 'application/json',
+//             'Authorization': `Token ${token}`,
+//           },
+//           body: JSON.stringify({ 
+//             UserID: userId,
+//             Preference: pref,
+//           })
+//         });
+//         if (!response.ok) {
+//           // throw new Error(`Failed to add drink. Status: ${response.status} ${response.statusText}`);
+//           const errorData = await response.json();  // Get the response body
+//           throw new Error(`Failed to add drink. Status: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+//         } 
+//       }
+//     } catch (error) {
+//         console.error(error);
+//     } 
+//   }
+
+
+//   const filterInventory = (type) => {
+//     const filteredItems = inventoryData.filter(item => item.ItemType === type);
+
+//     // Map over the filtered soda items to get only their names
+//     // const filteredItemsNames = filteredItems.map(item => item.value);
+//     const filteredItemsNames = filteredItems.map(item => ({
+//       label: item.value, // assuming `value` contains the item name
+//       value: item.value  // you can use the same value for both label and value, or customize it
+//     }));
+
+//     // Log the names of all Soda items
+//     // console.log(filteredItemsNames);
+//     return filteredItemsNames;
+//   }
+
+//   const handleSodaSelection = (soda) => {
+//     setSoda((prevSodas) => {
+//       console.log('prev ', prevSodas)
+//       console.log('curr ', soda)
+//       if (prevSodas.includes(soda.toLowerCase())) {
+//         // If soda is already selected, remove it
+//         console.log('remove!')
+//         removePreferences(soda);
+
+//         return prevSodas.filter((item) => item !== soda);
+//       } else {
+//         // Otherwise, add the soda to the list
+//         savePreferences(soda);
+//         return [...prevSodas, soda];
+//       }
+//     });
+//   };
+    
+//   const handleSyrupSelection = (syrup) => {
+//     setSyrups((prevSyrups) => {
+//       if (prevSyrups.includes(syrup)) {
+//         // If soda is already selected, remove it
+//         removePreferences(syrup);
+//         return prevSyrups.filter((item) => item !== syrup);
+//       } else {
+//         // Otherwise, add the soda to the list
+//         savePreferences(syrup);
+//         return [...prevSyrups, syrup];
+//       }
+//     });
+//   };
+
+//   const handleAddInSelection = (addIn) => {
+//     setAddIns((prevAdd) => {
+//       if (prevAdd.includes(addIn)) {
+//         // If soda is already selected, remove it
+//         removePreferences(addIn);
+//         return prevAdd.filter((item) => item !== addIn);
+//       } else {
+//         // Otherwise, add the soda to the list
+//         savePreferences(addIn);
+//         return [...prevAdd, addIn];
+//       }
+//     });
+//   };
+
+const PreferencesPage = () => {
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [name, setName] = useState(null);
+    const [openDropdown, setOpenDropdown] = useState({
+      sodas: false,
+      syrups: false,
+      juices: false,
+    });
+    const [SodaUsed, setSoda] = useState([]);
+    const [SyrupsUsed, setSyrups] = useState([]);
+    const [AddIns, setAddIns] = useState([]);
+    const [inventoryData, setInventoryData] = useState([]);
+    const [userPreferences, setUserPreferences] = useState([]); // To store fetched preferences
+    const [isLoading, setIsLoading] = useState(true); // Add loading state
+    const navigation = useNavigation();
+  
+    // useEffect to check login status once on initial load
+    const checkLoginStatus = async () => {
+      try {
+        const storedName = await AsyncStorage.getItem('first_name');
+        const token = await AsyncStorage.getItem('userToken');
+        if (token && storedName) {
+          setIsLoggedIn(true); // User is logged in
+          setName(storedName); // Set username for display
+        } else {
+          setIsLoggedIn(false); // No user is logged in
+        }
+      } catch (error) {
+        console.error('Error checking login status:', error);
+      }
+    };
+  
+    const fetchInventory = async () => {
+      try {
         const response = await fetch(`${BASE_URL}/backend/inventory/`, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
+          headers: { 'Content-Type': 'application/json' },
         });
         const inventory = await response.json();
         const items = inventory.map(item => ({
           value: item.ItemName,
-          ItemType: item.ItemType
+          ItemType: item.ItemType,
         }));
         setInventoryData(items);
-      };
-      fetchData();
-  
-      const fetchUserPreferences = async () => {
-        const token = await AsyncStorage.getItem('userToken');
-        const userId = await AsyncStorage.getItem('userId');
-        
-        try {
-          const response = await fetch(`${BASE_URL}/backend/preferences/`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Token ${token}`,
-            }
-          });
-          const preferences = await response.json();
-          setUserPreferences(preferences); // Store the preferences in state
-          setIsLoading(false);
-          // Preselect preferences based on the user's saved preferences
-          const filteredSoda = preferences
-            .filter(item => filterInventory("Soda").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
-            .map(item => item.Preference);
-          setSoda(filteredSoda);
-          
-          const filteredSyrups = preferences
-          .filter(item => filterInventory("Syrup").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
-          .map(item => item.Preference);
-          setSyrups(filteredSyrups);
-          
-          const filteredAddIns = preferences
-          .filter(item => filterInventory("Add In").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
-          .map(item => item.Preference);
-          setAddIns(filteredAddIns);
-          
-        } catch (error) {
-          console.error("Error fetching preferences:", error);
-        }
-      };
-      
-      fetchUserPreferences();
-    }, [])  // The empty array ensures this only runs when the screen is focused
-  );
-
-  // Login button press
-  const goToLoginPage = () => {
-    navigation.navigate('Auth');  // Navigate to the login page
-  };
-
-  const savePreferences = async (pref) => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      const userId = await AsyncStorage.getItem('userId');  // Retrieve userId from AsyncStorage
-      const response = await fetch(`${BASE_URL}/backend/preferences/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`,
-        },
-        body: JSON.stringify({ 
-          UserID: userId,
-          Preference: pref,
-        })
-      });
-      if (response.ok) {
-        const data = await response.json();
-      } else {
-        // throw new Error(`Failed to add drink. Status: ${response.status} ${response.statusText}`);
-        const errorData = await response.json();  // Get the response body
-        throw new Error(`Failed to add drink. Status: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+      } catch (error) {
+        console.error('Error fetching inventory:', error);
       }
-    } catch (error) {
-        console.error(error);
-    } 
-  }
-
-  const removePreferences = async (pref) => {
-    try {
-      const token = await AsyncStorage.getItem('userToken');
-      const userId = await AsyncStorage.getItem('userId');  // Retrieve userId from AsyncStorage
-      const getResponse = await fetch(`${BASE_URL}/backend/preferences/`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${token}`,
-        }
-      });
-
-      const curr = await getResponse.json();
-
-      const parsedCurr = curr.map(preferences => ({
-        UserID: preferences.UserID,
-        Preference: preferences.Preference,
-        PreferenceID: preferences.PreferenceID,
-      }));
-
-      const filteredPreferences = parsedCurr.filter(item => 
-        String(item.UserID) === String(userId) && item.Preference.toLowerCase() === pref.toLowerCase()
-      );
-
-      // console.log
-      for (let i = 0; i < filteredPreferences.length; i++) {
-        console.log(filteredPreferences[i].PreferenceID);
-        const response = await fetch(`${BASE_URL}/backend/preferences/${filteredPreferences[i].PreferenceID}/`, {
-          method: 'DELETE',
+    };
+  
+    const fetchUserPreferences = async (token, userId) => {
+      try {
+        const response = await fetch(`${BASE_URL}/backend/preferences/`, {
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Token ${token}`,
           },
-          body: JSON.stringify({ 
+        });
+        const preferences = await response.json();
+        setUserPreferences(preferences); // Store the preferences in state
+  
+        // Preselect preferences based on the user's saved preferences
+        const filteredSoda = preferences
+          .filter(item => filterInventory("Soda").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
+          .map(item => item.Preference);
+        setSoda(filteredSoda);
+  
+        const filteredSyrups = preferences
+          .filter(item => filterInventory("Syrup").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
+          .map(item => item.Preference);
+        setSyrups(filteredSyrups);
+  
+        const filteredAddIns = preferences
+          .filter(item => filterInventory("Add In").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
+          .map(item => item.Preference);
+        setAddIns(filteredAddIns);
+  
+        setIsLoading(false); // Set loading to false once preferences are fetched
+      } catch (error) {
+        console.error("Error fetching preferences:", error);
+      }
+    };
+  
+    useFocusEffect(
+      React.useCallback(() => {
+        let isMounted = true;
+        const loadData = async () => {
+          await checkLoginStatus(); // Check login status
+  
+          const token = await AsyncStorage.getItem('userToken');
+          const userId = await AsyncStorage.getItem('userId');
+  
+          if (isMounted && token && userId) {
+            fetchInventory(); // Fetch inventory once login is successful
+            fetchUserPreferences(isMounted && token, userId); // Fetch preferences for the user
+          }
+        };
+        loadData();
+        
+        console.log(userPreferences);
+        return () => {
+          isMounted = false;
+        };
+      }, []) // Empty dependency array ensures this only runs once when the screen is focused
+    );
+  
+    const filterInventory = (type) => {
+      const filteredItems = inventoryData.filter(item => item.ItemType === type);
+      return filteredItems.map(item => ({
+        label: item.value,
+        value: item.value,
+      }));
+    };
+  
+    const handleSelection = (item, type) => {
+      switch (type) {
+        case 'Soda':
+          setSoda((prevSodas) => {
+            let soda = item;
+            if (prevSodas.includes(soda.toLowerCase())) {
+              // If soda is already selected, remove it
+              removePreferences(soda);
+              return prevSodas.filter((item) => item !== soda.toLowerCase());
+            } else {
+              // Otherwise, add the soda to the list and save it
+              savePreferences(soda);
+              return [...prevSodas, soda.toLowerCase()];
+            }
+          });
+          break;
+        case 'Syrup':
+          setSyrups((prevSyrups) => {
+            let syrup = item;
+            if (prevSyrups.includes(syrup)) {
+              // If syrup is already selected, remove it
+              removePreferences(syrup);
+              return prevSyrups.filter((item) => item !== syrup);
+            } else {
+              // Otherwise, add the syrup to the list and save it
+              savePreferences(syrup);
+              return [...prevSyrups, syrup];
+            }
+          });
+          break;
+        case 'AddIn':
+          let addIn = item;
+          setAddIns((prevAddIns) => {
+            if (prevAddIns.includes(addIn)) {
+              // If add-in is already selected, remove it
+              removePreferences(addIn);
+              return prevAddIns.filter((item) => item !== addIn);
+            } else {
+              // Otherwise, add the add-in to the list and save it
+              savePreferences(addIn);
+              return [...prevAddIns, addIn];
+            }
+          });
+          break;
+      }
+    };
+    
+    const savePreferencesToBackend = async () => {
+      const token = await AsyncStorage.getItem('userToken');
+      const userId = await AsyncStorage.getItem('userId');
+      
+      // Save each preference to the backend
+      for (let soda of SodaUsed) {
+        await savePreferences(soda, 'Soda');
+      }
+    
+      for (let syrup of SyrupsUsed) {
+        await savePreferences(syrup, 'Syrup');
+      }
+    
+      for (let addIn of AddIns) {
+        await savePreferences(addIn, 'AddIn');
+      }
+    };
+  
+    const savePreferences = async (pref, type) => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const userId = await AsyncStorage.getItem('userId');
+        const response = await fetch(`${BASE_URL}/backend/preferences/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`,
+          },
+          body: JSON.stringify({
             UserID: userId,
             Preference: pref,
-          })
+          }),
         });
-        if (!response.ok) {
-          // throw new Error(`Failed to add drink. Status: ${response.status} ${response.statusText}`);
-          const errorData = await response.json();  // Get the response body
-          throw new Error(`Failed to add drink. Status: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
-        } 
-      }
-    } catch (error) {
+        if (response.ok) {
+          console.log(`${type} preference saved`);
+        } else {
+          throw new Error(`Failed to save ${type} preference`);
+        }
+      } catch (error) {
         console.error(error);
-    } 
-  }
-
-
-  const filterInventory = (type) => {
-    const filteredItems = inventoryData.filter(item => item.ItemType === type);
-
-    // Map over the filtered soda items to get only their names
-    // const filteredItemsNames = filteredItems.map(item => item.value);
-    const filteredItemsNames = filteredItems.map(item => ({
-      label: item.value, // assuming `value` contains the item name
-      value: item.value  // you can use the same value for both label and value, or customize it
-    }));
-
-    // Log the names of all Soda items
-    // console.log(filteredItemsNames);
-    return filteredItemsNames;
-  }
-
-  const handleSodaSelection = (soda) => {
-    setSoda((prevSodas) => {
-      if (prevSodas.includes(soda)) {
-        // If soda is already selected, remove it
-        removePreferences(soda);
-        return prevSodas.filter((item) => item !== soda);
-      } else {
-        // Otherwise, add the soda to the list
-        savePreferences(soda);
-        return [...prevSodas, soda];
       }
-    });
-  };
+    };
+  
+    const removePreferences = async (pref) => {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const userId = await AsyncStorage.getItem('userId');
+        
+        const getResponse = await fetch(`${BASE_URL}/backend/preferences/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`,
+          },
+        });
     
-  const handleSyrupSelection = (syrup) => {
-    setSyrups((prevSyrups) => {
-      if (prevSyrups.includes(syrup)) {
-        // If soda is already selected, remove it
-        removePreferences(syrup);
-        return prevSyrups.filter((item) => item !== syrup);
-      } else {
-        // Otherwise, add the soda to the list
-        savePreferences(syrup);
-        return [...prevSyrups, syrup];
+        const preferences = await getResponse.json();
+    
+        // Filter out preferences that belong to the current user and match the preference to be removed
+        const filteredPreferences = preferences.filter(
+          (item) => String(item.UserID) === String(userId) && item.Preference.toLowerCase() === pref.toLowerCase()
+        );
+    
+        for (let preference of filteredPreferences) {
+          const deleteResponse = await fetch(`${BASE_URL}/backend/preferences/${preference.PreferenceID}/`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Token ${token}`,
+            },
+          });
+    
+          if (!deleteResponse.ok) {
+            const errorData = await deleteResponse.json();
+            throw new Error(`Failed to delete preference: ${errorData}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error removing preference:', error);
       }
-    });
-  };
-
-  const handleAddInSelection = (addIn) => {
-    setAddIns((prevAdd) => {
-      if (prevAdd.includes(addIn)) {
-        // If soda is already selected, remove it
-        removePreferences(addIn);
-        return prevAdd.filter((item) => item !== addIn);
-      } else {
-        // Otherwise, add the soda to the list
-        savePreferences(addIn);
-        return [...prevAdd, addIn];
-      }
-    });
-  };
-
+    };
+    
+  
+    const goToLoginPage = () => {
+      navigation.navigate('Auth');
+    };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -256,7 +835,7 @@ const PreferencesPage = () => {
                 <DropDown
                   title='Sodas'
                   options={filterInventory("Soda")}
-                  onSelect={handleSodaSelection} 
+                  onSelect={(soda) => handleSelection(soda, 'Soda')} 
                   isOpen={openDropdown.sodas}
                   setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
                   selectedValues={SodaUsed} // Pass selected values for prepopulation
@@ -264,7 +843,7 @@ const PreferencesPage = () => {
                 <DropDown 
                   title='Syrups' 
                   options={filterInventory("Syrup")} 
-                  onSelect={handleSyrupSelection} 
+                  onSelect={(syrup) => handleSelection(syrup, 'Syrup')} 
                   isOpen={openDropdown.syrups}
                   setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
                   selectedValues={SyrupsUsed} // Pass selected values for prepopulation
@@ -272,7 +851,7 @@ const PreferencesPage = () => {
                 <DropDown 
                   title='Add ins' 
                   options={filterInventory("Add In")} 
-                  onSelect={handleAddInSelection} 
+                  onSelect={(addIn) => handleSelection(addIn, 'Add In')} 
                   isOpen={openDropdown.juices}
                   setOpen={() => setOpenDropdown(prev => ({ ...prev, juices: !prev.juices }))}
                   selectedValues={AddIns} // Pass selected values for prepopulation
