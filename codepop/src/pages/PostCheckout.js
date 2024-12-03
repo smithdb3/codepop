@@ -6,6 +6,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GeoMap from '../components/map';
 import * as Location from 'expo-location';
+import MapView, { Marker } from 'react-native-maps';
 
 // todo
 // add geolocation tracking map
@@ -29,7 +30,9 @@ const PostCheckout = () => {
   const storeLocation = { //the store location is the Logan Cemetery because integrating this geolocator has been the death of me
       latitude: 41.748978207108976,
       longitude: -111.8076790945287
-    };
+//        latitude: 37.422,
+//        longitude: -122.0839
+  };
 
   useEffect(() => {
       (async () => {
@@ -38,11 +41,82 @@ const PostCheckout = () => {
           setErrorMsg('Permission to access location was denied');
           return;
         }
+//
+//        let locationInterval = setInterval(async () => {
+//            try {
+//              let currentLocation = await Location.getCurrentPositionAsync({});
+//              setLocation(currentLocation);
+//              console.log(JSON.stringify(location));
+//            } catch (error) {
+//              console.error("Error fetching location:", error);
+//            }
+//          }, 5000); // Refresh location every 5 seconds
 
-        let currentLocation = await Location.getCurrentPositionAsync({});
-        setLocation(currentLocation);
+          try {
+                // Fetch the user's current location
+                let currentLocation = await Location.getCurrentPositionAsync({});
+//                console.log(JSON.stringify(currentlocation));
+                setLocation(currentLocation);
+              } catch (error) {
+                console.error("Error fetching location:", error);
+              }
+
+        return () => clearInterval(locationInterval);
       })();
     }, []);
+
+
+    // Function to calculate the distance between two coordinates using the Haversine formula
+    const calculateDistance = (lat1, lon1, lat2, lon2) => {
+      const R = 6371e3; // Earth's radius in meters
+      const toRadians = (deg) => (deg * Math.PI) / 180;
+
+      const φ1 = toRadians(lat1);
+      const φ2 = toRadians(lat2);
+      const Δφ = toRadians(lat2 - lat1);
+      const Δλ = toRadians(lon2 - lon1);
+
+      const a =
+        Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+      return R * c; // Distance in meters
+    };
+
+
+    // Function to check if user is within 500 yards (457.2 meters)
+      const checkDistance = (userCoords) => {
+        const userLatitude = userCoords.latitude;
+        const userLongitude = userCoords.longitude;
+
+        // Calculate the distance between the user's coordinates and the store's coordinates
+        const distance = calculateDistance(
+          userLatitude,
+          userLongitude,
+          storeLocation.latitude,
+          storeLocation.longitude
+        );
+
+        console.log("Distance to store:", distance, "meters");
+
+        // 500 yards is approximately 457.2 meters
+        if (distance <= 457.2) {
+          setIsNearby(true);
+        } else {
+          setIsNearby(false);
+        }
+      };
+
+      // Trigger checkDistance whenever the location changes
+      useEffect(() => {
+        if (location) {
+          const { coords } = location;
+          checkDistance(coords);
+        }
+      }, [location]);
+
 
 
   // get the list of drinks from the cartlist
@@ -68,7 +142,7 @@ const PostCheckout = () => {
   
   useEffect(() => {
     // Start countdown timer
-    if (timeLeft > 0) {
+    if (timeLeft > 0 && isNearby) {
       const timerId = setInterval(() => {
         setTimeLeft((prevTime) => prevTime - 1);
       }, 1000);
@@ -76,7 +150,7 @@ const PostCheckout = () => {
       // Clear the interval when the timer reaches 0
       return () => clearInterval(timerId);
     }
-  }, [timeLeft]);
+  }, [isNearby, timeLeft]);
   
 
   const handleLockerCombo = () => {
@@ -96,18 +170,44 @@ const PostCheckout = () => {
   return (
     <View style={styles.container}>
       <View style={styles.padding}>
-
-        <View style={styles.section}>
-            <Text>{location ? JSON.stringify(location) : errorMsg}</Text>
+        {/*Distance from store*/}
+        <View style={[styles.section, styles.nearbySection]}>
+            <View style={styles.section, styles.nearbyText}>
+                {isNearby ? (
+                        <Text style={styles.text}>Your drink is being made!</Text>
+                      ) : (
+                        <Text style={styles.text}>Once you are within 500 yards from the store Bob will start making your drink.</Text>
+                )}
+            </View>
         </View>
+
         {/* Map Image Box */}
         <View style={[styles.section, styles.mapSection]}>
           {/* <GeoMap/> */}
-          <Image 
-            source={require('../../assets/map.png')}
-            style={styles.image}
-            resizeMode="contain"
-          />
+          <View style={styles.section}>
+                {location ? (
+                  <MapView
+                    style={styles.map}
+                    region={{
+                      latitude: location.coords.latitude,
+                      longitude: location.coords.longitude,
+                      latitudeDelta: 0.0922,
+                      longitudeDelta: 0.0421,
+                    }}
+                  >
+                    <Marker
+                      coordinate={{
+                        latitude: location.coords.latitude,
+                        longitude: location.coords.longitude,
+                      }}
+                      title="You are here"
+                      description="Current location"
+                    />
+                  </MapView>
+                ) : (
+                  <Text>Loading...</Text>
+                )}
+              </View>
         </View>
 
         {/* Rating Box */}
@@ -167,7 +267,12 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   mapSection: {
-    backgroundColor: '#D30C7B', 
+    backgroundColor: '#D30C7B',
+    width: '100%',
+    height: 250,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
   },
   ratingSection: {
     backgroundColor: '#FFA686', 
@@ -230,6 +335,19 @@ const styles = StyleSheet.create({
   paragraph: {
     fontSize: 18,
     textAlign: 'center',
+  },
+  map: {
+    width: '90%',
+    height: 200,
+    borderRadius: 8,
+  },
+  nearbySection: {
+    backgroundColor: '#F92758',
+    justifyContent: 'center',
+    height: 40
+  },
+  nearbyText: {
+    fontWeight: '900',
   }
 });
 
