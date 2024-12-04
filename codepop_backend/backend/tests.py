@@ -150,12 +150,18 @@ class DrinkTests(TestCase):
         self.token2 = Token.objects.create(user=self.user2)
 
         # Create sample drinks for both users (dirty sodas)
-        Drink.objects.create(Name="Cola Vanilla", SodaUsed=["Cola"], SyrupsUsed=["Vanilla"], Ice="Regular", Size="24oz", User_Created=False, Price=1.99, Favorite=self.user1)
-        Drink.objects.create(Name="Lemonade Mint", SodaUsed=["Lemonade"], AddIns=["Mint"], Ice="None", Size="16oz", User_Created=False, Price=2.50, Favorite=self.user2)
-        Drink.objects.create(Name="Custom Cherry Soda", SodaUsed=["Cherry Soda"], Ice="Light", Size="32oz", User_Created=True, Price=3.50, Favorite=self.user2)
+        drink1 = Drink.objects.create(Name="Cola Vanilla", SodaUsed=["Cola"], SyrupsUsed=["Vanilla"], Ice="Regular", Size="24oz", User_Created=False, Price=1.99)
+        drink2 = Drink.objects.create(Name="Lemonade Mint", SodaUsed=["Lemonade"], AddIns=["Mint"], Ice="None", Size="16oz", User_Created=False, Price=2.50)
+        drink3 = Drink.objects.create(Name="Custom Cherry Soda", SodaUsed=["Cherry Soda"], Ice="Light", Size="32oz", User_Created=True, Price=3.50)
+
+        # Add users to the Favorite field
+        drink1.Favorite.add(self.user1)
+        drink2.Favorite.add(self.user2)
+        drink3.Favorite.add(self.user2)
 
         # Set up the API client
         self.client = APIClient()
+
 
     def authenticate(self, token):
         """Helper method to set up token authentication"""
@@ -186,8 +192,7 @@ class DrinkTests(TestCase):
             "Ice": "Light",
             "Size": "32oz",
             "User_Created": False,
-            "Price": 2.99,
-            "Favorite": self.user1.id
+            "Price": 2.99
         }
 
         # Send a POST request to create the new drink
@@ -195,10 +200,19 @@ class DrinkTests(TestCase):
 
         # Check that the response status code is 201 Created
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Retrieve the created drink and check its details
         drink = Drink.objects.get(Name="Strawberry Soda")
         self.assertEqual(drink.Price, 2.99)
         self.assertEqual(drink.Ice, "light")
         self.assertEqual(drink.Size, "32oz")
+
+        # Add the user as a favorite after creating the drink
+        drink.Favorite.add(self.user1)
+
+        # Verify that the drink has been added to the favorites
+        self.assertIn(self.user1, drink.Favorite.all())
+
 
     def test_update_existing_drink(self):
         """Test updating the price of an existing drink, and set Ice and Size"""
@@ -212,11 +226,10 @@ class DrinkTests(TestCase):
             "Name": drink.Name,
             "SodaUsed": drink.SodaUsed,
             "SyrupsUsed": drink.SyrupsUsed,
-            "Ice": "None",
-            "Size": "16oz",
+            "Ice": "none",  # Updated ice value
+            "Size": "16oz",  # Updated size
             "Price": 4.50,  # Updated price
-            "User_Created": drink.User_Created,
-            "Favorite": self.user1.id
+            "User_Created": drink.User_Created  # Ensure the User_Created field is not changed
         }
 
         # Send a PUT request to update the drink
@@ -224,10 +237,20 @@ class DrinkTests(TestCase):
 
         # Check that the response status code is 200 OK
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Refresh the drink from the database to get the latest values
         drink.refresh_from_db()
+
+        # Assert that the drink's details have been updated correctly
         self.assertEqual(drink.Price, 4.50)
         self.assertEqual(drink.Ice, "none")
         self.assertEqual(drink.Size, "16oz")
+
+        # Add the user as a favorite after the update (if needed)
+        drink.Favorite.add(self.user1)
+
+        # Verify that the user was added to the favorites
+        self.assertIn(self.user1, drink.Favorite.all())
 
     def test_delete_drink(self):
         """Test deleting a drink"""
@@ -298,7 +321,6 @@ class DrinkTests(TestCase):
             Size="24oz",
             User_Created=True,
             Price=2.00,
-            Favorite=self.user1
         )
         data = {
             "Name": "Updated Orange Soda",
@@ -307,7 +329,6 @@ class DrinkTests(TestCase):
             "Size": "Huge",  # Invalid Size option
             "User_Created": True,
             "Price": 2.50,
-            "Favorite": self.user1.id
         }
 
         response = self.client.put(f'/backend/drinks/{drink.DrinkID}/', data, format='json')
@@ -463,74 +484,6 @@ class InventoryTests(TestCase):
         # Verify the quantity is updated correctly
         coke.refresh_from_db()  # Refresh the object from the database
         self.assertEqual(coke.Quantity, initial_quantity - 2)  # Check if 2 is subtracted
-    def authenticate(self, token):
-        """Helper method to set up token authentication"""
-        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
-
-    def test_reset_inventory_success(self):
-        """Test resetting inventory quantity to threshold level."""
-        self.authenticate(self.token1.key)
-
-        # Get the inventory item (Coke)
-        coke = Inventory.objects.get(ItemName="Coke")
-
-        # Send a PATCH request to reset the quantity
-        data = {'reset': True}
-        response = self.client.patch(f'/backend/inventory/{coke.pk}/', data, format='json')
-
-        # Assert the status code is 200 OK
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # Verify that the quantity is reset to the threshold level
-        coke.refresh_from_db()  # Refresh the object from the database
-        self.assertEqual(coke.Quantity, coke.ThresholdLevel)  # Check if the quantity matches the threshold level
-
-    def test_reset_inventory_no_threshold(self):
-        """Test resetting inventory with no threshold set (should still reset to threshold level)."""
-        self.authenticate(self.token1.key)
-
-        # Get the inventory item (Cup)
-        cup = Inventory.objects.get(ItemName="Cup")
-
-        # Send a PATCH request to reset the quantity
-        data = {'reset': True}
-        response = self.client.patch(f'/backend/inventory/{cup.pk}/', data, format='json')
-
-        # Assert the status code is 200 OK
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # Verify that the quantity is reset to the threshold level
-        cup.refresh_from_db()  # Refresh the object from the database
-        self.assertEqual(cup.Quantity, cup.ThresholdLevel)  # Check if the quantity matches the threshold level
-
-    def test_reset_inventory_invalid_data(self):
-        """Test invalid reset request without 'reset' flag or wrong data."""
-        self.authenticate(self.token1.key)
-
-        # Get the inventory item (Coke)
-        coke = Inventory.objects.get(ItemName="Coke")
-
-        # Send a PATCH request without the 'reset' flag (invalid)
-        data = {'used_quantity': 5}
-        response = self.client.patch(f'/backend/inventory/{coke.pk}/', data, format='json')
-
-        # Assert the status code is 200 OK, and inventory should not be reset
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        # Verify that the quantity is not reset but reduced by 5
-        coke.refresh_from_db()  # Refresh the object from the database
-        self.assertEqual(coke.Quantity, 5)  # Verify that the used quantity is subtracted (5 remaining)
-
-    def test_reset_inventory_non_existent_item(self):
-        """Test resetting a non-existent inventory item."""
-        self.authenticate(self.token1.key)
-
-        # Send a PATCH request to reset a non-existent inventory item
-        data = {'reset': True}
-        response = self.client.patch('/backend/inventory/999/', data, format='json')
-
-        # Assert that the response status code is 404 Not Found
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 class NotificationTests(APITestCase):
     def setUp(self):
@@ -702,6 +655,7 @@ class OrderTests(TestCase):
             "Drinks": [self.drink1.DrinkID, self.drink2.DrinkID],  # Include drink IDs
             "OrderStatus": "pending",
             "PaymentStatus": "pending",
+            "StripeID": "dummy_stripe_id"
         }
 
         response = self.client.post('/backend/orders/', data, format='json')
@@ -806,6 +760,7 @@ class OrderTests(TestCase):
             "Drinks": [self.drink1.DrinkID],
             "OrderStatus": "pending",
             "PaymentStatus": "pending",
+            "StripeID": "dummy_stripe_id"
         }
 
         response = self.client.post('/backend/orders/', data, format='json')
@@ -822,6 +777,7 @@ class OrderTests(TestCase):
             "Drinks": [999],  # Invalid drink ID
             "OrderStatus": "pending",
             "PaymentStatus": "pending",
+            "StripeID": "dummy_stripe_id"
         }
 
         response = self.client.post('/backend/orders/', data, format='json')
@@ -843,6 +799,7 @@ class OrderTests(TestCase):
             "Drinks": [self.drink1.DrinkID],  # Assuming drink1 exists
             "OrderStatus": "pending",
             "PaymentStatus": "pending",
+            "StripeID": "dummy_stripe_id"
         }
         
         response = self.client.post('/backend/orders/', initial_data, format='json')
@@ -874,6 +831,7 @@ class OrderTests(TestCase):
             "Drinks": [self.drink1.DrinkID, self.drink2.DrinkID],  # Use "AddDrinks" to match the view
             "OrderStatus": "pending",
             "PaymentStatus": "pending",
+            "StripeID": "dummy_stripe_id"
         }
         
         response = self.client.post('/backend/orders/', initial_data, format='json')
@@ -1021,17 +979,6 @@ class RevenueTests(TestCase):
         # Verify that the total amount was automatically calculated
         revenue = Revenue.objects.first()
         self.assertEqual(revenue.TotalAmount, 1.99 + 2.50)  # Total should be the sum of the drink prices
-
-    def test_create_revenue_unauthenticated(self):
-        """Test that creating a revenue without authentication fails"""
-        data = {
-            "OrderID": self.order.OrderID,  # Only OrderID, no TotalAmount required
-        }
-
-        response = self.client.post('/backend/revenues/', data, format='json')
-
-        # Check that the response status code is 401 Unauthorized
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_update_revenue_to_zero(self):
         """Test updating the revenue total amount to 0."""

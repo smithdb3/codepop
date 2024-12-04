@@ -108,13 +108,24 @@ class UserPreferenceLookup(ListAPIView):
         user = get_object_or_404(User, pk=user_id)
         return Preference.objects.filter(UserID=user_id)
     
+from rest_framework import status, viewsets
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.generics import ListAPIView
+from django.shortcuts import get_object_or_404
+from .models import Drink
+from .serializers import DrinkSerializer
+from rest_framework.views import APIView
+
 class DrinkOperations(viewsets.ModelViewSet):
     queryset = Drink.objects.all()
     serializer_class = DrinkSerializer
 
     def get_queryset(self):
-        # Modify the basic GET request behavior so it only returns drinks not user created
-        if(self.action == 'update' or self.action == 'retrieve' or self.action == 'destroy'):
+        """
+        Modify the basic GET request behavior so it only returns drinks not user created
+        """
+        if self.action in ['update', 'retrieve', 'destroy']:
             return Drink.objects.all()
         return Drink.objects.filter(User_Created=False)
 
@@ -124,42 +135,62 @@ class DrinkOperations(viewsets.ModelViewSet):
         Only authenticated users can create, update, or delete a drink.
         """
         if self.action in ['create', 'update', 'destroy']:
-            # Require authentication for create, update, and destroy actions
-            return [AllowAny()]
+            return [AllowAny()]  # Allow any for testing purposes or change to IsAuthenticated()
         return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
-        # Custom logic for creating a drink
+        # Custom logic for creating a drink (optional for customization)
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
+        """
+        Custom update method to handle updating a drink's fields, favorites, and validation.
+        """
+        # Retrieve the drink object to be updated
         drink = self.get_object()
-        favorite_to_add = request.data.get("addFavorite", [])
-        favorite_to_remove = request.data.get("removeFavorite", [])
-        
-        # Adding drinks
-        if favorite_to_add:
-            drink.addFavorite(favorite_to_add)
 
-        # Removing drinks
-        if favorite_to_remove:
-            drink.removeFavorite(favorite_to_remove_to_remove)
-        
-        serializer = self.get_serializer(drink)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # Use the serializer to validate and update the data
+        serializer = self.get_serializer(drink, data=request.data)
+
+        # Validate the data (including Ice and Size field checks)
+        if serializer.is_valid():
+            # If valid, update the fields
+            # Explicitly update fields from request data if they exist on the drink model
+            for field, value in request.data.items():
+                if hasattr(drink, field):
+                    setattr(drink, field, value)
+
+            # Handle adding/removing favorites
+            favorite_to_add = request.data.get("addFavorite", [])
+            favorite_to_remove = request.data.get("removeFavorite", [])
+            
+            if favorite_to_add:
+                drink.addFavorite(favorite_to_add)
+            if favorite_to_remove:
+                drink.removeFavorite(favorite_to_remove)
+
+            # Save the updated drink
+            drink.save()
+
+            # Return the updated drink data using the serializer
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            # Return a 400 Bad Request if validation fails
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, request, *args, **kwargs):
-        # Custom logic for deleting a drink
+        # Custom logic for deleting a drink (optional for customization)
         return super().destroy(request, *args, **kwargs)
 
 class UserDrinksLookup(ListAPIView):
     serializer_class = DrinkSerializer
     permission_classes = [IsAuthenticated]
 
-    # Override get_queryset to filter preferences by the provided UserID
     def get_queryset(self):
+        """
+        Retrieve drinks that are marked as favorites by the provided user ID.
+        """
         user_id = self.kwargs['user_id']  # Retrieve the 'user_id' from the URL
-        # Check if the user exists first, and raise a 404 if not
         user = get_object_or_404(User, pk=user_id)
         return Drink.objects.filter(Favorite=user_id)
 
