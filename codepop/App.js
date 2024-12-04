@@ -1,22 +1,24 @@
-import { NavigationContainer } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Font from 'expo-font';
 import React, { useEffect } from 'react';
+import { TouchableOpacity } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
+import AdminDash from './src/pages/AdminDash';
 import AuthPage from './src/pages/AuthPage';
 import CartPage from './src/pages/CartPage';
-import CreateAccountPage from './src/pages/CreateAccountPage';
-import PaymentPage from './src/pages/PaymentPage';
+import CheckoutForm from './src/pages/CheckoutForm';
 import ComplaintsPage from './src/pages/ComplaintsPage';
-import UpdateDrink from './src/pages/UpdateDrink';
-import ManagerDash from './src/pages/ManagerDash';
-import AdminDash from './src/pages/AdminDash';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import CompletePage from './src/pages/CompletePage';
+import CreateAccountPage from './src/pages/CreateAccountPage';
 import CreateDrinkPage from './src/pages/CreateDrinkPage';
 import GeneralHomePage from './src/pages/GeneralHomePage';
-import CompletePage from './src/pages/CompletePage';
-import CheckoutForm from './src/pages/CheckoutForm';
-import PreferencesPage from './src/pages/PreferencesPage';
+import ManagerDash from './src/pages/ManagerDash';
+import PaymentPage from './src/pages/PaymentPage';
 import PostCheckout from './src/pages/PostCheckout';
+import PreferencesPage from './src/pages/PreferencesPage';
+import UpdateDrink from './src/pages/UpdateDrink';
 
 const Stack = createNativeStackNavigator();
 const title = 'CodePop' 
@@ -110,7 +112,10 @@ const App = () => {
             title: title, 
             headerTitleStyle: {
               // fontFamily: 'CherryBombOne',
-          },}}
+            },
+            headerRight: () => (
+              <ProfileButton />
+            ),}}
         />
         <Stack.Screen
           name="payment"
@@ -149,6 +154,16 @@ const App = () => {
         />
       </Stack.Navigator>
     </NavigationContainer>
+  );
+};
+
+const ProfileButton = () => {
+  const navigation = useNavigation(); // Use navigation hook
+
+  return (
+    <TouchableOpacity onPress={() => navigation.navigate('Preferences')}>
+      <Icon name="person-circle-outline" size={30} color="#000" />
+    </TouchableOpacity>
   );
 };
 

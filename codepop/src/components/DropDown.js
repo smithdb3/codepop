@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-const DropDown = ({ title, options = [], onSelect, isOpen, setOpen}) => {
+const DropDown = ({ title, options = [], onSelect, isOpen, setOpen, selectedValues = [] }) => {
   // const [isOpen, setIsOpen] = useState(false);
   const [selectedItems, setSelectedItems] = useState({});
 
@@ -13,6 +13,22 @@ const DropDown = ({ title, options = [], onSelect, isOpen, setOpen}) => {
     }));
     onSelect(item);
   };
+  // const toggleItemSelection = (item) => {
+  //   setSelectedItems((prevSelectedItems) => {
+  //     // If the item is already selected, remove it
+  //     if (prevSelectedItems[item]) {
+  //       const updatedSelectedItems = { ...prevSelectedItems };
+  //       delete updatedSelectedItems[item];  // Remove the item
+  //       return updatedSelectedItems;
+  //     } else {
+  //       // Otherwise, add it to the selected items
+  //       return { ...prevSelectedItems, [item]: true };
+  //     }
+  //   });
+  // };
+  // const toggleItemSelection = (itemValue) => {
+  //   onSelect(itemValue);  // Pass the value to parent to update selected values
+  // }
 
   return (
     <View style={styles.container}>
@@ -29,7 +45,12 @@ const DropDown = ({ title, options = [], onSelect, isOpen, setOpen}) => {
             {options.map((option) => (
               <TouchableOpacity
                 key={option.value}
-                style={[
+                style={ selectedValues.includes(option.value.toLowerCase()) 
+                  ? [
+                  styles.circularButton,
+                  styles.circularButtonSelected,
+                ]
+                  : [
                   styles.circularButton,
                   selectedItems[option.value] && styles.circularButtonSelected,
                 ]}
@@ -105,6 +126,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
+  selectedOption: {
+    backgroundColor: '#8DF1D3',
+    color: '#fff', // Change text color for selected options
+  }
 });
 
 export default DropDown;

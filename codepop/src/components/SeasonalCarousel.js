@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { BASE_URL } from '../../ip_address';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: windowWidth } = Dimensions.get('window');
 
@@ -22,9 +23,18 @@ const SeasonalCarousel = () => {
             const drinks = await response.json();
 
             const parsedDrinks = drinks.map(drink => ({
+                drinkID: drink.DrinkID,
                 name: drink.Name,
                 price: drink.Price,
+                sodaUsed: drink.SodaUsed,  // Default value if SodaUsed is null
+                syrupsUsed: drink.SyrupsUsed,
+                addIns: drink.AddIns,
+                user_Created: drink.user_Created,    // Assuming the user is creating the drink
+                // size: drink.selectedSize,
+                // ice: drink.selectedIce,
             }));
+            console.log('parsed')
+            console.log(parsedDrinks);
             setData(parsedDrinks);
             } catch (error) {
                 console.error(error);
@@ -33,8 +43,38 @@ const SeasonalCarousel = () => {
         fetchData();
     }, []);
     
-    const createDrink = (item) => {
+    const createDrink = async (item) => {
         console.log('creating drinks...');
+        try {
+            // Get the list from AsyncStorage, or initialize as an empty array
+            cartList = await AsyncStorage.getItem("checkoutList");
+            const currentList = cartList && cartList !== 'null' ? JSON.parse(cartList) : [];
+            const cleanedList = currentList.filter(item => item !== null && item !== undefined);
+
+            // Log the item to ensure it has the correct structure
+            console.log(item);
+            
+            // Check that DrinkID exists on the item
+            const drinkID = item.drinkID;
+            if (!drinkID) {
+              console.log("Invalid item: DrinkID is missing");
+              return;
+            }
+            console.log(currentList);
+            // Add the drinkID to the checkout list
+            const updatedList = [...cleanedList, drinkID];
+          
+            // Save the updated list back to AsyncStorage
+            await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
+          
+            // Optionally, verify the save operation
+            const savedList = await AsyncStorage.getItem('checkoutList');
+            console.log("Updated Checkout List:", savedList);
+          
+        } catch (error) {
+            console.log("Error:", error);
+        }
+          
         navigation.navigate('Cart');
     }
 
