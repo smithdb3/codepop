@@ -1,26 +1,101 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, Button, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, Image, Button, TouchableOpacity, ScrollView } from 'react-native';
 import NavBar from '../components/NavBar';
 import RatingCarosel from '../components/RatingCarosel';
-import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import GeoMap from '../components/map';
 import { BASE_URL } from '../../ip_address';
-
-// todo
-// add geolocation tracking map
-  // use googles geolocation API: https://developers.google.com/maps/documentation/javascript/examples/map-geolocation#maps_map_geolocation-javascript
-// fix bug in carosel so that only one of each drink shows up
-// add im here button
-
-// test card number: 4242 4242 4242 4242
-  // enter a date in the future like 12/34
-  // for everything else, just add random numbers
+import * as Location from 'expo-location';
+import MapView, { Marker } from 'react-native-maps';
 
 const PostCheckout = () => {
   const [lockerCombo, setLockerCombo] = useState('');
   const [timeLeft, setTimeLeft] = useState(60);
   const [purchasedDrinks, setPurchasedDrinks] = useState([]);
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [isNearby, setIsNearby] = useState(false);
+
+  const storeLocation = { //the store location is the Logan Cemetery because integrating this geolocator has been the death of me
+      latitude: 41.748978207108976,
+      longitude: -111.8076790945287
+//        latitude: 37.422, //the emulator will likely user coordinates to google headquarters which is these coordinates. uncomment to test <500 yard option
+//        longitude: -122.0839
+  };
+
+  useEffect(() => {
+      (async () => {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setErrorMsg('Permission to access location was denied.\n Please click the button when you have arrived so we can have your drink prepared.');
+          return;
+        }
+
+          try {
+                // Fetch the user's current location
+                let currentLocation = await Location.getCurrentPositionAsync({});
+                console.log(JSON.stringify(currentLocation));
+                setLocation(currentLocation);
+              } catch (error) {
+                console.error("Error fetching location:", error);
+              }
+
+        return () => clearInterval(locationInterval);
+      })();
+    }, []);
+
+
+    // Function to calculate the distance between two coordinates using the Haversine formula
+    const calculateDistance = (lat1, lon1, lat2, lon2) => {
+      const R = 6371e3; // Earth's radius in meters
+      const toRadians = (deg) => (deg * Math.PI) / 180;
+
+      const φ1 = toRadians(lat1);
+      const φ2 = toRadians(lat2);
+      const Δφ = toRadians(lat2 - lat1);
+      const Δλ = toRadians(lon2 - lon1);
+
+      const a =
+        Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+      return R * c; // Distance in meters
+    };
+
+
+    // Function to check if user is within 500 yards (457.2 meters)
+      const checkDistance = (userCoords) => {
+        const userLatitude = userCoords.latitude;
+        const userLongitude = userCoords.longitude;
+
+        // Calculate the distance between the user's coordinates and the store's coordinates
+        const distance = calculateDistance(
+          userLatitude,
+          userLongitude,
+          storeLocation.latitude,
+          storeLocation.longitude
+        );
+
+        console.log("Distance to store:", distance, "meters");
+
+        // 500 yards is approximately 457.2 meters
+        if (distance <= 457.2) {
+          setIsNearby(true);
+        } else {
+          setIsNearby(false);
+        }
+      };
+
+      // Trigger checkDistance whenever the location changes
+      useEffect(() => {
+        if (location) {
+          const { coords } = location;
+          checkDistance(coords);
+        }
+      }, [location]);
+
+
 
   // get the list of drinks from the cartlist
   useEffect(() => {
@@ -51,7 +126,7 @@ const PostCheckout = () => {
 
   useEffect(() => {
     // Start countdown timer
-    if (timeLeft > 0) {
+    if (timeLeft > 0 && isNearby) {
       const timerId = setInterval(() => {
         setTimeLeft((prevTime) => prevTime - 1);
       }, 1000);
@@ -61,7 +136,8 @@ const PostCheckout = () => {
     }else{
       completeOrder();
     }
-  }, [timeLeft]);
+  }, [isNearby, timeLeft]);
+  
 
   const completeOrder = async () => {
     const orderNum = await AsyncStorage.getItem("orderNum");
@@ -105,18 +181,67 @@ const PostCheckout = () => {
   const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
   const seconds = String(timeLeft % 60).padStart(2, '0');
 
+  // Function for the "I've Arrived" button
+  const handleUserArrived = () => {
+    setIsNearby(true);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.padding}>
+      <ScrollView contentContainerStyle={styles.scrollViewContainer}>
+
+        {/*Distance from store*/}
+        <View style={[styles.section, styles.nearbySection]}>
+            <View style={styles.section, styles.nearbyText}>
+                {isNearby ? (
+                        <Text style={styles.text}>Your drink is being made!</Text>
+                      ) : (
+                        <Text style={styles.text}>Once you are within 500 yards from the store Bob will start making your drink.</Text>
+                )}
+            </View>
+        </View>
+
         {/* Map Image Box */}
         <View style={[styles.section, styles.mapSection]}>
-          {/* <GeoMap/> */}
-          <Image 
-            source={require('../../assets/map.png')}
-            style={styles.image}
-            resizeMode="contain"
-          />
-        </View>
+                {location ? (
+                  <MapView
+                    style={styles.map}
+                    region={{
+                      latitude: location.coords.latitude,
+                      longitude: location.coords.longitude,
+                      latitudeDelta: 0.0922,
+                      longitudeDelta: 0.0421,
+                    }}
+                  >
+                    <Marker
+                      coordinate={{
+                        latitude: location.coords.latitude,
+                        longitude: location.coords.longitude,
+                      }}
+                      title="You are here"
+                      description="Current location"
+                    />
+                  </MapView>
+                ) : (
+                  <View style={styles.arrivalButtonContainer}>
+                    {errorMsg ? (
+                      <>
+                        <Text style={styles.errorMessage}>
+                          {errorMsg || "Location permission not granted."}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.button}
+                          onPress={handleUserArrived}
+                        >
+                          <Text style={styles.buttonText}>I've Arrived</Text>
+                        </TouchableOpacity>
+                      </>
+                    ) : (
+                      <Text>Loading...</Text>
+                    )}
+                  </View>
+                )}
+              </View>
 
         {/* Rating Box */}
         <View style={[styles.section, styles.ratingSection]}>
@@ -139,7 +264,7 @@ const PostCheckout = () => {
           </View>
         </View>
 
-      </View>
+      </ScrollView>
       <NavBar />
     </View>
   );
@@ -147,15 +272,15 @@ const PostCheckout = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, 
+    flex: 1,
     backgroundColor: '#8DF1D3', 
   },
-  padding: {
+  scrollViewContainer: {
+    flexGrow: 1,
     padding: 10,
   },
   section: {
     width: '100%',
-    // padding: 5,
     marginBottom: 15,
     borderRadius: 8,
     alignItems: 'center',
@@ -175,7 +300,12 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   mapSection: {
-    backgroundColor: '#D30C7B', 
+    backgroundColor: '#D30C7B',
+    width: '100%',
+    height: 250,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
   },
   ratingSection: {
     backgroundColor: '#FFA686', 
@@ -234,6 +364,30 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
+  },
+  map: {
+    width: '90%',
+    height: 200,
+    borderRadius: 8,
+  },
+  nearbySection: {
+    backgroundColor: '#F92758',
+    justifyContent: 'center',
+    height: 40
+  },
+  nearbyText: {
+    fontWeight: '900',
+  },
+  arrivalButtonContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+  },
+  errorMessage: {
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
   }
 });
 
