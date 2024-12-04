@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import * as Font from 'expo-font';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BASE_URL } from '../../ip_address';
@@ -32,6 +33,16 @@ const GeneralHomePage = () => {
       checkLoginStatus();
     }, [])  // The empty array ensures this only runs when the screen is focused
   );
+
+  useEffect(() => {
+    const loadFonts = async () => {
+        await Font.loadAsync({
+            'CherryBombOne': require('./../../assets/fonts/CherryBombOne-Regular.ttf'), // Adjust path as necessary
+        });
+    };
+
+    loadFonts();
+  }, []);
 
   useEffect(() => {
     // Retrieve the username from AsyncStorage when the component mounts
@@ -169,6 +180,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
+    // fontFamily: 'CherryBombOne',
   }
 });
 

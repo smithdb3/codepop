@@ -63,10 +63,16 @@ const CartPage = () => {
 
   const calculatePrice = (drink) => {
     // $2 base price + $0.30 per ingredient
-    const syrupsCount = Array.isArray(drink.SyrupsUsed) ? drink.SyrupsUsed.length : 0;
-    const addInsCount = Array.isArray(drink.AddIns) ? drink.AddIns.length : 0;
+    if (drink.Price == 2) {
+      const syrupsCount = Array.isArray(drink.SyrupsUsed) ? drink.SyrupsUsed.length : 0;
+      const addInsCount = Array.isArray(drink.AddIns) ? drink.AddIns.length : 0;
+      return 2 + (syrupsCount + addInsCount) * 0.3;
+      // return 2 + (drink.SyrupsUsed.length + drink.AddIns.length) * 0.3;
+    } else {
+      // Carousel drink prices
+      return drink.Price;
+    }
 
-    return 2 + (syrupsCount + addInsCount) * 0.3;
   };
 
 
@@ -85,13 +91,24 @@ const CartPage = () => {
       const currentList = cartList ? JSON.parse(cartList) : [];
       const token = await AsyncStorage.getItem('userToken');
   
-      // Delete the drink from the backend database
-      await fetch(`${BASE_URL}/backend/drinks/${drinkId}/`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // Don't delete seasonal carousel items (items prepopulated in the database after running clean script)
+      if (drinkId > 6) {
+        // Delete the drink from the backend database
+        await fetch(`${BASE_URL}/backend/drinks/${drinkId}/`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${token}`,
+          },
+        });
+        // // Delete the drink from the backend database
+        // await fetch(`${BASE_URL}/backend/drinks/${drinkId}/`, {
+        //   method: 'DELETE',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //   },
+        // });
+      }
   
       // Update the local state to remove the drink from the cart page
       const updatedDrinks = drinks.filter(data => data.DrinkID !== drinkId);
