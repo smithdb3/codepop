@@ -463,6 +463,74 @@ class InventoryTests(TestCase):
         # Verify the quantity is updated correctly
         coke.refresh_from_db()  # Refresh the object from the database
         self.assertEqual(coke.Quantity, initial_quantity - 2)  # Check if 2 is subtracted
+    def authenticate(self, token):
+        """Helper method to set up token authentication"""
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token)
+
+    def test_reset_inventory_success(self):
+        """Test resetting inventory quantity to threshold level."""
+        self.authenticate(self.token1.key)
+
+        # Get the inventory item (Coke)
+        coke = Inventory.objects.get(ItemName="Coke")
+
+        # Send a PATCH request to reset the quantity
+        data = {'reset': True}
+        response = self.client.patch(f'/backend/inventory/{coke.pk}/', data, format='json')
+
+        # Assert the status code is 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify that the quantity is reset to the threshold level
+        coke.refresh_from_db()  # Refresh the object from the database
+        self.assertEqual(coke.Quantity, coke.ThresholdLevel)  # Check if the quantity matches the threshold level
+
+    def test_reset_inventory_no_threshold(self):
+        """Test resetting inventory with no threshold set (should still reset to threshold level)."""
+        self.authenticate(self.token1.key)
+
+        # Get the inventory item (Cup)
+        cup = Inventory.objects.get(ItemName="Cup")
+
+        # Send a PATCH request to reset the quantity
+        data = {'reset': True}
+        response = self.client.patch(f'/backend/inventory/{cup.pk}/', data, format='json')
+
+        # Assert the status code is 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify that the quantity is reset to the threshold level
+        cup.refresh_from_db()  # Refresh the object from the database
+        self.assertEqual(cup.Quantity, cup.ThresholdLevel)  # Check if the quantity matches the threshold level
+
+    def test_reset_inventory_invalid_data(self):
+        """Test invalid reset request without 'reset' flag or wrong data."""
+        self.authenticate(self.token1.key)
+
+        # Get the inventory item (Coke)
+        coke = Inventory.objects.get(ItemName="Coke")
+
+        # Send a PATCH request without the 'reset' flag (invalid)
+        data = {'used_quantity': 5}
+        response = self.client.patch(f'/backend/inventory/{coke.pk}/', data, format='json')
+
+        # Assert the status code is 200 OK, and inventory should not be reset
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify that the quantity is not reset but reduced by 5
+        coke.refresh_from_db()  # Refresh the object from the database
+        self.assertEqual(coke.Quantity, 5)  # Verify that the used quantity is subtracted (5 remaining)
+
+    def test_reset_inventory_non_existent_item(self):
+        """Test resetting a non-existent inventory item."""
+        self.authenticate(self.token1.key)
+
+        # Send a PATCH request to reset a non-existent inventory item
+        data = {'reset': True}
+        response = self.client.patch('/backend/inventory/999/', data, format='json')
+
+        # Assert that the response status code is 404 Not Found
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 class NotificationTests(APITestCase):
     def setUp(self):

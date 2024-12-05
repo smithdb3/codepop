@@ -196,9 +196,20 @@ class InventoryUpdateAPIView(RetrieveUpdateAPIView):
 
     def patch(self, request, *args, **kwargs):
         item = self.get_object()  # Retrieve the specific item based on ID
-        used_quantity = request.data.get('used_quantity')
+        
+        reset_quantity = request.data.get('reset')  # Check if the request is for a reset
+        used_quantity = request.data.get('used_quantity')  # Used quantity for orders
 
-        # Validate the used quantity
+        # Handle inventory reset
+        if reset_quantity:
+            # Reset the quantity to the threshold level (or a specific value)
+            item.Quantity = item.ThresholdLevel  # Or you could use a custom value
+            item.save()
+
+            # Return the updated item details in the response
+            return Response(self.get_serializer(item).data, status=status.HTTP_200_OK)
+
+        # Handle normal used quantity update (for orders)
         if used_quantity is None or int(used_quantity) <= 0:
             return Response(
                 {"detail": "Invalid used quantity."}, 
@@ -234,6 +245,7 @@ class InventoryUpdateAPIView(RetrieveUpdateAPIView):
             response_data['warning'] = warning
 
         return Response(response_data, status=status.HTTP_200_OK)
+
 
 class NotificationOperations(viewsets.ModelViewSet):
     queryset = Notification.objects.all()
