@@ -9,9 +9,6 @@ import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AIAlert from '../components/AIAlert';
 
-// to do:
-// generate drink from AI
-
 
 const CreateDrinkPage = () => {
   const route = useRoute();
@@ -305,6 +302,7 @@ const CreateDrinkPage = () => {
           onSelect={handleSodaSelection} 
           isOpen={openDropdown.sodas}
           setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
+          selectedValues={SodaUsed}
         />
         <DropDown 
           title="Syrups" 
@@ -312,6 +310,7 @@ const CreateDrinkPage = () => {
           onSelect={handleSyrupSelection} 
           isOpen={openDropdown.syrups}
           setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
+          selectedValues={SyrupsUsed}
         />
         <DropDown 
           title="AddIns" 
@@ -319,6 +318,7 @@ const CreateDrinkPage = () => {
           onSelect={handleAddInSelection} 
           isOpen={openDropdown.addins}
           setOpen={() => setOpenDropdown(prev => ({ ...prev, addins: !prev.addins }))}
+          selectedValues={AddIns}
         />
       </View>
       </ScrollView>
