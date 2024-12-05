@@ -9,6 +9,8 @@ import SeasonalCarousel from '../components/SeasonalCarousel';
 
 const GeneralHomePage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isManager, setIsManager] = useState(false);
   const [name, setName] = useState(null);
   const navigation = useNavigation();
 
@@ -19,11 +21,20 @@ const GeneralHomePage = () => {
         try {
           const storedName = await AsyncStorage.getItem('first_name');
           const token = await AsyncStorage.getItem('userToken');
+          const userRole = await AsyncStorage.getItem('userRole');
           if (token && storedName) {
             setIsLoggedIn(true);  // User is logged in
             setName(storedName);  // Set username for display
           } else {
             setIsLoggedIn(false);  // No user is logged in
+          }
+          if (userRole == 'admin'){
+            setIsAdmin(true);
+          }else if(userRole == 'manager'){
+            setIsManager(true);
+          }else{
+            setIsAdmin(false);
+            setIsManager(false);
           }
         } catch (error) {
           console.error('Error checking login status:', error);
@@ -98,6 +109,14 @@ const GeneralHomePage = () => {
     navigation.navigate('Auth');  // Navigate to the login page
   };
 
+  const goToAdminDash = () => {
+    navigation.navigate('AdminDash');  // Navigate to the login page
+  };
+
+  const goToManDash = () => {
+    navigation.navigate('ManagerDash');  // Navigate to the login page
+  };
+
   // Generate drinks button press
   const generateDrinks = () => {
     console.log('generating drinks...');
@@ -122,6 +141,22 @@ const GeneralHomePage = () => {
             <TouchableOpacity onPress={handleLogout} style={styles.mediumButton}>
               <Text style={styles.buttonText}>Logout</Text>
             </TouchableOpacity>
+            {/*If the user is an admin display a button for navigation to the admin dash*/}
+            {isAdmin ? (
+              <>
+              <TouchableOpacity onPress={goToAdminDash} style={styles.mediumButton}>
+                <Text style={styles.buttonText}>Admin Dash</Text>
+              </TouchableOpacity>
+              </>
+            ): (<></>)}
+            {/*If the user is an admin display a button for navigation to the admin dash*/}
+            {isManager ? (
+              <>
+              <TouchableOpacity onPress={goToManDash} style={styles.mediumButton}>
+                <Text style={styles.buttonText}>Manager Dash</Text>
+              </TouchableOpacity>
+              </>
+            ): (<></>)}  
           </View>
         </>
       ) : (

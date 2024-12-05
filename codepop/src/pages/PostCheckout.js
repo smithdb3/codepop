@@ -16,10 +16,10 @@ const PostCheckout = () => {
   const [isNearby, setIsNearby] = useState(false);
 
   const storeLocation = { //this is my apartment in case you were wondering lol
-      latitude: 41.7376316,
-      longitude: -111.8216457
-//        latitude: 37.422, //the emulator will likely user coordinates to google headquarters which is these coordinates. uncomment to test <500 yard option
-//        longitude: -122.0839
+      // latitude: 41.7376316,
+      // longitude: -111.8216457
+       latitude: 37.422, //the emulator will likely user coordinates to google headquarters which is these coordinates. uncomment to test <500 yard option
+       longitude: -122.0839
   };
 
   useEffect(() => {
@@ -237,7 +237,7 @@ const PostCheckout = () => {
 
         {/*Distance from store*/}
         <View style={[styles.section, styles.nearbySection]}>
-            <View style={styles.section, styles.nearbyText}>
+            <View style={styles.nearbyText}>
                 {isNearby ? (
                         <Text style={styles.text}>Your drink is being made!</Text>
                       ) : (
@@ -354,6 +354,7 @@ const styles = StyleSheet.create({
   },
   ratingSection: {
     backgroundColor: '#FFA686', 
+    paddingBottom: 20,
   },
   heading: {
     fontSize: 20,

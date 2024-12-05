@@ -136,7 +136,7 @@ const RatingCarosel = ({ purchasedDrinks }) => {
     return (
         <View style={{ height: 250 }}>
           <Carousel
-            width={400}
+            width={windowWidth}
             sliderWidth={windowWidth}
             itemWidth={windowWidth * 0.8}
             height={400}

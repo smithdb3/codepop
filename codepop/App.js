@@ -3,7 +3,7 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Font from 'expo-font';
 import React, { useEffect } from 'react';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, StyleSheet, Text, Alert} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AdminDash from './src/pages/AdminDash';
 import AuthPage from './src/pages/AuthPage';
@@ -19,6 +19,7 @@ import PaymentPage from './src/pages/PaymentPage';
 import PostCheckout from './src/pages/PostCheckout';
 import PreferencesPage from './src/pages/PreferencesPage';
 import UpdateDrink from './src/pages/UpdateDrink';
+import { BASE_URL } from './ip_address';
 
 const Stack = createNativeStackNavigator();
 const title = 'CodePop' 
@@ -130,12 +131,12 @@ const App = () => {
         <Stack.Screen
           name="ManagerDash"
           component={ManagerDash}
-          options={{ title: 'ManagerDash' }}
+          options={{ title: 'ManagerDash', headerRight: () => (<LogoutButton />) }}
         />
         <Stack.Screen
           name="AdminDash"
           component={AdminDash}
-          options={{ title: 'AdminDash' }}
+          options={{ title: 'AdminDash', headerRight: () => (<LogoutButton />) }}
         />
         <Stack.Screen
           name="Complete"
@@ -164,7 +165,77 @@ const ProfileButton = () => {
     <TouchableOpacity onPress={() => navigation.navigate('Preferences')}>
       <Icon name="person-circle-outline" size={30} color="#000" />
     </TouchableOpacity>
+    
   );
+};
+
+const LogoutButton = () => {
+  const navigation = useNavigation();
+  const styles = StyleSheet.create({
+    mediumButton: {
+      margin: 10,
+      padding: 15,
+      backgroundColor: '#D30C7B',
+      borderRadius: 10,
+      alignItems: 'center',
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOffset: { width: 2, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 3,
+    },
+    buttonText: {
+      fontSize: 16,
+      color: 'white',
+    },
+  });
+
+  return(
+    <TouchableOpacity onPress={() => (handleLogout(navigation))} style={styles.mediumButton}>
+      <Text style={styles.buttonText}>Logout</Text>
+    </TouchableOpacity>
+  );
+}
+
+// Logout function
+const handleLogout = async (navigation) => {
+  try {
+    // Send logout request to the backend
+    const token = await AsyncStorage.getItem('userToken');
+    const response = await fetch(`${BASE_URL}/backend/auth/logout/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.status === 200) {
+      // Clear AsyncStorage
+      await AsyncStorage.removeItem('userToken');
+      await AsyncStorage.removeItem('userId');
+      await AsyncStorage.removeItem('first_name');
+      await AsyncStorage.removeItem('userRole');
+      
+      // Show the alert and navigate after dismiss
+      Alert.alert(
+        'Logout successful!',
+        '',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.navigate('GeneralHome'),
+          },
+        ],
+        { cancelable: false }
+      );
+    } else {
+      Alert.alert('Logout failed, please try again.');
+    }
+  } catch (error) {
+    console.error('Error during logout:', error);
+    Alert.alert('Logout failed, please try again later.');
+  }
 };
 
 export default App;
