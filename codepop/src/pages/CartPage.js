@@ -136,10 +136,11 @@ const CartPage = () => {
     <View style={styles.drinkContainer}>
       <Text style={styles.drinkText}>{drink.Size} Drink: {drink.SodaUsed.join(', ')} with {drink.Ice} Ice</Text>
       <Text style={styles.ingredientsText}>
-        Ingredients: {drink.SyrupsUsed ? drink.SyrupsUsed.join(', ') : ''} {drink.AddIns ? drink.AddIns.join(', ') : ''}
+        Syrups: {drink.SyrupsUsed ? drink.SyrupsUsed.join(', ') : ''}{'\n\n'}
+        Add Ins: {drink.AddIns ? drink.AddIns.join(', ') : ''}
       </Text>
       <Text style={styles.priceText}>Price: ${calculatePrice(drink).toFixed(2)}</Text>
-  
+
       <View style={styles.buttonRow}>
         <TouchableOpacity onPress={() => navigation.navigate('UpdateDrink', { drink })} style={styles.button}>
           <Icon name="create-outline" size={24} color="#000" />
