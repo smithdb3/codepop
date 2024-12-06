@@ -35,9 +35,18 @@ const CreateDrinkPage = () => {
         console.log("Generating drinks activated from home page button");
         GenerateAI();
       }
-    }, [route.params?.fromGenerateButton])
+      resetDrinkForm();
+    }, [route.params?.fromGenerateButton, route.params?.fromCartPage])
   );
 
+  const resetDrinkForm = () => {
+    setSoda([]);  // Clear selected sodas
+    setSyrups([]);  // Clear selected syrups
+    setAddIns([]);  // Clear selected add-ins
+    setIce(null);  // Clear selected ice amount
+    setSize(null);  // Clear selected size
+  };
+  
   const addToCart = async () => {
     try {
       // check if ice and size have been selected

@@ -12,7 +12,7 @@ const PreferencesPage = () => {
     const [openDropdown, setOpenDropdown] = useState({
       sodas: false,
       syrups: false,
-      juices: false,
+      addIns: false,
     });
     const [SodaUsed, setSoda] = useState([]);
     const [SyrupsUsed, setSyrups] = useState([]);
@@ -137,28 +137,28 @@ const PreferencesPage = () => {
         case 'Syrup':
           setSyrups((prevSyrups) => {
             let syrup = item;
-            if (prevSyrups.includes(syrup)) {
+            if (prevSyrups.includes(syrup.toLowerCase())) {
               // If syrup is already selected, remove it
               removePreferences(syrup);
-              return prevSyrups.filter((item) => item !== syrup);
+              return prevSyrups.filter((item) => item !== syrup.toLowerCase());
             } else {
               // Otherwise, add the syrup to the list and save it
               savePreferences(syrup);
-              return [...prevSyrups, syrup];
+              return [...prevSyrups, syrup.toLowerCase()];
             }
           });
           break;
-        case 'AddIn':
+        case 'Add In':
           let addIn = item;
           setAddIns((prevAddIns) => {
-            if (prevAddIns.includes(addIn)) {
+            if (prevAddIns.includes(addIn.toLowerCase())) {
               // If add-in is already selected, remove it
               removePreferences(addIn);
-              return prevAddIns.filter((item) => item !== addIn);
+              return prevAddIns.filter((item) => item !== addIn.toLowerCase());
             } else {
               // Otherwise, add the add-in to the list and save it
               savePreferences(addIn);
-              return [...prevAddIns, addIn];
+              return [...prevAddIns, addIn.toLowerCase()];
             }
           });
           break;
@@ -284,9 +284,9 @@ const PreferencesPage = () => {
                 <DropDown 
                   title='Add ins' 
                   options={filterInventory("Add In")} 
-                  onSelect={(addIn) => handleSelection(addIn, 'Add In')} 
-                  isOpen={openDropdown.juices}
-                  setOpen={() => setOpenDropdown(prev => ({ ...prev, juices: !prev.juices }))}
+                  onSelect={(addIns) => handleSelection(addIns, 'Add In')} 
+                  isOpen={openDropdown.addIns}
+                  setOpen={() => setOpenDropdown(prev => ({ ...prev, addIns: !prev.addIns }))}
                   selectedValues={AddIns} // Pass selected values for prepopulation
                 />
               </View>
