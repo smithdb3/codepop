@@ -56,7 +56,7 @@ class PreferenceSerializer(serializers.ModelSerializer):
             "sour", "blue curacao", "bubble gum", "cotton candy", "mojito", "cucumber", "lavender",
             "pumpkin spice", "peppermint", "irish cream", "gingerbread", "butterbrew mix", "cream", 
             "coconut cream", "whip", "lemon wedge", "lime wedge", "french vanilla creamer", "candy",
-            "sprinkles", "strawberry puree", "peach puree", "mango puree", "raspberry puree"
+            "sprinkles", "strawberry puree", "peach puree", "mango puree", "raspberry puree", "candy sprinkles", "chocolate"
         ]
 
         # Check if the value is in the allowed preferences
