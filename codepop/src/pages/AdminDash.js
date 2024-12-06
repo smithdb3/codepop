@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Modal, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -230,7 +230,7 @@ const AdminDash = () => {
             <Modal transparent={true} visible={editorIsOpen} onRequestClose={closeEditor}>
               <View style={styles.modalBackground}>
                 <View style={styles.editor}>
-                  <TouchableOpacity onPress={closeEditor} style={styles.xButton}><Text style={styles.x}>x</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={closeEditor} style={styles.xButton}><Text style={styles.x}>X</Text></TouchableOpacity>
                   <Text style={styles.editorHeader}>Edit user "{userToEdit?.username}"</Text>
                   <Text style={styles.editorText}>Username:</Text><TextInput onChangeText={(text) => setUserInfo(prev => ({ ...prev, username: text }))} value={userInfo.username} style={styles.textBox}/>
                   <Text style={styles.editorText}>First Name:</Text><TextInput onChangeText={(text) => setUserInfo(prev => ({ ...prev, firstName: text }))} value={userInfo.firstName} style={styles.textBox}/>
@@ -243,6 +243,9 @@ const AdminDash = () => {
                     items={roleOptions}
                     onValueChange={(value) => setUserInfo(prev => ({ ...prev, role: value }))}
                     value={userInfo.role}
+                    pickerProps={{
+                      style: { backgroundColor: '#C6C8EE' }
+                    }}
                   />
                   <TouchableOpacity onPress={() => editUser(userToEdit)} style={styles.button}><Text style={styles.buttonText}>Save</Text></TouchableOpacity>
                 </View>
@@ -255,6 +258,11 @@ const AdminDash = () => {
 
   return (
     <View style={styles.mainContainer}>
+      <Image 
+            source={require('../../assets/PinkBubbles.png')}
+            style={styles.image}
+            resizeMode="cover"
+        />
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Admin Dashboard</Text>
       </View>
@@ -268,6 +276,11 @@ const AdminDash = () => {
 };
 
 const styles = StyleSheet.create({
+  image: {
+    width: '150%',
+    height: '200%',
+    ...StyleSheet.absoluteFillObject,
+  },
   mainContainer: {
     flex: 1,
     padding: 20,
@@ -296,6 +309,8 @@ const styles = StyleSheet.create({
     flex: 0,
     flexDirection: "row",
     justifyContent: 'space-between',
+    backgroundColor: '#8DF1D3',
+    zIndex: 2, // Ensure it's above the image
   },
   mainText: {
     fontSize: 24,
@@ -360,7 +375,7 @@ const styles = StyleSheet.create({
     flex: 0,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: '#f4f4f4',
+    backgroundColor: '#FFA686',
     height: 600,
     width: 360,
     zIndex: 3,
@@ -378,7 +393,7 @@ const styles = StyleSheet.create({
     top: 10,
     right: 10,
     borderRadius: 100,
-    backgroundColor: "#FF0000",
+    backgroundColor: "#D30C7B",
     width: 45,
     height: 45,
   },
@@ -394,25 +409,28 @@ const styles = StyleSheet.create({
   },
   textBox: {
     borderWidth: 2,
-    borderColor: '#ccc',
+    borderColor: '#D30C7B',
+    borderRadius: 10,
+    padding: 5,
     width: '100%',
     height: 35,
     fontSize: 20,
     marginBottom: 20,
+    backgroundColor: '#C6C8EE',
   },
   dropdown: {
     inputIOS: {
       height: 50,
       paddingLeft: 10,
       color: '#000',
-      backgroundColor: '#C7C7C7',
+      backgroundColor: '#C6C8EE',
       marginBottom: 15,
     },
     inputAndroid: {
       height: 50,
       paddingLeft: 10,
       color: '#000',
-      backgroundColor: '#C7C7C7',
+      backgroundColor: '#C6C8EE',
       marginBottom: 15,
     },
     iconContainer: {

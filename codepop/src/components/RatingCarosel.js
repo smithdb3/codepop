@@ -59,8 +59,6 @@ const RatingCarosel = ({ purchasedDrinks }) => {
     // Function to update the rating for a specific drink
     const handleRatingSelected = async (newRating, drink) => {
         try {
-            console.log("DrinkID:", drink);
-
             const token = await AsyncStorage.getItem('userToken');
             const response = await fetch(`${BASE_URL}/backend/drinks/${drink.DrinkID}/`, {
                 method: 'PUT',
@@ -69,11 +67,21 @@ const RatingCarosel = ({ purchasedDrinks }) => {
                 // 'Authorization': `Token ${token}`,
                 },
                 body: JSON.stringify({ 
-                    Rating: newRating 
+                    drinkID: drink.DrinkID,
+                    Name: drink.Name,
+                    Price: drink.Price,
+                    SodaUsed: drink.SodaUsed,  // Default value if SodaUsed is null
+                    syrupsUsed: drink.SyrupsUsed,
+                    addIns: drink.AddIns,
+                    User_Created: drink.User_Created,
+                    Rating: newRating, 
+                    size: drink.size,
+                    ice: drink.ice,
                 }),
             });
-
             if (!response.ok) {
+                const errorData = await response.json();  // Read the response body as JSON
+                console.error('Error response:', errorData);
                 throw new Error(`Failed to update rating. Status: ${response.status}`);
             }
         } catch (error) {
