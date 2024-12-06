@@ -227,11 +227,12 @@ This command will discover and run all tests defined in your project. It will pr
 These are the values that will appear in the database when you run the clean_database.sh file
 
 ### Users
-| Username | Password | Email               | First Name | Last Name | Role |
-|----------|----------|---------------------|------------|-----------|----- |
-| super    | password | supertest@test.com  | Lemonjello | Smith     |Super |
-| test     | password | test@test.com       | Orangejello| Smith     |User  |
-| test2    | password | test@testing.com    | Bob        | Bobsford  |User  |
+| Username | Password | Email               | First Name | Last Name | Role  |
+|----------|----------|---------------------|------------|-----------|-----  |
+| super    | password | supertest@test.com  | Lemonjello | Smith     |Super  |
+| staff    | password | stafftest@test.com  |            |           |manager|
+| test     | password | test@test.com       | Orangejello| Smith     |User   |
+| test2    | password | test@testing.com    | Bob        | Bobsford  |User   |
 
 
 ### Drinks
