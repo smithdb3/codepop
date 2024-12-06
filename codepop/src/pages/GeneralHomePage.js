@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Font from 'expo-font';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
 import { BASE_URL } from '../../ip_address';
 import NavBar from '../components/NavBar';
 import SeasonalCarousel from '../components/SeasonalCarousel';
@@ -124,64 +124,78 @@ const GeneralHomePage = () => {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* If logged in, display the username and Logout button, otherwise display Login button */}
-      {isLoggedIn ? (
-        <>
-          {/* Conditionally render the "Hello <username>" if username exists */}
-          {name ? <Text style={styles.greeting}>Hello {name}!</Text> : null}
+    <View style={styles.container}>
+      <Image 
+                source={require('../../assets/PinkBubbles.png')}
+                style={styles.image}
+                resizeMode="cover"
+            />
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        {/* If logged in, display the username and Logout button, otherwise display Login button */}
+        {isLoggedIn ? (
+          <>
+            {/* Conditionally render the "Hello <username>" if username exists */}
+            {name ? <Text style={styles.greeting}>Hello {name}!</Text> : null}
 
-          {/* The main title */}
-          <Text style={styles.title}>Welcome to the CodePop App!</Text>
-          <SeasonalCarousel style={styles.carousel}/>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={generateDrinks} style={styles.mediumButton}>
+            {/* The main title */}
+            <Text style={styles.title}>Welcome to the CodePop App!</Text>
+            <SeasonalCarousel style={styles.carousel}/>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity onPress={generateDrinks} style={styles.mediumButton}>
+                <Text style={styles.buttonText}>Generate Drinks</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleLogout} style={styles.mediumButton}>
+                <Text style={styles.buttonText}>Logout</Text>
+              </TouchableOpacity>
+              {/*If the user is an admin display a button for navigation to the admin dash*/}
+              {isAdmin ? (
+                <>
+                <TouchableOpacity onPress={goToAdminDash} style={styles.mediumButton}>
+                  <Text style={styles.buttonText}>Admin Dash</Text>
+                </TouchableOpacity>
+                </>
+              ): (<></>)}
+              {/*If the user is an admin display a button for navigation to the admin dash*/}
+              {isManager ? (
+                <>
+                <TouchableOpacity onPress={goToManDash} style={styles.mediumButton}>
+                  <Text style={styles.buttonText}>Manager Dash</Text>
+                </TouchableOpacity>
+                </>
+              ): (<></>)}  
+            </View>
+          </>
+        ) : (
+          <>
+            <SeasonalCarousel style={styles.carousel}/>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity onPress={generateDrinks} style={styles.mediumButton}>
               <Text style={styles.buttonText}>Generate Drinks</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleLogout} style={styles.mediumButton}>
-              <Text style={styles.buttonText}>Logout</Text>
-            </TouchableOpacity>
-            {/*If the user is an admin display a button for navigation to the admin dash*/}
-            {isAdmin ? (
-              <>
-              <TouchableOpacity onPress={goToAdminDash} style={styles.mediumButton}>
-                <Text style={styles.buttonText}>Admin Dash</Text>
               </TouchableOpacity>
-              </>
-            ): (<></>)}
-            {/*If the user is an admin display a button for navigation to the admin dash*/}
-            {isManager ? (
-              <>
-              <TouchableOpacity onPress={goToManDash} style={styles.mediumButton}>
-                <Text style={styles.buttonText}>Manager Dash</Text>
+              <TouchableOpacity onPress={goToLoginPage} style={styles.mediumButton}>
+                <Text style={styles.buttonText}>Login</Text>
               </TouchableOpacity>
-              </>
-            ): (<></>)}  
-          </View>
-        </>
-      ) : (
-        <>
-          <SeasonalCarousel style={styles.carousel}/>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={generateDrinks} style={styles.mediumButton}>
-            <Text style={styles.buttonText}>Generate Drinks</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={goToLoginPage} style={styles.mediumButton}>
-              <Text style={styles.buttonText}>Login</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
-      <NavBar />
-    </ScrollView>
+            </View>
+          </>
+        )}
+        <NavBar />
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  image: {
+    width: '100%',
+    height: '150%',
+    ...StyleSheet.absoluteFillObject,
+  },
   container: {
     flex: 1,
     padding: 0,
-    backgroundColor: '#c0ffe7',
+    backgroundColor: '#D30C7B',
+    zIndex: 2, // Ensure it's above the image
+
   },
   contentContainer: {
     flexGrow: 1,
@@ -191,7 +205,7 @@ const styles = StyleSheet.create({
   mediumButton: {
     margin: 10,
     padding: 15,
-    backgroundColor: '#D30C7B',
+    backgroundColor: '#8DF1D3',
     borderRadius: 10,
     alignItems: 'center',
     elevation: 3,
@@ -202,10 +216,10 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 16,
-    color: 'white',
+    color: '#000',
   },
   greeting: {
-    fontSize: 32,
+    fontSize: 40,
     fontWeight: 'bold',
     marginBottom: 10,
   },
@@ -214,8 +228,7 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   title: {
-    fontSize: 22,
-    // fontFamily: 'CherryBombOne',
+    fontSize: 25,
   }
 });
 
