@@ -137,7 +137,6 @@ const UpdateDrink = ({route, navigation}) => {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`,
           },
           body: JSON.stringify({
             Name: "Updated Drink",

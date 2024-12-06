@@ -120,6 +120,7 @@ from rest_framework.views import APIView
 class DrinkOperations(viewsets.ModelViewSet):
     queryset = Drink.objects.all()
     serializer_class = DrinkSerializer
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         """
@@ -128,15 +129,6 @@ class DrinkOperations(viewsets.ModelViewSet):
         if self.action in ['update', 'retrieve', 'destroy']:
             return Drink.objects.all()
         return Drink.objects.filter(User_Created=False)
-
-    def get_permissions(self):
-        """
-        Instantiates and returns the list of permissions that this view requires.
-        Only authenticated users can create, update, or delete a drink.
-        """
-        if self.action in ['create', 'update', 'destroy']:
-            return [AllowAny()]  # Allow any for testing purposes or change to IsAuthenticated()
-        return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
         # Custom logic for creating a drink (optional for customization)
