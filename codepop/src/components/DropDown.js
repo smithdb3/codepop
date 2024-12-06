@@ -7,28 +7,12 @@ const DropDown = ({ title, options = [], onSelect, isOpen, setOpen, selectedValu
   const [selectedItems, setSelectedItems] = useState({});
 
   const toggleItemSelection = (item) => {
-    setSelectedItems((prevSelectedItems) => ({
-      ...prevSelectedItems,
-      [item]: !prevSelectedItems[item],
-    }));
+    // setSelectedItems((prevSelectedItems) => ({
+    //   ...prevSelectedItems,
+    //   [item]: !prevSelectedItems[item],
+    // }));
     onSelect(item);
   };
-  // const toggleItemSelection = (item) => {
-  //   setSelectedItems((prevSelectedItems) => {
-  //     // If the item is already selected, remove it
-  //     if (prevSelectedItems[item]) {
-  //       const updatedSelectedItems = { ...prevSelectedItems };
-  //       delete updatedSelectedItems[item];  // Remove the item
-  //       return updatedSelectedItems;
-  //     } else {
-  //       // Otherwise, add it to the selected items
-  //       return { ...prevSelectedItems, [item]: true };
-  //     }
-  //   });
-  // };
-  // const toggleItemSelection = (itemValue) => {
-  //   onSelect(itemValue);  // Pass the value to parent to update selected values
-  // }
 
   return (
     <View style={styles.container}>
@@ -52,7 +36,7 @@ const DropDown = ({ title, options = [], onSelect, isOpen, setOpen, selectedValu
                 ]
                   : [
                   styles.circularButton,
-                  selectedItems[option.value] && styles.circularButtonSelected,
+                  // selectedItems[option.value] && styles.circularButtonSelected,
                 ]}
                 onPress={() => toggleItemSelection(option.value)}
               >

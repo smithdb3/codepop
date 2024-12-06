@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert 
 import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
 import { useNavigation } from '@react-navigation/native';
-import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
+import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
 import Gif from '../components/Gif';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,6 +24,7 @@ const UpdateDrink = ({route, navigation}) => {
   const [selectedIce, setIce] = useState(null);
 
   console.log(drink)
+  console.log(drink.SodaUsed)
 
   // State for dropdown open status
   const [openDropdown, setOpenDropdown] = useState({
@@ -50,25 +51,45 @@ const UpdateDrink = ({route, navigation}) => {
     setIce(ice);
   };
 
-  const handleSodaSelection = (selected) => {
-    const updatedSoda = SodaUsed.includes(selected)
-      ? SodaUsed.filter(soda => soda !== selected)
-      : [...SodaUsed, selected];
-    setSoda(updatedSoda);
+  // const handleSodaSelection = (selected) => {
+  //   // Toggle selection for soda
+  //   setSoda((prevSodas) => {
+  //     if (prevSodas.includes(selected)) {
+  //       return prevSodas.filter((soda) => soda !== selected);
+  //     } else {
+  //       return [...prevSodas, selected];
+  //     }
+  //   });
+  // };
+  const handleSodaSelection = (item) => {
+    setSoda((prevSodaUsed) => {
+      if (prevSodaUsed.includes(item)) {
+        return prevSodaUsed.filter(soda => soda !== item); // Deselect item
+      } else {
+        return [...prevSodaUsed, item]; // Select item
+      }
+    });
   };
-
   const handleSyrupSelection = (selected) => {
-    const updatedSyrups = SyrupsUsed.includes(selected)
-      ? SyrupsUsed.filter(syrup => syrup !== selected)
-      : [...SyrupsUsed, selected];
-    setSyrups(updatedSyrups);
+    // Toggle selection for syrup
+    setSyrups((prevSyrups) => {
+      if (prevSyrups.includes(selected)) {
+        return prevSyrups.filter((syrup) => syrup !== selected);
+      } else {
+        return [...prevSyrups, selected];
+      }
+    });
   };
 
   const handleAddInSelection = (selected) => {
-    const updatedAddIns = AddIns.includes(selected)
-      ? AddIns.filter(addIn => addIn !== selected)
-      : [...AddIns, selected];
-    setAddIns(updatedAddIns);
+    // Toggle selection for add-in
+    setAddIns((prevAddIns) => {
+      if (prevAddIns.includes(selected)) {
+        return prevAddIns.filter((addIn) => addIn !== selected);
+      } else {
+        return [...prevAddIns, selected];
+      }
+    });
   };
 
   const handleSearch = (text) => {
@@ -80,18 +101,26 @@ const UpdateDrink = ({route, navigation}) => {
     });
   };
 
+  // const filterOptions = (options, selectedItems = []) => {
+  //   return options
+  //     .filter(option => 
+  //       option.label.toLowerCase().includes(searchText.toLowerCase())
+  //     )
+  //     .map(option => ({
+  //       ...option,
+  //       selected: selectedItems
+  //         .map(item => item.toLowerCase())
+  //         .includes(option.label.toLowerCase()),
+  //     }));
+  // };
   const filterOptions = (options, selectedItems = []) => {
-    return options
-      .filter(option => 
-        option.label.toLowerCase().includes(searchText.toLowerCase())
-      )
-      .map(option => ({
-        ...option,
-        selected: selectedItems
-          .map(item => item.toLowerCase())
-          .includes(option.label.toLowerCase()),
-      }));
-  };
+    return options.map(option => ({
+      ...option,
+      selected: selectedItems
+        .map(item => item.toLowerCase().trim())
+        .includes(option.label.toLowerCase().trim()),
+    }));
+  };  
   
 
   const updateDrink = async () => {
@@ -155,7 +184,7 @@ const UpdateDrink = ({route, navigation}) => {
     });
   
     addins.forEach((addinName) => {
-      const addInOption = syrupOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
+      const addInOption = AddInOptions.find((opt) => opt.label === addinName); 
       if (addInOption) {
         layers.push({ color: addInOption.color, height: 100 / totalItems });
       } else {
@@ -226,12 +255,21 @@ const UpdateDrink = ({route, navigation}) => {
 
       {/* Dropdowns */}
       <View style={styles.navBarSpace}>
-      <DropDown 
+      {/* <DropDown 
         title="Sodas" 
         options={filterOptions(sodaOptions, SodaUsed)} 
         onSelect={handleSodaSelection} 
         isOpen={openDropdown.sodas}
         setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
+        selectedValues={SodaUsed} // Pass the updated state
+      /> */}
+      <DropDown
+        title="Sodas"
+        options={filterOptions(sodaOptions, SodaUsed)} 
+        onSelect={handleSodaSelection}
+        isOpen={openDropdown.sodas}
+        setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
+        selectedValues={SodaUsed}
       />
       <DropDown 
         title="Syrups" 
@@ -239,13 +277,15 @@ const UpdateDrink = ({route, navigation}) => {
         onSelect={handleSyrupSelection} 
         isOpen={openDropdown.syrups}
         setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
+        selectedValues={SyrupsUsed}
       />
       <DropDown 
-        title="Juices" 
-        options={filterOptions(juiceOptions, AddIns)} 
+        title="AddIns" 
+        options={filterOptions(AddInOptions, AddIns)} 
         onSelect={handleAddInSelection} 
         isOpen={openDropdown.juices}
         setOpen={() => setOpenDropdown(prev => ({ ...prev, juices: !prev.juices }))}
+        selectedValues={AddIns}
       />
 
       </View>
