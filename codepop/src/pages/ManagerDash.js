@@ -224,6 +224,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#D30C7B',
+    textAlign: 'center',
+    marginBottom: 20,
+    zIndex: 2, 
+    backgroundColor: '#8DF1D3',
+    borderRadius: 10,
+    padding: 10,
   },
   card: {
     backgroundColor: '#FFA686',

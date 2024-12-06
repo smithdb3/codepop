@@ -148,11 +148,11 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
               <Text style={styles.ingredientsText}>Add-ins: {addIns.join(", ")}</Text>
             </View>
             <View style={styles.buttonsContainer}>
-              <TouchableOpacity style={styles.buttons} onPress={edit}>
+              <TouchableOpacity style={styles.buttons} onPress={() => (edit(), toggleModal())}>
                 <Text style={styles.buttonText}>Edit</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.buttons} onPress={AddToCart}>
+              <TouchableOpacity style={styles.buttons} onPress={() => (AddToCart(), toggleModal())}>
                 <Text style={styles.buttonText}>Add to Cart</Text>
               </TouchableOpacity>
 
