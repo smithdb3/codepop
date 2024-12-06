@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput, ActivityIndicator, Image } from 'react-native';
 import { BASE_URL } from '../../ip_address';
 
 const ManagerDash = () => {
@@ -91,7 +91,13 @@ const ManagerDash = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
+      <Image 
+                source={require('../../assets/PinkBubbles.png')}
+                style={styles.image}
+                resizeMode="cover"
+            />
+      <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.title}>Manager Dashboard</Text>
 
       {/* Revenue Section */}
@@ -199,24 +205,35 @@ const ManagerDash = () => {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  image: {
+    width: '150%',
+    height: '200%',
+    ...StyleSheet.absoluteFillObject,
+  },
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#D30C7B',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
+    color: '#D30C7B',
     textAlign: 'center',
     marginBottom: 20,
+    zIndex: 2, 
+    backgroundColor: '#8DF1D3',
+    borderRadius: 10,
+    padding: 10,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFA686',
     padding: 20,
     borderRadius: 10,
     marginBottom: 15,
@@ -225,6 +242,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    zIndex: 2, // Ensure it's above the image
   },
   cardTitle: {
     fontSize: 18,
@@ -243,7 +261,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 14,
-    color: '#fff',
+    color: '#000',
   },
   modalBackground: {
     flex: 1,

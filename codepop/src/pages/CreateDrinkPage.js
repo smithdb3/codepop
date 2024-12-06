@@ -4,13 +4,10 @@ import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import Gif from '../components/Gif';
-import { sodaOptions, syrupOptions, juiceOptions } from '../components/Ingredients';
+import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AIAlert from '../components/AIAlert';
-
-// to do:
-// generate drink from AI
 
 
 const CreateDrinkPage = () => {
@@ -22,7 +19,7 @@ const CreateDrinkPage = () => {
   const [openDropdown, setOpenDropdown] = useState({
     sodas: false,
     syrups: false,
-    juices: false,
+    addins: false,
   });
 
   // variables to add to drink object
@@ -152,7 +149,7 @@ const CreateDrinkPage = () => {
     setOpenDropdown({
       sodas: !!text,
       syrups: !!text,
-      juices: !!text,
+      addins: !!text,
     });
   };
   
@@ -210,7 +207,7 @@ const CreateDrinkPage = () => {
     });
   
     addins.forEach((addinName) => {
-      const addInOption = syrupOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
+      const addInOption = AddInOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
       if (addInOption) {
         layers.push({ color: addInOption.color, height: 100 / totalItems });
       } else {
@@ -244,6 +241,7 @@ const CreateDrinkPage = () => {
             </TouchableOpacity>
           ))}
         </View>
+
 
         
         <View style={styles.graphicContainer}>
@@ -304,6 +302,7 @@ const CreateDrinkPage = () => {
           onSelect={handleSodaSelection} 
           isOpen={openDropdown.sodas}
           setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
+          selectedValues={SodaUsed}
         />
         <DropDown 
           title="Syrups" 
@@ -311,13 +310,15 @@ const CreateDrinkPage = () => {
           onSelect={handleSyrupSelection} 
           isOpen={openDropdown.syrups}
           setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
+          selectedValues={SyrupsUsed}
         />
         <DropDown 
-          title="Juices" 
-          options={filterOptions(juiceOptions)} 
+          title="AddIns" 
+          options={filterOptions(AddInOptions)} 
           onSelect={handleAddInSelection} 
-          isOpen={openDropdown.juices}
-          setOpen={() => setOpenDropdown(prev => ({ ...prev, juices: !prev.juices }))}
+          isOpen={openDropdown.addins}
+          setOpen={() => setOpenDropdown(prev => ({ ...prev, addins: !prev.addins }))}
+          selectedValues={AddIns}
         />
       </View>
       </ScrollView>
