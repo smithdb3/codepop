@@ -176,8 +176,8 @@ const CreateDrinkPage = () => {
       }
 
       const drink = await response.json();
-      setDrinkDict(drink)
-      setModalVisible(true)
+      setDrinkDict(drink);
+      setModalVisible(true);
       console.log(drink);
     }
     catch (error) {
@@ -258,7 +258,7 @@ const CreateDrinkPage = () => {
         {drinkDict && (
           <AIAlert
             isModalVisible={isModalVisible}
-            toggleModal={() => setModalVisible(!isModalVisible)}
+            toggleModal={() => (setModalVisible(false))}
             drinkDict={drinkDict}
           />
         )}

@@ -19,6 +19,7 @@ const CartPage = () => {
 
   useFocusEffect(React.useCallback(() => {
     fetchDrinks();
+    initializePaymentSheet();
   }, []));
 
   useEffect(() => {
