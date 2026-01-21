@@ -138,36 +138,50 @@ The user will pay for their soda(s) as soon as they submit their order either on
 - The dashboard should display stats of average time between the order being made and picked up and also display stats of how long people are waiting to receive their order.
 
 **AI Help Bot:** *(C)*
-- If customers run into issues there should be an AI chatbot to help guide them through their problems.
-- This help bot should serve most of our customer service needs. 
+- There shall be an AI chatbot to help with customer concerns/questions 24/7
+- The bot shall be capable of resolving the following issues:
+  - Questions on how to use the app
+  - Refunds
+  - How the customer can file a complaint or request to speak with a manager
+- When the bot cannot resolve an issue, it must categorize the issue by one of the following (by prompting - the user chatting with the bot):
+  - Software bug: send a report (prompt user for description of error) to IT (us)
+  - Customer service: the bot provides the contact information of the nearest store manager
+
 
 **Member Loyalty Program:** *(C)*
-- There should be a program where the user builds up points as they purchase drinks. These points can be redeemed for free items once the user has built up enough points.
+- Users earn 1 point for every dollar spent on drinks
+- Points are only available to account users
+- Points are added after the order is picked up (canceled orders do not earn points)
+- Points expire 1 year after being earned, with prior user notification
+- Users can view their point balance on their dashboard
+- Users can redeem points during checkout
 
 **Social Media:** *(C)*
-- There will be a link to post to social media (i.e. X, Instagram, Facebook) that will allow users to post about their favorite drinks in order to generate free marketing.
+- Users can share their favorite drinks to Instagram, X, or Facebook
+- A pre-populated post template includes the hashtag #socialdrinker
+- Sharing is available to generate organic marketing and community engagement
 
 ### User requirements
 **Account creation:** *(M)* 
-Users must be able to create an account or log in to the application using a combination of a username, password, and email address. This process includes setting up security measures such as email verification and password strength checks to protect user accounts from unauthorized access.
+Users must be able to create an account or log in to the application using a combination of a username, password, and email address. This process includes setting up security measures such as email verification (upon sign-up) and password strength checks to protect user accounts from unauthorized access. The email verification will be done prior to password creation and the password must be at least 8 characters and contain a lowercase letter, an uppercase letter, a number, and a special character.
 
 **Profile management:** *(M)* 
-Users should be able to view and edit their profile information after initial sign-up. The profile management system should ensure that updates are reflected in real-time and maintain consistency across all parts of the application, including personalized recommendations and saved preferences.
+Users should be able to view and edit their profile information after initial sign-up. The profile management system should ensure that updates are reflected immediately after modification across all parts of the application.
 
 **Favorite drinks:** *(M)* 
-Users should be able to mark and view their favorite drinks. The application should provide an intuitive interface for users to manage their favorites, and ensure that this list is easily accessible for quick reordering and personalized recommendations.
+Users should be able to mark and view their favorite drinks. There should be an interface where users can manage their favorites. That interface should include easy one-click reordering. If there are any ingredients unavailable, any drinks in this interface should be marked as ‘unavailable’.
 
 **Edit preferences:** *(S)* 
-Users should be able to customize their drink preferences. This feature will allow users to refine their experience based on individual tastes, ensuring that drink suggestions and potential promotional offers are tailored to their specific likes and dislikes.
+Users shall be able to edit drink preferences, including preferred ingredients, excluded ingredients, sweetness level, ice amount, and other customization defaults. These preferences shall be used to personalize drink recommendations and AI-generated drinks and may be overridden on a per-order basis.
 
 **First-time user tutorial:** *(S)* 
-New users should be guided through a tutorial when they first use the application. The tutorial should not only introduce the basic functionalities but also highlight unique features of the app, ensuring a smooth onboarding experience and helping users get the most out of the application from the start. 
+New users should be guided through a tutorial (upon account creation) when they first use the application. The tutorial should have an option to be skipped and will not be replayable. The tutorial should not only introduce the basic functionalities but also highlight unique features of the app, ensuring a smooth onboarding experience and helping users get the most out of the application from the start.
 
 **Choose time for drink to be ready:** *(S)* 
-Users should be able to select a specific time for their drink to be ready. This feature aims to provide convenience for those users who do not want to use geolocation functionality by allowing them to plan ahead and ensure their drink is prepared and available precisely when they want it, reducing wait times and improving overall satisfaction.
+Users should be able to select a specific time for their drink to be ready. The time window for scheduling will be only show store hours. This feature aims to provide convenience for those users who do not want to use geolocation functionality by allowing them to plan ahead and ensure their drink is prepared and available precisely when they want it, reducing wait times and improving overall satisfaction.
 
 **Rate drinks:** *(S)* 
-Users should be able to rate the drinks they purchase. The rating system should enable users to provide detailed feedback on their experience, which will be used to enhance the quality of the drinks and inform other customers about popular choices and potential improvements.
+Users shall be able to rate purchased drinks after pickup using a 5-point numeric scale, with an optional text comment. Ratings shall be stored per user and used to improve drink recommendations and AI-generated suggestions.
 
 **Chat functionality with AI support staff:** *(C)* 
 Users should be able to chat with an AI-powered support staff for assistance. The AI support staff should be capable of handling a wide range of queries and issues, providing instant help and guidance while learning from reactions to improve its responses over time.
