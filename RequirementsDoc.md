@@ -16,7 +16,7 @@ To effectively prioritize the requirements for this application, we will use MoS
 
 - **Must Have *(M)*:** Essential features needed for the application to function correctly.
 - **Should Have *(S)*:** Important but not critical features that enhance user experience.
-- **Could Have *(C)*S:** Desirable features that are not essential but could add value to the application.
+- **Could Have *(C)*:** Desirable features that are not essential but could add value to the application.
 - **Won’t Have *(W)*:** Features that are not relevant or feasible at this stage.
 
 In this document, these categories will be indicated with the following abbreviations added to each requirement for clarity:
@@ -27,35 +27,37 @@ In this document, these categories will be indicated with the following abbrevia
 
 These abbreviations will facilitate a clear and efficient understanding of the priority and scope of each requirement.
 
-## Requirements
+## Functional Requirements
 
-### Functional Requirements
+### Summary of Existing Functional Requirements
 
-**Device Accessibility:**
-*(M)* Prioritize functionality for handheld devices, specifically phones. CodePop should function as both an app and a site, and work on both iphone and android. The site will work on the most up to date versions of more popular search browsers, like Google Chrome, Safari, Mozilla Firefox, and Microsoft Edge.
+**Device Accessibility:** (M) CodePop prioritizes handheld device usage. The system should support iOS and Android devices, as well as all modern browsers.
 
-**Ability to Sign Up and Sign In:**
-*(M)* A variety of users can sign into the app/website, including Admins, Users, and Managers. Users with an account can save preferences and favorites, managers can see inventory, complaints, and revenue/payments, and admins can have access to user data and accounts (ex. remove problematic accounts or add a manager account). Users can use CodePop without an account, but their information (favorites and preferences) will not get saved.
+**User Authentication:** (M) Users can sign in as general users, managers, or administrators with role-specific access.
 
-*(S)* New users signing up will be given a brief tutorial to get them familiar with the CodePop interface and how to use it.
+**Guest Ordering:** (M) Users may order without an account, but preferences and favorites will not be saved.
 
-**Ordering and AI Integration:**
-There are three different ways to order sodas on CodePop:
+**Account Personalization:** (M) Registered users can save favorite drinks.
 
-- **Manual Creation and Customization:** *(M)* The user will be given a layered interface to choose their soda flavor, how much ice they want (ex. light, medium, heavy), syrup flavor and how many pumps they want in their drink, and the flavor of cream and how much (ex. light, medium, heavy). Items can be excluded, such as if the user does not want any cream in their soda.
+**Administrative Account Control:** (M) Admins can manage user accounts and assign manager permissions.
 
+**User Onboarding:** (S) New users should receive a tutorial during sign-up.
 
-- **AI Randomized Soda:** *(M)* An AI will create a soda for the user using a random combination of soda flavor, ice amount, syrup flavor and pumps, and cream. The user can review the drink and, if it does not sound good, they can re-randomize and the AI will create a new drink.
+**Drink Customization:** (M) AI can generate randomized drink combinations. Users can also fully customize drinks by selecting soda, ice, syrups, and add-ins. 
 
-  If the user has an account with CodePop, the user can choose to have the AI randomize based on their preferences: leaving out flavors they do not like and including flavors they do. Users without an account will not get this option, but they will get text in place of the “personalized-randomize” button that says they can get more personalized creations via account creation. General Users can get randomized drinks based on popular flavors as a placeholder.
+**AI Suggestions:** (M) AI tailors recommendations for registered users. Non-account users receive popularity-based suggestions.
 
+**Cart Management:** (M) Users can add, edit, review, or remove drinks before checkout.
 
-- **Preset Menu and Seasonal Drinks:** *(C)* If the user wants to order a non-randomized, preset drink, there will be a menu with a variety of drinks the user can pick from. This menu will also include a seasonal section, with different sodas swapping out throughout the year (flavors of in-season fruits and drinks for special events).
+**Order Cancellation:** (M) Orders can be canceled before payment.
 
-- For all options, the user can order multiple sodas, remove, review, and edit sodas in the cart, or cancel before they make a payment.
+**Payment Processing:** (M) Payment occurs immediately upon order submission.
 
-**Payment:** *(M)*
-The user will pay for their soda(s) as soon as they submit their order either on the app or the website. If the cart is empty no transactions will take place. If the user decides to cancel the order, they will get immediately reimbursed. The user should not be able to cancel their order once the drinks have been picked up. To prevent theft, the user is given an order code after payment that they can input into their cooler at the location.  *(C)* There will also be an option to save credit/debit card or payment methods for future use.
+**Refund Handling:** (M) Orders canceled before pickup are refunded.
+
+**Order Verification:** (M) An order code is used to prevent theft.
+
+**Saved Payment Methods:** (C) Users may save payment methods.
 
 **Geolocation and AI:**
 *(M)* After submitting and paying for an order, the app will ask for the user’s location. Different options will be available depending on the user’s answer:
@@ -76,7 +78,36 @@ The user will pay for their soda(s) as soon as they submit their order either on
 
   - **Inventory Tracking:** The AI will keep track of ingredient popularity and the rate at which ingredients are being used (in store). When it predicts an ingredient to start running low, it will notify the manager what ingredients should be ordered and restocked.
 
-### Non-functional Requirements
+### New Functional Requirements
+
+**Multi-Store Support:** (M) The system must support multiple store locations operating under the CodePop platform across the United States, where each store can accept orders, manage inventory, and operate independently without impacting other stores.
+
+**Independent Store Operation:** (M) Each store must maintain independent inventory, order processing, machine status, and operational data, and changes to one store must not automatically alter data at another store.
+
+**Decentralized Architecture:** (M) The system must operate without a centralized server controlling all stores, such that individual stores can continue operating even if other stores or regions become unavailable. 
+
+**Store-to-Store Communication:** (S) Stores should be able to exchange limited operational data (such as supply availability or transfer requests) with nearby stores within the same geographic region. 
+
+**Supply Hub Infrastructure:** (M) The system must support seven designated supply hubs, each with defined inventory, service regions, and assigned management responsibility. 
+
+**Supply Hub Scope:** (M) Supply hubs must support deliveries to stores within their assigned region, and must also support inter-region deliveries to other regions within 1000 miles.
+
+**Shared Supply Coordination:** (M) Store managers must be able to request supplies from supply hubs, including item types, quantities, and urgency, and view the status of those requests.
+
+**Local Supplier Integration:** (C) Stores could submit supply requests to approved local suppliers when hub supplies are unavailable, with those requests tracked separately from hub deliveries.
+
+**Logistics Manager Role:** (M) A logistics manager role must exist with permissions to manage supply hub inventory, approve or deny supply requests, and coordinate inter-store and inter-region deliveries.
+
+**Supply Tracking:** (S) The system should record the lifecycle of each supply request, including submission, approval, shipment, delivery, and completion.
+
+**Historical Supply Records:** (C) The system could retain historical records of supply movements and requests to support reporting and analysis.
+
+**Test Data Generation:** (M) The system must include test files or configurations that populate stores, hubs, users, and supplies so that system behavior can be validated without real-world data. 
+
+
+## Non-functional Requirements
+
+### Summary of Existing Non-Functional Requirements
 
 **Responsive:**
 *(M)* Responsive: The application must be responsive, providing an optimal user experience across a variety of devices, including desktops, tablets, and mobile devices, with seamless adaptation to different screen sizes and orientations.
@@ -105,7 +136,24 @@ The user will pay for their soda(s) as soon as they submit their order either on
 **Reporting:**
 *(S)* The system should include features for inventory management. It must automatically notify the manager when items are out of stock and generate detailed reports that can be sent to the developer for further analysis. Additionally, the system should provide the manager with financial reports, offering insights into revenue. This will ensure timely restocking, help in identifying inventory trends or potential issues, and provide a clear understanding of the store's financial performance
 
-### Business Requirements
+### New Non-Functional Requirements
+
+**Scalability:** (M) The system must support expansion from a small number of stores to a nationwide network without requiring fundamental redesign.
+
+**Fault Isolation:** (M) Failures or outages at one store or supply hub must not prevent other stores or hubs from continuing normal operations.
+
+**Performance Expectations:** (S) Store-to-store and store-to-hub communication should complete within reasonable operational timeframes that do not disrupt normal store operations.
+
+**Network Resilience:** (S) Stores should continue core operations, such as accepting orders and tracking inventory, during partial or temporary network disruptions.
+
+**Offline Operation:** (C) Limited offline functionality, such as viewing recent inventory data, could be available when a store is temporarily offline.
+
+**Global Synchronization:** (W) The system will not require real-time global synchronization of all stores and hubs at all times. 
+
+
+## Business Requirements
+
+### Summary of Existing Business Requirements
 
 **As Little Human Input as Possible:**
 - The stores and the app should be mostly machine run.
@@ -161,7 +209,24 @@ The user will pay for their soda(s) as soon as they submit their order either on
 - A pre-populated post template includes the hashtag #socialdrinker
 - Sharing is available to generate organic marketing and community engagement
 
-### User requirements
+### New Business Requirements
+
+**Nationwide Expansion:** (M) The system must support business operations across multiple regions to enable expansion beyond a single store.
+
+**Supply Efficiency:** (M) Coordinated supply management and logistics must reduce the likelihood of inventory shortages and overstocking at individual stores.
+
+**Operational Cost Reduction:** (S) Shared supply hubs should reduce redundant purchasing and storage costs at the store level.
+
+**Data-Informed Decisions:** (S) Aggregated supply and usage data should support management in identifying trends and making operational decisions.
+
+**Strategic Insights:** (C) Regional summaries could be used to evaluate performance and guide future store placement or hub expansion.
+
+**Automated Business Decisions:** (W) The system will not autonomously make final business or financial decisions without human approval.
+
+## User requirements
+
+### Summary of Existing User Requirements
+
 **Account creation:** *(M)* 
 Users must be able to create an account or log in to the application using a combination of a username, password, and email address. This process includes setting up security measures such as email verification (upon sign-up) and password strength checks to protect user accounts from unauthorized access. The email verification will be done prior to password creation and the password must be at least 8 characters and contain a lowercase letter, an uppercase letter, a number, and a special character.
 
@@ -192,7 +257,7 @@ A loyalty program should be available to reward repeat customers.This program sh
 **Social media functionality:** *(C)* 
 The application should integrate with social media platforms to enhance user engagement and sharing. Users should be able to seamlessly share their experiences and favorite drinks, as well as interact with the soda shop’s social media presence, creating a sense of community and boosting brand visibility.
 
-### User requirements
+## User requirements
 **Manager:**
 - Has access to data such as stock inventory
 - Has access to user payments
@@ -213,7 +278,27 @@ The application should integrate with social media platforms to enhance user eng
   - remove/unlock user accounts
 - Has the ability to add manager accounts/grant permissions
 
-### MosCow analysis
+### New User Requirements
+
+#### Store Manager
+
+* **Supply Requests:** (M) A store manager must be able to submit, view, and track supply requests for their store.
+* **Supply Coordination:** (S) A store manager should be able to view nearby store availability and request shared supplies when appropriate.
+* **Inventory Awareness:** (C) A store manager could view summarized inventory information for nearby stores or regional hubs.
+
+#### Logistics Manager
+
+* **Hub Management:** (M) A logistics manager must be able to manage inventory levels and fulfillment capacity for assigned supply hubs. 
+* **Routing Decisions:** (M) A logistics manager must be able to approve, deny, or reroute supply requests between stores and hubs. 
+* **Supply Visibility:** (S) A logistics manager should be able to view aggregated supply usage and fulfillment data across regions. 
+
+#### Administrator
+
+* **Role Assignment:** (M) An administrator must be able to assign and revoke logistics manager permissions. 
+* **System Oversight:** (S) An administrator should be able to view system-wide operational summaries.
+* **Operational Overrides:** (W) An administrator will not override active logistics workflows during live operations. 
+
+## MosCow analysis
 **Must haves:**
 - App that works on a phone
 - Geolocation or similar
@@ -254,7 +339,7 @@ The application should integrate with social media platforms to enhance user eng
 - A gift card system. 
 - A cash processing system. 
 
-### Use case stories 
+## Use case stories 
 **Account user stories:**
 - *(M)* As an account user I want to be able to easily and securely sign in to my account to access my drink history and order drinks 
 - *(M)* As an account user, I want to know that my private data such as payment information and geolocation is being protected if I choose to share it. 
@@ -294,19 +379,38 @@ The application should integrate with social media platforms to enhance user eng
 - *(S)* As an admin, I want to receive all available data in the form of easily understandable and regular reports.
 - *(M)* As an admin, I want the ability to manage user accounts. This includes overriding locked accounts, disabling accounts, and deleting user accounts.
 - *(M)* As an admin, I want to be able to add permissions to manager accounts.
+- *(M)* As an admin, I want to assign logistics manager roles so that each supply hub has proper oversight.
+- *(S)* As an admin, I want to review nationwide supply trends so that I can support strategic decisions for the business.
+- *(M)* As an admin, I want to ensure each store and hub has proper data access so that security and permissions are maintained. 
 
 **Manager User stories**
 - *(S)* As a manager, I want to be able to see store revenue reports from the database.
 - *(M)* As a manager, I want to be notified when inventory is low. 
 - *(S)* As a manager, I want to be able to order more inventory when it is low.
 - *(M)* As a manager, I want to be able to see inventory and usage data pertinent to running the store in the form of regular reports.
+- *(M)* As a manager, I want to request inventory from a supply hub so that my store remains stocked.
+- *(S)* As a manager, I want to coordinate shared supplies with nearby stores so that inventory shortages can be mitigated.
+- *(M)* As a manager, I want to generate test data files to simulate orders and supplies so that I can validate system functionality before real operations.
 
-**General system stories**
+**Logistics Manager Stories**
+- *(S)* As a logistics manager, I want to approve or deny supply transfers so that supplies are delivered efficiently and appropriately.
+- *(M)* As a logistics manager, I want to track supply requests and deliveries so that I can monitor hub performance.
+- *(M)* As a logistics manager, I want to approve inter-region deliveries so that distant stores can receive necessary supplies on time. 
+
+**General User stories**
 - *(M)* As a user, I want all my options to be easily accessible and useful. 
 - *(M)* As a user, I want simple and user-friendly options for making soda combinations, rating my sodas, and ordering sodas.
 - *(M)* As a user, I want a safe and secure platform that ensures my data, especially my geolocation and email, is protected. 
 - *(S)* As a user, I want the platform to be accessible according to WCAG standards of at least an “A”. 
 - *(S)* As a user, I want a place I can lodge complaints and get helpful feedback.
+- *(M)* As a user, I want to choose a store location for pickup so that I can get my drinks from the most convenient location.
+- *(M)* As a user, I want to see drink suggestions based on my past orders so that I can quickly reorder favorites or discover new drinks I like.
+- *(M)* As a user, I want to place a one-time order without having to create an account so that I can try the service without committing to an account.
+
+### General System Stories
+- *(M)* As a system, I want to automatically track supply inventory changes so that managers and logistics managers always have up-to-date data.
+- *(S)* As a system, I want to notify store managers when supplies are approved or delivered so that store operations remain efficient.
+- *(M)* As a system, I want to simulate supply routes during testing so that system performance can be validated under realistic conditions. 
 
 **Use Case Diagrams**
 
