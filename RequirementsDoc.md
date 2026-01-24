@@ -458,3 +458,4 @@ The application should integrate with social media platforms to enhance user eng
 ![Non Account User](misc/NonAccountUserUseCaseDiagram.png)
 ![Manager](misc/ManagerUseCaseDiagram.png)
 ![Admin](misc/AdminUseCaseDiagram.png)
+![Logistics Manager](misc/LogisticsManagerUseCaseDiagram.png)
