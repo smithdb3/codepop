@@ -135,6 +135,24 @@ Each supply hub must be associated with its respective region and available for 
 - Regional access limits are enforced correctly.
 - Logistics and repair dashboards display accurate, region-specific information.
 
+**Logistics Manager Dashboard:**  
+*(M)* The system must provide a dedicated dashboard for users assigned the **logistics_manager** role. This dashboard must allow logistics managers to:
+- View supply hubs and associated stores within their assigned region.
+- Monitor supply levels and usage trends for stores they manage.
+- Coordinate supply routing between supply hubs and stores within their region and to other regions within allowed delivery distance.
+- View historical supply usage data to support planning and scheduling decisions.
+
+**Repair Staff Dashboard:**  
+*(M)* The system must provide a dedicated dashboard for users assigned the **repair_staff** role. This dashboard must allow repair staff to:
+- View machine maintenance and repair status for stores within their assigned region.
+- Access repair schedules and machine status information.
+- Track machines requiring maintenance or repair based on reported status.
+
+**Existing Role Dashboard Updates:**  
+*(M)* Dashboards for existing roles must be updated to reflect new responsibilities and access limits:
+- **Admins** retain access to user account management and system-level data but are restricted to their assigned store information unless granted elevated permissions.
+- **Managers** can view inventory, payments, and revenue data for their own store only and do not have access to regional supply hub data.
+- **Account users** and **general users** must not have access to any operational dashboards related to logistics, repairs, or inventory management.
 
 
 ## Non-functional Requirements
@@ -394,9 +412,8 @@ The application should integrate with social media platforms to enhance user eng
 - *(S)* As an account user, I want access to a seasonal drink menu for inspiration when making my own drinks. 
 
 **Admin User stories**
-- *(M)* As an admin, I want to be able to keep track of inventory.
+- *(M)* As an admin, I want to be able to keep track of inventory for my shop.
 - *(M)* As an admin, I want to be able to access certain user data such as the number of user accounts.
-- *(M)* As an admin, I want to be able to see and keep track of the cost of inventory and maintenance of the shop.
 - *(M)* As an admin, I want to be able to see how much money the shop is bringing in.
 - *(M)* As an admin, I want to be able to see general and account user complaints.
 - *(S)* As an admin, I want to receive all available data in the form of easily understandable and regular reports.
