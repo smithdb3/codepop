@@ -104,6 +104,38 @@ These abbreviations will facilitate a clear and efficient understanding of the p
 
 **Test Data Generation:** (M) The system must include test files or configurations that populate stores, hubs, users, and supplies so that system behavior can be validated without real-world data. 
 
+**Test Data Support:**  
+*(M)* The system must support pre-populated test data to allow validation of dashboards, role-based access control, and regional system behavior. This test data must be loadable through system initialization files or scripts and be usable without requiring manual data entry.
+
+**Supply Hubs:**  
+*(M)* The system must include test data defining **seven (7) supply hubs**, each assigned to a unique region and location as follows:
+- **Region A:** Chicago, IL  
+- **Region B:** New Jersey, NY  
+- **Region C:** Logan, UT  
+- **Region D:** Dallas, TX  
+- **Region E:** Atlanta, GA  
+- **Region F:** Phoenix, AZ  
+- **Region G:** Boise, ID  
+
+Each supply hub must be associated with its respective region and available for use in logistics and dashboard views.
+
+**Store Data:**  
+*(M)* The system must include test data defining multiple store locations across regions:
+- A group of **20 stores located in Region C (Logan, UT)**.
+- Groups of stores in neighboring regions within **200 miles of Region C**, with a **minimum of 5 stores per neighboring region**.
+
+**Roles and Role Assignments:**  
+*(M)* The system must include test data that creates and assigns the following roles:
+- A **logistics_manager** role for each supply hub in Regions A through G, with access scoped to the stores and supplies associated with their assigned region.
+- A **repair_staff** role assigned to **Region C**, with access limited to maintenance and repair data for stores in that region.
+
+**Dashboard Integration:**  
+*(M)* All test data must integrate with system dashboards to verify that:
+- Users only see data permitted by their role.
+- Regional access limits are enforced correctly.
+- Logistics and repair dashboards display accurate, region-specific information.
+
+
 
 ## Non-functional Requirements
 
@@ -223,6 +255,10 @@ These abbreviations will facilitate a clear and efficient understanding of the p
 
 **Automated Business Decisions:** (W) The system will not autonomously make final business or financial decisions without human approval.
 
+**Support for System Demonstration:** (M) The software will include predefined test data to support effective demonstrations of the system’s functionality, dashboards, and role-based access during evaluations and presentations, allowing stakeholders to observe system behavior without relying on live operational data.
+
+**Realistic Data Representation:** (M) Test data must closely mimic realistic operational conditions, including the regional distribution of supply hubs, stores, and user roles, so that demonstrations accurately reflect how the system would function in a real-world, nationwide environment.
+
 ## User requirements
 
 ### Summary of Existing User Requirements
@@ -252,30 +288,23 @@ Users shall be able to rate purchased drinks after pickup using a 5-point numeri
 Users should be able to chat with an AI-powered support staff for assistance. The AI support staff should be capable of handling a wide range of queries and issues, providing instant help and guidance while learning from reactions to improve its responses over time.
 
 **Loyalty program:** *(C)* 
-A loyalty program should be available to reward repeat customers.This program should offer various incentives such as points, discounts, or exclusive offers, fostering customer retention and encouraging continued patronage by recognizing and rewarding frequent visits.
+A loyalty program should be available to reward repeat customers and reward frequent purchases from stores.
 
 **Social media functionality:** *(C)* 
-The application should integrate with social media platforms to enhance user engagement and sharing. Users should be able to seamlessly share their experiences and favorite drinks, as well as interact with the soda shop’s social media presence, creating a sense of community and boosting brand visibility.
+The application should integrate with social media platforms to enhance user engagement and sharing.
 
-## User requirements
+### User requirements
 **Manager:**
-- Has access to data such as stock inventory
-- Has access to user payments
-- Has access to revenue reports
+- Has access to data such as stock inventory, payments, and revenue reports.
 
 **Account User:**
-- This user has an account they can sign into
-- Account keeps track of user data and suggests new drinks based on preferences as well as remembers previous orders
-- Essentially has all app functionality
+- This user has an account they can sign into, that keeps track of past/present user data.
 
 **General User:**
 - User can use the app to order drinks on a single time basis without creating an account 
-- This user’s data and preferences aren’t saved
 
 **Admin (us):**
 - Has access to manage user account data
-- Has ability to update account
-  - remove/unlock user accounts
 - Has the ability to add manager accounts/grant permissions
 
 ### New User Requirements
@@ -303,22 +332,20 @@ The application should integrate with social media platforms to enhance user eng
 - App that works on a phone
 - Geolocation or similar
 - Ordering
-- Payments (when they order. If they cancel reimburse)
+- Reimbursable payments
 - System orders when ingredients are low
 - AI integration for generating drinks
 - Log in/signup screen
-- Database that keeps track of inventory and updated when inventory is used up – Can see this from the managers side
-- Ability to cancel orders (reimbursement)
+- Database that keeps track of inventory
 - Option to favorite drinks
 
 **Should haves:**
-- User can add preferences (likes and dislikes)
-  - Ai can also add these depending on user drinks – uses them for random generated drinks
+- User/AI can add preferences
 - Accessibility
 - Login tutorial for first timers
 - Seasonal menu
 - Ability to choose what time the drink is ready as opposed to making it automatically based on geolocation
-- System to throw out old orders if they have sat in a cooler for too long
+- System to throw out old orders
 
 **Could haves:**
 - AI that talks to the customer
@@ -331,13 +358,9 @@ The application should integrate with social media platforms to enhance user eng
 - SSO - google, etc
 
 **Will not haves:**
-- Use of global trends to determine when the manager should restock: AI may not be able to get good/reliable data, and world trends may not affect CodePop stores. Tracking what is happening in-store should provide similar data anyway.
-- The ability for multiple users to use the same account to keep better track of individual preferences. 
-- Multiple store locations: will keep our focus on 1 location for version 1.
+- The ability for multiple users to use the same account
 - The ability to get a refund after a drink is made. 
-- The ability to upload money into the account: payments only made through an outer source. 
-- A gift card system. 
-- A cash processing system. 
+- The ability to upload money into the account. 
 
 ## Use case stories 
 **Account user stories:**
