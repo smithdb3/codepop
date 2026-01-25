@@ -284,11 +284,16 @@ The application should integrate with social media platforms to enhance user eng
 
 ## User requirements
 **Manager:**
+- Can only access information at their own store
 - Has access to data such as stock inventory
 - Has access to user payments
 - Has access to revenue reports
 
 **Account User:**
+- Can access their own information from any store
+  Software will suggest which location to order from based on:
+  - The users location and preferred pickup time
+  - The user’s preferred location (this takes priority if setup)
 - This user has an account they can sign into
 - Account keeps track of user data and suggests new drinks based on preferences as well as remembers previous orders
 - Essentially has all app functionality
@@ -298,6 +303,7 @@ The application should integrate with social media platforms to enhance user eng
 - This user’s data and preferences aren’t saved
 
 **Admin (us):**
+- Can access information for their store only
 - Has access to manage user account data
 - Has ability to update account
   - remove/unlock user accounts
@@ -463,6 +469,6 @@ Building upon the inventory tracking from Part 1, the new requirements demand a 
 ![User](misc/UserUseCaseDiagram.png)
 ![Non Account User](misc/NonAccountUserUseCaseDiagram.png)
 ![Manager](misc/ManagerUseCaseDiagram.png)
-![Admin](misc/AdminUseCaseDiagram.png)
+![Admin](misc/AdminSuperAdminUseCaseDiagram.png)
 ![Logistics Manager](misc/LogisticsManagerUseCaseDiagram.png)
 ![Repair Staff UML](misc/RepairStaffUseCaseDiagram.png)
