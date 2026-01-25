@@ -135,13 +135,14 @@ These requirements define the quality attributes of the system, ensuring stabili
 * **Availability (C):** Orders can only be placed when the store is open, but scheduled ordering is supported. The application should maintain an uptime of at least 99.9%. While the store is closed, users can schedule orders to be processed once the store reopens.
 
 **Maintainability:**
-*(M)* The codebase must be modular, well-documented, and adhere to established coding standards to facilitate ease of maintenance, updates, and troubleshooting. This includes clear comments, structured code, and comprehensive documentation. Additionally, all dependencies, libraries, and frameworks used in the application should be kept up-to-date to ensure security, compatibility, and optimal performance.
+*(M)* The codebase must be modular, well-documented, and adhere to established coding standards to facilitate ease of maintenance, updates, and troubleshooting. This includes clear comments, structured code, and comprehensive documentation. All dependencies, libraries, and frameworks used in the application should be kept up-to-date to ensure security, compatibility, and optimal performance. 
+*(S)* The number of dependencies and libraries we use to build the app should be kept to a minimum as to not add bloat to our app.
 
 **Accessible:**
-*(S)* The application must comply with Web Content Accessibility Guidelines (WCAG) 2.1 to ensure that users with disabilities can navigate and use the application effectively. This includes avoiding problematic color combinations, such as red and green, and providing alternative text labels for color-based indicators.
+*(S)* The application must comply with Web Content Accessibility Guidelines (WCAG) 2.1 to ensure that users with disabilities can navigate and use the application effectively. This includes avoiding problematic color combinations, such as red and green, and providing alternative text labels for color-based indicators. Ensure anyone with a smartphone can access and navigate our app.
 
 **Reporting:**
-*(S)* The system should include features for inventory management. It must automatically notify the manager when items are out of stock and generate detailed reports that can be sent to the developer for further analysis. Additionally, the system should provide the manager with financial reports, offering insights into revenue. This will ensure timely restocking, help in identifying inventory trends or potential issues, and provide a clear understanding of the store's financial performance
+*(S)* The system should include features for inventory management. It must automatically notify the manager when items are out of stock and generate detailed reports that can be sent to the developer for further analysis. Additionally, the system should provide the manager with financial reports, offering insights into revenue. This will ensure timely restocking, help in identifying inventory trends or potential issues, and provide a clear understanding of the store's financial performance. Logistics Managers should also receive a report about their region to help them identify trends in sub regions and their region as a whole.
 
 ### New Non-Functional Requirements
 
@@ -166,6 +167,7 @@ These requirements define the quality attributes of the system, ensuring stabili
 - The stores and the app should be mostly machine run.
 - We want one manager to effectively be able to run many stores.
 - Ideally there won’t be a human at most locations, just the robots that make the drinks.
+- Assigning tasks to employees should be done with as little human input as possible. 
 
 **Payment System:** *(M)*
 - The app needs to be able to process payments when an order is placed. 
@@ -229,6 +231,22 @@ These requirements define the quality attributes of the system, ensuring stabili
 **Strategic Insights:** (C) Regional summaries could be used to evaluate performance and guide future store placement or hub expansion.
 
 **Automated Business Decisions:** (W) The system will not autonomously make final business or financial decisions without human approval.
+
+**Repair Staff Dashboard (M)**
+- A way to import their repair schedule in a csv file format (M)
+- An item on the repair schedule must have the store location, the machine type, machine operational date, machine status and status date which is the date the status was recorded. (M)
+- The status a machine can have are:
+   + normal - machine operating normally
+   + repair-start - servicing started; machine is off-line
+   + repair-end - servicing finished
+   + warning - non-critical issue; operational but needs repair soon
+   + error - critical issue; requires repair within a week
+   + out-of-order - not operational
+   + schedule-service - operational but needs scheduled maintenance within one month
+- The ability to cancel a reschedule repairs (M)
+- A tool to help them optimize their schedule (M)
+- A log of completed repairs (S)
+- A way to see every machine's status (S)
 
 ## User requirements
 
@@ -299,6 +317,12 @@ The `logistics_manager` is a specialized role focused on the "behind-the-scenes"
 * **Supply Routing (M):** They are responsible for determining the most efficient paths for supply delivery trucks to reach stores needing restock.
 * **AI Pattern Recognition (M):** The manager will upload CSV files containing historical supply data. An AI module will then parse this data to identify patterns (e.g., "Store A always runs out of lemons on Tuesdays").
 * **Automated Scheduling (M):** Based on the patterns identified by the AI, the logistics manager can create or update recurring supply delivery schedules to preemptively solve stock shortages.
+
+#### New Role: repair_staff
+The `repair_staff` role is meant to manage repairs for stores in their area.
+* *Scheduling* (M) There should be a way for repair_staff to upload their schedule so they can and then have a tool to optimize their schedule to maximize the time repairs can actually happen.
+* *Machine Access* (M) The ability to view and change the status of machines of the stores they manage is crucial to signal to when a repair is underway or completed and would help with building schedules. 
+* 
 
 #### New Role: super_admin (M)
 The `super_admin` is the highest tier of access, providing a bird's-eye view of the entire operation.
@@ -376,14 +400,21 @@ Building upon the inventory tracking from Part 1, the new requirements demand a 
 - *(C)* As an account user, I want to be able to share my drinks on social media. 
 - *(S)* As an account user, I want access to a seasonal drink menu for inspiration when making my own drinks. 
 
-**General user stories:**
-- *(M)* As a general user, I want to be able to order drinks from the soda shop without having an account
-- *(M)* As a general user I want to be able to create personalized drinks to order
-- *(S)* As a general user, I want to be able to see drink suggestions based on popular drinks so I have ideas to order
-- *(M)* As a general user I want to be able to see all possible combinations of syrups, sodas, and add-ins so I can craft my drink.
-- *(S)* As a general user, I want to receive a notification when my soda is ready to pick up.
-- *(M)* As a general user, I want to be able to receive a refund if I cancel my order. 
-- *(S)* As an account user, I want access to a seasonal drink menu for inspiration when making my own drinks. 
+**Repair Staff stories**
+- *(S)* I want a tool that can help me build an efficient schedule   
+- *(M)* I want a clean user interface
+- *(M)* As someone on the repair staff I want as much control over my schedule as possible
+
+**General User stories**
+- *(M)* As a user, I want all my options to be easily accessible and useful. 
+- *(M)* As a user, I want simple and user-friendly options for making soda combinations, rating my sodas, and ordering sodas.
+- *(M)* As a user, I want a safe and secure platform that ensures my data, especially my geolocation and email, is protected. 
+- *(S)* As a user, I want the platform to be accessible according to WCAG standards of at least an “A”. 
+- *(S)* As a user, I want a place I can lodge complaints and get helpful feedback.
+- *(M)* As a user, I want to choose a store location for pickup so that I can get my drinks from the most convenient location.
+- *(M)* As a user, I want to see drink suggestions based on my past orders so that I can quickly reorder favorites or discover new drinks I like.
+- *(M)* As a user, I want to place a one-time order without having to create an account so that I can try the service without committing to an account.
+- *(S)* As an account user, I want access to a seasonal drink menu for inspiration when making my own drinks
 
 **Admin User stories**
 - *(M)* As an admin, I want to be able to keep track of inventory.
@@ -434,3 +465,4 @@ Building upon the inventory tracking from Part 1, the new requirements demand a 
 ![Manager](misc/ManagerUseCaseDiagram.png)
 ![Admin](misc/AdminUseCaseDiagram.png)
 ![Logistics Manager](misc/LogisticsManagerUseCaseDiagram.png)
+![Repair Staff UML](misc/RepairStaffUseCaseDiagram.png)
