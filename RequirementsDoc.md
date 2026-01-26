@@ -374,9 +374,8 @@ The `logistics_manager` is a specialized role focused on the "behind-the-scenes"
 
 #### New Role: repair_staff
 The `repair_staff` role is meant to manage repairs for stores in their area.
-* *Scheduling* (M) There should be a way for repair_staff to upload their schedule so they can and then have a tool to optimize their schedule to maximize the time repairs can actually happen.
-* *Machine Access* (M) The ability to view and change the status of machines of the stores they manage is crucial to signal to when a repair is underway or completed and would help with building schedules. 
-* 
+* **Scheduling** (M) There should be a way for repair_staff to upload their schedule so they can and then have a tool to optimize their schedule to maximize the time repairs can actually happen.
+* **Machine Access** (M) The ability to view and change the status of machines of the stores they manage is crucial to signal to when a repair is underway or completed and would help with building schedules. 
 
 #### New Role: super_admin (M)
 The `super_admin` is the highest tier of access, providing a bird's-eye view of the entire operation.
@@ -519,4 +518,5 @@ Building upon the inventory tracking from Part 1, the new requirements demand a 
 ![Manager](misc/ManagerUseCaseDiagram.png)
 ![Admin](misc/AdminSuperAdminUseCaseDiagram.png)
 ![Logistics Manager](misc/LogisticsManagerUseCaseDiagram.png)
+
 ![Repair Staff UML](misc/RepairStaffUseCaseDiagram.png)
