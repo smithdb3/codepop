@@ -107,9 +107,7 @@ AI is an integral part of the app/website’s functionality and is used in a var
 
 **Supply Tracking:** (S) The system should record the lifecycle of each supply request, including submission, approval, shipment, delivery, and completion.
 
-**Historical Supply Records:** (C) The system could retain historical records of supply movements and requests to support reporting and analysis.
-
-**Test Data Generation:** (M) The system must include test files or configurations that populate stores, hubs, users, and supplies so that system behavior can be validated without real-world data. 
+**Historical Supply Records:** (C) The system could retain historical records of supply movements and requests to support reporting and analysis. 
 
 * **Maintenance Logs (M):** The software must maintain a digital ledger/history for every machine, tracking its service history, part replacements, and cleaning cycles.
 * **Role: repair_staff (M):** A new role is required: `repair_staff`. These users are responsible for managing repair schedules for machines at the specific locations they are in charge of. They must have a dashboard to see which machines need attention.
@@ -117,6 +115,56 @@ AI is an integral part of the app/website’s functionality and is used in a var
     * Updating the status of a machine (e.g., "In Service," "Operational," "Offline").
     * Logging specific repair actions taken.
 * **System Population (M):** Development must include scripts or CSV seeds to populate the database with initial machine data for testing the maintenance workflows.
+
+**Test Data Support:**  
+*(M)* The system must support pre-populated test data to allow validation of dashboards, role-based access control, and regional system behavior. This test data must be loadable through system initialization files or scripts and be usable without requiring manual data entry.
+
+**Supply Hubs:**  
+*(M)* The system must include test data defining **seven (7) supply hubs**, each assigned to a unique region and location as follows:
+- **Region A:** Chicago, IL  
+- **Region B:** New Jersey, NY  
+- **Region C:** Logan, UT  
+- **Region D:** Dallas, TX  
+- **Region E:** Atlanta, GA  
+- **Region F:** Phoenix, AZ  
+- **Region G:** Boise, ID  
+
+Each supply hub must be associated with its respective region and available for use in logistics and dashboard views.
+
+**Store Data:**  
+*(M)* The system must include test data defining multiple store locations across regions:
+- A group of **20 stores located in Region C (Logan, UT)**.
+- Groups of stores in neighboring regions within **200 miles of Region C**, with a **minimum of 5 stores per neighboring region**.
+
+**Roles and Role Assignments:**  
+*(M)* The system must include test data that creates and assigns the following roles:
+- A **logistics_manager** role for each supply hub in Regions A through G, with access scoped to the stores and supplies associated with their assigned region.
+- A **repair_staff** role assigned to **Region C**, with access limited to maintenance and repair data for stores in that region.
+
+**Dashboard Integration:**  
+*(M)* All test data must integrate with system dashboards to verify that:
+- Users only see data permitted by their role.
+- Regional access limits are enforced correctly.
+- Logistics and repair dashboards display accurate, region-specific information.
+
+**Logistics Manager Dashboard:**  
+*(M)* The system must provide a dedicated dashboard for users assigned the **logistics_manager** role. This dashboard must allow logistics managers to:
+- View supply hubs and associated stores within their assigned region.
+- Monitor supply levels and usage trends for stores they manage.
+- Coordinate supply routing between supply hubs and stores within their region and to other regions within allowed delivery distance.
+- View historical supply usage data to support planning and scheduling decisions.
+
+**Repair Staff Dashboard:**  
+*(M)* The system must provide a dedicated dashboard for users assigned the **repair_staff** role. This dashboard must allow repair staff to:
+- View machine maintenance and repair status for stores within their assigned region.
+- Access repair schedules and machine status information.
+- Track machines requiring maintenance or repair based on reported status.
+
+**Existing Role Dashboard Updates:**  
+*(M)* Dashboards for existing roles must be updated to reflect new responsibilities and access limits:
+- **Admins** retain access to user account management and system-level data but are restricted to their assigned store information unless granted elevated permissions.
+- **Managers** can view inventory, payments, and revenue data for their own store only and do not have access to regional supply hub data.
+- **Account users** and **general users** must not have access to any operational dashboards related to logistics, repairs, or inventory management.
 
 
 ### Non-Functional Requirements (NFRs)
