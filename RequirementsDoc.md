@@ -406,6 +406,8 @@ Building upon the inventory tracking from Part 1, the new requirements demand a 
 - Database that keeps track of inventory and updated when inventory is used up – Can see this from the managers side
 - Ability to cancel orders (reimbursement)
 - Option to favorite drinks
+- Appropriate dashboards for different user roles
+- Realistic test data to properly preview and debug system
 
 **Should haves:**
 - User can add preferences (likes and dislikes)
