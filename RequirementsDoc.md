@@ -296,6 +296,10 @@ These requirements define the quality attributes of the system, ensuring stabili
 - A log of completed repairs (S)
 - A way to see every machine's status (S)
 
+**Support for System Demonstration:** (M) The software will include predefined test data to support effective demonstrations of the system’s functionality, dashboards, and role-based access during evaluations and presentations, allowing stakeholders to observe system behavior without relying on live operational data.
+
+**Realistic Data Representation:** (M) Test data must closely mimic realistic operational conditions, including the regional distribution of supply hubs, stores, and user roles, so that demonstrations accurately reflect how the system would function in a real-world, nationwide environment.
+
 ## User requirements
 
 ### Summary of Existing User Requirements
