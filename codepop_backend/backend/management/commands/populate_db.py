@@ -7,39 +7,54 @@ class Command(BaseCommand):
     help = 'Populates the database with initial data'
 
     def handle(self, *args, **kwargs):
-        # Creating some users
-        super_user = User.objects.create_superuser(
+        # Creating some users (idempotent: skip if already exist)
+        super_user, _ = User.objects.get_or_create(
             username='super',
-            email='supertest@test.com',
-            password='password',
-            first_name='Lemonjello',
-            last_name='Smith'
+            defaults={
+                'email': 'supertest@test.com',
+                'first_name': 'Lemonjello',
+                'last_name': 'Smith',
+            }
         )
+        super_user.set_password('password')
+        super_user.is_superuser = True
+        super_user.is_staff = True
+        super_user.save()
 
-        staff_user = User.objects.create_user(
+        staff_user, _ = User.objects.get_or_create(
             username='staff',
-            email='staff@codepop.com',
-            password= 'password',
-            first_name = 'Orlando',
-            is_staff = True,
-            is_superuser = False
+            defaults={
+                'email': 'staff@codepop.com',
+                'first_name': 'Orlando',
+                'is_staff': True,
+                'is_superuser': False,
+            }
         )
+        staff_user.set_password('password')
+        staff_user.is_staff = True
+        staff_user.save()
 
-        user1 = User.objects.create_user(
+        user1, _ = User.objects.get_or_create(
             username='test',
-            email='test@test.com',
-            password='password',
-            first_name='Orangejello',
-            last_name='Smith'
+            defaults={
+                'email': 'test@test.com',
+                'first_name': 'Orangejello',
+                'last_name': 'Smith',
+            }
         )
+        user1.set_password('password')
+        user1.save()
 
-        user2 = User.objects.create_user(
+        user2, _ = User.objects.get_or_create(
             username='test2',
-            email='test@testing.com',
-            password='password',
-            first_name='Bob',
-            last_name='Bobsford'
+            defaults={
+                'email': 'test@testing.com',
+                'first_name': 'Bob',
+                'last_name': 'Bobsford',
+            }
         )
+        user2.set_password('password')
+        user2.save()
 
          # Data to insert into the Inventory table
         sodas = [
@@ -74,20 +89,36 @@ class Command(BaseCommand):
             }
         
 
-        # Inserting sodas
+        # Inserting sodas (idempotent)
         for soda in sodas:
-            Inventory.objects.create(**generate_inventory_data(soda, 'Soda'))
+            data = generate_inventory_data(soda, 'Soda')
+            Inventory.objects.get_or_create(
+                ItemName=soda, ItemType='Soda',
+                defaults={'Quantity': data['Quantity'], 'ThresholdLevel': data['ThresholdLevel']}
+            )
 
         # Inserting syrups
         for syrup in syrups:
-            Inventory.objects.create(**generate_inventory_data(syrup, 'Syrup'))
+            data = generate_inventory_data(syrup, 'Syrup')
+            Inventory.objects.get_or_create(
+                ItemName=syrup, ItemType='Syrup',
+                defaults={'Quantity': data['Quantity'], 'ThresholdLevel': data['ThresholdLevel']}
+            )
 
         # Inserting add-ins
         for add_in in add_ins:
-            Inventory.objects.create(**generate_inventory_data(add_in, 'Add In'))
+            data = generate_inventory_data(add_in, 'Add In')
+            Inventory.objects.get_or_create(
+                ItemName=add_in, ItemType='Add In',
+                defaults={'Quantity': data['Quantity'], 'ThresholdLevel': data['ThresholdLevel']}
+            )
 
         for physical_item in physical_items:
-            Inventory.objects.create(**generate_inventory_data(physical_item, 'Physical Item'))
+            data = generate_inventory_data(physical_item, 'Physical')
+            Inventory.objects.get_or_create(
+                ItemName=physical_item, ItemType='Physical',
+                defaults={'Quantity': data['Quantity'], 'ThresholdLevel': data['ThresholdLevel']}
+            )
 
         
 
@@ -144,24 +175,33 @@ class Command(BaseCommand):
             }
             ]
         for drink in drink_data:
-            Drink.objects.create(**drink)
+            Drink.objects.get_or_create(
+                Name=drink['Name'], User_Created=False,
+                defaults={
+                    'SyrupsUsed': drink.get('SyrupsUsed', []),
+                    'SodaUsed': drink.get('SodaUsed', []),
+                    'AddIns': drink.get('AddIns', []),
+                    'Rating': drink.get('Rating'),
+                    'Price': drink['Price'],
+                }
+            )
 
-        # Populating Preferences
+        # Populating Preferences (idempotent)
         preferences = [
             {'UserID': user1, 'Preference': 'mango'},
             {'UserID': user1, 'Preference': 'strawberry'},
             {'UserID': user1, 'Preference': 'mtn. dew'},
-            
             {'UserID': user2, 'Preference': 'peach'},
-            {'UserID': user2, 'Preference': 'pumpkin_spice'},
+            {'UserID': user2, 'Preference': 'pumpkin spice'},
             {'UserID': user2, 'Preference': 'dr. pepper'},
-
             {'UserID': super_user, 'Preference': 'pear'},
             {'UserID': super_user, 'Preference': 'cherry'},
             {'UserID': super_user, 'Preference': 'cupcake'},
             {'UserID': super_user, 'Preference': 'rootbeer'},
         ]
         for pref in preferences:
-            Preference.objects.create(**pref)
+            Preference.objects.get_or_create(
+                UserID=pref['UserID'], Preference=pref['Preference']
+            )
 
         self.stdout.write(self.style.SUCCESS('Successfully populated the database.'))

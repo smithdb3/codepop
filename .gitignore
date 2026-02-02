@@ -2,11 +2,11 @@
 **/__pycache__/
 *.pyc
 
-# Ignore Django migration files, except __init__.py
-**/migrations/*
-!**/migrations/__init__.py
+# Ignore Python cache in migrations
+**/migrations/__pycache__/
 
 codepop_virtual_enviroment
+.env
 
 .idea
 node_modules
