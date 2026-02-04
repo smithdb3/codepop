@@ -4,7 +4,7 @@
 BACKEND_DIR := codepop_backend
 FRONTEND_DIR := codepop
 
-.PHONY: up down migrate seed setup backend frontend android ios
+.PHONY: up down migrate seed setup backend frontend frontend-setup android ios
 
 # Start backend (Postgres + Django) in background
 up:
@@ -33,6 +33,10 @@ setup: up
 # Run backend in foreground (logs in terminal)
 backend:
 	cd $(BACKEND_DIR) && docker compose up
+
+# Frontend initial setup (install dependencies). Run once before first make frontend.
+frontend-setup:
+	cd $(FRONTEND_DIR) && npm install
 
 # Run Expo dev server (frontend)
 frontend:
