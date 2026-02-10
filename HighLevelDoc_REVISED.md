@@ -231,16 +231,14 @@ The CodePop data model has been extended to support multiple store locations, re
 
 User accounts are global across all stores via lazy replication.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **id** | Integer (PK) | Globally consistent user ID |
-| **username** | String (unique) | Login username |
-| **password** | String (hashed) | Password (PBKDF2-SHA256, configurable to Argon2) |
-| **email** | String | Email address (AES-256 encrypted at rest) |
-| **is_staff** | Boolean | Staff privileges flag |
-| **is_superuser** | Boolean | Superuser privileges flag |
-
-**Replication**: Lazy - fetched from origin store on first login at new store and cached locally. Relations: Preference, Order, Notification, UserRole (one-to-many); Drink (many-to-many favorites).
+| Field | Description |
+|-------|-------------|
+| **id** | Globally consistent user ID (primary key) |
+| **username** | Login username (unique) |
+| **password** | Password (PBKDF2-SHA256, configurable to Argon2) |
+| **email** | Email address (AES-256 encrypted at rest) |
+| **is_staff** | Staff privileges flag |
+| **is_superuser** | Superuser privileges flag |
 
 ---
 
@@ -248,12 +246,12 @@ User accounts are global across all stores via lazy replication.
 
 Tracks replication metadata and store preferences.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **user** | ForeignKey (User) | One-to-one link to User |
-| **is_replicated** | Boolean | True if replicated from another store |
-| **source_node_id** | UUID | Original store where account was created |
-| **preferred_store** | ForeignKey (Store) | Preferred pickup location (optional) |
+| Field | Description |
+|-------|-------------|
+| **user** | Links to User table (one-to-one) |
+| **is_replicated** | True if replicated from another store |
+| **source_node_id** | Original store where account was created |
+| **preferred_store** | Links to Store table (optional) |
 
 ---
 
@@ -261,13 +259,13 @@ Tracks replication metadata and store preferences.
 
 Defines user roles and their scope.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **user** | ForeignKey (User) | User this role belongs to |
-| **role_type** | String (Choice) | ACCOUNT_USER, GENERAL_USER, MANAGER, ADMIN, LOGISTICS_MANAGER, REPAIR_STAFF, SUPER_ADMIN |
-| **store** | ForeignKey (Store) | Specific store (for MANAGER, ADMIN) |
-| **region** | ForeignKey (Region) | Specific region (for LOGISTICS_MANAGER, REPAIR_STAFF) |
-| **is_active** | Boolean | Whether role is currently active |
+| Field | Description |
+|-------|-------------|
+| **user** | Links to User table |
+| **role_type** | ACCOUNT_USER, GENERAL_USER, MANAGER, ADMIN, LOGISTICS_MANAGER, REPAIR_STAFF, SUPER_ADMIN |
+| **store** | Links to Store table (for MANAGER, ADMIN roles) |
+| **region** | Links to Region table (for LOGISTICS_MANAGER, REPAIR_STAFF) |
+| **is_active** | Whether role is currently active |
 
 ---
 
@@ -275,11 +273,11 @@ Defines user roles and their scope.
 
 Stores flavor preferences for users (one preference per row).
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **PreferenceID** | Integer (PK) | Primary key |
-| **UserID** | ForeignKey (User) | User who has this preference |
-| **Preference** | String | Preference value (e.g., "Strawberry", "No Coconut") |
+| Field | Description |
+|-------|-------------|
+| **PreferenceID** | Primary key |
+| **UserID** | Links to User table |
+| **Preference** | Preference value (e.g., "Strawberry", "No Coconut") |
 
 **Replication**: Lazy - replicated with user account.
 
@@ -289,17 +287,15 @@ Stores flavor preferences for users (one preference per row).
 
 Drink combinations (catalog or user-created).
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **DrinkID** | Integer (PK) | Globally unique drink ID |
-| **Name** | String | Drink name |
-| **SyrupsUsed** | Array[String] | Syrups used in drink |
-| **SodaUsed** | Array[String] | Sodas used in drink |
-| **AddIns** | Array[String] | Add-ins (fruit, candy, ice) |
-| **Price** | Float | Price in USD |
-| **User_Created** | Boolean | True if user-created, False if catalog |
-
-**Replication**: Catalog drinks replicated globally (daily sync); user-created drinks replicated lazily.
+| Field | Description |
+|-------|-------------|
+| **DrinkID** | Globally unique drink ID (primary key) |
+| **Name** | Drink name |
+| **SyrupsUsed** | Array of syrups used in drink |
+| **SodaUsed** | Array of sodas used in drink |
+| **AddIns** | Array of add-ins (fruit, candy, ice) |
+| **Price** | Price in USD |
+| **User_Created** | True if user-created, False if catalog |
 
 ---
 
@@ -307,14 +303,12 @@ Drink combinations (catalog or user-created).
 
 Geographic region containing multiple stores and one supply hub.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **region_code** | String (PK) | Region identifier (A-G) |
-| **name** | String | Region name (e.g., "Logan, UT") |
-| **center_latitude** | Float | Geographic center latitude |
-| **center_longitude** | Float | Geographic center longitude |
-
-**Seven Regions**: Chicago (A), New Jersey (B), Logan (C), Dallas (D), Atlanta (E), Phoenix (F), Boise (G). Each has one supply hub.
+| Field | Description |
+|-------|-------------|
+| **region_code** | Region identifier (A-G) - primary key |
+| **name** | Region name (e.g., "Logan, UT") |
+| **center_latitude** | Geographic center latitude |
+| **center_longitude** | Geographic center longitude |
 
 ---
 
@@ -322,17 +316,15 @@ Geographic region containing multiple stores and one supply hub.
 
 Regional supply hub (runs same Django codebase as stores but configured for logistics only - no machines, no customer orders).
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **hub_id** | UUID (PK) | Primary key |
-| **region** | ForeignKey (Region) | Region served (one-to-one) |
-| **name** | String | Hub name |
-| **latitude** | Float | Geographic latitude |
-| **longitude** | Float | Geographic longitude |
-| **api_base_url** | URL | API endpoint (e.g., "https://hub-logan.codepop.com") |
-| **is_operational** | Boolean | Operational status |
-
-**Functions**: Service registry, user account discovery, supply request management, regional inventory aggregation, revenue aggregation.
+| Field | Description |
+|-------|-------------|
+| **hub_id** | Primary key |
+| **region** | Links to Region table (one-to-one) |
+| **name** | Hub name |
+| **latitude** | Geographic latitude |
+| **longitude** | Geographic longitude |
+| **api_base_url** | API endpoint (e.g., "https://hub-logan.codepop.com") |
+| **is_operational** | Operational status |
 
 ---
 
@@ -340,18 +332,18 @@ Regional supply hub (runs same Django codebase as stores but configured for logi
 
 Physical CodePop location.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **store_id** | UUID (PK) | Primary key |
-| **store_number** | String (unique) | Store identifier (e.g., "LOGAN-001") |
-| **name** | String | Store name |
-| **region** | ForeignKey (Region) | Region this store belongs to |
-| **supply_hub** | ForeignKey (SupplyHub) | Supply hub servicing this store |
-| **latitude** | Float | Geographic latitude |
-| **longitude** | Float | Geographic longitude |
-| **api_base_url** | URL | API endpoint (e.g., "https://store-logan-001.codepop.com") |
-| **is_operational** | Boolean | Operational status |
-| **hours_of_operation** | JSONB | Store hours by day |
+| Field | Description |
+|-------|-------------|
+| **store_id** | Primary key |
+| **store_number** | Store identifier (e.g., "LOGAN-001") - unique |
+| **name** | Store name |
+| **region** | Links to Region table |
+| **supply_hub** | Links to SupplyHub table |
+| **latitude** | Geographic latitude |
+| **longitude** | Geographic longitude |
+| **api_base_url** | API endpoint (e.g., "https://store-logan-001.codepop.com") |
+| **is_operational** | Operational status |
+| **hours_of_operation** | Store hours by day (JSON format) |
 
 ---
 
@@ -359,13 +351,13 @@ Physical CodePop location.
 
 Ingredient quantities at each store (strictly local, not replicated).
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **store** | ForeignKey (Store) | Store this inventory belongs to |
-| **ItemName** | String | Item name |
-| **ItemType** | String (Choice) | Soda, Syrup, Add In, Physical |
-| **Quantity** | Integer | Current quantity |
-| **ThresholdLevel** | Integer | Restock alert threshold |
+| Field | Description |
+|-------|-------------|
+| **store** | Links to Store table |
+| **ItemName** | Item name |
+| **ItemType** | Soda, Syrup, Add In, Physical |
+| **Quantity** | Current quantity |
+| **ThresholdLevel** | Restock alert threshold |
 
 ---
 
@@ -373,14 +365,14 @@ Ingredient quantities at each store (strictly local, not replicated).
 
 Customer drink order at specific store (strictly local, not replicated).
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **store** | ForeignKey (Store) | Store where order was placed |
-| **UserID** | ForeignKey (User) | User who placed order (nullable for guests) |
-| **Drinks** | ManyToMany (Drink) | Drinks in order |
-| **OrderStatus** | String (Choice) | pending, processing, completed, cancelled |
-| **PaymentStatus** | String (Choice) | pending, paid, failed, remade |
-| **StripeID** | String | Stripe payment intent ID |
+| Field | Description |
+|-------|-------------|
+| **store** | Links to Store table |
+| **UserID** | Links to User table (nullable for guest orders) |
+| **Drinks** | Links to Drink table (many-to-many) |
+| **OrderStatus** | pending, processing, completed, cancelled |
+| **PaymentStatus** | pending, paid, failed, remade |
+| **StripeID** | Stripe payment intent ID |
 
 ---
 
@@ -388,13 +380,13 @@ Customer drink order at specific store (strictly local, not replicated).
 
 Financial transactions by a singular store strictly local to that store.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **store** | ForeignKey (Store) | Store where revenue was generated |
-| **OrderID** | ForeignKey (Order) | Associated order |
-| **TotalAmount** | Float | Revenue amount in USD |
-| **SaleDate** | DateTime | Transaction date |
-| **Refunded** | Boolean | Refund status |
+| Field | Description |
+|-------|-------------|
+| **store** | Links to Store table |
+| **OrderID** | Links to Order table |
+| **TotalAmount** | Revenue amount in USD |
+| **SaleDate** | Transaction date |
+| **Refunded** | Refund status |
 
 ---
 
@@ -402,12 +394,12 @@ Financial transactions by a singular store strictly local to that store.
 
 Notifications sent to users or managers.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **store** | ForeignKey (Store) | Store (nullable for global) |
-| **UserID** | ForeignKey (User) | User (nullable for global) |
-| **Message** | String | Notification text |
-| **Type** | String | order_update, inventory_alert, system_message, etc. |
+| Field | Description |
+|-------|-------------|
+| **store** | Links to Store table (nullable for global notifications) |
+| **UserID** | Links to User table (nullable for global notifications) |
+| **Message** | Notification text |
+| **Type** | order_update, inventory_alert, system_message, etc. |
 
 ---
 
@@ -415,13 +407,13 @@ Notifications sent to users or managers.
 
 Robotic beverage-making machine (strictly local; status updates pushed to hub).
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **machine_id** | UUID (PK) | Primary key |
-| **store** | ForeignKey (Store) | Store where machine is located |
-| **machine_type** | String | Machine type |
-| **status** | String (Choice) | normal, repair-start, repair-end, warning, error, out-of-order, schedule-service |
-| **status_date** | DateTime | Date status was set |
+| Field | Description |
+|-------|-------------|
+| **machine_id** | Primary key |
+| **store** | Links to Store table |
+| **machine_type** | Machine type |
+| **status** | normal, repair-start, repair-end, warning, error, out-of-order, schedule-service |
+| **status_date** | Date status was set |
 
 ---
 
@@ -429,13 +421,13 @@ Robotic beverage-making machine (strictly local; status updates pushed to hub).
 
 Service history for machines (local; accessible to repair staff via hub).
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **machine** | ForeignKey (Machine) | Machine serviced |
-| **repair_staff** | ForeignKey (User) | Repair staff member |
-| **service_type** | String (Choice) | routine_maintenance, repair, emergency_fix, part_replacement, cleaning |
-| **service_start** | DateTime | Service start time |
-| **cost** | Decimal | Service cost |
+| Field | Description |
+|-------|-------------|
+| **machine** | Links to Machine table |
+| **repair_staff** | Links to User table (repair staff) |
+| **service_type** | routine_maintenance, repair, emergency_fix, part_replacement, cleaning |
+| **service_start** | Service start time |
+| **cost** | Service cost |
 
 ---
 
@@ -443,14 +435,12 @@ Service history for machines (local; accessible to repair staff via hub).
 
 Repair staff schedules (regional; managed by hub).
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **repair_staff** | ForeignKey (User) | Assigned repair staff |
-| **machine** | ForeignKey (Machine) | Machine to be serviced |
-| **scheduled_date** | DateTime | Service date/time |
-| **status** | String (Choice) | scheduled, in_progress, completed, cancelled |
-
-**AI Optimization**: Route optimization algorithms suggest efficient schedules minimizing travel time and prioritizing critical repairs.
+| Field | Description |
+|-------|-------------|
+| **repair_staff** | Links to User table (assigned repair staff) |
+| **machine** | Links to Machine table |
+| **scheduled_date** | Service date/time |
+| **status** | scheduled, in_progress, completed, cancelled |
 
 ---
 
@@ -458,13 +448,13 @@ Repair staff schedules (regional; managed by hub).
 
 Inventory replenishment request from store to supply hub (hub-managed).
 
-| Field | Type | Description |
-|-------|------|-------------|
-| **store** | ForeignKey (Store) | Store making request |
-| **supply_hub** | ForeignKey (SupplyHub) | Supply hub receiving request |
-| **requested_items** | JSONB | Items and quantities (e.g., [{"item_name": "Cherry Syrup", "quantity": 50, "unit": "bottles"}]) |
-| **priority** | String (Choice) | low, normal, urgent |
-| **status** | String (Choice) | submitted, approved, in_transit, delivered, rejected |
+| Field | Description |
+|-------|-------------|
+| **store** | Links to Store table |
+| **supply_hub** | Links to SupplyHub table |
+| **requested_items** | Items and quantities in JSON format (e.g., [{"item_name": "Cherry Syrup", "quantity": 50, "unit": "bottles"}]) |
+| **priority** | low, normal, urgent |
+| **status** | submitted, approved, in_transit, delivered, rejected |
 
 ---
 
@@ -535,5 +525,4 @@ Django's migration system handles schema changes across all store nodes. Migrati
 - **Payment Data**: No raw credit card data stored; Stripe handles payment processing (only payment intent IDs stored)
 
 **Backup and Recovery:**
-Each store runs automated backups with daily full backups and hourly incremental backups (PostgreSQL WAL archiving). Backups stored off-site with 30-day retention. Recovery process involves restoring from backup and re-syncing replicated data from peers. Local data (orders, inventory, revenue) must be recovered from backups as they are not replicated.
-
+Each store runs automated backups with daily full backups and hourly incremental backups. Backups stored off-site with 30-day retention. Recovery process involves restoring from backup and re-syncing replicated data from peers. Local data (orders, inventory, revenue) must be recovered from backups as they are not replicated.
