@@ -105,53 +105,200 @@ CodePop is designed to be accessible to a wide variety of users. Our goal is to 
   * **Touchscreen Laptops**:  
     Although touchscreen laptops exist, their dimensions differ significantly from mobile devices, and they will not be prioritized in the initial development phase. Their prioritization will remain with every other laptop device.
 
-## **3\. Architecture Design**
+## **3. Architecture Design**
 
-* **Architecture Overview**:   
-  * This will be a client-server architecture where the app run on the phone will be a client that will communicate and get information from our server and then display that information for the user.  
-* **Component Diagram**: Diagram showing major system components and their relationships.  
-* **Technology Stack**:  
-  Technologies and frameworks used (e.g., languages, databases, servers).  
-  * **React Native (Frontend):**   
-    * React native is a very popular front end development framework that is widely supported by most API’s and backend frameworks.  
-    * React is based on javascript which offers the best integration and flexibility for a lightweight client-server integration.  
-    * React’s hot reload feature offers much more flexibility to front end developers to see changes in real time, which leads to faster, more flexible front end development.   
-  * **Django(Backend):**  
-    * Django comes preloaded with user authentication and security built in which should help us save time in not having to develop those parts of the software.  
-    * Django also is widely supported by most tools because of its popularity.  
-  * **PostgreSQL(Database):**  
-    * PostgreSQL is well suited for databases that have complex relationships.  
-    * It is one of the most popular databases to be used with Django meaning there is a lot of community support and help for PostgreSQL.  
-    * PostgreSQL is very scalable meaning it will function well with both large and small amounts of data  
-  * **Artificial Intelligence (AI)**:  
-    * **Scikit-Learn** will be the AI library we use for both of the AI Models listed below (Content-Based Model & Item-Based Collaborative Filtering Model). We have chosen this library for the following reasons:  
-      * Is free  
-      * Is protected under the BSD license, which allows for free usage in personal and commercial projects  
-      * Easy to implement  
-      * Works well for small datasets  
-      * Is widely used in academia and industry, providing strong documentation for any of our future needs  
-      * Uses Python  
-    * **Content-Based AI Filtering Model by Scikit-Learn** will be used for the personalized drink suggestion for account users. We have decided this model for the following reasons:  
-      * **Does not require large amounts of user data**:  
-        As a startup, we will not have significant user data to rely on initially. This model allows for an enhanced customer experience from the start without the need for extensive data.  
-      * **Allows for cold-starts for new users**:  
-        Since the recommendations are item-based, the AI does not depend on other users for suggestions. This provides personalized recommendations to new users even before we gather large-scale user interaction.  
-      * **Is highly personal and customizable**:  
-        This model operates solely on user A’s data, not on data from users B or C. As a result, the recommendations for each user will be entirely different, offering a deeply personalized and unique experience.  
-- The downside of this model is that it does not capture popularity trends.  
-  * **Item-Based Collaborative Filtering Model (Optional) by Scikit-Learn** for the random drink suggestion.   
-    * **Leverages User Behavior:** Identifies relationship between items and clicks, ratings, purchases, etc.  
-      * **Diverse Recommendations:** Unlike the content-based model, this model suggests items that the users might not have considered on their own  
-      * **Captures popularity trends**  
-- The downsides of this model is that new items can’t be recommended to users until there has been enough interaction. For this reason, we decided to use the content-based filtering model for more personal suggestions (especially because our drink preference data will be very scattered at the beginning)  
-  * **Gemini (AI Images)**  
-    * AI images will be used for smaller items like Loading Screens, Icons, Logos, etc.  
-      * Although AI is the future, we want to give our front-end team the opportunity to learn how to create a variety of custom images, animations, and backgrounds. AI Images will be a smaller part of the front-end team’s bigger creation.  
-    *   
-    * ![AISoda](misc/AISodaResized.jpg)
-    ![SodaRobot](misc/SodaRobotResized.jpg)
-    ![bob](misc/bobResized.jpg)
-    ![robotDrinkingSoda](misc/robotDrinkingSodaResized.jpg)
+### **Architecture Overview**
+
+This section describes a **planned future architecture** for CodePop's transformation from a single-location system to a nationwide distributed network. The current implementation is a centralized single-store system. This document serves as the architectural blueprint for the distributed system upgrade.
+
+CodePop will employ a **federated distributed system architecture** where each physical store location operates as an independent node with regional coordination hubs. This is **not** a true peer-to-peer system but rather a **hub-and-spoke model with store autonomy**.
+
+**Key Architectural Principles:**
+
+* **Decentralization**: No central server controls the entire system. Each store runs its own complete backend stack (Django + PostgreSQL) and can operate independently during network partitions.
+
+* **Regional Coordination**: Seven regional supply hubs provide logistics coordination, peer discovery, and inventory management for stores within their geographic regions. Hubs are **not** customer-facing and do not process drink orders.
+
+* **Hybrid Communication Model**:
+  - **Hub as Service Registry**: Stores register with hub on startup; hub maintains "phone book" of stores in region
+  - **Hub for Discovery**: When Store B needs data from Store A, it first asks hub "where is Store A?"
+  - **Direct Store-to-Store for Data**: Once Store B has Store A's address, they communicate directly (peer-to-peer) without hub mediation
+  - **Hub for Logistics**: Supply requests, revenue aggregation, and machine status reporting still go through hub
+
+* **Fault Isolation**: Failures or outages at one store or hub do not prevent other stores from continuing normal operations. The system is designed to gracefully handle network partitions and temporary connectivity loss.
+
+* **Local-First Data**: Each store maintains its own operational data (orders, inventory, revenue, machine status) in its local database. Only specific data types (user accounts, preferences, favorites) are synchronized across the network on-demand.
+
+---
+
+### **Network Topology:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│          Supply Hub Network (7 Regional Hubs)                   │
+│  Chicago IL │ New Jersey NY │ Logan UT │ Dallas TX │ etc.       │
+│  - Service registry (lists stores in region)                    │
+│  - Logistics coordination (supply requests)                     │
+│  - Regional inventory aggregation                               │
+│  - User account lookup service                                  │
+└────────────┬────────────────────────────────┬───────────────────┘
+             │                                │
+             │    Hub-Store Communication     │
+             │    (REST APIs + Event Queue)   │
+             │                                │
+    ┌────────▼────────┐              ┌───────▼────────┐
+    │  Store Node A   │              │  Store Node B  │
+    │  - Django API   │◄─────────────►  - Django API  │
+    │  - PostgreSQL   │ (direct P2P) │  - PostgreSQL  │
+    │  - Local Data   │              │  - Local Data  │
+    │  - Event Queue  │              │  - Event Queue │
+    └────────┬────────┘              └───────┬────────┘
+             │                                │
+    ┌────────▼────────┐              ┌───────▼────────┐
+    │  Mobile Client  │              │  Mobile Client │
+    │  (React Native) │              │  (React Native)│
+    └─────────────────┘              └────────────────┘
+```
+
+Each store node includes:
+- **Django Backend**: Full REST API implementation with all business logic
+- **PostgreSQL Database**: Complete local data storage for that store
+- **Inter-Node Communication Layer**: REST endpoints for hub-to-store and store-to-store communication
+- **Event Queue**: Celery workers with Redis broker for asynchronous message processing
+- **Service Registry Client**: Maintains connection to regional supply hub for peer discovery
+
+Each supply hub includes:
+- **Same Django Codebase**: Supply hubs run the same Django backend as stores but with different configuration
+- **No Customer Operations**: Supply hubs do NOT have robotic machines, do NOT accept customer orders, and are NOT customer-facing
+- **Logistics Functions Only**: Manage supply requests, track regional inventory, maintain store registry
+
+---
+
+### **Mobile Client Interaction:**
+
+The React Native mobile app uses geolocation to discover nearby operational stores via the store discovery API.
+
+**Store Discovery Flow:**
+1. User opens app → App requests device location (latitude, longitude)
+2. Backend queries Store table for stores within radius, returns sorted list of nearby stores
+3. User selects store (or app auto-selects closest operational store)
+4. All subsequent orders and interactions target that specific store's API endpoint
+5. If selected store becomes unavailable (health check fails), the app can switch to another nearby store
+
+CodePop uses a **lazy replication model** for user data:
+
+- **NOT Proactive Replication**: User accounts are NOT automatically replicated to all stores
+- **NOT Eventual Replication**: There is NO background process that eventually propagates all user data everywhere
+- **Lazy On-Demand**: User data is replicated to a store ONLY when that user logs in at that store for the first time
+
+**Why Lazy Replication?**
+- **Scalability**: With thousands of stores nationwide, eagerly replicating millions of user accounts to every store would be prohibitively expensive
+- **Data Locality**: Most users visit the same store repeatedly, so local caching after first visit is efficient
+- **Reduced Sync Traffic**: Only active users generate sync traffic, not dormant accounts
+- **Privacy**: User data is only distributed to stores where the user has actually been
+
+---
+
+### **Cross-Region User Discovery**
+
+When a user from one region logs in at a store in a different region, the system uses **hierarchical hub coordination** to locate the user's origin store:
+
+1. **Discovery**: Hubs query all 6 other regional hubs in parallel to find users
+2. **Transfer**: Stores talk directly to each other, bypassing hubs
+3. **Caching**: After first login, subsequent logins are much quicker (no re-querying)
+
+```
+User from Logan (Region C) logs in at New York Store (Region B)
+        ↓
+New York Store: checks local DB → not found
+        ↓
+New York Store → New York Hub: "Where is user alice@example.com?"
+        ↓
+New York Hub: queries NY stores → not found locally
+        ↓
+New York Hub: broadcasts to OTHER 6 REGIONAL HUBS
+    "Does anyone have user alice@example.com?"
+        ↓
+    ┌───────┼───────┬────────┬─────────┐
+    ▼       ▼       ▼        ▼         ▼
+Chicago Dallas Phoenix Atlanta Logan Boise
+  Hub     Hub     Hub      Hub    Hub   Hub
+    ↓       ↓       ↓        ↓      ↓     ↓
+   No      No      No       No    YES!  No
+                                   ↓
+                    Logan Hub responds:
+            "Yes! User at store-logan-001.codepop.com"
+                                   ↓
+        New York Hub tells New York Store:
+            "User found at Logan Store (Region C)"
+                                   ↓
+        New York Store → Logan Store (direct P2P)
+            "Please send user alice's data"
+                                   ↓
+            Logan Store → New York Store
+            (sends user account + preferences)
+                                   ↓
+        New York Store replicates user locally
+                                   ↓
+                User logs in successfully!
+```
+
+---
+
+### **Revenue Aggregation for Logistics Managers**
+
+**Architecture:**
+1. **Revenue stays local**: Each store's Revenue table contains only that store's transactions
+2. **Supply hub does NOT store revenue**: Hub has no Revenue table
+3. **On-demand polling**: When logistics manager requests regional report, hub queries all stores in region
+
+---
+
+### **Nationwide Revenue Aggregation for Super Admins**
+
+CodePop uses a **master hub** (e.g., Logan Hub) as the primary aggregation point with **client-side fallback** for resilience.
+
+The master hub queries all regional hubs in parallel, each regional hub aggregates its stores, and the master hub combines results.
+
+**Fallback Path (Client-Side):**
+
+If the master hub is unavailable, the dashboard queries all 7 regional hubs directly in parallel and aggregates results client-side. Slower but ensures system remains operational.
+
+**Other Nationwide Metrics:**
+
+The same hierarchical pattern applies to inventory status (items critically low, out-of-stock), order statistics (total orders, popular drinks), and machine health (machines by status, stores needing repair). All use master hub aggregation with client-side fallback.
+
+---
+
+### **Technology Stack**
+
+**Frontend: React Native (Expo 51.0.38)**
+- Cross-platform mobile app framework for iOS and Android
+- Supports geolocation-based store discovery, connection resilience, and offline caching
+
+**Backend: Django 5.1 + Django REST Framework 3.14**
+- Each store and hub runs its own Django instance with complete REST API
+- Supports node identity, peer registry, inter-node endpoints, and asynchronous event publishing for distributed operations
+
+**Database: PostgreSQL 15**
+- Each store runs its own independent PostgreSQL instance (database-per-store architecture)
+- Provides data autonomy, fault isolation, and independent scaling
+- JSONB support for semi-structured data (store hours, supply requests)
+- No global transactions; uses eventual consistency for cross-store operations
+
+**Asynchronous Task Queue: Celery 5.3+ with Redis 7.0+**
+- **Celery**: Distributed task queue system that executes background jobs asynchronously using worker processes
+- **Redis**: In-memory data store used as the message broker (queue) between Django and Celery workers
+- **Why needed**: Without async processing, operations like "sync user account to 5 peer stores" would block the user's API request for seconds. With Celery, the API returns immediately (~50ms) while background workers handle the slow operations.
+- Supports event processing (user data sync), heartbeat monitoring (peer health checks), and automated supply alerts
+- Built-in retry logic handles transient network failures when communicating with peer stores
+
+**Artificial Intelligence:**
+- **Scikit-Learn 1.3+**: Content-based and collaborative filtering for personalized drink recommendations
+- **Time-Series Forecasting**: Predicts inventory depletion and automates supply request triggers
+- **Route Optimization**: Genetic algorithms for efficient repair staff scheduling across multiple stores
+- **DialoGPT (Hugging Face)**: Natural language chatbot for customer service (transformers 4.30+, torch 2.0+)
+- **Gemini API**: Decorative image generation for app graphics
 
 ## **4\. Modules and Components (Internal Interfaces)** 
 
@@ -193,143 +340,311 @@ CodePop is designed to be accessible to a wide variety of users. Our goal is to 
     * Data Analysis Service: Analyzes user data and preferences for insights  
     * AI Model: Generates recommendations based on past behavior and trends
 
-## **5\. Data Design**
+## **5. Data Design**
 
-### **Data Model:**
+The CodePop data model has been extended to support multiple store locations, regional supply hubs, machine maintenance tracking, and logistics coordination. The model follows a **database-per-store design** where some entities are local to each store (Orders, Inventory, Machines) while others are **lazily replicated** across the network on-demand (User, Preference, Drink).
 
-* **Key Entities**  
-  * **User:** Represents a person who uses the application, whether as a general user or an account user. The User entity stores all the necessary information about the user, such as login credentials and profile details.  
-    * **UserID:** (Primary Key) A unique identifier for each user.  
-    * **Username:** The user's chosen name for logging in and identification within the app.  
-    * **Password:** The user's password, stored securely  
-      * Encryption: **Yes**   
-    * **Email:** The user’s email address  
-      * Encryption: **Yes**  
-    * **UserRole:** Defines the role of the user (e.g., admin, manager, account user)  
-    * **OrderHistory:** A reference to all orders made by the user.  
-  * **Preference**: Stores individual drink preferences for each user. This table adheres to First Normal Form (1NF), meaning that each preference is stored as an atomic value rather than as a comma-separated list.  
-    * **PreferenceID**: (Primary Key) A unique identifier for each preference entry.  
-    * **UserID**: (Foreign Key) Links the preference to the user who selected it.  
-    * **Preference**: A string representing the individual drink preference (e.g., "Strawberry", "Vanilla").  
-    * Example:  
-      ![preferences](misc/preferences.png) 
-  * **Order:** Represents a purchase made by a user, containing details about the drinks ordered, their status, and payment information.  
-    * **OrderID:** (Primary Key) A unique identifier for each order.  
-    * **UserID:** (Foreign Key) Links the order to the user who placed it.  
-    * **DrinkDetails:** Information about the drinks included in the order.  
-    * **OrderStatus:** The current status of the order (e.g., pending, completed, canceled).  
-    * **PaymentStatus:** Indicates whether payment has been completed, pending, or refunded.  
-    * **PickupTime:** The scheduled or expected time for the order to be picked up.  
-    * **CreationTime:** The time when the order was placed.  
-  * **Drink:** Represents the various drink combinations that can be ordered by users. It includes information about the ingredients used and the drink's price.  
-    * **DrinkID:** (Primary Key) A unique identifier for each drink.  
-    * **SyrupsUsed:** A list of syrups included in the drink.  
-    * **SodaUsed:** The type of soda used in the drink.  
-    * **AddIns:** Any additional ingredients added to the drink (e.g., ice, fruit).  
-    * **Rating:** Optional, allows users to rate the drink.  
-    * **Price:** The cost of the drink.  
-  * **Inventory:** Represents the items available in the store's inventory, including syrups, sodas, and add-ins. Tracks the quantity and threshold levels for restocking.  
-    * **InventoryID:** (Primary Key) A unique identifier for each inventory item.  
-    * **ItemName:** The name of the inventory item (e.g., a specific syrup or soda brand).  
-    * **Quantity:** The current amount of the item in stock.  
-    * **Threshold Level:** The minimum quantity before a restock notification is triggered.  
-    * **LastUpdated:** The date and time when the inventory was last updated.  
-  * **Payment:** Represents payment transactions associated with orders. It stores information about the payment process and its status.  
-    * **PaymentID:** (Primary Key) A unique identifier for each payment transaction.  
-    * **OrderID:** (Foreign Key) Links the payment to the specific order.  
-    * **UserID:** (Foreign Key) Links the payment to the user who made it.  
-    * **Amount:** The total amount paid.  
-    * **PaymentMethod:** The method of payment used (e.g., credit card, PayPal)  
-    * **PaymentStatus:** Indicates whether the payment was successful, pending, or failed.  
-    * **RefundStatus:** Indicates if a refund has been issued  
-      * Encryption: **Yes** (Sensitive information such as payment details should be encrypted).  
-  * **Notifications:** Represents notifications sent to users, informing them of order status updates, inventory issues, or other important messages.  
-    * **NotificationID:** (Primary Key) A unique identifier for each notification.  
-    * **UserID:** (Foreign Key) Links the notification to the specific user.  
-    * **Message:** The content of the notification.  
-    * **Timestamp:** The time when the notification was sent.  
-    * **Type:** The type of notification (e.g., order update, promotional message).  
-  * **QRCode:**  
-    * **QRCodeID:** (Primary Key) A unique identifier for each QR code entry.  
-    * **OrderID:** (Foreign Key) Links the QR code to a specific order that contains soda.  
-    * **QRCodeData:** The data or link that the QR code contains (e.g., a link to open the fridge).  
-    * **ExpirationTime:** The time when the QR code expires and is no longer usable.  
-  * **Revenue:**  
-    * **RevenueID:** (Primary Key) A unique identifier for each revenue entry.  
-    * **TotalAmount:** The total revenue generated from completed orders.  
-    * **Date:** The date when the revenue was recorded (e.g., daily, weekly, or monthly).  
-    * **ManagerID:** (Foreign Key) Links to the manager who has access to the revenue data.  
-* **Relationships**  
-  * **User to Order:** One-to-Many (A user an place multiple orders)  
-  * **User to Preferences:** One-to-Many (Each user can have multiple preferences, and each preference is a unique value for that user).  
-  * **Order to Drink:** Many-to-Many (An order and include multiple drinks, and a drink can be part of many orders)  
-  * **Revenue to Order:** One-to-Many (Revenue is updated when an order is completed)  
-  * **Revenue to User:** One-to-Many (Only a User with the Manager role has access to view revenue)  
-  * **Inventory to Drink:** Many-to-Many (A drink can use multiple inventory items, and an inventory item can be used in multiple drinks.)  
-  * **User to Payments:** One-to-Many (A user can have multiple payments)  
-  * **User to notifications:** One-to-Many (A user can receive multiple notifications)  
-  * **Order to QRCode:** One-to-One (A QR code is generated an order)  
-  * **Notification to QRCode:** One-to-One (The QR code is sent to the user as  notification)
+---
 
-### **Database Design:**
+### **User**
 
-* **Relational Database (PostgreSQL):** Well-suited for managing complex relationships and ensuring transactional integrity. PostgreSQL supports advanced features like JSONB fields, which can be useful for storing unstructured data like user preferences or dynamic order details  
-* **Major Tables in PostgreSQL** (Mapped from Django Models):  
-  * **Auth\_user Table:**  
-    * Stores user data.   
-    * Columns: id: username, email, password, role, dataJoined, lastLogin  
-  * **Order Table**  
-    * Stores order data.   
-    * Columns: id, userId, status, paymentStatus pickupTime, createdAt  
-  * **Drink Table**  
-    * Stores drink details.   
-    * Columns id, itemName, quantity, thresholdLevel, lastUpdated  
-  * **Inventory Table:**  
-    * Stores inventory data.   
-    * Columns: id, itemName, quantity, thresholdLevel, lastUpdated  
-  * **Payment Table:**  
-    * Stores payment information.   
-    * Columns: id orderId, userId, amount, paymentMethod, paymentStatus, createdAt  
-  * **Notification Table:**  
-    * Stores notifications.   
-    * Columns: id, userId, message, timestamp, type  
-  * **Preference Table:**   
-    * Stores user preferences for drinks  
-    * Columns: id, userID preferences  
-  * **Revenu Table:**  
-    * Stores store revenue data accessible to managers  
-    * Columns: id, totalAmount, date, managerId  
-  * **QRCode Table:**  
-    * Stores QR codes for orders that include sodas. These codes allow users to open the fridge   
-    * Columns: id, orderId, QRCodeData, expirationTime  
-* **Relationships in PostgreSQL:**  
-  * Defined through Foreign Keys and Many-to-Many relationships in Django models. Django automatically handles join tables for Many-to-Many relationships.  
-* **Indexes**  
-  * Django creates indexes on primary keys and foreign keys by default. You can create additional indexes using the db\_index=True option in model fields or Meta class options for performance optimization.
+User accounts are global across all stores via lazy replication.
 
-![diagram0](misc/diagram0.png)
+| Field | Description |
+|-------|-------------|
+| **id** | Globally consistent user ID (primary key) |
+| **username** | Login username (unique) |
+| **password** | Password (PBKDF2-SHA256, configurable to Argon2) |
+| **email** | Email address (AES-256 encrypted at rest) |
+| **is_staff** | Staff privileges flag |
+| **is_superuser** | Superuser privileges flag |
 
-### **Data Access Layer:**
+---
 
-* In Django, the data access layer is primarily handled through the ORM, which abstracts SQL queries into Python code.  
-* **Data Access Patterns:**   
-  * **ORM Queries**: Django’s ORM allows you to perform CRUD operations (Create, Read, Update, Delete) directly through model methods. For instance  
-    * *Order.objects.create(user=user, status='Pending', ...)*  
-    * *Order.objects.filter(user=user).order\_by('-created\_at')*  
-  * **Raw SQL Queries:** Django allows executing raw SQL if needed using *Model.objects.raw()* or *connection.cursor()*. This is useful for complex queries or optimizations.  
-  * **Transitions:** Django provides transaction management via *transaction.atomic()*, ensuring that operations like placing an order and processing a payment are treated as a single transaction.  
-  * **Caching:**  Use Django's caching framework with backends like Redis for improving performance on frequently accessed data (e.g., drink menus, user preferences)  
-* **Migration Management:**  
-  * Django handles database migrations through the makemigrations and migrate commands. This keeps the database schema in sync with your models.  
-* **Data Encryption:**  
-  * Django automatically hashes passwords using PBKDF2 by default, and you can enhance this with Argon2 or bcrypt.  
-  * For sensitive data fields, consider using Django-encrypted-fields or custom encryption methods.  
-* **Access Control:**  
-  * Implement Django's built-in permissions and groups to enforce role-based access control.  
-  * Use Django's middleware and decorators (@login\_required, @permission\_required) to secure views.  
-* **Backup and Recovery:**  
-  * Regularly back up the PostgreSQL database using tools like pg\_dump. Automate this process with cron jobs or Django management commands.  
-  * Test recovery procedures to ensure data can be restored effectively.
+### **UserProfile**
+
+Tracks replication metadata and store preferences.
+
+| Field | Description |
+|-------|-------------|
+| **user** | Links to User table (one-to-one) |
+| **is_replicated** | True if replicated from another store |
+| **source_node_id** | Original store where account was created |
+| **preferred_store** | Links to Store table (optional) |
+
+---
+
+### **UserRole**
+
+Defines user roles and their scope.
+
+| Field | Description |
+|-------|-------------|
+| **user** | Links to User table |
+| **role_type** | ACCOUNT_USER, GENERAL_USER, MANAGER, ADMIN, LOGISTICS_MANAGER, REPAIR_STAFF, SUPER_ADMIN |
+| **store** | Links to Store table (for MANAGER, ADMIN roles) |
+| **region** | Links to Region table (for LOGISTICS_MANAGER, REPAIR_STAFF) |
+| **is_active** | Whether role is currently active |
+
+---
+
+### **Preference**
+
+Stores flavor preferences for users (one preference per row).
+
+| Field | Description |
+|-------|-------------|
+| **PreferenceID** | Primary key |
+| **UserID** | Links to User table |
+| **Preference** | Preference value (e.g., "Strawberry", "No Coconut") |
+
+**Replication**: Lazy - replicated with user account.
+
+---
+
+### **Drink**
+
+Drink combinations (catalog or user-created).
+
+| Field | Description |
+|-------|-------------|
+| **DrinkID** | Globally unique drink ID (primary key) |
+| **Name** | Drink name |
+| **SyrupsUsed** | Array of syrups used in drink |
+| **SodaUsed** | Array of sodas used in drink |
+| **AddIns** | Array of add-ins (fruit, candy, ice) |
+| **Price** | Price in USD |
+| **User_Created** | True if user-created, False if catalog |
+
+---
+
+### **Region**
+
+Geographic region containing multiple stores and one supply hub.
+
+| Field | Description |
+|-------|-------------|
+| **region_code** | Region identifier (A-G) - primary key |
+| **name** | Region name (e.g., "Logan, UT") |
+| **center_latitude** | Geographic center latitude |
+| **center_longitude** | Geographic center longitude |
+
+---
+
+### **SupplyHub**
+
+Regional supply hub (runs same Django codebase as stores but configured for logistics only - no machines, no customer orders).
+
+| Field | Description |
+|-------|-------------|
+| **hub_id** | Primary key |
+| **region** | Links to Region table (one-to-one) |
+| **name** | Hub name |
+| **latitude** | Geographic latitude |
+| **longitude** | Geographic longitude |
+| **api_base_url** | API endpoint (e.g., "https://hub-logan.codepop.com") |
+| **is_operational** | Operational status |
+
+---
+
+### **Store**
+
+Physical CodePop location.
+
+| Field | Description |
+|-------|-------------|
+| **store_id** | Primary key |
+| **store_number** | Store identifier (e.g., "LOGAN-001") - unique |
+| **name** | Store name |
+| **region** | Links to Region table |
+| **supply_hub** | Links to SupplyHub table |
+| **latitude** | Geographic latitude |
+| **longitude** | Geographic longitude |
+| **api_base_url** | API endpoint (e.g., "https://store-logan-001.codepop.com") |
+| **is_operational** | Operational status |
+| **hours_of_operation** | Store hours by day (JSON format) |
+
+---
+
+### **Inventory**
+
+Ingredient quantities at each store (strictly local, not replicated).
+
+| Field | Description |
+|-------|-------------|
+| **store** | Links to Store table |
+| **ItemName** | Item name |
+| **ItemType** | Soda, Syrup, Add In, Physical |
+| **Quantity** | Current quantity |
+| **ThresholdLevel** | Restock alert threshold |
+
+---
+
+### **Order**
+
+Customer drink order at specific store (strictly local, not replicated).
+
+| Field | Description |
+|-------|-------------|
+| **store** | Links to Store table |
+| **UserID** | Links to User table (nullable for guest orders) |
+| **Drinks** | Links to Drink table (many-to-many) |
+| **OrderStatus** | pending, processing, completed, cancelled |
+| **PaymentStatus** | pending, paid, failed, remade |
+| **StripeID** | Stripe payment intent ID |
+
+---
+
+### **Revenue**
+
+Financial transactions by a singular store strictly local to that store.
+
+| Field | Description |
+|-------|-------------|
+| **store** | Links to Store table |
+| **OrderID** | Links to Order table |
+| **TotalAmount** | Revenue amount in USD |
+| **SaleDate** | Transaction date |
+| **Refunded** | Refund status |
+
+---
+
+### **Notification**
+
+Notifications sent to users or managers.
+
+| Field | Description |
+|-------|-------------|
+| **store** | Links to Store table (nullable for global notifications) |
+| **UserID** | Links to User table (nullable for global notifications) |
+| **Message** | Notification text |
+| **Type** | order_update, inventory_alert, system_message, etc. |
+
+---
+
+### **Machine**
+
+Robotic beverage-making machine (strictly local; status updates pushed to hub).
+
+| Field | Description |
+|-------|-------------|
+| **machine_id** | Primary key |
+| **store** | Links to Store table |
+| **machine_type** | Machine type |
+| **status** | normal, repair-start, repair-end, warning, error, out-of-order, schedule-service |
+| **status_date** | Date status was set |
+
+---
+
+### **MaintenanceLog**
+
+Service history for machines (local; accessible to repair staff via hub).
+
+| Field | Description |
+|-------|-------------|
+| **machine** | Links to Machine table |
+| **repair_staff** | Links to User table (repair staff) |
+| **service_type** | routine_maintenance, repair, emergency_fix, part_replacement, cleaning |
+| **service_start** | Service start time |
+| **cost** | Service cost |
+
+---
+
+### **RepairSchedule**
+
+Repair staff schedules (regional; managed by hub).
+
+| Field | Description |
+|-------|-------------|
+| **repair_staff** | Links to User table (assigned repair staff) |
+| **machine** | Links to Machine table |
+| **scheduled_date** | Service date/time |
+| **status** | scheduled, in_progress, completed, cancelled |
+
+---
+
+### **SupplyRequest**
+
+Inventory replenishment request from store to supply hub (hub-managed).
+
+| Field | Description |
+|-------|-------------|
+| **store** | Links to Store table |
+| **supply_hub** | Links to SupplyHub table |
+| **requested_items** | Items and quantities |
+| **priority** | low, normal, urgent |
+| **status** | submitted, approved, in_transit, delivered, rejected |
+
+---
+
+### **Relationships Summary**
+
+| Relationship | Type | Description |
+|--------------|------|-------------|
+| User → Preference | One-to-Many | User has multiple flavor preferences |
+| User → Order | One-to-Many | User can place multiple orders |
+| User → UserRole | One-to-Many | User can have multiple roles (e.g., manager of Store A, admin of Store B) |
+| User → MaintenanceLog | One-to-Many | Repair staff logs multiple service activities |
+| User → RepairSchedule | One-to-Many | Repair staff has multiple scheduled tasks |
+| User ↔ Drink | Many-to-Many | Users can favorite many drinks; drinks can be favorited by many users |
+| Region → Store | One-to-Many | Region contains multiple stores |
+| Region → SupplyHub | One-to-One | Each region has one supply hub |
+| Region → UserRole | One-to-Many | Region has multiple logistics managers and repair staff |
+| SupplyHub → Store | One-to-Many | Supply hub services multiple stores |
+| SupplyHub → SupplyRequest | One-to-Many | Supply hub receives multiple requests |
+| Store → Inventory | One-to-Many | Store has multiple inventory items |
+| Store → Order | One-to-Many | Store processes multiple orders |
+| Store → Revenue | One-to-Many | Store generates multiple revenue records |
+| Store → Machine | One-to-Many | Store has multiple machines |
+| Store → SupplyRequest | One-to-Many | Store makes multiple supply requests |
+| Store → UserRole | One-to-Many | Store has multiple managers and admins |
+| Order ↔ Drink | Many-to-Many | Order contains multiple drinks; drink can be in multiple orders |
+| Order → Revenue | One-to-One | Each order generates one revenue record |
+| Machine → MaintenanceLog | One-to-Many | Machine has multiple service logs |
+| Machine → RepairSchedule | One-to-Many | Machine has multiple scheduled service appointments |
+
+---
+
+### **Database Design**
+
+**Database Type: PostgreSQL 15**
+
+CodePop uses a **database-per-store** model where each store and hub runs its own independent PostgreSQL instance. This provides fault isolation (one store's failure doesn't affect others), data sovereignty (each store owns its data), independent scaling, and reduced latency (no network round-trip to central server). Trade-off: no global transactions (uses eventual consistency) and increased operational overhead (each database must be backed up and maintained independently).
+
+#### **Major Tables in PostgreSQL**
+
+| Table Name | Purpose | Local or Replicated | Key Relationships |
+|------------|---------|---------------------|-------------------|
+| **auth_user** | User accounts | Lazy replication | → Preference, Order, UserRole |
+| **backend_userprofile** | User replication metadata | Lazy replication | → User, Store |
+| **backend_userrole** | Role assignments | Lazy replication | → User, Store, Region |
+| **backend_preference** | User flavor preferences | Lazy replication | → User |
+| **backend_drink** | Drink combinations | Catalog: replicated, User-created: lazy | ↔ User (favorites), Order |
+| **backend_region** | Geographic regions | Replicated (static, rarely changes) | → Store, SupplyHub |
+| **backend_supplyhub** | Supply hubs | Replicated (static, rarely changes) | → Region, Store, SupplyRequest |
+| **backend_store** | Store locations | Replicated (static, rarely changes) | → Region, SupplyHub, Inventory, Order, Machine |
+| **backend_inventory** | Store inventory | Local (never replicated) | → Store |
+| **backend_order** | Customer orders | Local (never replicated) | → Store, User, Drink |
+| **backend_revenue** | Financial transactions | Local (never replicated) | → Store, Order |
+| **backend_notification** | User notifications | Local (never replicated) | → Store, User |
+| **backend_machine** | Robotic machines | Local (status pushed to hub) | → Store, MaintenanceLog |
+| **backend_maintenancelog** | Machine service logs | Local (accessible to repair staff) | → Machine, User (repair staff) |
+| **backend_repairschedule** | Repair schedules | Regional (managed by hub) | → Machine, User (repair staff) |
+| **backend_supplyrequest** | Supply requests | Hub-managed | → Store, SupplyHub |
+
+**Indexes:**
+Django automatically creates indexes on primary keys and foreign keys. Custom indexes optimize performance-critical queries: inventory lookups and low-stock alerts, order dashboards and user history, revenue reports and refund tracking, machine status filtering, and geolocation-based store discovery.
+
+**Data Migrations:**
+Django's migration system handles schema changes across all store nodes. Migration files are committed to version control and applied independently at each store. Migrations are backward-compatible during rolling deployments (e.g., new nullable fields don't break old code).
+
+**Data Encryption:**
+- **At Rest**: Passwords hashed with PBKDF2-SHA256 (configurable to Argon2), sensitive fields encrypted with AES-256
+- **In Transit**: All communication uses HTTPS/TLS 1.3 (client-to-backend and inter-node)
+- **Payment Data**: No raw credit card data stored; Stripe handles payment processing (only payment intent IDs stored)
+
+**Backup and Recovery:**
+Each store runs automated backups with daily full backups and hourly incremental backups. Backups stored off-site with 30-day retention. Recovery process involves restoring from backup and re-syncing replicated data from peers. Local data (orders, inventory, revenue) must be recovered from backups as they are not replicated.
 
 ## **6\. Integration Points (External Interfaces)**
 
