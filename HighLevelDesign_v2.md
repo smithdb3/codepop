@@ -371,82 +371,90 @@ CodePop is designed to be accessible to a wide variety of users. Our goal is to 
     * Some exceptions to this include obvious and brightly colored buttons for navigation to pages such as the account creation page or the payment page which is accessed from the cart.   
   * Accessibility  
     * Color blindness  
-      * The color palette chosen is shown in the following graphics as seen by some of the more common forms of color blindness.   
-      * Based on this analysis, colors like teal and purple will not be used right next to each other in the app so as to keep easy readability for all users.   
-      ![ColorPallet0](misc/ColorPallet0.png) 
-      ![ColorPallet1](misc/ColorPallet1.png)
+      * -=-=- What notes does AI have on our current palette for color blindness? -=-=- 
     * Each page will have screen-reader compatibility and tab-controlled navigation options.   
-    * Web Content Accessibility Guidelines (WCAG) 
+    * Web Content Accessibility Guidelines (WCAG) -=-=- what does this mean? -=-=- 
     
 * **Mockups**: High-level mockups or wireframes of key screens.  
-  * Color way  
-    * The color way has been chosen specifically to reflect the bright colorful nature of the app while also providing good contrast for useability.   
+  * Color way -=-=- not sure what color way is -=-=-
+    * The color way has been chosen specifically to reflect the bright colorful nature of the app while also providing good contrast for useability.
     * Hex values (L-R)  
-      * D30C7B  
-      * 8DF1D3  
-      * C6C8EE  
-      * F92758  
-      * FFA686  
+      * Primary Color #FF2E63  
+      * Secondary Color#08D9D6  
+      * Background #F9FAFB  
+      * Surface #FFFFFF  
+      * Text Color #222831  
   * Style Guide  
     * Corners of boxes and buttons will be rounded.
-    ![ColorPallet2](misc/ColorPallet2.png)
+    ![UI_color_palette](misc/UI_color_palette.jpeg)
+    ![color_palette_UI_example](misc/color_palette_UI_example.jpeg)
 
 * **Navigation Flow**: Overview of how users will navigate the app.  
   * Pages will not be more than 2-3 clicks deep  
   * Pages:  
-    * Home page  
+    * Home page
       * Nav bar  
         * Cart button \- link to cart page  
         * Link to drink design page  
         * Link to Account user home page  
-        * Link to complaints page  
+        * Link to complaints page
       * Seasonal drinks menu carousel  
-      * Generate random button (from AI)  
-      * Create account button (for non-account users)  
-    * Sign in page  
+      * Generate random button (from AI)
+      * If signed in: 
+        * Saved drinks - with options to delete or add to cart (UI for size selection follows 'add to cart' button)
+        * Update preferences  
+          * Soda, syrups, ice quantity
+        * Settings
+          * Set location for geolocation
+          * account settings
+            * change email/password
+            * dark mode/light mode
+      * If not signed in:
+        * Create account button (for non-account users)
+    * Sign in page
       * Simple page with text entry boxes for username and password  
       * Login button  
       * Automatically displayed error message or taken to home page after login  
-    * Complaints page  
-      * Simple page with a text entry box with a complaint prompt \- users will receive AI generated response messages after entering complaints  
-    * Account user home page  
-      * Saved drinks  
-      * Update preferences button  
-        * Favorite drinks and favorite ingredients for users to take into account  
-        * Option to enable/disable geolocation  
-    * Payment page  
+      * (C) Goes to a tutorial of how to use app after signed in - skip button optional
+    * Complaints page
+      * Simple page with a text entry box with a complaint prompt \- users will receive AI generated response messages after entering complaints
+    * Cart page
+      * Drinks graphic + drink name + edit + price + remove
+      * Button to checkout + total price
+    * Payment page
       * User is taken here from the “checkout” button in the cart  
       * Stripe API used to take user payment information  
-      * After payment information is submitted, there is a notification for users   
       * Option for user to track with geolocation (default selected) or select a time for it to be ready  
-        * If geolocation is disabled this button should be grayed out and there should be a message letting the user know how to enable geolocation  
-    * Cart page  
-      * Drinks   
-      * Options to remove things from cart  
-      * Button to checkout  
-    * Confirmation page  
-      * After a user pays for their drink, they are taken to a page with a link to the complaints page (Didn’t get their drink?” button) as well as a rate your drink section where a user can rate their drink out of 5\.   
+        * If geolocation is not setup, clicking this button should give them the option to enable geolocation
+    * Confirmation page
+      * After a user pays for their drink, they are taken to a page with a link to the complaints page (Didn’t get their drink?” button) as well as a rate your drink section where a user can rate their drink out of 5.   
     * Drink design page  
-      * generative/responsive graphic created when a user makes drinks  
-      * Add-in options are displayed with easily identifiable graphics instead of a list so options are easy to choose  
-      * There is a way to search for options  
-      * A van bar for different add in options  
-      * Also a way to remove options \- have the graphics be selected (added) or unselected (removed) with a visible difference for ingredients that are added  
-      * Drink graphic, nav bar (soda (can choose more than one), syrups, juices (lemon, lime, pineapple, coconut etc.), ice (light, regular), extra, no ice), search bar  
-      * An add to cart button  
-      * A size and soda selection are required to add to cart, everything else is optional and the default is “none”. An error will pop up if the user tries to add a drink to the cart without selecting a drink size or soda.   
+      * generative/responsive graphic created when a user makes drinks
+      * An add to cart button by the graphic - must have a soda selected (other options default to none) - size selection occurs after hitting 'add to cart'
+      * A 'Save as favorite' button by the graphic (saves drink to the user's favorites)
+      * Drink design options (little graphics or emojis included with option names):
+        * Soda - can select/deselect multiple - search bar included at top of this section
+        * Syrups - can select/deselect multiple - search bar included at top of this section
+        * Juices - can select/deselect multiple - (lemon, lime, pineapple, coconut etc.) - no search bar needed
+        * Ice - can select one - (light, regular, extra, no ice) - no search bar needed
     * Manager dashboard  
       * A dashboard that contains links to a store revenue report and a store inventory report.   
         * Data such as total revenue, inventory costs, total user accounts will be displayed in an easily understandable format  
       * AI will be used to estimate when supplies need to be ordered to notify the manager and also find the best places to purchase ingredients.  
     * Admin dashboard  
-      * A simple dashboard to view all functional user accounts with options to delete, disable, and reinstate accounts. An admin also has the permissions necessary to create manager accounts and grant managers permission to view certain data.   
+      * Shows all user accounts (searchable):
+        * 3 sections: Active, disabled, and deleted
+        * Active: delete, disable, make manager
+        * Disabled: delete, enable
+        * Deleted: no buttons (non-recoverable. purely a log)
+      * Shows all manager accounts (searchable):
+        * shows options for different kinds of permissions based on the manager -=-=-=- what are the kinds of permission for managers? -=-=-=-=-
     * Loading screens  
       * Typical loading screen:  
       ![SodaRobot](misc/SodaRobotResized.jpg)
       * Loading screen for customer service:  
-        * Bob  
-      ![bob](misc/bobResized.jpg)
+        * Tonic  
+      ![tonic](misc/tonic.png)
       *   
   * UI diagrams:  
   ![Proto0](misc/Proto0.jpg)
@@ -587,3 +595,5 @@ For future reference, the following will be handled in app:
  ![diagram1](misc/diagram1.png)
 
 ## 
+
+
