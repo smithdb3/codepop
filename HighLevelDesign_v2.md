@@ -852,51 +852,181 @@ Note: Much of this section may be a repeat of what has already been documented, 
 * **Privacy**  
   * We will make sure that the user has the option to opt into any of the features that handle personal data (geolocation, drink preferences, emails) to ensure that they are able to make an informed choice about their data.
 
-## **10\. Testing Strategy**
+## **10. Testing Strategy**
 
-* **Unit Testing**
+CodePop will employ a two-pronged testing strategy: automated unit tests for systematic verification and manual testing for user experience validation. Tests are created incrementally as features are developed to catch issues early and ensure system reliability. A goal for this testing strategy should be to automate testing as much as possible without it being "overkill". Manual testing should validate cases and features that are impractical to automate. Unit tests listed here may move to manual test cases depending on automation difficulty.
 
-  CodePop will implement unit tests as we go along with our software production. 
+### **Automated Testing (Unit Tests)**
 
-* Unit tests will provide an automated way to run tests and prevent the need to manually input over and over again.   
-* These tests will be created as the project gets created. As an example, once all of the sign-in page functionality is up-and-running, unit tests will be created to ensure the user can only input valid emails, and that everything gets properly stored in the database. Creating the tests in this fashion will:  
-  * Prevent rushing them later on in the project’s development.  
-  * Ensure a section works before moving on  
-  * Make testing easier as developers merge code together. Did someone’s merge break someone else’s unit test?  
-    Unit testing may add more complication to the project, especially if developers are not that familiar with it. However, unit testing will ensure that the project has less bugs and also provide a visual as to what has and hasn’t been tested.  
-* **Manual Testing**
+Unit tests provide automated, repeatable verification of individual components. Tests run automatically before code merges to catch regressions early.
 
-  In the case that unit tests do not work, manual testing will be used. 
+**Framework:** Django's built-in TestCase and APITestCase classes
 
-* In order to make the testing as smooth and consistent as possible, a document will be created describing each test case, that way everyone on the team has access to every test (and could copy/paste).   
-* Without this document, test cases may get left out during testing or forgotten, which will cause problems later on in development.
+**Current Implementation Coverage:**
 
-## **11\. Risks and Mitigations**
+| Test Suite | What's Tested | Key Test Cases |
+|------------|---------------|----------------|
+| **PreferenceTests** | User preference CRUD operations | Get/create/delete preferences, validate invalid values |
+| **DrinkTests** | Drink catalog and custom drinks | CRUD operations, Ice/Size validation, user favorites |
+| **InventoryTests** | Stock management | Update quantities, out-of-stock handling, low-stock warnings |
+| **NotificationTests** | User notifications | Create/filter/delete notifications, time-based filtering, user isolation |
+| **OrderTests** | Order processing | Create orders, add/remove drinks, invalid drink handling |
+| **RevenueTests** | Financial tracking | Auto-calculate totals, update after order changes |
+| **AITests** | Drink recommendation engine | Validate AI output format, preference matching, ingredient validity |
 
-* **Identified Risks**: List of known risks (e.g., technology choice, dependencies).  
-* **Mitigation Plans**: Strategies for addressing these risks.  
-    
-* **User Geolocation**  
-  * **Risk:** Geolocation will be used to track how close the user is to the CodePop location. However, there is a chance this gets hacked and the user’s location will be revealed and tracked by unknown parties  
-  * **Mitigation:** User location will be encrypted/hashed so it is more secure, and location will be accessed sparingly throughout the program. The user also has the option to opt out of geolocation and set a time for their drink to be ready instead.  
-* **User Input (AI)**  
-  * **Risk:** AI could get fed bad input from the user preventing it from working properly or causing it to reveal secure information.  
-  * **Mitigation:** Users will either not be able to directly input into the AI, or in cases where they do input (i.g. Preferences, complaints) user input will be searched for any risky words or symbols, which will then get parsed out before being sent to the AI.  
-* **Payment Information**  
-  * **Risk:** Anytime we deal with people’s money there is a big risk that relevant data will be hacked resulting in financial harm to our customers   
-  * **Mitigation:** We will be using Stripe’s payment API so that we avoid directly handling our customers' sensitive information. This will allow our customer’s data to be kept safe by Stripe who has much more time and money to create robust security than we do.  
-* **Allergies**  
-  * **Risk:** Some of our customers may have food allergies that could result in bodily harm if they get contaminated drinks.  
-  * **Mitigation:** We will need to clearly label what allergens a drink contains so that a user can make an informed decision when they purchase a drink and ensure that it won’t cause harm to them.  
-* **User Information**  
-  * **Risk:** User accounts may be hacked and information may be stolen or used to buy items through the app.  
-  * **Mitigation:** We will encrypt sensitive user information in the database (i.e. email, password). We will also allow users to contact administrators if they fear their data has been compromised to allow them to either freeze their account or change passwords.   
-* **Location Revenue Information**  
-  * **Risk:** Manager accounts may be hacked and information may be stolen.  
-  * **Mitigation:** We will encrypt sensitive user information in the database (i.e. email, password). We will have a stricter password policy for managers and admins that will require them to have longer, more complicated passwords.  
-* **Legal Issues**  
-  * **Risk:** Customers may try to hold the company liable if something were to happen such as the AI generating them a drink that has something they are allergic to in it.  
-  * **Mitigation:** We will have a warning statement for non account users when they order a drink created though AI. Account users will sign an agreement upon account creation to agree to not hold the company liable for personal harm. 
+**Authentication & Authorization (All Test Suites):**
+- Token-based authentication using Django REST Framework tokens
+- Role-based access control verification
+- Unauthorized access prevention (401/403 errors)
+
+**Tests Needed for Planned Features:**
+
+| Test Suite | What's Tested | Key Test Cases |
+|------------|---------------|----------------|
+| **UserRoleTests** | Role-based access control | Manager sees only their store, logistics manager sees region, super admin sees all |
+| **StoreRegistryTests** | Store/hub communication | Registration, peer discovery, operational status updates |
+| **UserReplicationTests** | Cross-store user data sync | Lazy replication on first login, preference sync, cross-region lookup |
+| **SupplyRequestTests** | Inventory replenishment | Create requests, status transitions, approval workflow |
+| **MachineTests** | Equipment status tracking | Status transitions, out-of-order prevents orders, notification triggers |
+| **MaintenanceLogTests** | Service history | Create logs, repair staff assignment, cost tracking |
+| **RevenueAggregationTests** | Financial rollup | Regional totals, nationwide aggregation, hub query fallback |
+| **SettingsTests** (Frontend) | User preferences | Dark mode, geolocation toggle, account updates |
+
+**Future Automated Testing (Existing Features):**
+- **Frontend Unit Tests:** Jest + React Native Testing Library for component testing
+- **Integration Tests:** End-to-end API flows (registration → login → order → payment)
+
+---
+
+### **Manual Testing**
+
+Manual testing validates user experience, visual design, and edge cases that are difficult or impractical to automate. A standardized checklist ensures consistency across team members and provides a comprehensive list of requirements that the app should adhere to.
+
+**Manual Test Checklist:**
+
+#### **UI/UX Validation**
+- [ ] Visual consistency (colors, fonts, spacing match design mockups)
+- [ ] Responsive layout on different screen sizes (small, medium, large phones)
+- [ ] Loading states display correctly (SodaRobot and Tonic animations)
+
+#### **User Workflows**
+- [ ] Guest user: Browse drinks → add to cart → checkout → pay → confirm
+- [ ] New user: Create account → receive email → login → set preferences
+- [ ] Returning user: Login → view saved drinks → reorder → rate drink
+- [ ] Manager: Login → view inventory report → check low stock items
+- [ ] Admin: Login → view user accounts → disable/delete user
+- [ ] AI recommendations: Click "Generate" → review drink → add to cart
+- [ ] Complaints: Submit complaint → receive chatbot response → verify resolution
+
+#### **Edge Cases & Error Handling**
+- [ ] Empty cart checkout attempt (should show error)
+- [ ] Incorrect password (should show error, count attempts)
+- [ ] Payment card declined (should display Stripe error message)
+
+#### **New Features: Multi-Store & New Roles**
+
+*Store Discovery & Geolocation:*
+- [ ] User with geolocation enabled sees nearby stores in correct order (closest first)
+- [ ] User with geolocation disabled can manually select a store
+- [ ] Store list updates when user moves to different location
+
+*New User Roles & Dashboards:*
+- [ ] Manager login → dashboard shows only their store's revenue and inventory
+- [ ] Manager cannot access other stores' data (verify error if trying URL manipulation)
+- [ ] Logistics Manager login → sees regional supply requests and inventory status
+- [ ] Logistics Manager can approve/reject supply requests
+- [ ] Super Admin login → sees nationwide revenue, analytics, and user management
+
+*Machine Maintenance:*
+- [ ] Repair Staff can view machines needing service in their region
+- [ ] Repair Staff can log maintenance work (start time, end time, cost)
+- [ ] Manager receives notification when machine status changes
+- [ ] Machine status updates (normal → repair-start → repair-end) display in real-time
+
+*Supply Management:*
+- [ ] Manager can view low-stock inventory items
+- [ ] Manager can generate supply request from inventory report
+- [ ] Supply hub receives and processes requests correctly
+
+**Testing Cadence:**
+- Run manual tests after each major feature completion
+- Full regression testing before production releases
+
+## **11. Risks and Mitigations**
+
+This section identifies potential risks across technical, security, operational, and legal domains, along with mitigation strategies to minimize impact.
+
+#### **User Geolocation Privacy**
+- **Risk:** Geolocation tracking could be exploited by attackers to monitor user movements, creating privacy violations and safety concerns.
+- **Likelihood:** Medium - Geolocation APIs are common attack targets
+- **Mitigation:**
+  - Encrypt geolocation data in transit (HTTPS/TLS 1.3)
+  - Hash/encrypt geolocation data at rest in database
+  - Access geolocation data only during active order tracking (not continuous background tracking)
+  - Implement strict access controls (only order service can read location)
+  - Users can opt out of geolocation entirely (fallback to manual time selection)
+  - Display clear privacy notice explaining geolocation usage
+  - Delete geolocation data after order completion (retention: 1 hour max)
+
+#### **Payment Information Security**
+- **Risk:** Payment data breach could result in financial loss for customers and legal liability for CodePop.
+- **Likelihood:** Low - Using Stripe eliminates most direct risk
+- **Mitigation:**
+  - **Primary Defense:** Use Stripe Payment API - no raw credit card data stored in CodePop database
+  - Store only Stripe payment intent IDs (non-sensitive tokens)
+
+#### **User Account Security**
+- **Risk:** User accounts could be compromised via credential stuffing, brute force attacks, or session hijacking, leading to unauthorized purchases or data theft.
+- **Likelihood:** Medium - Common attack vector for online services
+- **Mitigation:**
+  - **Authentication:**
+    - Enforce strong password requirements (min 12 chars, mix of upper/lower/digit/symbol)
+    - Hash passwords with PBKDF2-SHA256 (upgrade to Argon2 in production)
+  - **Authorization:**
+    - Use Django REST Framework Token Authentication with expiring tokens (24-hour lifetime)
+  - **Session Security:**
+    - Implement HTTPS for all communication (prevent token interception)
+    - Add CSRF protection for state-changing requests
+
+#### **AI Model Security**
+- **Risk:** AI models (recommendation engine, chatbot) could be manipulated via adversarial inputs, prompt injection, or data poisoning, causing incorrect recommendations or leaking sensitive information.
+- **Likelihood:** Low-Medium - AI attacks are emerging but not yet widespread
+- **Mitigation:**
+  - **Input Sanitization:**
+    - Filter user inputs for malicious content before sending to AI models
+    - Blocklist risky keywords (SQL syntax, command injection patterns)
+    - Limit input length (max 500 chars for chatbot, max 20 preferences)
+  - **Output Validation:**
+    - Ensure chatbot responses don't leak user data or internal system information
+  - **Model Isolation:**
+    - Run AI models in isolated environment (separate process or container)
+    - Limit AI model access to database (read-only access to preferences and drinks)
+  - **Monitoring:**
+    - Log all AI interactions for audit trail
+
+#### **Allergen Information Accuracy**
+- **Risk:** Incorrect or missing allergen information could cause allergic reactions, resulting in bodily harm, legal liability, and reputational damage.
+- **Likelihood:** Low-Medium - Human error in data entry, ingredient changes
+- **Mitigation:**
+  - **Data Accuracy:**
+    - Maintain comprehensive allergen database for all ingredients
+    - Clearly label common allergens (peanuts, tree nuts, dairy, soy, gluten, shellfish)
+    - Display allergen warnings prominently in drink details
+    - Allow users to filter drinks by allergen exclusions
+  - **Legal Protection:**
+    - Display disclaimer on AI-generated drinks: "This drink was generated by AI. Please review ingredients carefully and consult allergen information."
+
+#### **Legal Liability for AI-Generated Drinks**
+- **Risk:** Customers may attempt to hold CodePop liable for harm caused by AI-generated drinks (allergic reactions, illness, unpleasant taste).
+- **Likelihood:** Low-Medium - Depends on legal precedents for AI-generated content
+- **Mitigation:**
+  - **Disclaimers:**
+    - Display prominent warning for AI-generated drinks: "This drink was created by artificial intelligence. Please review all ingredients and allergen information before ordering. CodePop is not responsible for allergic reactions or dissatisfaction with AI-generated drinks."
+  - **Human Oversight:**
+    - Implement "flag for review" feature (users can report dangerous AI recommendations)
+
+
+This testing and risk management strategy ensures CodePop is reliable, secure, and resilient as it scales from a single-store prototype to a nationwide distributed system.
 
 **Interactions Diagram**
 
