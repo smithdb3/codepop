@@ -312,6 +312,7 @@ The same hierarchical pattern applies to inventory status (items critically low,
     * User service: Handles user data storage and retrieval  
     * Authentication service: Manages login, sessions, and secure password management  
     * Recommendation service: Manages preferences and order history  
+
 * **Soda Catalog Module:** Manages the inventory of soda products and custom drink options.  
   * Responsibilities  
     * Product listing and categorization  
@@ -321,6 +322,7 @@ The same hierarchical pattern applies to inventory status (items critically low,
     * Product service: Manages operations for soda products  
     * Customization service: Allows users to create custom sodas  
     * Inventory service: Tracks stock levels and alerts for low inventory  
+
 * **Order Management Module:** Handles the order lifecycle from creation to delivery.  
   * Responsibilities  
     * Order placement and tracking  
@@ -330,6 +332,7 @@ The same hierarchical pattern applies to inventory status (items critically low,
     * Order service: Manages order creation, updates, and status  
     * Payment service: Handles payment transactions  
     * Order completion service: Manages scheduling of orders and geolocation tracking  
+
 * **AI Recommendation Module:** Provides personalized and randomized soda recommendations using AI.  
   * Responsibilities  
     * Analyze user preferences and behavior  
@@ -339,6 +342,7 @@ The same hierarchical pattern applies to inventory status (items critically low,
   * Components  
     * Data Analysis Service: Analyzes user data and preferences for insights  
     * AI Model: Generates recommendations based on past behavior and trends
+
 * **Supply Chain module:** Helps the admins and logistic managers keep track of supplies both in their area and the entire country
 
 - Responsibilities
@@ -373,7 +377,7 @@ The same hierarchical pattern applies to inventory status (items critically low,
 * **Inter-Node Communication Module (P2P)** Handle how servers communicate to each other to coordinate
 
 - Responsibilities 
-    - Store user data
+    - Establishes role in hierarchy (store, supply hub or master hub)
     - Manage inter-server communications 
     - Ensure messages are processed 
 - Components 
@@ -868,11 +872,11 @@ Note: Much of this section may be a repeat of what has already been documented, 
 * **Authentication and Authorization**: Description of user roles and permission management.  
   * Explanation of admin and manager access and roles:  
     * Admins: 
-        * Have access to user account information in their region.
-        * They are able to add/remove general user accounts and create manager accounts for select stores.   
+        * Have access to user account information in their store.
+        * They are able to add/remove general user accounts and create manager accounts for their stores.   
     * Super Admins
         * Have all the same permissions as a regional Admin but on a national scale
-        * can create/remove regional admins 
+        * can create/remove store admins 
     * Managers:
         * have access to store data such as revenue and expense reports.   
     * Logistics Manager:
@@ -888,17 +892,15 @@ Note: Much of this section may be a repeat of what has already been documented, 
   * Django security features: [https://docs.djangoproject.com/en/5.1/topics/security/](https://docs.djangoproject.com/en/5.1/topics/security/)  
     * Includes injection protection because queries are constructed using query parameterization  
     * Includes Cross site request forgery (CSRF) protection which prevents attacks that perform actions using other people’s credentials.
-* **Peer to Peer Security**: How to keep communications between servers secure
-  * Communication between store servers should be strictly for coordination 
-  * Information that should not be shared between stores via server are:
-    * Employee information
-    * Financial reports 
-    * A machine's status
-    * Pretty much anything that is store specific and not necessary to supply coordination
-  * Information about a stores current stock levels should be given out sparingly 
+* **Inter-Node Communication Security**: How to keep communications between servers secure
   * Messages should be passed using HTTPS 
   * Servers must authenticate that they are talking to a legit Codepop server before any communications take place
-    * A list of know servers should be maintained to and to ensure a server can trust another server  
+    * A list of know servers should be created and maintained to ensure a server can trust another server  
+  * A store servers can be accessed by super admins and a store's admin, manager and repair staff
+    * If a supply hub or another regional store needs information from a different store it can request the information
+  * Supply hubs can only be accessed by logistic managers and super admins 
+    * They can send requests to other supply hubs and store inside of their region only
+  * The Master hub can only be accessed by logistic managers and super admins
 * **Data Encryption**: Explanation of how data will be encrypted (at rest and in transit).  
   * Django user data encryption  
   * Sha 256 encryption  
@@ -910,7 +912,9 @@ Note: Much of this section may be a repeat of what has already been documented, 
     * Email  
     * geolocation  
   * Store data:  
-    * Revenue reports (regional and local) 
+    * Revenue tables (regional and local) 
+  * Hub data
+    * 
 * **Privacy**  
   * We will make sure that the user has the option to opt into any of the features that handle personal data (geolocation, drink preferences, emails) to ensure that they are able to make an informed choice about their data.
 
