@@ -339,6 +339,46 @@ The same hierarchical pattern applies to inventory status (items critically low,
   * Components  
     * Data Analysis Service: Analyzes user data and preferences for insights  
     * AI Model: Generates recommendations based on past behavior and trends
+* **Supply Chain module:** Helps the admins and logistic managers keep track of supplies both in their area and the entire country
+
+- Responsibilities
+    - Supplies requests
+    - Optimal routing
+    - Report creation
+- Components
+    - Supply request: Creates and Handles requests for products
+    - Routing: Ensures that products are shipped in an optimal way
+    - Reporting: Creates a report for users so they can hav a at a glance view of their region
+    - Order conformation: Lets admins approve or deny orders
+
+* **Machine Maintenance module:** Tracks all machines and their status to ensure repairs go out
+
+- Responsibilities
+    - Machine status
+        - Update status
+    - Repair tracking
+- Components
+    - Status updater: Changes a machines status to reflect how operational it is
+    - Machine database: Holds every machine the company need to keep track of
+
+* **Logistics AI module:** The AI that identifies patterns in teh supply chain
+
+- Responsibilities
+    - Read CSV files
+    - Analyze supply chain
+- Components
+    - CSV upload: A way to upload a CSV file 
+    - AI analyze: Looks at the CSV file to try and find patterns
+
+* **Inter-Node Communication Module (P2P)** Handle how servers communicate to each other to coordinate
+
+- Responsibilities 
+    - Store user data
+    - Manage inter-server communications 
+    - Ensure messages are processed 
+- Components 
+    - Messenger: Handles outgoing for other stores
+    - Message router: handles incoming messages and gets them to the correct module to be processed
 
 ## **5. Data Design**
 
@@ -827,8 +867,19 @@ Note: Much of this section may be a repeat of what has already been documented, 
 
 * **Authentication and Authorization**: Description of user roles and permission management.  
   * Explanation of admin and manager access and roles:  
-    * Admins have access to user account information as well as permissions to add/remove general user accounts and create manager accounts.   
-    * Managers have access to store data such as revenue and expense reports.   
+    * Admins: 
+        * Have access to user account information in their region.
+        * They are able to add/remove general user accounts and create manager accounts for select stores.   
+    * Super Admins
+        * Have all the same permissions as a regional Admin but on a national scale
+        * can create/remove regional admins 
+    * Managers:
+        * have access to store data such as revenue and expense reports.   
+    * Logistics Manager:
+        * Has access to regional supply chain information
+        * Determines supply routes
+    * Repair Staff
+        * Can view any machine's status in their area
   * Django comes with a built in user authentication system that handles user accounts, groups, permissions and cookie-based user sessions  
     * This system can be expanded and customized to add things like   
     * password strength checking to add more security.    
@@ -836,7 +887,18 @@ Note: Much of this section may be a repeat of what has already been documented, 
     * The client and server will talk to each other through token authentication which is already included with Django.   
   * Django security features: [https://docs.djangoproject.com/en/5.1/topics/security/](https://docs.djangoproject.com/en/5.1/topics/security/)  
     * Includes injection protection because queries are constructed using query parameterization  
-    * Includes Cross site request forgery (CSRF) protection which prevents attacks that perform actions using other people’s credentials.  
+    * Includes Cross site request forgery (CSRF) protection which prevents attacks that perform actions using other people’s credentials.
+* **Peer to Peer Security**: How to keep communications between servers secure
+  * Communication between store servers should be strictly for coordination 
+  * Information that should not be shared between stores via server are:
+    * Employee information
+    * Financial reports 
+    * A machine's status
+    * Pretty much anything that is store specific and not necessary to supply coordination
+  * Information about a stores current stock levels should be given out sparingly 
+  * Messages should be passed using HTTPS 
+  * Servers must authenticate that they are talking to a legit Codepop server before any communications take place
+    * A list of know servers should be maintained to and to ensure a server can trust another server  
 * **Data Encryption**: Explanation of how data will be encrypted (at rest and in transit).  
   * Django user data encryption  
   * Sha 256 encryption  
@@ -848,7 +910,7 @@ Note: Much of this section may be a repeat of what has already been documented, 
     * Email  
     * geolocation  
   * Store data:  
-    * Revenue reports  
+    * Revenue reports (regional and local) 
 * **Privacy**  
   * We will make sure that the user has the option to opt into any of the features that handle personal data (geolocation, drink preferences, emails) to ensure that they are able to make an informed choice about their data.
 
