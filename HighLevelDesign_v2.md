@@ -800,28 +800,28 @@ Each store runs automated backups with daily full backups and hourly incremental
     * Manager dashboard
       * A dashboard that contains links to a store revenue report, a store inventory report, order statistics, and a supply request page.  
         * Revenue report:
-          * Total revenue
-          * Inventory costs
-          * Total user accounts assigned to that location
+          * Total revenue.
+          * Inventory costs.
+          * Total user accounts assigned to that location.
         * Inventory report:
-          * Levels of syrups, soda, addins
-          * Estimated amount of syrups, soda, addins to order that month
-          * grid of the levels of syrups, sodas, addins
-            * grid can be configured to sort by how much is left
-          * grid of coolers/status (full/empty)
-          * for every full cooler, it shows how long the drink has been sitting there
+          * Levels of syrups, soda, addins.
+          * Estimated amount of syrups, soda, addins to order that month - AI generated.
+            * included in the AI report will be AI's recommendation for the best places to purchase ingredients.
+          * grid of the levels of syrups, sodas, addins.
+            * grid can be configured to sort by how much is left.
+          * grid of coolers/status (full/empty).
+          * for every full cooler, it shows how long the drink has been sitting there.
           * A grid that shows the inventory of nearby stores.
           * A grid that shows the inventory of the supply hub.
         * Order statistics
-          * History of orders
-          * Average time between order made and picked up
+          * History of orders.
+          * Average time between order made and picked up.
         * Supply request page
           * Here you can submit an order form for all supplies. Two options for submission button:
-            * Request from nearby store
+            * Request from nearby store.
               * If selected, the user must specify which store from a list of the nearby stores within a 30 mile radius.
-            * Request from supply hub
-          * There is also a way to view pending supply requests and their progress (like a track package UI)
-          * There is also a section to
+            * Request from supply hub.
+          * There is also a way to view pending supply requests and their progress (like a track package UI).
         * AI will be used to estimate when supplies need to be ordered to notify the manager and also find the best places to purchase ingredients.
     * Admin dashboard  
       * Shows all user accounts (searchable):
