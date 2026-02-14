@@ -1,5 +1,3 @@
-This document was created with assistance from ChatGPT.
-
 # **Code Pop High-Level Design Document**
 
 **Introduction**
@@ -299,6 +297,14 @@ The same hierarchical pattern applies to inventory status (items critically low,
 - **Route Optimization**: Genetic algorithms for efficient repair staff scheduling across multiple stores
 - **DialoGPT (Hugging Face)**: Natural language chatbot for customer service (transformers 4.30+, torch 2.0+)
 - **Gemini API**: Decorative image generation for app graphics
+
+**Deployment**
+
+CodePop will be deployed using **Google Cloud Platform (GCP)** to support the federated distributed architecture. Each store and regional supply hub will run as an independent deployment with its own backend infrastructure.
+
+- **Cloud Platform: Google Cloud Platform (GCP)**: Selected for cost-effectiveness (25% cheaper than Azure), superior student credits ($300 free trial), and excellent Django support
+
+- **Docker**: Containerizes the Django application with all dependencies, ensuring consistent environments across development, testing, and production. Each store/hub deployment uses the same Docker image with environment-specific configuration
 
 ## **4\. Modules and Components (Internal Interfaces)** 
 
