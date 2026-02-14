@@ -756,13 +756,14 @@ Each store runs automated backups with daily full backups and hourly incremental
 
 * **Navigation Flow**: Overview of how users will navigate the app.  
   * Pages will not be more than 2-3 clicks deep  
+  * Nav bar  
+      * Link to home page  
+      * Link to drink design page  
+      * Cart button \- link to cart page  
+      * Link to chat page
+      * Link to profile page
   * Pages:  
     * Home page
-      * Nav bar  
-        * Cart button \- link to cart page  
-        * Link to drink design page  
-        * Link to Account user home page  
-        * Link to complaints page
       * Seasonal drinks menu carousel  
       * Generate random button (from AI)
       * If signed in: 
@@ -776,23 +777,11 @@ Each store runs automated backups with daily full backups and hourly incremental
             * dark mode/light mode
       * If not signed in:
         * Create account button (for non-account users)
-    * Sign in page
+    * Sign-in/create account page
       * Simple page with text entry boxes for username and password  
       * Login button  
       * Automatically displayed error message or taken to home page after login  
       * (C) Goes to a tutorial of how to use app after signed in - skip button optional
-    * Complaints page
-      * Simple page with a text entry box with a complaint prompt \- users will receive AI generated response messages after entering complaints
-    * Cart page
-      * Drinks graphic + drink name + edit + price + remove
-      * Button to checkout + total price
-    * Payment page
-      * User is taken here from the “checkout” button in the cart  
-      * Stripe API used to take user payment information  
-      * Option for user to track with geolocation (default selected) or select a time for it to be ready  
-        * If geolocation is not setup, clicking this button should give them the option to enable geolocation
-    * Confirmation page
-      * After a user pays for their drink, they are taken to a page with a link to the complaints page (Didn’t get their drink?” button) as well as a rate your drink section where a user can rate their drink out of 5.   
     * Drink design page  
       * generative/responsive graphic created when a user makes drinks
       * An add to cart button by the graphic - must have a soda selected (other options default to none) - size selection occurs after hitting 'add to cart'
@@ -802,10 +791,44 @@ Each store runs automated backups with daily full backups and hourly incremental
         * Syrups - can select/deselect multiple - search bar included at top of this section
         * Juices - can select/deselect multiple - (lemon, lime, pineapple, coconut etc.) - no search bar needed
         * Ice - can select one - (light, regular, extra, no ice) - no search bar needed
-    * Manager dashboard  
-      * A dashboard that contains links to a store revenue report and a store inventory report.   
-        * Data such as total revenue, inventory costs, total user accounts will be displayed in an easily understandable format  
-      * AI will be used to estimate when supplies need to be ordered to notify the manager and also find the best places to purchase ingredients.  
+    * Cart page
+      * Drinks graphic + drink name + edit + price + remove
+      * Button to checkout + total price
+    * Payment page
+      * User is taken here from the “checkout” button in the cart  
+      * Stripe API used to take user payment information  
+      * Option for user to track with geolocation (default selected) or select a time for it to be ready  
+        * If geolocation is not setup, clicking this button should give them the option to enable geolocation
+    * Confirmation page
+      * After a user pays for their drink, they are taken to a page with a link to the complaints page (Didn’t get their drink?” button) as well as a rate your drink section where a user can rate their drink out of 5.
+    * Chat page
+      * Simple page with a text entry box with a complaint prompt \- users will receive AI generated response messages after entering complaints
+    * Manager dashboard
+      * A dashboard that contains links to a store revenue report, a store inventory report, order statistics, and a supply request page.  
+        * Revenue report:
+          * Total revenue.
+          * Inventory costs.
+          * Total user accounts assigned to that location.
+        * Inventory report:
+          * Levels of syrups, soda, addins.
+          * Estimated amount of syrups, soda, addins to order that month - AI generated.
+            * included in the AI report will be AI's recommendation for the best places to purchase ingredients.
+          * grid of the levels of syrups, sodas, addins.
+            * grid can be configured to sort by how much is left.
+          * grid of coolers/status (full/empty).
+          * for every full cooler, it shows how long the drink has been sitting there.
+          * A grid that shows the inventory of nearby stores.
+          * A grid that shows the inventory of the supply hub.
+        * Order statistics
+          * History of orders.
+          * Average time between order made and picked up.
+        * Supply request page
+          * Here you can submit an order form for all supplies. Two options for submission button:
+            * Request from nearby store.
+              * If selected, the user must specify which store from a list of the nearby stores within a 30 mile radius.
+            * Request from supply hub.
+          * There is also a way to view pending supply requests and their progress (like a track package UI).
+        * AI will be used to estimate when supplies need to be ordered to notify the manager and also find the best places to purchase ingredients.
     * Admin dashboard  
       * Shows all user accounts (searchable):
         * 3 sections: Active, disabled, and deleted
