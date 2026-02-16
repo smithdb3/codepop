@@ -1,72 +1,19 @@
 # **Code Pop High-Level Design Document**
 
-**Introduction**
+## Sections
 
-* Purpose  
-* Scope  
-* Audience  
-  **System Overview**  
-* Problem Statement  
-* Proposed Solution  
-* Hardware Platform  
-  * Mobile  
-  * Laptop and Desktop
+1. **Introduction**
+2. **System Overview**
+3. **Architecture Design**
+4. **Modules and Components (Internal Interfaces)**
+5. **Data Design**
+6. **Integration Points (External Interfaces)**
+7. **User Interface (UI) Design Overview**
+8. **Input and Output (I/O)**
+9. **Security and Privacy**
+10. **Testing Strategy**
+11. **Risks and Mitigations**
 
-  **Architecture Design**
-
-* Architecture Overview: Explanation of the overall architecture (monolithic, microservices, etc.)  
-* Component Diagram: Diagram showing major system components and their relationships  
-* Technology Stack: Technologies and frameworks used (e.g., languages, databases, servers)  
-  * React Native  
-  * Django  
-  * PostgreSQL  
-  * AI
-
-  **Modules and Components (Internal Interfaces)**
-
-* Module Overview: Description of key modules or components, their responsibilities, and interactions  
-* Data Flow Diagram (DFD): Illustration of how data moves between components  
-* Component Interaction: Details on how system components will communicate (e.g., APIs, web services)  
-  **Data Design**  
-* Data Model: High-level structure of data, including key entities and relationships  
-* Database Design: Type of database used (relational, NoSQL, etc.), major tables, and relationships  
-* Data Access Layer: Overview of how data is accessed, stored, and retrieved (e.g., ORM, SQL)  
-  **Integration Points (External Interfaces)**  
-* External Systems: Description of external systems or services the app will integrate with  
-* APIs: List of public/external APIs, endpoints, methods, and data contracts  
-  * Payment System: Stripe  
-  * Geolocator: MapBox  
-  * AI Chatbot: DialoGPT  
-  * Notifications: Firebase Cloud Messaging (FCM)
-
-  **User Interface (UI) Design Overview**
-
-* UI/UX Principles: High-level UI/UX principles (e.g., responsiveness, accessibility)  
-* Mockups: High-level mockups or wireframes of key screens  
-* Navigation Flow: Overview of how users will navigate the app  
-  **Input and Output (I/O)**  
-* Input  
-* Output  
-  **Security and Privacy**  
-* Authentication and Authorization: Description of user roles and permission management  
-* Data Encryption: Explanation of how data will be encrypted (at rest and in transit)  
-* Compliance: Relevant data protection laws (GDPR, HIPAA)  
-* Privacy  
-  **Testing Strategy**  
-* Unit Testing  
-* Manual Testing  
-  **Risks and Mitigations**  
-* Identified Risks: List of known risks (e.g., technology choice, dependencies)  
-* Mitigation Plans: Strategies for addressing these risks  
-  * User Geolocation  
-  * User Input (AI)  
-  * Payment Information  
-  * Allergies  
-  * User (Account) Information  
-  * Location Revenue Information  
-  * Legal Issues
-
----
 
 ## **1\. Introduction**
 
@@ -763,13 +710,12 @@ High-level wireframes will define layout and hierarchy for key screens, includin
 - **Background:** `#F9FAFB`  
 - **Surface:** `#FFFFFF`  
 - **Text:** `#222831`  
-![UI_color_palette](misc/UI_color_palette.jpeg)
-![color_palette_UI_example](misc/color_palette_UI_example.jpeg)
+<img src="misc/UI_color_palette.jpeg" width="600px" />
+<img src="misc/color_palette_UI_example.jpeg" width="600px" />
 
 The palette supports strong contrast, readability, and a cohesive visual identity.
 
-* **Navigation Flow**: Overview of how users will navigate the app.  
-  * Pages will not be more than 2-3 clicks deep
+* **Navigation Flow**: Overview of how users will navigate the app. Pages will not be more than 2-3 clicks deep. The UI features listed have been classified using MoSCoW as either *Must Have* (M), *Sould Have* (S), and *Could Have* (C). Implementation will include all (M) features and may or may not have (S) or (C) features.
   * (M) Nav bar
       * Link to home page  
       * Link to drink design page  
@@ -954,23 +900,23 @@ The palette supports strong contrast, readability, and a cohesive visual identit
           * The scheduling order UI will show the closure dates/times as grayed out and non-selectable, forcing the user to choose a date/time that is open.
     * Loading screens  
       * Typical loading screen:  
-      ![SodaRobot](misc/SodaRobotResized.jpg)
-      * Loading screen for customer service:  
+      <img src="misc/SodaRobotResized.jpg" width="200px" />
+      * Loading screen for customer service:
         * Tonic  
-      ![tonic](misc/tonic.png)
-      *   
-  * UI diagrams:
-  ![UI_diagram_1](misc/UI_diagram_1.jpeg)
-  ![UI_diagram_2](misc/UI_diagram_2.jpeg)
-  ![UI_diagram_3](misc/UI_diagram_3.jpeg)
-  ![UI_diagram_4](misc/UI_diagram_4.jpeg)
-  ![UI_diagram_5](misc/UI_diagram_5.jpeg)
-  ![UI_diagram_6](misc/UI_diagram_6.jpeg)
-  ![UI_diagram_7](misc/UI_diagram_7.jpeg)
-  ![UI_diagram_8](misc/UI_diagram_8.jpeg)
-  ![UI_diagram_9](misc/UI_diagram_9.jpeg)
-  ![UI_diagram_10](misc/UI_diagram_10.jpeg)
-  ![UI_diagram_11](misc/UI_diagram_11.jpeg)
+      <img src="misc/tonic.png" width="300px"/>
+
+  * UI diagrams:  
+  <img src="misc/UI_diagram_1.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_2.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_3.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_4.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_5.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_6.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_7.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_8.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_9.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_10.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_11.jpeg" width="200px"/>
   
 
 ## **8\. Input and Output (I/O)**
@@ -1017,26 +963,27 @@ Note: Much of this section may be a repeat of what has already been documented, 
 * **Authentication and Authorization**: Description of user roles and permission management.  
   * Explanation of admin and manager access and roles:  
     * Admins: 
-        * Have access to user account information in their store.
-        * They are able to add/remove general user accounts and create manager accounts for their stores.   
+        * Admins have access to user account information in their store.
+        * Admins are able to add/remove general user accounts and create manager accounts for their stores.   
     * Super Admins
-        * Have all the same permissions as a regional Admin but on a national scale
-        * can create/remove store admins 
+        * Super Admins have all the same permissions as a regional Admin but on a national scale.
+        * Super Admins can create/remove store admins.
     * Managers:
-        * have access to store data such as revenue and expense reports.   
+        * Managers have access to store data such as revenue and expense reports.   
     * Logistics Manager:
-        * Has access to regional supply chain information
-        * Determines supply routes
+        * Logistics Managers have access to regional supply chain information.
+        * Logistics Managers determine supply routes.
     * Repair Staff
-        * Can view any machine's status in their area
-  * Django comes with a built in user authentication system that handles user accounts, groups, permissions and cookie-based user sessions  
-    * This system can be expanded and customized to add things like   
-    * password strength checking to add more security.    
+        * Repair Staff can view any machine's status in their area.
+  * User authentication:
+    * Django comes with a built in user authentication system that handles user accounts, groups, permissions and cookie-based user sessions 
+      * This system can be expanded and customized to add things like password strength checking to add more security.    
   * To secure the application, the client and server will be separated.   
     * The client and server will talk to each other through token authentication which is already included with Django.   
   * Django security features: [https://docs.djangoproject.com/en/5.1/topics/security/](https://docs.djangoproject.com/en/5.1/topics/security/)  
     * Includes injection protection because queries are constructed using query parameterization  
     * Includes Cross site request forgery (CSRF) protection which prevents attacks that perform actions using other people’s credentials.
+    
 * **Inter-Node Communication Security**: How to keep communications between servers secure
   * Messages should be passed using HTTPS 
   * Servers must authenticate that they are talking to a legit Codepop server before any communications take place
@@ -1238,18 +1185,3 @@ This section identifies potential risks across technical, security, operational,
 
 
 This testing and risk management strategy ensures CodePop is reliable, secure, and resilient as it scales from a single-store prototype to a nationwide distributed system.
-
-**Interactions Diagram**
-
-Below is a breakdown of interactions in the CodePop app. To obtain the information on the far right column, our app will utilize HTTP Requests and Django's ORM. 
-
-For future reference, the following will be handled in app:
-
-- Email confirmation (By Django’s built-in function, send\_mail())  
-- AI drink suggestions (By Scikit-Learn. This will be built into the CodePop app.)
-
- ![diagram1](misc/diagram1.png)
-
-## 
-
-
