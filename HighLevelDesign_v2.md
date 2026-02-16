@@ -900,10 +900,10 @@ The palette supports strong contrast, readability, and a cohesive visual identit
           * The scheduling order UI will show the closure dates/times as grayed out and non-selectable, forcing the user to choose a date/time that is open.
     * Loading screens  
       * Typical loading screen:  
-      <img src="misc/SodaRobotResized.jpg" width="200px" />
+      <img src="misc/SodaRobotResized.jpg" width="200px"/> <br>
       * Loading screen for customer service:
-        * Tonic  
-      <img src="misc/tonic.png" width="300px"/>
+        * Tonic <br>
+        <img src="misc/tonic.png" width="300px"/>
 
   * UI diagrams:  
   <img src="misc/UI_diagram_1.jpeg" width="200px"/>
