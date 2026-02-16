@@ -1,72 +1,19 @@
 # **Code Pop High-Level Design Document**
 
-**Introduction**
+## Sections
 
-* Purpose  
-* Scope  
-* Audience  
-  **System Overview**  
-* Problem Statement  
-* Proposed Solution  
-* Hardware Platform  
-  * Mobile  
-  * Laptop and Desktop
+1. **Introduction**
+2. **System Overview**
+3. **Architecture Design**
+4. **Modules and Components (Internal Interfaces)**
+5. **Data Design**
+6. **Integration Points (External Interfaces)**
+7. **User Interface (UI) Design Overview**
+8. **Input and Output (I/O)**
+9. **Security and Privacy**
+10. **Testing Strategy**
+11. **Risks and Mitigations**
 
-  **Architecture Design**
-
-* Architecture Overview: Explanation of the overall architecture (monolithic, microservices, etc.)  
-* Component Diagram: Diagram showing major system components and their relationships  
-* Technology Stack: Technologies and frameworks used (e.g., languages, databases, servers)  
-  * React Native  
-  * Django  
-  * PostgreSQL  
-  * AI
-
-  **Modules and Components (Internal Interfaces)**
-
-* Module Overview: Description of key modules or components, their responsibilities, and interactions  
-* Data Flow Diagram (DFD): Illustration of how data moves between components  
-* Component Interaction: Details on how system components will communicate (e.g., APIs, web services)  
-  **Data Design**  
-* Data Model: High-level structure of data, including key entities and relationships  
-* Database Design: Type of database used (relational, NoSQL, etc.), major tables, and relationships  
-* Data Access Layer: Overview of how data is accessed, stored, and retrieved (e.g., ORM, SQL)  
-  **Integration Points (External Interfaces)**  
-* External Systems: Description of external systems or services the app will integrate with  
-* APIs: List of public/external APIs, endpoints, methods, and data contracts  
-  * Payment System: Stripe  
-  * Geolocator: MapBox  
-  * AI Chatbot: DialoGPT  
-  * Notifications: Firebase Cloud Messaging (FCM)
-
-  **User Interface (UI) Design Overview**
-
-* UI/UX Principles: High-level UI/UX principles (e.g., responsiveness, accessibility)  
-* Mockups: High-level mockups or wireframes of key screens  
-* Navigation Flow: Overview of how users will navigate the app  
-  **Input and Output (I/O)**  
-* Input  
-* Output  
-  **Security and Privacy**  
-* Authentication and Authorization: Description of user roles and permission management  
-* Data Encryption: Explanation of how data will be encrypted (at rest and in transit)  
-* Compliance: Relevant data protection laws (GDPR, HIPAA)  
-* Privacy  
-  **Testing Strategy**  
-* Unit Testing  
-* Manual Testing  
-  **Risks and Mitigations**  
-* Identified Risks: List of known risks (e.g., technology choice, dependencies)  
-* Mitigation Plans: Strategies for addressing these risks  
-  * User Geolocation  
-  * User Input (AI)  
-  * Payment Information  
-  * Allergies  
-  * User (Account) Information  
-  * Location Revenue Information  
-  * Legal Issues
-
----
 
 ## **1\. Introduction**
 
@@ -762,90 +709,194 @@ CodePop uses a **database-per-store architecture** where each store and hub oper
       * When the user signs up to the app or website, they will be sent a confirmation email to ensure they used the right email address and that they are the ones signing up.  
       * Django’s email functions can be used to accomplish this (send\_mail()), using a token to verify the email. While this isn’t external, it is included in this section since it is related and putting it here makes it easy to find.
 
-## **7\. User Interface (UI) Design Overview**
+## **7. User Interface (UI) Design Overview**
 
-* **UI/UX Principles**: High-level UI/UX principles (e.g., responsiveness, accessibility).  
-  * We aim to keep the app simple and intuitive so as to provide a frustration free user experience for all our users as our app has a wide target audience.  
-  * The design focus will be primarily for a phone application but we will also make sure the interface is responsive and compatible with any interface. We will utilize flex-box in the CSS design to ensure this because it is good for responsive design.   
-  * Design color choices and navigation style will stay consistent for all types of users including managers and admin accounts so users remain familiar with the layout.   
-  * Navigation will primarily happen through a nav bar containing descriptive graphic icons that will persist on all pages of the app. With this, a user is able to access all the app’s functionality more easily from one to two clicks.   
-    * Some exceptions to this include obvious and brightly colored buttons for navigation to pages such as the account creation page or the payment page which is accessed from the cart.   
-  * Accessibility  
-    * Color blindness  
-      * -=-=- What notes does AI have on our current palette for color blindness? -=-=- 
-    * Each page will have screen-reader compatibility and tab-controlled navigation options.   
-    * Web Content Accessibility Guidelines (WCAG) -=-=- what does this mean? -=-=- 
-    
-* **Mockups**: High-level mockups or wireframes of key screens.  
-  * Color way -=-=- not sure what color way is -=-=-
-    * The color way has been chosen specifically to reflect the bright colorful nature of the app while also providing good contrast for useability.
-    * Hex values (L-R)  
-      * Primary Color #FF2E63  
-      * Secondary Color#08D9D6  
-      * Background #F9FAFB  
-      * Surface #FFFFFF  
-      * Text Color #222831  
-  * Style Guide  
-    * Corners of boxes and buttons will be rounded.
-    ![UI_color_palette](misc/UI_color_palette.jpeg)
-    ![color_palette_UI_example](misc/color_palette_UI_example.jpeg)
+### **UI/UX Principles**
 
-* **Navigation Flow**: Overview of how users will navigate the app.  
-  * Pages will not be more than 2-3 clicks deep  
-  * Nav bar  
+The application is designed to be intuitive, responsive, and accessible across all user roles.
+
+- **Simplicity & Consistency**
+  - Clear layouts and predictable navigation.
+  - Core actions accessible within one to two interactions.
+  - Consistent design across customer, manager, and admin views.
+
+- **Responsive Design**
+  - Mobile-first design.
+  - Responsive layouts using Flexbox to support tablet and desktop screens.
+
+- **Navigation**
+  - Persistent navigation bar with labeled icons.
+  - High-contrast buttons for key actions (e.g., Checkout, Account Creation).
+
+- **Accessibility**
+  - Adequate color contrast and non-color status indicators.
+  - Screen-reader compatibility and keyboard navigation support.
+  - Alignment with WCAG accessibility standards.
+---
+### **Mockups**
+High-level wireframes will define layout and hierarchy for key screens, including:
+- Customer Dashboard  
+- Cart & Checkout  
+- Rewards  
+- Manager & Admin Dashboards  
+---
+### **Color Palette**
+- **Primary:** `#FF2E63`  
+- **Secondary:** `#08D9D6`  
+- **Background:** `#F9FAFB`  
+- **Surface:** `#FFFFFF`  
+- **Text:** `#222831`  
+<img src="misc/UI_color_palette.jpeg" width="600px" />
+<img src="misc/color_palette_UI_example.jpeg" width="600px" />
+
+The palette supports strong contrast, readability, and a cohesive visual identity.
+
+* **Navigation Flow**: Overview of how users will navigate the app. Pages will not be more than 2-3 clicks deep. The UI features listed have been classified using MoSCoW as either *Must Have* (M), *Sould Have* (S), and *Could Have* (C). Implementation will include all (M) features and may or may not have (S) or (C) features.
+  * (M) Nav bar
       * Link to home page  
       * Link to drink design page  
       * Cart button \- link to cart page  
       * Link to chat page
       * Link to profile page
-  * Pages:  
-    * Home page
-      * Seasonal drinks menu carousel  
-      * Generate random button (from AI)
-      * If signed in: 
+  * Pages:
+    * (M) Home page
+      * (S) Seasonal drinks menu carousel  
+      * (M) Generate random button (from AI). 
+        * (S) 2 options (if signed in):
+          * Generate based off my preferences
+          * Try something new
+      * (M) If signed in:
         * Saved drinks - with options to delete or add to cart (UI for size selection follows 'add to cart' button)
-        * Update preferences  
-          * Soda, syrups, ice quantity
-        * Settings
-          * Set location for geolocation
-          * account settings
-            * change email/password
-            * dark mode/light mode
-      * If not signed in:
+      * (M) If not signed in:
         * Create account button (for non-account users)
-    * Sign-in/create account page
+    * (M) Sign-in/create account page
       * Simple page with text entry boxes for username and password  
-      * Login button  
+        * the password must be at least 8 characters and contain a lowercase letter, an uppercase letter, a number, and a special character.
+      * Login or Create Account button
+        * (C) In the case of "Create Account" the user is taken to an email verification screen
       * Automatically displayed error message or taken to home page after login  
       * (C) Goes to a tutorial of how to use app after signed in - skip button optional
-    * Drink design page  
-      * generative/responsive graphic created when a user makes drinks
-      * An add to cart button by the graphic - must have a soda selected (other options default to none) - size selection occurs after hitting 'add to cart'
-      * A 'Save as favorite' button by the graphic (saves drink to the user's favorites)
-      * Drink design options (little graphics or emojis included with option names):
+    * (M) Drink design page
+      * (C) generative/responsive graphic created when a user makes drinks
+      * (M) An add to cart button by the graphic - must have a soda selected (other options default to none) - size selection occurs after hitting 'add to cart'
+      * (S) A 'Save as favorite' button by the graphic (saves drink to the user's favorites)
+      * (M) Drink design options (little graphics or emojis included with option names):
         * Soda - can select/deselect multiple - search bar included at top of this section
         * Syrups - can select/deselect multiple - search bar included at top of this section
         * Juices - can select/deselect multiple - (lemon, lime, pineapple, coconut etc.) - no search bar needed
         * Ice - can select one - (light, regular, extra, no ice) - no search bar needed
-    * Cart page
-      * Drinks graphic + drink name + edit + price + remove
-      * Button to checkout + total price
-    * Payment page
-      * User is taken here from the “checkout” button in the cart  
-      * Stripe API used to take user payment information  
-      * Option for user to track with geolocation (default selected) or select a time for it to be ready  
-        * If geolocation is not setup, clicking this button should give them the option to enable geolocation
-    * Confirmation page
-      * After a user pays for their drink, they are taken to a page with a link to the complaints page (Didn’t get their drink?” button) as well as a rate your drink section where a user can rate their drink out of 5.
-    * Chat page
+    * (M) Cart page - also links to a payment page and a confirmation page
+      * Description of cart page:
+        * Contains a bar of a graphic of the drink, drink name, edit buttion, price, remove button.
+        * At the bottom there is a total price display and checkout button.
+      * (M) Payment page
+        * User is taken here from the “checkout” button in the cart 
+        * Stripe API used to take user payment information
+        * (C) There will also be a check box by the payment information that says, "Save this card".  
+        * (M) Option for user to track with geolocation (default selected) or select a time for it to be ready  
+          * If geolocation is not setup, clicking this button should give them the option to enable geolocation
+          * If the user selects the option to select a time, the minimum time out to select for it to be ready is 5 minutes. The maximum is.
+          * (C) There is also an option to select "Order Recurring"
+            * If this option is selected the user will recieve a text box that says, 
+            "By selecting this option, your order will be automatically placed and your saved payment method will be charged $___ 30 minutes before your scheduled time. You can modify or cancel recurring orders at any time in your account settings."
+            * Following the prompt, the user will be able to select the custom recurrence they desire:
+            ```
+            ----------------------------------------
+            CUSTOM RECURRENCE
+            ----------------------------------------
+
+            Repeat every:   [ 1 ] (week)
+
+            Repeat on:      S  M  T  W  T  F  S
+                                       [S]
+
+            Ends:
+              (*) Never
+              ( ) On:      [ Feb 14, 2026 ]
+              ( ) After:   [ 13 ] occurrences
+
+            ----------------------------------------
+            [ Cancel ]                      [ Done ]
+            ----------------------------------------
+            ```
+      * (M) Confirmation page
+        * (C) After a user pays for their drink, they are taken to a page with a link to the complaints page (Didn’t get their drink?” button) as well as a rate your drink section where a user can rate their drink out of 5.
+          * (C) Included will also be an input box that says, "Leave a review"
+        * (M) In addition, there will be an order code displayed (which is what they type in a locked cooler to get their drink).
+        * (S) The order code will also be visible on the home screen should the user leave the app and return. 
+          * The order code goes away 5 minutes after the order number is typed into the cooler.
+        * (C) There will also be a link to Instagram, X, or Facebook that says, "Share my drink"
+          * Once clicked, the app goes to the selected platform and a pre-populated post template that includes the hashtag #socialdrinker appears
+    * (M) Chat page
       * Simple page with a text entry box with a complaint prompt \- users will receive AI generated response messages after entering complaints
-    * Manager dashboard
-      * A dashboard that contains links to a store revenue report, a store inventory report, order statistics, and a supply request page.  
-        * Revenue report:
+    * (M) Profile page
+      * (M) Update preferences  
+        * Soda, syrups, ice quantity.
+      * (M) Settings
+        * (M) Set location for geolocation.
+        * (S) account settings
+          * (S) change email/password.
+          * (C) dark mode/light mode. 
+    * (C) Rewards page
+      * Should this be included, there will be a section added to the nav bar called "Rewards":
+        - "Home | Order | Cart | Rewards | Chat | Account"
+      * The Loyalty Program will include a dedicated “Rewards” section in the main navigation. Logged-in users can view their total point balance, earning history, and upcoming expirations. Points are awarded after order pickup and excluded for canceled orders. Expiration notifications will appear as dashboard alerts. Checkout will include a placeholder section for future point redemption functionality.
+    * (M) Super Admin Dashboard
+      * (M) Global Navigation Panel
+        * (M) Region selector (with override enabled)
+        * (M) Store, hub, and system-level data views
+        * (C) Role & permissions management access
+        * (C) AI configuration controls
+      * (C) System Overview Panel
+        * Network-wide performance metrics
+        * Active alerts (regional issues, stock risks, system faults)
+        * Emergency override indicators
+      * (C) Configuration & Control Section
+        * (C) Role creation and permission editor
+        * (M) Global AI parameter controls
+        * System override toggles for emergency or maintenance scenarios
+    * (M) Repair Staff Dashboard
+      * (M) Regional Overview Panel
+        * (M) Store selector
+        * (C) Summary cards to give immediate visibility into machine health
+      * (M) Machine Status Table- A sortable, filterable data table showing all machines within the assigned region.
+      * (M) Repair Schedule Manager- Calendar or timeline view showing:
+        * Upcoming repairs
+        * In-progress service jobs
+        * Overdue maintenance
+      * (S) Machine Detail View
+        * When selecting a machine, show repair status, history, and any notes
+      * (C) Schedule Optimization Tool
+        * A utility panel that suggests route grouping and recommends optimal scheduling
+    * (M) Logistics Manager Dashboard
+      * (M) Hubs
+        * Supply levels
+      * (M) Stores
+        * Supply levels
+        * Usage trends
+      * (M) Supply usage statistics
+          * (C) History of supply usage.
+          * (M) Popularity trends
+            * Do certain syrups, sodas, or addins trend higher than average based on time of year, month, or week? Do certain ingredients trend higher at one location over another? AI generated. (report is region-based, not store-based).
+      * (M) Delivery schedules/routes
+        * (M) Planning View
+          * Forecasted depletion dates per store
+          * Suggested restock window (AI calculated)
+        * (M) Routing View
+          * (C) Route building
+          * (M) AI suggested optimal route buttonstores needing restock.
+        * (C) Automated Scheduling
+          * Like the customer recurring UI — but for supply.
+    * (M) Manager dashboard
+      * A dashboard that contains links to a notifications section, store revenue report, a store inventory report, order statistics, and a supply request page.  
+        * (M) Notifications section:
+          * Notifications appear here when stock levels cross a predictive threshold (they will run out before the next scheduled delivery).
+          * The notification includes: which ingredient + how much is left + recommendations (how much to order/from where).
+        * (M) Revenue report:
           * Total revenue.
           * Inventory costs.
           * Total user accounts assigned to that location.
-        * Inventory report:
+        * (M) Inventory report:
           * Levels of syrups, soda, addins.
           * Estimated amount of syrups, soda, addins to order that month - AI generated.
             * included in the AI report will be AI's recommendation for the best places to purchase ingredients.
@@ -855,43 +906,54 @@ CodePop uses a **database-per-store architecture** where each store and hub oper
           * for every full cooler, it shows how long the drink has been sitting there.
           * A grid that shows the inventory of nearby stores.
           * A grid that shows the inventory of the supply hub.
-        * Order statistics
-          * History of orders.
-          * Average time between order made and picked up.
-        * Supply request page
+        * (M) Order statistics
+          * (C) History of orders.
+          * (C) Average time between order made and picked up.
+          * (M) Popularity trends
+            * Do certain syrups, sodas, or addins trend higher than average based on time of year, month, or week? Do certain ingredients trend higher at one location over another? AI generated.
+        * (M) Supply request page
           * Here you can submit an order form for all supplies. Two options for submission button:
-            * Request from nearby store.
-              * If selected, the user must specify which store from a list of the nearby stores within a 30 mile radius.
-            * Request from supply hub.
-          * There is also a way to view pending supply requests and their progress (like a track package UI).
-        * AI will be used to estimate when supplies need to be ordered to notify the manager and also find the best places to purchase ingredients.
-    * Admin dashboard  
-      * Shows all user accounts (searchable):
+            * (C) Request from nearby store.
+              * If selected, the user must specify which store from a list of the nearby stores within a 100 mile radius.
+            * (M) Request from supply hub.
+          * (S) There is also a way to view pending supply requests and their progress (like a track package UI).
+          * (C) History of supply movements and requests
+        * (M) AI will be used to estimate when supplies need to be ordered to notify the manager and also find the best places to purchase ingredients.
+    * (M) Admin dashboard  
+      * (M) Shows all user accounts (searchable):
         * 3 sections: Active, disabled, and deleted
         * Active: delete, disable, make manager
         * Disabled: delete, enable
         * Deleted: no buttons (non-recoverable. purely a log)
-      * Shows all manager accounts (searchable):
+      * (M) Shows all manager accounts (searchable):
         * shows options for different kinds of permissions based on the manager -=-=-=- what are the kinds of permission for managers? -=-=-=-=-
+    * (M) Error Messages
+      * The system will implement contextual error messaging including inline validation for form inputs, permission-based access alerts, scheduling conflict warnings, payment processing errors, geolocation prompts, and system-level failure notifications. Errors will be visually distinct, non-destructive to user input, and include actionable guidance for resolution.
+    * (C) Special messages
+      * Store closures:
+        * Home screen message: If the store is closed for a holiday or other reason, a large notification will appear on the home screen stating that it is closed and when it reopens. It will also contain a link that takes the user to store hours/closures.
+        * Cart message: Before the user can checkout there will also be a message in bright text telling reminding the user that the store is closed and that they must schedule out their order. The option for geolocation will be grayed out and the user must click on the "Schedule my order" option.
+          * The scheduling order UI will show the closure dates/times as grayed out and non-selectable, forcing the user to choose a date/time that is open.
     * Loading screens  
       * Typical loading screen:  
-      ![SodaRobot](misc/SodaRobotResized.jpg)
-      * Loading screen for customer service:  
-        * Tonic  
-      ![tonic](misc/tonic.png)
-      *   
+      <img src="misc/SodaRobotResized.jpg" width="200px"/> <br>
+      * Loading screen for customer service:
+        * Tonic <br>
+        <img src="misc/tonic.png" width="300px"/>
+
   * UI diagrams:  
-  ![Proto0](misc/Proto0.jpg)
-  ![Proto1](misc/Proto1.jpg)
-  ![Proto2](misc/Proto2.jpg)
-  ![Proto3](misc/Proto3.jpg)
-  ![Proto4](misc/proto4.jpg)
-  ![Proto5](misc/Proto5.jpg)
-  ![Proto6](misc/Proto6.jpg)
-  ![Proto7](misc/proto7.jpg)
-  ![Proto8](misc/proto8.jpg)
-  ![Proto9](misc/Proto9.jpg)
-    
+  <img src="misc/UI_diagram_1.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_2.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_3.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_4.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_5.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_6.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_7.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_8.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_9.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_10.jpeg" width="200px"/>
+  <img src="misc/UI_diagram_11.jpeg" width="200px"/>
+  
 
 ## **8\. Input and Output (I/O)**
 
@@ -937,26 +999,27 @@ Note: Much of this section may be a repeat of what has already been documented, 
 * **Authentication and Authorization**: Description of user roles and permission management.  
   * Explanation of admin and manager access and roles:  
     * Admins: 
-        * Have access to user account information in their store.
-        * They are able to add/remove general user accounts and create manager accounts for their stores.   
+        * Admins have access to user account information in their store.
+        * Admins are able to add/remove general user accounts and create manager accounts for their stores.   
     * Super Admins
-        * Have all the same permissions as a regional Admin but on a national scale
-        * can create/remove store admins 
+        * Super Admins have all the same permissions as a regional Admin but on a national scale.
+        * Super Admins can create/remove store admins.
     * Managers:
-        * have access to store data such as revenue and expense reports.   
+        * Managers have access to store data such as revenue and expense reports.   
     * Logistics Manager:
-        * Has access to regional supply chain information
-        * Determines supply routes
+        * Logistics Managers have access to regional supply chain information.
+        * Logistics Managers determine supply routes.
     * Repair Staff
-        * Can view any machine's status in their area
-  * Django comes with a built in user authentication system that handles user accounts, groups, permissions and cookie-based user sessions  
-    * This system can be expanded and customized to add things like   
-    * password strength checking to add more security.    
+        * Repair Staff can view any machine's status in their area.
+  * User authentication:
+    * Django comes with a built in user authentication system that handles user accounts, groups, permissions and cookie-based user sessions 
+      * This system can be expanded and customized to add things like password strength checking to add more security.    
   * To secure the application, the client and server will be separated.   
     * The client and server will talk to each other through token authentication which is already included with Django.   
   * Django security features: [https://docs.djangoproject.com/en/5.1/topics/security/](https://docs.djangoproject.com/en/5.1/topics/security/)  
     * Includes injection protection because queries are constructed using query parameterization  
     * Includes Cross site request forgery (CSRF) protection which prevents attacks that perform actions using other people’s credentials.
+    
 * **Inter-Node Communication Security**: How to keep communications between servers secure
   * Messages should be passed using HTTPS 
   * Servers must authenticate that they are talking to a legit Codepop server before any communications take place
@@ -1158,18 +1221,3 @@ This section identifies potential risks across technical, security, operational,
 
 
 This testing and risk management strategy ensures CodePop is reliable, secure, and resilient as it scales from a single-store prototype to a nationwide distributed system.
-
-**Interactions Diagram**
-
-Below is a breakdown of interactions in the CodePop app. To obtain the information on the far right column, our app will utilize HTTP Requests and Django's ORM. 
-
-For future reference, the following will be handled in app:
-
-- Email confirmation (By Django’s built-in function, send\_mail())  
-- AI drink suggestions (By Scikit-Learn. This will be built into the CodePop app.)
-
- ![diagram1](misc/diagram1.png)
-
-## 
-
-
