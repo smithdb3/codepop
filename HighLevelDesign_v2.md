@@ -717,23 +717,22 @@ CodePop uses a **database-per-store architecture** where each store and hub oper
 ### **6.4 External Interfaces**
 
 1. **Payments:** Stripe (Secure, Apple/Google Pay support).  
-   1. Free  
-   2. Secure payments- offers built-in fraud prevention tools  
-   3. Support for variety of payment methods  
-   4. Is a Indestroy standard  
+   1.1\. **Free*:*  
+   1.2\. **Secure payments:** offers built-in fraud prevention tools  
+   1.3\. **Support:** for variety of payment methods  
+   1.4\. **Indestroy standard:**  
 2. **Geolocation:** Mapbox (Python SDK for proximity tracking).	  
-   1. **Generous Free Tier for Scaling:** For small projects and startups, the pricing is highly competitive. Mapbox offers up to **50,000 free map loads** per month  
-   2. **Extreme Visual Customization:**  
-   3. **Developer-First Tooling: Mapbox provides robust APIs and SDKs specifically perfect for python and django**  
+   2.1\. **Generous Free Tier for Scaling:** For small projects and startups, the pricing is highly competitive. Mapbox offers up to **50,000 free map loads** per month  
+   2.2\. **Extreme Visual Customization:**  
+   2.3\. **Developer-First Tooling: Mapbox provides robust APIs and SDKs specifically perfect for python and django**  
 3. **Customer Support:** Dialogflow ES from google  for automated help/complaint handling.  
-   1. **No monthly fee:** You only pay if you exceed the free tier limits 
-
-   2. ### **No Server Management**
+   3.1\. **No monthly fee:** You only pay if you exceed the free tier limits 
+   3.2\. **No Server Management:**
 
 4. **Notifications:** Firebase Cloud Messaging (FCM) for push alerts; Django for email verification.  
-   1. FCM is free for small projects  
-   2. **Cross-Platform Simplicity:** You write one integration in your Django backend. FCM then handles the heavy lifting of talking to Apple’s servers (APNs), Android devices, and even web browsers.  
-   3. **Security & Data Integrity:** Django’s built-in authentication system handles the generation of secure, one-time-use tokens for email verification out of the box. 
+   4.1\. **FCM:** is free for small projects  
+   4.2\. **Cross-Platform Simplicity:** You write one integration in your Django backend. FCM then handles the heavy lifting of talking to Apple’s servers (APNs), Android devices, and even web browsers.  
+   4.3\. **Security & Data Integrity:** Django’s built-in authentication system handles the generation of secure, one-time-use tokens for email verification out of the box.
 
 ### **6.5 Non-Functional Requirements (NFRs)**
 
