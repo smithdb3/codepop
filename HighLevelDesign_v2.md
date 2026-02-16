@@ -25,30 +25,34 @@
 
 ## **2\. System Overview**
 
-**Problem Statement**: In the world of dirty soda shops, there are too many options and many long lines, resulting in a confusing and overwhelming customer experience.
+### **2.1 Problem Statement**
 
-**Proposed Solution**: CodePop will provide a simple, AI-powered ordering experience to help eliminate the confusion and pressure typically associated with dirty soda shops.
+In the world of "dirty soda" shops, customers are often overwhelmed by excessive options and stalled by long lines. This results in a confusing, high-pressure experience that detracts from the product itself.
 
-**Hardware Platform**:  
-CodePop is designed to be accessible to a wide variety of users. Our goal is to create software that is easy/quick to use. This section outlines the hardware platforms CodePop could be built on, including priorities and possibilities.
+### **2.2 Proposed Solution**
 
-* **Mobile**:  
-  * **App**:  
-    CodePop’s priority hardware will be a mobile application. Phones are generally very easy to use and carry around. Since users will need to travel to a CodePop location to pick up their drinks, having a device they can easily bring with them is essential. Touchscreens make it easy for users to navigate the app quickly.   
-    * A mobile app is more prioritized than a website because we believe it best fits the client’s needs.  
-  * **Website**:  
-    The mobile app can be converted to a mobile-optimized website with the same functionality and layout as the app. To ensure accessibility, the app and website will be designed to work on both Android and iOS devices. However, due to easier testing methods, we will begin by developing the app for Android.  
-  * **Touchscreen**:  
-    Since touchscreen functionality is key to accessibility and usability, it will be prioritized in the app’s UI. Buttons and sections will be larger in size to make them easier to tap without zooming in. Other actions, such as swiping and holding, will also be considered.  
-  * **Gestures**:  
-    Gestures will not be included in the first version of the app. They are less reliable than touchscreen interactions, and our focus will remain on perfecting the core features of the app instead.  
-  * **Portrait vs. Landscape**:  
-    The app/website will be optimized for portrait mode to allow easy access to all points of the screen and to enable comfortable use with one hand. Landscape mode may be considered in future versions or when laptop/desktop accessibility is introduced.  
-* **Laptop/Desktop**:  
-  * **Website**:  
-    While phones are the primary use-case for the CodePop app/website, a laptop/desktop UI will not be a high priority initially. A desktop-friendly UI may be added after the mobile functionality is complete, provided it doesn't divert resources from more critical features. Laptop/desktop access will be limited to the website only, not an app, to avoid over-scoping.  
-  * **Touchscreen Laptops**:  
-    Although touchscreen laptops exist, their dimensions differ significantly from mobile devices, and they will not be prioritized in the initial development phase. Their prioritization will remain with every other laptop device.
+CodePop provides a streamlined, AI-powered ordering experience. By utilizing "just-in-time" robotic fulfillment, we ensure customers can order personal or AI-generated drinks and pick them up fresh at the precise moment of arrival.
+
+### **2.3 Nationwide Logistics Model**
+
+CodePop operates as a nationwide franchise using a **Hub-and-Spoke** architecture:
+
+* **The Hubs:** Central regional centers that act as the "axle" of the wheel, managing supply for their territory.  
+* **The Spokes:** The transfer routes connecting the Hubs to individual store locations.  
+* **The Stores:** Automated fulfillment centers where the robotic "pour" occurs.
+
+## **Hardware & Accessibility Strategy**
+
+### **2.4 Mobile Application**
+
+* **Core Platform:** Initial development focuses on **Android** due to ease of testing, followed by iOS.  
+* **UX Design:** Optimized for **Portrait Mode** for one-handed use.  
+* **Accessibility:** Large touchscreen targets and buttons to eliminate the need for zooming. Gestures are excluded from v1 to ensure reliability.
+
+### **2.5 Web & Desktop**
+
+* **Mobile Web (M):** A responsive version of the app for browser-based access.  
+* **Laptop/Desktop (M):** A responsive website that booth customers and administrators can use..
 
 ## **3. Architecture Design**
 
@@ -679,35 +683,64 @@ CodePop uses a **database-per-store architecture** where each store and hub oper
 - 30-day retention with off-site storage
 - Recovery: Restore from backup + re-sync replicated data from peer nodes
 
-## **6\. Integration Points (External Interfaces)**
+### **6\. Integration Point (External Interfaces)**
 
-* **External Systems and APIs:**  
-  * **Payment System:** Stripe  
-    * Free   
-    * Secure payments- offers built-in fraud prevention tools  
-    * Support for variety of payment methods- like Apple Pay or Google Pay  
-    * Erik is familiar with it- we can troubleshoot with him if needed  
-  * **Geolocation:** Mapbox  
-    * Offers Python SDKs (meaning we do not need to manually create HTTP requests. The SDK handles that for us)  
-    * Free for up to 50,000 geolocation requests/month  
-    * Many other tools require third-party libraries to implement features (ex. OpenStreetMap), creating a more extensive setup process. Mapbox does not have this  
-  * **AI Chatbot:** DialoGPT from huggingface.co  
-    * Basic AI to run the customer help/complaint center of the app  
-    * This is a Natural Processing model (NPL)  
-    * DialoGPT is trained on conversational datasets, making it naturally suited for a chatbot  
-    * Low configuration, making it a quick setup (We aren’t too concerned with this being a super high functioning bot. Most of our concern will be with the drink suggestion AI models)  
-    * Free   
-    * Can be implemented with Python  
-  * **Notifications**  
-    * **Push:** Firebase Cloud Messaging (FCM)  
-      * One of the most widely used and robust push notification services  
-      * Free  
-      * Integrates well with mobile platforms (Android and iOS), web push notifications, and backend server to send notifications  
-        * Firebase Admin SDK includes option for Python in the backend (which is likely where we will implement the push notifications)  
-        * By using the SDK instead of REST API we will not have to worry about HTTP requests  
-    * **Email:** Django  
-      * When the user signs up to the app or website, they will be sent a confirmation email to ensure they used the right email address and that they are the ones signing up.  
-      * Django’s email functions can be used to accomplish this (send\_mail()), using a token to verify the email. While this isn’t external, it is included in this section since it is related and putting it here makes it easy to find.
+### **6.1 Geolocation and Fulfillment**
+
+* **User Location Prompt (M):** Trigger GPS permission requests post-payment.  
+* **Proximity Calculation (M):** AI analyzes approach that take into account of the velocity, distance from the store and drink assembly time to find the **"Golden Window."**  
+* **Manual Override (M):** A "Start" button for users who deny GPS access or have poor signal.  
+* **Scheduled Orders (M):** Capability to select a specific future pick-up time.
+
+### **6.2 Machine & Inventory Management**
+
+* **Real-Time Monitoring (M):** AI tracks depletion of syrups, carbonation, and garnishes.  
+* **Maintenance Logs (M):** Digital ledger for every machine tracking service history and cleaning.  
+* **Automated Resupply (M):** Store-to-Hub communication automatically triggers a restock when thresholds are met.  
+* **AI Forecasting (M):** Analysis of regional trends (e.g., Utah stores running out of lemon on Tuesdays).
+
+### **6.3 AI & Engagement**
+
+* **"Surprise Me" (M):** AI generates drinks based on user history or pure randomness with a "Re-roll" option.  
+* **Estimated Time (EST) Engine (M):** Calculates exact prep time so ice doesn't melt before the user arrives at the store also increasing freshness.  
+* **CSV Ingestion (M):** Logistics managers upload data to the AI as a CSV to identify supply patterns and machine health.
+
+| Role | Responsibility |
+| :---- | :---- |
+| **Customer** | Orders drinks, manages preferences, and provides location data. |
+| **Repair Staff (M)** | Updates machine status ("In Service," "Offline") and logs repair actions. |
+| **Logistics Manager (M)** | Oversees regional inventory, manages supply routes, and analyzes CSV data. |
+| **Super Admin (M)** | Universal data access, global configuration, and emergency system overrides. |
+
+## **Technical Integration & Security**
+
+### **6.4 External Interfaces**
+
+1. **Payments:** Stripe (Secure, Apple/Google Pay support).  
+   1. Free  
+   2. Secure payments- offers built-in fraud prevention tools  
+   3. Support for variety of payment methods  
+   4. Is a Indestroy standard  
+2. **Geolocation:** Mapbox (Python SDK for proximity tracking).	  
+   1. **Generous Free Tier for Scaling:** For small projects and startups, the pricing is highly competitive. Mapbox offers up to **50,000 free map loads** per month  
+   2. **Extreme Visual Customization:**  
+   3. **Developer-First Tooling: Mapbox provides robust APIs and SDKs specifically perfect for python and django**  
+3. **Customer Support:** Dialogflow ES from google  for automated help/complaint handling.  
+   1. **No monthly fee:** You only pay if you exceed the free tier limits 
+
+   2. ### **No Server Management**
+
+4. **Notifications:** Firebase Cloud Messaging (FCM) for push alerts; Django for email verification.  
+   1. FCM is free for small projects  
+   2. **Cross-Platform Simplicity:** You write one integration in your Django backend. FCM then handles the heavy lifting of talking to Apple’s servers (APNs), Android devices, and even web browsers.  
+   3. **Security & Data Integrity:** Django’s built-in authentication system handles the generation of secure, one-time-use tokens for email verification out of the box. 
+
+### **6.5 Non-Functional Requirements (NFRs)**
+
+* **Security (M):** All location and payment data must be encrypted.  
+* **Responsiveness (M):** Fluid grid system for all mobile viewports.  
+* **Scalability (S):** Horizontal scaling to handle peak traffic spikes.
+
 
 ## **7. User Interface (UI) Design Overview**
 
@@ -953,46 +986,14 @@ The palette supports strong contrast, readability, and a cohesive visual identit
   <img src="misc/UI_diagram_9.jpeg" width="200px"/>
   <img src="misc/UI_diagram_10.jpeg" width="200px"/>
   <img src="misc/UI_diagram_11.jpeg" width="200px"/>
-  
 
-## **8\. Input and Output (I/O)**
+##  **8\. Input/Output (I/O) Matrix**
 
-Note: Much of this section may be a repeat of what has already been documented, but it is repeated here to make I/O items easier to find and relate to each other.
-
-* Input  
-  * User Information  
-    * Username  
-    * Email  
-    * Password  
-    * Preferences  
-    * Payment Method  
-    * Customer Complaints  
-  * Geolocation (MapBox)  
-    * How close the user is to a store location  
-    * If user does not consent to geolocation, an “I’m ready” button or a set time will be input by the user instead  
-  * Stripe  
-    * Confirmation that the user’s payment went through  
-  * AI  
-    * AI chatbot responds to user complaints and allows for further response (from user)  
-    * AI drink results are given back to the user with an option to confirm or rerandomize  
-  * Navigational Input  
-    * User will use buttons, drop-down menus, etc. to navigate through the app/website
-
-* Output  
-  * Notifications  
-    * User will get notifications either through email (sign up confirmation) or by push notification (drink-is-ready indicator, event notifications \[ex. Birthday, holiday, change to seasonal menu\], etc.)  
-  * Geolocation (MapBox)  
-    * Start tracking once the user has given consent  
-  * Stripe  
-    * Send user payment to simulate a purchase  
-  * AI  
-    * Customer complaints sent to an external AI chatbot  
-    * User preferences given to AI to randomize a more personalized drink (more likely to choose preferences over something completely random)  
-    * User ratings used to train the AI as to what flavors/drinks are more popular  
-  * UI Output  
-    * User navigation input will bring them to different screens/sections of the app that will be shown visually to the user  
-  * Store Information  
-    * API may be used to show the manager graphs of the store’s revenue, stock, etc.
+| Category | Inputs | Outputs |
+| :---- | :---- | :---- |
+| **User Flow** | **Preferences, Payment, GPS Data, Complaints.** | **Push Notifications, "Drink Ready" alerts, AI Suggestions.** |
+| **Logistics** | **CSV Supply Files, Regional Sales, Threshold Alerts.** | **Automated Supply Requests, Hub Email Alerts.** |
+| **Maintenance** | **Repair Logs, Machine Status Updates, CSV Seeds.** | **Maintenance Dashboards, Fault Alerts to Hubs.** |
 
 ## **9\. Security and Privacy**
 

@@ -1,3 +1,4 @@
+
 # Setup Instructions for CodePop
 
 Follow these instructions to set up the CodePop project on your machine.
@@ -258,3 +259,4 @@ They have also been given a random empty threshold between 1 and 10
 
 This randomization is subject to change as we go further but for testing purposes it's good enough for right now. 
 
+>>>>>>> master
