@@ -25,15 +25,15 @@
 
 ## **2\. System Overview**
 
-### **2.1 Problem Statement**
+### **Problem Statement**
 
 In the world of "dirty soda" shops, customers are often overwhelmed by excessive options and stalled by long lines. This results in a confusing, high-pressure experience that detracts from the product itself.
 
-### **2.2 Proposed Solution**
+### **Proposed Solution**
 
 CodePop provides a streamlined, AI-powered ordering experience. By utilizing "just-in-time" robotic fulfillment, we ensure customers can order personal or AI-generated drinks and pick them up fresh at the precise moment of arrival.
 
-### **2.3 Nationwide Logistics Model**
+### **Nationwide Logistics Model**
 
 CodePop operates as a nationwide franchise using a **Hub-and-Spoke** architecture:
 
@@ -41,15 +41,15 @@ CodePop operates as a nationwide franchise using a **Hub-and-Spoke** architectur
 * **The Spokes:** The transfer routes connecting the Hubs to individual store locations.  
 * **The Stores:** Automated fulfillment centers where the robotic "pour" occurs.
 
-## **Hardware & Accessibility Strategy**
+### **Hardware & Accessibility Strategy**
 
-### **2.4 Mobile Application**
+#### **Mobile Application**
 
 * **Core Platform:** Initial development focuses on **Android** due to ease of testing, followed by iOS.  
 * **UX Design:** Optimized for **Portrait Mode** for one-handed use.  
 * **Accessibility:** Large touchscreen targets and buttons to eliminate the need for zooming. Gestures are excluded from v1 to ensure reliability.
 
-### **2.5 Web & Desktop**
+#### **Web & Desktop**
 
 * **Mobile Web (M):** A responsive version of the app for browser-based access.  
 * **Laptop/Desktop (M):** A responsive website that booth customers and administrators can use..
@@ -683,62 +683,61 @@ CodePop uses a **database-per-store architecture** where each store and hub oper
 - 30-day retention with off-site storage
 - Recovery: Restore from backup + re-sync replicated data from peer nodes
 
-### **6\. Integration Point (External Interfaces)**
+## **6\. Integration Points (External Interfaces)**
 
-### **6.1 Geolocation and Fulfillment**
+This section describes how CodePop integrates with external services and APIs to enable core functionality. It covers geolocation-based order fulfillment tracking, real-time machine and inventory monitoring with automated resupply, and AI-powered features for drink generation and customer support. The section also details the external service providers along with the rationale for selecting each provider.
 
-* **User Location Prompt (M):** Trigger GPS permission requests post-payment.  
-* **Proximity Calculation (M):** AI analyzes approach that take into account of the velocity, distance from the store and drink assembly time to find the **"Golden Window."**  
-* **Manual Override (M):** A "Start" button for users who deny GPS access or have poor signal.  
-* **Scheduled Orders (M):** Capability to select a specific future pick-up time.
+### **External Interfaces**
 
-### **6.2 Machine & Inventory Management**
+1. **Payments:** Stripe (Secure, Apple/Google Pay support)
+   - **Secure payments:** Built-in fraud prevention and PCI compliance
+   - **Payment flexibility:** Supports Apple Pay, Google Pay, and major credit cards
+   - **Industry standard:** Trusted payment processor with extensive documentation and community support
 
-* **Real-Time Monitoring (M):** AI tracks depletion of syrups, carbonation, and garnishes.  
-* **Maintenance Logs (M):** Digital ledger for every machine tracking service history and cleaning.  
-* **Automated Resupply (M):** Store-to-Hub communication automatically triggers a restock when thresholds are met.  
-* **AI Forecasting (M):** Analysis of regional trends (e.g., Utah stores running out of lemon on Tuesdays).
+2. **Geolocation:** Mapbox (Python SDK for proximity tracking)
+   - **Generous free tier:** Up to 50,000 free map loads per month, ideal for scaling startups
+   - **Visual customization:** Highly customizable maps and styling options
+   - **Developer-friendly tooling:** Robust APIs and SDKs with excellent Python and Django integration
 
-### **6.3 AI & Engagement**
+3. **Customer Support:** Dialogflow ES (Google) for automated help and complaint handling
+   - **Pay-as-you-go pricing:** No monthly fees; only pay when exceeding free tier limits
+   - **Serverless architecture:** No infrastructure management required
+   - **Natural language processing:** Pre-trained AI models for understanding customer intent
 
-* **"Surprise Me" (M):** AI generates drinks based on user history or pure randomness with a "Re-roll" option.  
-* **Estimated Time (EST) Engine (M):** Calculates exact prep time so ice doesn't melt before the user arrives at the store also increasing freshness.  
-* **CSV Ingestion (M):** Logistics managers upload data to the AI as a CSV to identify supply patterns and machine health.
+4. **Notifications:** Firebase Cloud Messaging (FCM) for push alerts; Django for email verification
+   - **Free tier:** No cost for small to medium-scale projects
+   - **Cross-platform support:** Single integration handles iOS (APNs), Android, and web push notifications
+   - **Secure email verification:** Django's built-in authentication generates secure, one-time-use verification tokens  
 
-| Role | Responsibility |
-| :---- | :---- |
-| **Customer** | Orders drinks, manages preferences, and provides location data. |
-| **Repair Staff (M)** | Updates machine status ("In Service," "Offline") and logs repair actions. |
-| **Logistics Manager (M)** | Oversees regional inventory, manages supply routes, and analyzes CSV data. |
-| **Super Admin (M)** | Universal data access, global configuration, and emergency system overrides. |
+---
 
-## **Technical Integration & Security**
+### **Integration with CodePop Features**
 
-### **6.4 External Interfaces**
+#### **Geolocation and Fulfillment**
 
-1. **Payments:** Stripe (Secure, Apple/Google Pay support).  
-   1.1\. **Free*:*  
-   1.2\. **Secure payments:** offers built-in fraud prevention tools  
-   1.3\. **Support:** for variety of payment methods  
-   1.4\. **Indestroy standard:**  
-2. **Geolocation:** Mapbox (Python SDK for proximity tracking).	  
-   2.1\. **Generous Free Tier for Scaling:** For small projects and startups, the pricing is highly competitive. Mapbox offers up to **50,000 free map loads** per month  
-   2.2\. **Extreme Visual Customization:**  
-   2.3\. **Developer-First Tooling: Mapbox provides robust APIs and SDKs specifically perfect for python and django**  
-3. **Customer Support:** Dialogflow ES from google  for automated help/complaint handling.  
-   3.1\. **No monthly fee:** You only pay if you exceed the free tier limits 
-   3.2\. **No Server Management:**
+This subsystem uses Mapbox Geolocation API to track customer proximity and optimize drink preparation timing, ensuring beverages are freshly made when customers arrive.
 
-4. **Notifications:** Firebase Cloud Messaging (FCM) for push alerts; Django for email verification.  
-   4.1\. **FCM:** is free for small projects  
-   4.2\. **Cross-Platform Simplicity:** You write one integration in your Django backend. FCM then handles the heavy lifting of talking to Apple’s servers (APNs), Android devices, and even web browsers.  
-   4.3\. **Security & Data Integrity:** Django’s built-in authentication system handles the generation of secure, one-time-use tokens for email verification out of the box.
+* **User Location Prompt (M):** Requests GPS permission post-payment to share user location with Mapbox for tracking.
+* **Proximity Calculation (M):** Sends user's real-time location to Mapbox, which calculates distance and ETA to the store. Backend uses this data to determine when to trigger drink preparation.
+* **Manual Override (M):** Allows users without GPS access to manually signal arrival, triggering preparation immediately instead of relying on Mapbox tracking.
+* **Scheduled Orders (M):** Bypasses Mapbox proximity tracking; preparation is scheduled for a specific time rather than triggered by user location.
 
-### **6.5 Non-Functional Requirements (NFRs)**
+#### **Machine & Inventory Management**
 
-* **Security (M):** All location and payment data must be encrypted.  
-* **Responsiveness (M):** Fluid grid system for all mobile viewports.  
-* **Scalability (S):** Horizontal scaling to handle peak traffic spikes.
+Internal system that monitors inventory levels and machine health using AI interface to trigger automated restocking.
+
+* **Real-Time Monitoring (M):** Tracks ingredient depletion and alerts when thresholds are reached.
+* **Maintenance Logs (M):** Digital record of machine service history accessible to managers for maintenance scheduling.
+* **Automated Resupply (M):** Triggers restock orders when inventory falls below thresholds.
+* **AI Forecasting (M):** Analyzes inventory trends to predict future demand and optimize restocking schedules proactively.
+
+#### **AI & Engagement**
+
+AI-powered recommendation and support features integrated with customer-facing systems.
+
+* **"Surprise Me" (M):** AI generates drink recommendations based on user preferences and order history, displayed in the mobile app for user selection.
+* **Estimated Time (ETA) Engine (M):** Calculates drink prep time and displays it to users; integrates with Mapbox proximity data to optimize start time.
+* **CSV Ingestion (M):** Allows logistics managers to upload supply and machine data via the admin portal for AI analysis of patterns and forecasting.
 
 
 ## **7. User Interface (UI) Design Overview**
@@ -783,7 +782,11 @@ High-level wireframes will define layout and hierarchy for key screens, includin
 
 The palette supports strong contrast, readability, and a cohesive visual identity.
 
-* **Navigation Flow**: Overview of how users will navigate the app. Pages will not be more than 2-3 clicks deep. The UI features listed have been classified using MoSCoW as either *Must Have* (M), *Sould Have* (S), and *Could Have* (C). Implementation will include all (M) features and may or may not have (S) or (C) features.
+---
+
+### **Navigation Flow**
+Overview of how users will navigate the app. Pages will not be more than 2-3 clicks deep. The UI features listed have been classified using MoSCoW as either *Must Have* (M), *Sould Have* (S), and *Could Have* (C). Implementation will include all (M) features and may or may not have (S) or (C) features.  
+
   * (M) Nav bar
       * Link to home page  
       * Link to drink design page  
@@ -957,8 +960,7 @@ The palette supports strong contrast, readability, and a cohesive visual identit
         * Active: delete, disable, make manager
         * Disabled: delete, enable
         * Deleted: no buttons (non-recoverable. purely a log)
-      * (M) Shows all manager accounts (searchable):
-        * shows options for different kinds of permissions based on the manager -=-=-=- what are the kinds of permission for managers? -=-=-=-=-
+      * (M) Shows all manager accounts (searchable)
     * (M) Error Messages
       * The system will implement contextual error messaging including inline validation for form inputs, permission-based access alerts, scheduling conflict warnings, payment processing errors, geolocation prompts, and system-level failure notifications. Errors will be visually distinct, non-destructive to user input, and include actionable guidance for resolution.
     * (C) Special messages
@@ -986,7 +988,79 @@ The palette supports strong contrast, readability, and a cohesive visual identit
   <img src="misc/UI_diagram_10.jpeg" width="200px"/>
   <img src="misc/UI_diagram_11.jpeg" width="200px"/>
 
-##  **8\. Input/Output (I/O) Matrix**
+##  **8\. Input and Output (I/O)**
+
+Note: Much of this section may be a repeat of what has already been documented, but it is repeated here to make I/O items easier to find and relate to each other.
+
+### **Input**
+
+* **User Information**
+  * Username
+  * Email
+  * Password
+  * Preferences
+  * Payment Method
+  * Customer Complaints
+
+* **Geolocation (Mapbox)**
+  * Distance to store location
+  * User location data when opted in
+  * If user does not consent to geolocation, an "I'm ready" button or a set time will be input by the user instead
+
+* **Payment Data (Stripe)**
+  * Credit card or payment method information
+  * Confirmation that payment transaction was successful
+
+* **AI Inputs**
+  * User preferences sent to recommendation engine
+  * Customer complaints sent to chatbot
+  * AI drink results with user confirmation or regeneration requests
+  * User ratings and feedback
+
+* **Logistics Inputs**
+  * CSV supply files
+  * Machine status updates and repair logs
+  * Regional sales data
+  * Inventory threshold alerts
+
+* **Navigational Input**
+  * User interactions with buttons, drop-down menus, and UI controls to navigate through the app/website
+
+### **Output**
+
+* **Notifications**
+  * Push notifications for order status updates
+  * Email notifications for sign-up confirmation
+  * "Drink Ready" alerts when order is prepared
+  * Event notifications (holiday, seasonal menu changes, birthday offers, etc.)
+
+* **Geolocation (Mapbox)**
+  * Real-time location tracking once user has given consent
+  * Distance calculations to nearby CodePop stores
+  * Store location data for user ordering
+
+* **Payment Processing (Stripe)**
+  * Payment confirmation and receipt
+  * Order processing trigger upon successful payment
+
+* **AI Outputs**
+  * Personalized drink recommendations based on user preferences
+  * AI-generated chatbot responses to customer complaints
+  * AI drink suggestions with option to confirm or regenerate
+  * AI-powered supply forecasts and analytics for repair staff and logistics managers
+
+* **UI Output**
+  * Visual display of app pages and screens based on user navigation
+  * Real-time updates to cart, order status, and drink preparation status
+  * Dashboard displays for managers and admins
+
+* **Manager/Admin Outputs**
+  * Revenue reports and graphs
+  * Inventory status dashboards
+  * Machine maintenance alerts
+  * Supply request confirmations
+
+### **Input/Output Matrix**
 
 | Category | Inputs | Outputs |
 | :---- | :---- | :---- |
