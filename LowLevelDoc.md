@@ -163,7 +163,92 @@ CodePop uses a **database-per-store architecture** where each physical store loc
 
 ---
 
-### 1.9 Entity Relationship Diagram
+### 1.9 Database Indexing Strategy
+
+**Recommended Indexes:**
+
+Create indexes on the following fields to optimize query performance:
+
+| Table | Fields | Purpose |
+| :---- | :---- | :---- |
+| User | UserID | Primary key (auto-indexed) |
+| Order | UserID | Lookup user's orders |
+| Order | CreationTime | Range queries for date filtering |
+| Order | OrderStatus | Filter orders by status |
+| Preference | UserID | Lookup user preferences |
+| Inventory | ItemName, ItemType | Quick ingredient lookups |
+| Inventory | Quantity | Find low-stock items |
+| Notification | UserID, Timestamp | User notification timeline |
+| Revenue | SaleDate | Revenue reporting by date range |
+
+**Indexing Guidelines:**
+- Primary keys are auto-indexed; do not add duplicate indexes
+- Foreign keys should be indexed for join performance
+- Timestamp fields should be indexed for range queries
+- Status/category fields should be indexed if frequently filtered
+- Consider composite indexes for common multi-column filters
+
+---
+
+### 1.10 Data Validation & Constraints
+
+**Field Validation Rules:**
+
+| Table | Field | Validation Rule | Error Message |
+| :---- | :---- | :---- | :---- |
+| User | Email | Valid email format (RFC 5322) | "Invalid email address" |
+| User | Password | Min 12 chars, 1 uppercase, 1 lowercase, 1 digit, 1 special char | "Password does not meet complexity requirements" |
+| Preference | Preference | Non-empty string, max 100 chars | "Invalid preference format" |
+| Drink | Name | Non-empty string, max 255 chars | "Drink name required" |
+| Drink | Price | Float >= 0.00, max 2 decimals | "Price must be positive currency value" |
+| Drink | Size | Must be "s", "m", or "l" | "Invalid size; must be s, m, or l" |
+| Drink | Ice | Must be "none", "light", "normal", or "extra" | "Invalid ice amount" |
+| Order | LockerCombo | 6-digit numeric code (000000-999999) | "Invalid locker combination format" |
+| Order | StripeID | Non-empty string, starts with "pi_" or "seti_" | "Invalid Stripe payment intent ID" |
+| Inventory | Quantity | Integer >= 0 | "Quantity cannot be negative" |
+| Inventory | ThresholdLevel | Integer >= 0 | "Threshold must be non-negative" |
+| Revenue | TotalAmount | Float >= 0.00, max 2 decimals | "Invalid revenue amount" |
+
+---
+
+### 1.11 Example Record
+
+**Complete Order Example (showing M2M relationship with Drinks):**
+```json
+{
+  "OrderID": 1001,
+  "UserID": 5,
+  "Drinks": [42, 87, 105],
+  "OrderStatus": "processing",
+  "PaymentStatus": "paid",
+  "PickupTime": "2026-02-24T14:30:00Z",
+  "CreationTime": "2026-02-24T13:15:00Z",
+  "LockerCombo": 483921,
+  "StripeID": "pi_1Ib4E82eZvKYlo2ChCU8YxUr"
+}
+```
+
+---
+
+### 1.12 Migration Considerations
+
+**Key Migration Patterns:**
+- **Adding new ingredients**: Insert into Inventory with appropriate ItemType and ThresholdLevel
+- **Changing drink recipes**: Update ArrayFields; existing orders retain original recipe
+- **Adding new user roles**: Extend is_staff/is_superuser flags or add authorization in views
+- **Database replication**: User + Preference replicate on-demand; Order/Revenue stay local
+- **Data cleanup**: Archive old orders/revenue after 1 year; cascade delete user records on account deletion
+
+**Zero-Downtime Migration Strategy:**
+1. Create new column with default value
+2. Deploy code that reads from both old and new locations
+3. Backfill data incrementally in background
+4. Deploy code that writes to new location only
+5. Remove old column in follow-up deployment
+
+---
+
+### 1.13 Entity Relationship Diagram
 
 ```mermaid
 erDiagram
@@ -545,6 +630,181 @@ stateDiagram-v2
 ---
 
 ### 2.4 Inter-Node Communication Protocol
+
+**Protocol Details:**
+- **Transport**: HTTPS/TLS 1.3 for all inter-node communication
+- **Authentication**: Token-based (JWT or Django REST Framework tokens)
+  - Each node has a shared secret or certificate
+  - All requests include `Authorization: NodeToken {token}` header
+  - Nodes validate token before processing requests
+- **Content Type**: JSON with UTF-8 encoding
+- **Timeouts**:
+  - Connection timeout: 5 seconds
+  - Read timeout: 10 seconds
+  - Max request size: 10MB
+- **Retry Logic**: Exponential backoff (1s, 2s, 4s, 8s) for transient failures
+
+**Inter-Node REST Endpoints:**
+```
+POST /api/inter-node/user-lookup/          # Query peer store for user
+POST /api/inter-node/user-sync/            # Transfer user data to peer
+POST /api/inter-node/status-update/        # Machine/store status update to hub
+GET /api/inter-node/store-registry/        # Retrieve list of stores from hub
+POST /api/inter-node/supply-request/       # Submit supply request to hub
+POST /api/inter-node/health-check/         # Peer availability check
+```
+
+**Request/Response Format:**
+```json
+// User Lookup Request
+{
+  "email": "user@example.com",
+  "requesting_store_id": 42
+}
+
+// User Lookup Response (Success)
+{
+  "status": "found",
+  "user": {
+    "user_id": 5,
+    "email": "user@example.com",
+    "preferences": ["Coconut", "Fruity"],
+    "favorite_drinks": [42, 87, 105]
+  },
+  "located_at_store_id": 101
+}
+
+// User Lookup Response (Not Found)
+{
+  "status": "not_found",
+  "message": "User not found in any store"
+}
+```
+
+---
+
+### 2.5 Data Synchronization & Conflict Resolution
+
+**Lazy Replication Strategy:**
+- User data syncs **only on-demand** when user logs into new store
+- No background sync process; on-demand queries happen in real-time
+- After first successful sync, data cached locally for 24 hours
+- Cache invalidation: Manual refresh via API or automatic expiration
+
+**Conflict Resolution Rules:**
+
+| Scenario | Rule | Resolution |
+| :---- | :---- | :---- |
+| User updates preferences at Store A, then logs in at Store B | Preference change wins | Accept most recent timestamp; overwrite cached version |
+| User's favorite drinks differ between stores | Union approach | Merge favorite lists; Store B gets all of Store A's favorites |
+| User account modified at multiple stores simultaneously | Last-write-wins | Use server timestamp; later write takes precedence |
+| Duplicate user records created | Merge | Consolidate into single record; redirect references |
+
+**Consistency Model:**
+- **Eventual Consistency** for replicated data (user preferences, roles)
+- **Strong Consistency** for local data (orders, inventory, revenue)
+- **Conflict-Free Replicated Data Type (CRDT)** consideration for future: use for favorite drinks list (append-only set)
+
+---
+
+### 2.6 Fallback Scenarios & Error Handling
+
+**Hub Unavailability:**
+- **Impact**: Store continues operating; new users cannot be discovered from other regions
+- **Fallback**: Stores maintain local user cache; queries timeout gracefully
+- **Recovery**: Automatic retry after 30 seconds; manual hub reconnection after 5 minutes
+- **User Experience**: Non-local users see error message with estimated wait time
+
+**Peer Store Unreachable:**
+- **Impact**: Cannot fetch user data from peer; user login fails
+- **Fallback**: Suggest user use their home store; provide offline mode if available
+- **Recovery**: Automatic retry with exponential backoff
+- **HTTP Status**: Return 503 Service Unavailable with retry hint
+
+**Network Partition (Store isolated):**
+- **Impact**: Store operates independently; orders processed normally
+- **Fallback**: All operations queued locally; sync when connectivity restored
+- **Outbound**: Status updates queued in Celery; processed when hub available
+- **Recovery**: Automatic reconciliation when partition heals; manual override for conflicts
+
+**Database Failure (Local PostgreSQL down):**
+- **Impact**: All API operations fail; machine maintenance halts
+- **Recovery**: Failover to replica (if configured); manual intervention required
+- **User Experience**: Immediate 503 error; recommend contact store management
+
+**Error Response Format:**
+```json
+{
+  "error": {
+    "code": "ERR_HUB_UNAVAILABLE",
+    "message": "Regional hub is temporarily unavailable",
+    "retry_after": 30,
+    "details": {
+      "hub_location": "Chicago",
+      "last_successful_contact": "2026-02-24T14:22:15Z",
+      "suggested_action": "Retry after 30 seconds or use home store"
+    }
+  }
+}
+```
+
+---
+
+### 2.7 Performance Requirements & Latency SLAs
+
+**Target Latencies (p99):**
+| Operation | Requirement | Notes |
+| :---- | :---- | :---- |
+| Local order creation | < 200ms | Database write only |
+| User login (local cache) | < 100ms | AsyncStorage lookup + token validation |
+| User login (first time at store) | < 2s | Hub query + P2P transfer |
+| Payment confirmation | < 500ms | Stripe integration |
+| Machine status update | < 1s | Hub communication |
+| Store discovery (geolocation) | < 500ms | Distance calculation |
+| P2P user data transfer | < 500ms | Network transfer |
+| Hub inter-node sync | < 3s | Regional aggregation |
+
+**Scalability Targets:**
+- **Single Store**: 1000 concurrent users, 100 orders/minute
+- **Regional Hub**: Coordinate 20 stores, 10K concurrent users region-wide
+- **Master Hub**: Coordinate 7 regional hubs, nationwide aggregation in < 5s
+
+**Database Query Performance:**
+- Index scans should complete in < 10ms
+- Full table scans unacceptable; always use indexed queries
+- Complex joins limited to < 3 tables
+
+---
+
+### 2.8 Inter-Node Authentication & Authorization
+
+**Node Identity & Trust:**
+1. **Node Registration**: Each store/hub registers with master hub on startup
+   - Provides: Node ID, Region, Location, Public Key
+   - Receives: Signed certificate valid for 90 days
+2. **Token Issuance**: Tokens signed with node's private key
+   - Token includes: Node ID, Issuing Time, Expiration (1 hour)
+   - Format: JWT with RS256 signature
+3. **Token Validation**: Receiving node validates signature using sender's public key
+   - Check expiration time
+   - Verify node ID matches certificate
+   - Reject if certificate expired
+
+**Authorization Rules:**
+- **Store → Hub**: Can submit supply requests, status updates, revenue reports
+- **Hub → Store**: Can query store data, trigger machine status changes
+- **Store A ↔ Store B**: Can exchange user data and machine status (after hub confirmation)
+- **Manager Access**: Token claims include `user_id` and `store_id`; can only access own store
+- **Logistics Manager**: Token includes `region_id`; can access hub-level data
+
+**SSL/TLS Requirements:**
+- Minimum TLS 1.3
+- Certificate pinning for production (prevent man-in-the-middle)
+- Certificate rotation: Every 90 days
+- Cipher suites: TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256
+
+
+
 
 In the distributed architecture, stores and hubs communicate via:
 
