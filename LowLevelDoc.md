@@ -6,7 +6,7 @@ The purpose of this document is to provide a working description of the product'
 
 ---
 
-## 1. Database Tables
+## Database Tables
 
 ### Overview
 
@@ -14,7 +14,7 @@ CodePop uses a **database-per-store architecture** where each physical store loc
 
 ---
 
-### 1.1 User Table
+### User Table
 
 | Field Data | Data Type | Constraints | Notes |
 | :---- | :---- | :---- | :---- |
@@ -32,7 +32,7 @@ CodePop uses a **database-per-store architecture** where each physical store loc
 
 ---
 
-### 1.2 Preference Table
+### Preference Table
 
 | Field Data | Data Type | Constraints | Notes |
 | :---- | :---- | :---- | :---- |
@@ -47,7 +47,7 @@ CodePop uses a **database-per-store architecture** where each physical store loc
 
 ---
 
-### 1.3 Drink Table
+### Drink Table
 
 | Field Data | Data Type | Constraints | Notes |
 | :---- | :---- | :---- | :---- |
@@ -70,7 +70,7 @@ CodePop uses a **database-per-store architecture** where each physical store loc
 
 ---
 
-### 1.4 Order Table
+### Order Table
 
 | Field Data | Data Type | Constraints | Notes |
 | :---- | :---- | :---- | :---- |
@@ -92,7 +92,7 @@ CodePop uses a **database-per-store architecture** where each physical store loc
 
 ---
 
-### 1.5 Inventory Table
+### Inventory Table
 
 | Field Data | Data Type | Constraints | Notes |
 | :---- | :---- | :---- | :---- |
@@ -111,7 +111,7 @@ CodePop uses a **database-per-store architecture** where each physical store loc
 
 ---
 
-### 1.6 Notification Table
+### Notification Table
 
 | Field Data | Data Type | Constraints | Notes |
 | :---- | :---- | :---- | :---- |
@@ -130,7 +130,7 @@ CodePop uses a **database-per-store architecture** where each physical store loc
 
 ---
 
-### 1.7 Revenue Table
+### Revenue Table
 
 | Field Data | Data Type | Constraints | Notes |
 | :---- | :---- | :---- | :---- |
@@ -149,7 +149,7 @@ CodePop uses a **database-per-store architecture** where each physical store loc
 
 ---
 
-### 1.8 Removed/Consolidated Tables
+### Removed/Consolidated Tables
 
 #### Payment Table (Removed)
 - **Previous design**: Separate Payment table for tracking transaction details.
@@ -163,7 +163,7 @@ CodePop uses a **database-per-store architecture** where each physical store loc
 
 ---
 
-### 1.9 Database Indexing Strategy
+### Database Indexing Strategy
 
 **Recommended Indexes:**
 
@@ -190,7 +190,7 @@ Create indexes on the following fields to optimize query performance:
 
 ---
 
-### 1.10 Data Validation & Constraints
+### Data Validation & Constraints
 
 **Field Validation Rules:**
 
@@ -211,7 +211,7 @@ Create indexes on the following fields to optimize query performance:
 
 ---
 
-### 1.12 Migration Considerations
+### Migration Considerations
 
 **Key Migration Patterns:**
 - **Adding new ingredients**: Insert into Inventory with appropriate ItemType and ThresholdLevel
@@ -229,7 +229,7 @@ Create indexes on the following fields to optimize query performance:
 
 ---
 
-### 1.13 Entity Relationship Diagram
+### Entity Relationship Diagram
 
 ```mermaid
 erDiagram
@@ -323,58 +323,13 @@ erDiagram
 
 ---
 
-## 2. System Architecture
+## System Architecture
 
-### 2.1 Current Implementation: Single-Store Architecture
-
-The current CodePop backend is a **3-tier client-server model** running locally via Docker Compose:
-
-```mermaid
-graph TB
-    subgraph CLIENT["Client Layer"]
-        M["React Native Frontend<br/>(iOS/Android via Expo CLI)"]
-    end
-
-    subgraph API["Application Layer"]
-        D["Django REST API Backend<br/>(Django 5.1 + DRF 3.14)<br/><br/>• User Management<br/>• Drink Catalog<br/>• Order Processing<br/>• Inventory Management<br/>• AI Recommendations<br/>• Customer Chatbot"]
-    end
-
-    subgraph DB["Database Layer"]
-        PG["PostgreSQL 15 Database<br/>(Docker: localhost:5432)<br/><br/>Users • Orders • Inventory<br/>Drinks • Revenue • Notifications"]
-    end
-
-    subgraph EXT["External Services"]
-        STRIPE["Stripe<br/>(Payments)"]
-        MAPBOX["Mapbox<br/>(Geolocation)"]
-        FCM["Firebase FCM<br/>(Push Notifications)"]
-        AI["Dialogflow/HuggingFace<br/>(Chatbot)"]
-    end
-
-    M -->|HTTP/REST + Token Auth| D
-    D -->|psycopg2/SQL| PG
-    D -->|API Calls| STRIPE
-    D -->|API Calls| MAPBOX
-    D -->|API Calls| FCM
-    D -->|API Calls| AI
-```
-
-**External Integrations:**
-- **Stripe API**: Payment processing (credit cards, Apple Pay, Google Pay)
-- **Mapbox API**: Geolocation and proximity calculations
-- **Firebase Cloud Messaging (FCM)**: Push notifications
-- **Dialogflow ES**: Customer service chatbot (Google Cloud AI)
-
-**Backend URL Configuration:**
-- Configured in `codepop/ip_address.js` (default: `http://localhost:8000`)
-- All protected endpoints require `Authorization: Token {userToken}` header
-
----
-
-### 2.2 Planned Architecture: Federated Distributed System
+### Federated Distributed System
 
 The High Level Design specifies a future transformation to a **federated distributed architecture** where multiple stores operate independently with regional coordination. This section describes the target architecture.
 
-#### 2.2.1 Network Topology
+### Network Topology
 
 CodePop will evolve into a **hub-and-spoke model with 7 regional supply hubs**:
 
@@ -418,14 +373,95 @@ flowchart TB
     PHX <--> ATL
 ```
 
-#### 2.2.2 Store Autonomy & Resilience
+### Store Discovery & Registration
+
+**Store Registration on Startup:**
+1. **Node Identification**: Store reads local configuration (store_id, region, location coordinates)
+2. **Hub Contact**: Store connects to regional hub via HTTPS
+3. **Registration Request**: POST to `/api/hub/register/` with payload:
+```json
+{
+  "store_id": 42,
+  "store_name": "CodePop Chicago #1",
+  "region": "Chicago",
+  "latitude": 41.8781,
+  "longitude": -87.6298,
+  "public_key": "-----BEGIN PUBLIC KEY-----...",
+  "api_endpoint": "https://store42.codepop.local"
+}
+```
+4. **Hub Response**: Hub returns signed certificate valid for 90 days and list of other stores in region
+5. **Cache Update**: Store stores registry in local cache for peer discovery during partition
+
+**Hub Registry Management:**
+- Hub maintains in-memory registry of all stores in region
+- Registry persists to PostgreSQL for recovery after hub restart
+- Heartbeat every 30 seconds from each store; timeout after 3 failures (90 seconds)
+- Failed stores marked as unavailable; mobile clients redirected to healthy stores
+
+**Peer Discovery Protocol:**
+1. Store needs data from peer store
+2. Queries regional hub: `GET /api/hub/store-location/?email=user@example.com`
+3. Hub responds with peer store's API endpoint and public key
+4. Store directly contacts peer (P2P) with TLS verification
+
+---
+
+### Store Startup Sequence
+
+**Initialization Order (Critical):**
+1. **Database Connection** (must succeed)
+   - Connect to local PostgreSQL
+   - Verify schema version matches expected
+   - Fail fast if DB unavailable; store cannot operate
+2. **Configuration Load**
+   - Read `config.json`: store_id, region, hub_url, etc.
+   - Load private key from secure storage (environment variable or key management service)
+3. **Register with Hub**
+   - POST to hub's `/api/hub/register/` endpoint
+   - Retry with exponential backoff (1s, 2s, 4s, 8s)
+   - Log warning if hub unreachable; continue with cached registry
+4. **Bootstrap Local Data** (if new store or DB reset)
+   - Seed catalog drinks from CSV/API
+   - Initialize empty inventory (manager will replenish)
+   - Create admin user account
+5. **Start API Server**
+   - Django server listens on configured port
+   - Health check endpoint returns 200 OK
+   - Accept client connections
+6. **Start Background Services**
+   - Celery worker for async tasks
+   - Event queue processors
+   - Heartbeat task to hub (every 30 seconds)
+7. **Ready for Operations**
+   - Log "Store startup complete"
+   - Begin accepting orders
+
+**Graceful Shutdown Sequence:**
+1. Stop accepting new connections
+2. Wait for in-flight requests (timeout: 10 seconds)
+3. Deregister from hub
+4. Shutdown Celery workers
+5. Close database connection
+
+**Data Bootstrap Sources:**
+- **Drink Catalog**: Replicated from master hub on first startup
+- **Inventory**: Start empty; manager creates items via UI
+- **User Data**: Lazy-loaded on first login attempts
+- **Machine Data**: Manager configures machines post-deployment
+
+---
+
+### Store Autonomy & Resilience
 
 - **Each store runs its own complete backend stack**: Django API + PostgreSQL database
 - **Operational independence**: Stores continue functioning during hub/peer outages
 - **Local data ownership**: Orders, inventory, revenue, machine status never leave the local database
 - **Fault isolation**: Problems at one store do not cascade to others
 
-#### 2.2.3 Hub-Store Communication
+---
+
+### Hub-Store Communication
 
 **Store Registration (on startup):**
 - Store registers with its regional hub
@@ -443,7 +479,9 @@ flowchart TB
 - Supply requests, machine status updates flow through hub
 - Hub aggregates regional inventory and maintenance schedules
 
-#### 2.2.4 Data Replication Strategy
+---
+
+### Data Replication Strategy
 
 **Replicated Data (Lazily synchronized):**
 - User accounts and authentication
@@ -470,7 +508,9 @@ flowchart TB
 - **Reduced network traffic**: Only active users generate sync traffic
 - **Privacy**: User data only exists at stores they have visited
 
-#### 2.2.5 Cross-Region User Discovery
+---
+
+### Cross-Region User Discovery
 
 When a user travels to a different region (e.g., Logan, UT user visiting New York, NY):
 
@@ -510,7 +550,9 @@ sequenceDiagram
 5. **Local Caching**: NY Store caches user data; user logs in successfully
 6. **Subsequent Logins**: Subsequent NY Store logins use cached data (no hub/peer queries needed)
 
-#### 2.2.6 Revenue Aggregation
+---
+
+#### 2.1.8 Revenue Aggregation
 
 **Local Level:**
 - Each store maintains its own revenue records
@@ -526,7 +568,9 @@ sequenceDiagram
 - **Primary path**: Master hub (Logan Hub) queries all 7 regional hubs
 - **Fallback path**: If master hub unavailable, dashboard queries all 7 hubs in parallel and aggregates client-side
 
-#### 2.2.7 Machine Status Monitoring
+---
+
+### Machine Status Monitoring
 
 Each robotic machine tracks operational status through a **state machine**:
 
@@ -569,20 +613,18 @@ stateDiagram-v2
 
 ---
 
-### 2.3 Technology Stack
+### Technology Stack
 
 #### Frontend
-- **Framework**: React Native 0.74.5 with Expo 51.0.38
+- **Framework**: React Native
 - **Key Libraries**:
   - React Navigation: Screen routing and navigation
   - Axios: HTTP requests to backend API
   - AsyncStorage: Local persistent data (userToken, userId, userRole, checkoutList)
   - Stripe React Native SDK: Payment processing
-  - Expo Location: Geolocation services
-- **Supported Platforms**: iOS and Android (via Expo CLI)
 
 #### Backend
-- **Framework**: Django 5.1 with Django REST Framework 3.14
+- **Framework**: Django with Django REST Framework
 - **Authentication**: Token-based authentication (djangorestframework.authtoken)
 - **Database**: PostgreSQL 15
 - **Asynchronous Processing**: Celery + Redis (planned for distributed architecture)
@@ -610,7 +652,7 @@ stateDiagram-v2
 
 ---
 
-### 2.4 Inter-Node Communication Protocol
+### Inter-Node Communication Protocol
 
 **Protocol Details:**
 - **Transport**: HTTPS/TLS 1.3 for all inter-node communication
@@ -664,7 +706,7 @@ POST /api/inter-node/health-check/         # Peer availability check
 
 ---
 
-### 2.5 Data Synchronization & Conflict Resolution
+### Data Synchronization & Conflict Resolution
 
 **Lazy Replication Strategy:**
 - User data syncs **only on-demand** when user logs into new store
@@ -688,7 +730,7 @@ POST /api/inter-node/health-check/         # Peer availability check
 
 ---
 
-### 2.6 Fallback Scenarios & Error Handling
+### Fallback Scenarios & Error Handling
 
 **Hub Unavailability:**
 - **Impact**: Store continues operating; new users cannot be discovered from other regions
@@ -715,33 +757,7 @@ POST /api/inter-node/health-check/         # Peer availability check
 
 ---
 
-### 2.7 Performance Requirements & Latency SLAs
-
-**Target Latencies (p99):**
-| Operation | Requirement | Notes |
-| :---- | :---- | :---- |
-| Local order creation | < 200ms | Database write only |
-| User login (local cache) | < 100ms | AsyncStorage lookup + token validation |
-| User login (first time at store) | < 2s | Hub query + P2P transfer |
-| Payment confirmation | < 500ms | Stripe integration |
-| Machine status update | < 1s | Hub communication |
-| Store discovery (geolocation) | < 500ms | Distance calculation |
-| P2P user data transfer | < 500ms | Network transfer |
-| Hub inter-node sync | < 3s | Regional aggregation |
-
-**Scalability Targets:**
-- **Single Store**: 1000 concurrent users, 100 orders/minute
-- **Regional Hub**: Coordinate 20 stores, 10K concurrent users region-wide
-- **Master Hub**: Coordinate 7 regional hubs, nationwide aggregation in < 5s
-
-**Database Query Performance:**
-- Index scans should complete in < 10ms
-- Full table scans unacceptable; always use indexed queries
-- Complex joins limited to < 3 tables
-
----
-
-### 2.8 Inter-Node Authentication & Authorization
+### Inter-Node Authentication & Authorization
 
 **Node Identity & Trust:**
 1. **Node Registration**: Each store/hub registers with master hub on startup
@@ -772,7 +788,7 @@ In the distributed architecture, stores and hubs communicate via:
 
 ---
 
-### 2.6 Data Flow Example: User Placing an Order
+### Data Flow Example: User Placing an Order
 
 ```mermaid
 sequenceDiagram
@@ -831,16 +847,117 @@ sequenceDiagram
     User->>User: Collect drink from locker
 ```
 
-**Key Integration Points:**
-1. **Token Authentication**: All protected endpoints require `Authorization: Token {userToken}`
-2. **Local Storage**: Token and user ID cached in AsyncStorage for offline access
-3. **Stripe Integration**: Card tokenization happens on client; backend never sees raw card data
-4. **Push Notifications**: Firebase FCM delivers order status updates in real-time
-5. **Database Transactions**: Order, Drinks (M2M), and Revenue created atomically
-6. **Locker Access**: LockerCombo generated server-side after payment confirmation
-
 ---
 
-## Summary
+## Implementation Roadmap
 
-The CodePop backend is currently a centralized single-store system running in Docker Compose. The planned distributed architecture transforms it into a **federated multi-store network** with 7 regional supply hubs coordinating independent store operations. Data strategy balances scalability (lazy replication for user data) with operational locality (orders, inventory, revenue never replicated). This design ensures resilience, fault isolation, and efficient resource utilization as the system scales nationwide.
+This section breaks the Low Level Design into implementable tasks organized by logical phase.
+
+### Phase 1: Local Store Foundation
+
+**Task: Database Schema Implementation**
+- Create all 8 tables (User, Preference, Drink, Order, Inventory, Notification, Revenue) in PostgreSQL
+- Implement M2M relationship between Order and Drink
+- Create all recommended indexes per section 1.9
+- Write and run migrations
+- **Acceptance**: All tables exist with correct types, constraints, and indexes
+
+**Task: Data Validation & Serializers**
+- Implement field validation rules from section 1.10 in Django serializers
+- Create error messages per validation table
+- Test validation for edge cases (negative inventory, invalid email, etc.)
+- **Acceptance**: All validation rules enforce constraints; invalid data rejected with correct errors
+
+**Task: Store Startup Sequence**
+- Implement initialization order from section 2.1.3
+- Database connection with schema verification
+- Configuration loading from environment/config file
+- Bootstrap catalog drinks if new store
+- Create admin user on first startup
+- Health check endpoint returns 200 OK
+- **Acceptance**: Store boots in correct order; fails gracefully if DB unavailable
+
+**Task: Local Order Operations**
+- Implement Order CRUD operations (create, read, update, delete)
+- Implement M2M drink assignment (add/remove drinks from order)
+- Implement order status transitions (pending → processing → completed)
+- Implement payment status tracking
+- Implement LockerCombo generation and storage
+- **Acceptance**: Orders can be created, updated, and tracked; M2M operations work
+
+### Phase 2: Inter-Node Communication
+
+**Task: Store Discovery & Registration**
+- Implement `/api/hub/register/` endpoint on hub
+- Implement store registration request (POST with store metadata)
+- Implement hub registry management (in-memory + PostgreSQL persistence)
+- Implement heartbeat mechanism (store sends heartbeat every 30s)
+- Implement timeout detection (mark store unavailable after 3 failures)
+- **Acceptance**: Store registers successfully; hub tracks registry; heartbeats keep store alive
+
+**Task: Inter-Node API Endpoints**
+- Implement `/api/inter-node/user-lookup/` endpoint (query peer for user by email)
+- Implement `/api/inter-node/user-sync/` endpoint (transfer user data to peer)
+- Implement `/api/inter-node/store-registry/` endpoint (hub returns list of stores in region)
+- Implement `/api/inter-node/health-check/` endpoint (peer availability check)
+- Implement request/response format per section 2.3
+- **Acceptance**: Endpoints accept requests, return correct JSON, handle errors (404, 503)
+
+**Task: Inter-Node Authentication**
+- Implement node registration with public key exchange
+- Implement JWT token signing with node's private key
+- Implement token validation on receiving node (verify signature, expiration, node ID)
+- Implement certificate generation/rotation for 90-day validity
+- **Acceptance**: Tokens are signed and validated; invalid tokens rejected
+
+**Task: Peer Discovery Protocol**
+- Implement hub query to find peer store location
+- Implement peer store address resolution
+- Implement P2P connection establishment with TLS verification
+- **Acceptance**: Store A can query hub to find Store B's address; can connect to Store B directly
+
+### Phase 3: Data Replication & Consistency
+
+**Task: Lazy User Data Replication**
+- Implement on-demand user data sync when user logs in at new store
+- Check local database for user; if not found, query hub
+- Hub broadcasts to other regional hubs to locate user
+- Fetch user data from home store via P2P
+- Cache user data locally for 24 hours
+- **Acceptance**: New user login at unfamiliar store succeeds; data cached
+
+**Task: Data Synchronization & Conflict Resolution**
+- Implement conflict detection (user modified at multiple stores)
+- Implement last-write-wins strategy (use server timestamp)
+- Implement preference merge strategy (union of favorite drinks)
+- Implement duplicate detection and consolidation
+- **Acceptance**: Conflicts detected and resolved per rules; no data loss
+
+**Task: Caching Strategy**
+- Implement 24-hour user data cache invalidation
+- Implement cache refresh on user preference update
+- Implement cache miss handling (redirect to hub for lookup)
+- **Acceptance**: Cached data serves subsequent requests; cache expiration triggers fresh fetch
+
+### Phase 4: Resilience & Operations
+
+**Task: Fallback Scenarios & Error Handling**
+- Implement hub unavailability handling (store continues operating; new user lookups fail gracefully)
+- Implement peer store unreachability handling (return 503 with retry guidance)
+- Implement network partition recovery (queue operations locally; sync when partition heals)
+- Implement error response format from section 2.5
+- **Acceptance**: System gracefully degrades; no silent failures; user-friendly error messages
+
+**Task: Machine Status State Machine**
+- Implement machine status model with states: NORMAL, WARNING, ERROR, OUT_OF_ORDER, SCHEDULE_SERVICE, REPAIR_START, REPAIR_END
+- Implement state transitions per section 2.1.9 state diagram
+- Implement status update to hub
+- Implement notification trigger when status changes to WARNING/ERROR
+- **Acceptance**: Machines transition through states; hubs receive updates; alerts trigger
+
+**Task: Hub Availability & Failover**
+- Implement health check from store to hub (periodic connectivity test)
+- Implement automatic failover to backup hub if configured
+- Implement fallback: store operates independently during hub outage
+- Implement reconciliation when hub recovers
+- **Acceptance**: Stores detect hub unavailability; continue operations; reconnect when hub available
