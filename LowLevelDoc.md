@@ -858,18 +858,18 @@ This section breaks the Low Level Design into implementable tasks organized by l
 **Task: Database Schema Implementation**
 - Create all 8 tables (User, Preference, Drink, Order, Inventory, Notification, Revenue) in PostgreSQL
 - Implement M2M relationship between Order and Drink
-- Create all recommended indexes per section 1.9
+- Create all recommended indexes per the Database Indexing Strategy guidelines
 - Write and run migrations
 - **Acceptance**: All tables exist with correct types, constraints, and indexes
 
 **Task: Data Validation & Serializers**
-- Implement field validation rules from section 1.10 in Django serializers
+- Implement field validation rules from the Data Validation & Constraints section in Django serializers
 - Create error messages per validation table
 - Test validation for edge cases (negative inventory, invalid email, etc.)
 - **Acceptance**: All validation rules enforce constraints; invalid data rejected with correct errors
 
 **Task: Store Startup Sequence**
-- Implement initialization order from section 2.1.3
+- Implement initialization order from the Store Startup Sequence section
 - Database connection with schema verification
 - Configuration loading from environment/config file
 - Bootstrap catalog drinks if new store
@@ -900,7 +900,7 @@ This section breaks the Low Level Design into implementable tasks organized by l
 - Implement `/api/inter-node/user-sync/` endpoint (transfer user data to peer)
 - Implement `/api/inter-node/store-registry/` endpoint (hub returns list of stores in region)
 - Implement `/api/inter-node/health-check/` endpoint (peer availability check)
-- Implement request/response format per section 2.3
+- Implement request/response format per the Inter-Node Communication Protocol
 - **Acceptance**: Endpoints accept requests, return correct JSON, handle errors (404, 503)
 
 **Task: Inter-Node Authentication**
@@ -945,12 +945,12 @@ This section breaks the Low Level Design into implementable tasks organized by l
 - Implement hub unavailability handling (store continues operating; new user lookups fail gracefully)
 - Implement peer store unreachability handling (return 503 with retry guidance)
 - Implement network partition recovery (queue operations locally; sync when partition heals)
-- Implement error response format from section 2.5
+- Implement error response format from the Fallback Scenarios & Error Handling section
 - **Acceptance**: System gracefully degrades; no silent failures; user-friendly error messages
 
 **Task: Machine Status State Machine**
 - Implement machine status model with states: NORMAL, WARNING, ERROR, OUT_OF_ORDER, SCHEDULE_SERVICE, REPAIR_START, REPAIR_END
-- Implement state transitions per section 2.1.9 state diagram
+- Implement state transitions per the Machine Status Monitoring state diagram
 - Implement status update to hub
 - Implement notification trigger when status changes to WARNING/ERROR
 - **Acceptance**: Machines transition through states; hubs receive updates; alerts trigger
