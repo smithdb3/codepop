@@ -569,12 +569,124 @@ Subsystems and UML Class Diagrams
 
 * App objects: 
 
-![Objects](misc/Objects.png) 
+```mermaid
+classDiagram
+    class User {
+        -username: String
+        -password: String
+        -email: String
+        -preferences: Preferences
+        -isLoggedIn: Boolean
+        +signIn(username:String, password:String): Boolean
+        +createUser(username:String, password:String): Boolean
+        +updatePreferences(preferences: List<String>): void
+        +savePreferences(): void
+        +logout(): void
+    }
+
+    class Cart {
+        -drinks: List<Drink>
+        -totalPrice: Float
+        -userId: String
+        +addDrink(drink: Drink): void
+        +removeDrink(drinkId: String): void
+        +getCartItems(): List<Drink>
+        +calculateTotal(): Float
+        +checkout(paymentDetails: PaymentDetails): Boolean
+    }
+
+    class Drink {
+        -drinkId: String
+        -name: String
+        -size: String
+        -ingredients: List<String>
+        -price: Float
+        +createDrink(ingredients: List<String>, size: String): Drink
+        +updateDrink(drinkId: String, updatedDetails: Drink): void
+        +getDrinkDetails(drinkId: String): Drink
+        +calculatePrice(): Float
+    }
+
+    class Admin {
+        -adminId: String
+        -name: String
+        -email: String
+        -permissions: List<String>
+        +createManager(managerDetails: Manager): void
+        +updateUser(userId: String, updatedDetails: User): void
+        +deleteUser(userId: String): void
+    }
+
+    class Manager {
+        -managerId: String
+        -name: String
+        -email: String
+        -permissions: List<String>
+        +getData(): DashboardData
+        +updateDrink(drinkId: String, updatedDetails: Drink): void
+        +resolveComplaint(complaintId: String, resolution: String): void
+        +viewComplaints(): List<Complaint>
+    }
+
+    class Complaints {
+        -userId: String
+        -message: String
+        +submitComplaint(userId: String, message: String): void
+        +getComplaints(): List<Complaints>
+    }
+
+    %% relationships
+    User --> Cart
+    Cart --> Drink
+    User <|-- Admin
+    User <|-- Manager
+    User --> Complaints
+    Manager --> Complaints
+```
 
 
 * Main user flow:  
 
-![UserFlow](misc/UserFlow.png) 
+```mermaid
+flowchart TD
+    %% start
+    A([Launch App])
+    A --> B[Splash Screen]
+    B --> C[Home Page]
+
+    %% authentication loop
+    C --> D{Logged in?}
+    D -->|no| E[Login Page]
+    D -->|yes| F{Part of Staff?}
+    E --> F
+    F -->|no| L[User Dashboard]
+    F -->|yes| M[Specific Staff Dashboard]
+    M <-->|part of staff| L
+
+    %% main purchase path
+    L --> G[Create Drink]
+    G --> H[Add to Cart]
+    H --> I{Payment}
+    I --> J[Confirmation]
+    J --> K([Drink Rating])
+
+    %% labels / descriptions (optional)
+    %% (removed empty click statement to avoid parse error)
+    classDef startEnd fill:#2d6a4f,stroke:#2d6a4f,color:#fff;
+    classDef page fill:#393e46,stroke:#ffe066,color:#fff;
+    classDef action fill:#1b262c,stroke:#0f4c75,color:#00b4d8;
+    classDef decision fill:#1b262c,stroke:#0f4c75,color:#00b4d8;
+    classDef userEnd fill:#bb9457,stroke:#bb9457,color:#fff;
+
+    class A startEnd;
+    class B,C,E,J,L,M page;
+    class G,H action;
+    class I decision;
+    class K userEnd;
+
+    %% descriptions could be added as subtext if your renderer supports it
+    %% e.g. B:::page; B["Splash Screen<br/><small>Brief introduction</small>"]
+``` 
  
 
 ## User interfaces:
@@ -1002,20 +1114,52 @@ To address system performance, potential bottlenecks such as high traffic during
 
 ## Security risks
 
-The CodePop app incorporates a robust security model based on Django’s built-in authentication and authorization system. This system manages user accounts, groups, permissions, and cookie-based sessions, ensuring secure access across different user roles. Admins have the authority to manage user accounts, add or remove users, and create manager accounts, while managers have access to store-specific data like revenue and expense reports. To enhance security, features such as password strength checking can be implemented. The app separates the client and server, utilizing token-based authentication for secure communication. Django’s security features include query parameterization for injection protection and Cross-Site Request Forgery (CSRF) protection to prevent unauthorized actions. Additionally, sensitive data, including user payment information, email addresses, and store revenue reports, will be encrypted using SHA-256 both at rest and in transit. CodePop complies with relevant data protection laws such as GDPR and takes measures to address the OWASP Top 10 security risks. Users will be given the option to opt into features that handle personal data, ensuring transparency and privacy.
+The CodePop app incorporates a robust security model based on Django’s built-in authentication and authorization system. This system manages user accounts, groups, permissions, and cookie-based sessions, ensuring secure access across different user roles. This is important since many user roles have a direct impact on on day to day operations. 
+* Admins have the ability manage user accounts in their area as well as create managers for stores.
+* Managers can access their stores information like expense reports and sales figures.
+* Logistics Managers have access to an entire regions supplies and can approve or deny requests for supplies.
+* Super Admins can view the information of any store nation wide as well as create admin accounts.
+If a malicious actor got access to any of these roles they could inflict serious financial harm on the company and our customers so a strong security is a must. To enhance security, features such as password strength checking can be implemented. Staff should also be told about ways the can keep their account secure. The app separates the client and server, utilizing token-based authentication for secure communication. Django’s security features include query parameterization for injection protection and Cross-Site Request Forgery (CSRF) protection to prevent unauthorized actions. Additionally, sensitive data, including user payment information, email addresses, and store revenue reports, will be encrypted using SHA-256 both at rest and in transit. CodePop complies with relevant data protection laws such as GDPR and takes measures to address the OWASP Top 10 security risks. Users will be given the option to opt into features that handle personal data, ensuring transparency and privacy. 
+
+### Risks with AI
+With the advent of AI we have seen numerous ways to "jailbreak" them and get them to say or do things they weren't intend to do. Since we have multiple interfaces for communicating with AI in the CodPop app we must take precautions to ensure that a bad actor cannot take advantage of our AI. It should be assumed that our AI *will* be exploited at some point. To minimize the damage this will cause the scope of our AI's abilities should be limited. Our resident customer support bot, Tonic, should only have access to order information to help process refunds. He should not be able to access any other data from our database. This way the worst he can do is say something obscene not leak the fiances of the company. Our Logistics Manager AI is a bit different. It will have access to sensitive documents that are uploaded by the staff. It should not be able to access anything more. To ensure that the AI stays on task we must give them initial prompts that ensure they do what they are told. These prompts should be robust enough to with stand the most common jailbreak prompts. To increase the stability of the AI's they should not be reset when they are no longer needed. Having them remember past conversations is not necessary for the functionality we require and introduces many technical and stability issues with the AI.
 
 * **Authentication and Authorization**: Description of user roles and permission management.  
   * Explanation of admin and manager access and roles:  
-    * Admins have access to user account information as well as permissions to add/remove general user accounts and create manager accounts.   
-    * Managers have access to store data such as revenue and expense reports.   
-  * Django comes with a built in user authentication system that handles user accounts, groups, permissions and cookie-based user sessions  
-    * This system can be expanded and customized to add things like   
-    * password strength checking to add more security.    
+    * Admins: 
+        * Admins have access to user account information in their store.
+        * Admins are able to add/remove general user accounts and create manager accounts for their stores.   
+    * Super Admins
+        * Super Admins have all the same permissions as a regional Admin but on a national scale.
+        * Super Admins can create/remove store admins.
+    * Managers:
+        * Managers have access to store data such as revenue and expense reports.   
+    * Logistics Manager:
+        * Logistics Managers have access to regional supply chain information.
+        * Logistics Managers determine supply routes.
+    * Repair Staff:
+        * Repair Staff can view any machine's status in their area.
+  * User authentication:
+    * Django comes with a built in user authentication system that handles user accounts, groups, permissions and cookie-based user sessions 
+      * This system can be expanded and customized to add things like password strength checking to add more security.    
   * To secure the application, the client and server will be separated.   
     * The client and server will talk to each other through token authentication which is already included with Django.   
   * Django security features: [https://docs.djangoproject.com/en/5.1/topics/security/](https://docs.djangoproject.com/en/5.1/topics/security/)  
     * Includes injection protection because queries are constructed using query parameterization  
-    * Includes Cross site request forgery (CSRF) protection which prevents attacks that perform actions using other people’s credentials.  
+    * Includes Cross site request forgery (CSRF) protection which prevents attacks that perform actions using other people’s credentials.
+  * API endpoints will be used to ensure a user can access a endpoint with their role.
+* **Inter-Node Communication Security**: How to keep communications between servers secure
+  * Messages should be passed using HTTPS 
+  * Servers must authenticate that they are talking to a legit CodePop server before any communications take place
+    * A list of know servers should be created and maintained to ensure a server can trust another server  
+  * A store servers can be accessed by super admins and a store's admin, manager and repair staff
+    * If a supply hub or another regional store needs information from a different store it can request the information
+  * Supply hubs can only be accessed by logistic managers and super admins 
+    * They can send requests to other supply hubs and store inside of their region only
+  * The Master hub can only be accessed by logistic managers and super admins
+  * Nodes will be ran on Google Cloud platform in Docker containers
+    * Google has plenty of security features for their architecture which we will be using by default
+    * The isolation of Docker containers can make programs more secure as they are harder to get into
 * **Data Encryption**: Explanation of how data will be encrypted (at rest and in transit).  
   * Django user data encryption  
   * Sha 256 encryption  
@@ -1027,9 +1171,15 @@ The CodePop app incorporates a robust security model based on Django’s built-i
     * Email  
     * geolocation  
   * Store data:  
-    * Revenue reports  
+    * Revenue tables (regional and local) 
+  * Hub data:
+    * Region's supplies
 * **Privacy**  
   * We will make sure that the user has the option to opt into any of the features that handle personal data (geolocation, drink preferences, emails) to ensure that they are able to make an informed choice about their data.
+* **Leak Policy**: What to do when a leak occurs and sensitive information gets out.
+  * Find leak and patch it ASAP
+  * Assess damage, see what got out
+    * Contact users about their data and account
 
 ## Programming languages, libraries, frameworks, and third party systems
 
