@@ -211,25 +211,6 @@ Create indexes on the following fields to optimize query performance:
 
 ---
 
-### 1.11 Example Record
-
-**Complete Order Example (showing M2M relationship with Drinks):**
-```json
-{
-  "OrderID": 1001,
-  "UserID": 5,
-  "Drinks": [42, 87, 105],
-  "OrderStatus": "processing",
-  "PaymentStatus": "paid",
-  "PickupTime": "2026-02-24T14:30:00Z",
-  "CreationTime": "2026-02-24T13:15:00Z",
-  "LockerCombo": 483921,
-  "StripeID": "pi_1Ib4E82eZvKYlo2ChCU8YxUr"
-}
-```
-
----
-
 ### 1.12 Migration Considerations
 
 **Key Migration Patterns:**
@@ -398,7 +379,7 @@ The High Level Design specifies a future transformation to a **federated distrib
 CodePop will evolve into a **hub-and-spoke model with 7 regional supply hubs**:
 
 ```mermaid
-graph TD
+flowchart TB
     MASTER["Master Hub<br/>Logan UT"]
 
     MASTER --> CHI["Chicago Hub"]
@@ -408,33 +389,33 @@ graph TD
     MASTER --> ATL["Atlanta Hub"]
     MASTER --> SEA["Seattle Hub"]
 
-    CHI --> SA1["Store A1<br/>Django + PostgreSQL<br/>Celery + Redis"]
-    CHI --> SA2["Store A2<br/>Django + PostgreSQL<br/>Celery + Redis"]
-    CHI --> SA3["Store A3<br/>Django + PostgreSQL<br/>Celery + Redis"]
+    CHI --> SA1["Store 1<br/>Django + PostgreSQL"]
+    CHI --> SA2["Store 2<br/>Django + PostgreSQL"]
+    SA1 <--> SA2
 
-    NJ --> SB1["Store B1<br/>Django + PostgreSQL<br/>Celery + Redis"]
-    NJ --> SB2["Store B2<br/>Django + PostgreSQL<br/>Celery + Redis"]
-    NJ --> SB3["Store B3<br/>Django + PostgreSQL<br/>Celery + Redis"]
+    NJ --> SB1["Store 1<br/>Django + PostgreSQL"]
+    NJ --> SB2["Store 2<br/>Django + PostgreSQL"]
+    SB1 <--> SB2
 
-    DAL --> SD1["Store D1<br/>Django + PostgreSQL<br/>Celery + Redis"]
-    DAL --> SD2["Store D2<br/>Django + PostgreSQL<br/>Celery + Redis"]
+    DAL --> SD1["Store 1<br/>Django + PostgreSQL"]
+    DAL --> SD2["Store 2<br/>Django + PostgreSQL"]
+    SD1 <--> SD2
 
-    PHX --> SP1["Store P1<br/>Django + PostgreSQL<br/>Celery + Redis"]
-    PHX --> SP2["Store P2<br/>Django + PostgreSQL<br/>Celery + Redis"]
+    PHX --> SP1["Store 1<br/>Django + PostgreSQL"]
+    PHX --> SP2["Store 2<br/>Django + PostgreSQL"]
+    SP1 <--> SP2
 
-    ATL --> SAT1["Store AT1<br/>Django + PostgreSQL<br/>Celery + Redis"]
-    ATL --> SAT2["Store AT2<br/>Django + PostgreSQL<br/>Celery + Redis"]
+    ATL --> SAT1["Store 1<br/>Django + PostgreSQL"]
+    ATL --> SAT2["Store 2<br/>Django + PostgreSQL"]
+    SAT1 <--> SAT2
 
-    SEA --> SSE1["Store SE1<br/>Django + PostgreSQL<br/>Celery + Redis"]
-    SEA --> SSE2["Store SE2<br/>Django + PostgreSQL<br/>Celery + Redis"]
+    SEA --> SSE1["Store 1<br/>Django + PostgreSQL"]
+    SEA --> SSE2["Store 2<br/>Django + PostgreSQL"]
+    SSE1 <--> SSE2
 
-    SA1 <-->|P2P| SB1
-    SA1 <-->|P2P| SD1
-    SB1 <-->|P2P| SP1
-
-    SA1 -->|Updates| CHI
-    SB1 -->|Updates| NJ
-    SD1 -->|Updates| DAL
+    CHI <--> NJ
+    NJ <--> DAL
+    PHX <--> ATL
 ```
 
 #### 2.2.2 Store Autonomy & Resilience
@@ -732,22 +713,6 @@ POST /api/inter-node/health-check/         # Peer availability check
 - **Recovery**: Failover to replica (if configured); manual intervention required
 - **User Experience**: Immediate 503 error; recommend contact store management
 
-**Error Response Format:**
-```json
-{
-  "error": {
-    "code": "ERR_HUB_UNAVAILABLE",
-    "message": "Regional hub is temporarily unavailable",
-    "retry_after": 30,
-    "details": {
-      "hub_location": "Chicago",
-      "last_successful_contact": "2026-02-24T14:22:15Z",
-      "suggested_action": "Retry after 30 seconds or use home store"
-    }
-  }
-}
-```
-
 ---
 
 ### 2.7 Performance Requirements & Latency SLAs
@@ -797,15 +762,6 @@ POST /api/inter-node/health-check/         # Peer availability check
 - **Manager Access**: Token claims include `user_id` and `store_id`; can only access own store
 - **Logistics Manager**: Token includes `region_id`; can access hub-level data
 
-**SSL/TLS Requirements:**
-- Minimum TLS 1.3
-- Certificate pinning for production (prevent man-in-the-middle)
-- Certificate rotation: Every 90 days
-- Cipher suites: TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256
-
-
-
-
 In the distributed architecture, stores and hubs communicate via:
 
 - **REST APIs** for synchronous requests (user lookup, store discovery)
@@ -813,38 +769,6 @@ In the distributed architecture, stores and hubs communicate via:
 - **HTTPS/TLS 1.3** for all communications (encryption in transit)
 - **Token authentication** between nodes (servers must authenticate before data exchange)
 - **Trusted peer registry**: Hardcoded list of valid CodePop servers prevents unauthorized access
-
----
-
-### 2.5 Security Model
-
-#### Authentication & Authorization
-
-**User Roles:**
-- **Customer**: Browse drinks, place orders, manage preferences
-- **Manager (Staff)**: View store inventory, manage stock, view local revenue reports
-- **Admin (Superuser)**: User management, store-level notifications, store configuration
-- **Logistics Manager**: Regional supply chain, hub-level logistics
-- **Repair Staff**: Machine status in assigned region, maintenance logging
-- **Super Admin**: National system administration, nationwide revenue, emergency overrides
-
-**Role-Based Access Control:**
-- Each API endpoint checks user role before granting access
-- Manager can only view their store's data; cannot access other stores
-- Logistics manager sees regional data; super admin sees national data
-
-#### Data Protection
-
-- **Passwords**: Hashed with PBKDF2-SHA256 (upgrade to Argon2 in production)
-- **In Transit**: HTTPS/TLS 1.3 for all client-server and inter-node communication
-- **Sensitive Fields**: User email, geolocation, payment intent ID encrypted at rest
-- **Payment Security**: Stripe handles all card data; CodePop stores only payment intent tokens
-
-#### Compliance
-
-- **GDPR**: User consent required for geolocation, email, and preference tracking
-- **OWASP Top 10**: Query parameterization for SQL injection prevention; CSRF tokens for state-changing requests
-- **PCI-DSS**: Stripe compliance means CodePop never handles raw credit card data
 
 ---
 
