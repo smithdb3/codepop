@@ -1374,11 +1374,12 @@ Additional Sections
   * Assign stores to regions
   * View store status
   * Force offline/maintenance mode per store
-* (S) Hub Management
-  * Create supply hubs
-  * Assign stores to hubs
+* (S) Hub Viewing
   * View hub status
   * Hub-level metrics
+* (C) Hub Management
+  * Create supply hubs
+  * Assign stores to hubs
 * (M) Reports & Analytics
   * Revenue reports (nationwide, by region, by store)
   * Order trends
