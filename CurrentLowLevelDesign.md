@@ -735,72 +735,1156 @@ The CodePop interface is carefully designed to support both usability and access
 
 ### Flow and design for page layout
 
-**Home Page**
+**(M) Nav bar**
 
-* Nav Bar: Links to Drink Design, Account User Home, Cart, Complaints.  
-* Seasonal Drinks Menu: Displayed as a carousel.  
-* Generate Random Drink Button (AI-powered).  
-* Set Drink Text Box (input for AI API-generated drink).  
-* Create Account Button (for non-account users).  
-* **Primary Flow**: User either navigates through nav bar or signs in/creates an account.
+* Home page  
+* Drink design page  
+* Cart button
+* Chat page
+* Profile page
 
-**Sign-In Page**
+**(M) Home page**
 
-* Username/Password text boxes.  
-* Login Button: Authenticates user via `signIn()`, redirects to Home Page upon success.  
-* Error Message displayed automatically if login fails.  
-* Link to Sign-Up Page for new users.
+* (S) Seasonal drinks menu carousel
+* If signed in:
+  * (M) Generate random button (from AI) - 2 options:
+    * (S) Generate based off my preferences
+    * (S) Try something new
+  * (M) Saved drinks - with options to delete or add to cart (UI for size selection follows 'add to cart' button)
+* (M) If not signed in:
+  * (M) Generate random button (from AI) - no options
+  * Create account button (for non-account users)
+  
+**(M) Sign-in page**
 
-**Sign-Up Page**
+* Email/Username Input
+* Password Input with Toggle (Show/hide password icon)
+* "Forgot Password" Link
+* Sign-Up Link
+* Error Messages - red error message at top of the screen
 
-* Fields for account creation.  
-* Button to create an account via `createUser()`, redirect to Sign-In after successful creation.
+  Additional Features (C): 
+* Social Login (Google, Apple sign-in) 
+* "Remember Me" Checkbox
+* Biometric Login (Face ID / Fingerprint on mobile)
+  * (React Native supports this)
+* Two-Factor Authentication (2FA)- accounts with saved payment info
+* Goes to a tutorial of how to use app after signed in - skip button optional
 
-**Account User Home Page**
+**(M) Sign-up/Create Account Page**
 
-* Displays saved drinks and current user preferences.  
-* Buttons to modify preferences (`updatePreferences()`) and save changes (`savePreferences()`).  
-* Option to enable/disable geolocation.
+* Email Input
+  * Real-time validation: check email format and if email already exists
+  * Error message if email taken: "This email is already registered. Sign in instead?"
+* Password Input with Toggle (Show/hide password icon)
+  * Real-time password strength indicator (visual bar: Weak → Medium → Strong)
+  * Display requirements: "8+ characters, uppercase, lowercase, number, special character"
+  * Error message if password weak: "Password must include uppercase, lowercase, number, and special character"
+* Confirm Password Input with Toggle
+  * Error message if passwords don't match: "Passwords do not match"
+* Terms & Conditions Checkbox (Required to proceed)
+  * Error message if unchecked: "You must accept the Terms & Conditions to continue"
+  * Link to Terms and Privacy Policy (policy found in codepop/misc)
+* Error Messages
+  * Red error message at top of the screen for all validation failures
+* Create Account Button
+* Sign-In Link ("Already have an account? Sign in")
 
-**Complaints Page**
+  Additional Features (C):
+* Social Login (Google, Apple sign-in)
+* Store Selection during Signup
+  * Allows user to set home store for preferences and lazy replication
+* Preference Onboarding (skippable)
+  * Ask simple preference questions (favorite flavors) to bootstrap AI recommendations
+* Email Verification Flow
+  * Send verification email post-signup
+  * Show: "Check your email to verify your account"
+  * "Resend verification email" button if not received
+  * Link expires handling: "Verification link expired. Request new link?"
+* Geolocation Permission Prompt
+  * Ask post-signup, not during (reduces friction)
+  * Explain: "We'll use this to find nearby CodePop locations"
+* Tutorial/Onboarding (skip button optional)
+  * Goes to a tutorial of how to use app after account verified and signed in
+* Password Requirements Display
+  * Show as user types: checkmarks next to each requirement as they're met
 
-* Text entry box for complaints, integrated with AI API to manage complaints.
+**(M) Drink design page**
 
-**Drink Design Page**
+* (C) generative/responsive graphic created when a user makes drinks
+* (M) An add to cart button by the graphic - must have a soda selected (other options default to none) - size selection occurs after hitting 'add to cart'
+* (S) A 'Save as favorite' button by the graphic (saves drink to the user's favorites)
+* (M) Drink design options (little graphics or emojis included with option names):
+  * Soda - can select/deselect multiple - search bar included at top of this section
+  * Syrups - can select/deselect multiple - search bar included at top of this section
+  * Juices - can select/deselect multiple - (lemon, lime, pineapple, coconut etc.) - no search bar needed
+  * Ice - can select one - (light, regular, extra, no ice) - no search bar needed
+  
+**(M) Cart page - also links to a payment page and a confirmation page**
 
-* Drink creation UI with add-ins displayed as graphics.  
-* Interactive drink customization (soda, size, ice, syrups, etc.).  
-* Search bar for quick ingredient lookup.  
-* Drink object is created (`createDrink()`) and saved to the cart.
+* Cart page:
+  * (M) Contains a bar of a graphic of the drink, drink name, edit buttion, price, and quantity controls
+  * (M) Quantity Controls
+    * +/- buttons for each item (or quantity input field)
+    * Price updates automatically
+  * (M) Empty State
+    * If cart is empty: "Your cart is empty" message
+    * Button: "Browse Drinks" to return to home
+  * (M) Order Summary Section
+    * Subtotal
+    * (C) Taxes
+    * Total (bold, highlighted)
+  * (M) Checkout button
+  * (C) Promo Code / Discount
+    * Input field for discount code
+    * Apply button
+    * Display savings
+  * (C) Apply Rewards button
+    * Included in the cart page could be a graphic that shows the user's total rewards points
+    * By "Checkout" button is an option that says, "Pay using ___ points"
+  * (C) Saved Drinks
+    * "Quick add" section showing previously ordered drinks
+    * One-tap add to cart
 
-**Cart Page**
+* (M) Payment page
+  * User is taken here from the “checkout” button in the cart
+  * (M) Order Review Summary (Before Payment)
+    * Show items being purchased
+    * Show store location
+    * Show estimated pickup time
+    * Show total amount to be charged
+  * (M) Payment Method Selection
+    * Stripe API used to take user payment information
+    * Radio buttons or tabs:
+      - Credit/Debit Card
+      - Apple Pay / Google Pay
+      - Saved cards (if (C) "Save this card" implemented)
+  * (C) Save Card Checkbox
+    * Link to privacy policy
+    * Show saved card last 4 digits for future orders
+  * (M) Security Indicators
+    * SSL lock icon
+    * "Secure payment powered by Stripe"
+    * Disclaimer: "Your card info is secure"
+  * (M) Error Handling & Retry
+    * If payment fails: "Payment declined. Please try again or use different card"
+    * Retry button with attempt counter
+    * Link to contact support for persistent issues
+  * (M) Loading State During Payment
+    * Disable button during processing
+    * Show spinner: "Processing payment..."
+    * Prevent accidental double-clicks
+  ---
+  Geolocation/Timing
+  * (M) Visual Store Location
+    * Show selected store name prominently
+    * (C) Small map preview showing store location
+    * Store hours display
+  * (M) ETA/Timing Summary
+    * If geolocation selected:
+      * "Estimated pickup: 8 minutes from now"
+      * Real-time ETA updates as user location changes
+    * If scheduled time:
+      * "Pickup at: 3:45 PM today"
+      * (S) The system should estimate how long each order will take based on how many orders are in the queue
+      * (S) If the user sets a time that is sooner than the system's estimated time, the user will be notified of the estimated finish time
+  * (M) Change Options Button
+    * Users can switch between geolocation/scheduled time
+    * Doesn't require restarting payment flow
+  ---
+  Recurring Orders
+  * (M) Recurring Order Confirmation Screen
+    * If this option is selected the user will recieve a text box that says, 
+      "By selecting this option, your order will be automatically placed and your saved payment method will be charged $___ 30 minutes before your scheduled time. You can modify or cancel recurring orders at any time in your account settings."
+    * Show full recurrence details:
+      - "Every [frequency]"
+      - "On [days]"
+      - "Until [end date]"
+      - "Charge amount: $X.XX"
+      - "Payment date: 30 minutes before order time"
+      ```
+      ----------------------------------------
+      CUSTOM RECURRENCE
+      ----------------------------------------
 
-* Displays a list of drinks with options to remove, edit, or proceed to checkout.  
-* Each drink object shows price and ingredients.  
-* The Checkout button redirects to the Payment Page.  
-* User can edit existing drinks using `updateDrink()`
+      Repeat every:   [ 1 ] (week)
 
-**Payment Page**
+      Repeat on:      S  M  T  W  T  F  S
+                                  [S]
 
-* Stripe API for secure payment processing.  
-* User can choose between geolocation-based tracking or a scheduled pickup time.  
-* Confirmation message displayed after payment submission.
+      Ends:
+        (*) Never
+        ( ) On:      [ Feb 14, 2026 ]
+        ( ) After:   [ 13 ] occurrences
 
-**Confirmation Page**
+      ----------------------------------------
+      [ Cancel ]                      [ Done ]
+      ----------------------------------------
+      ```
+      
+* (M) Confirmation page
+  * (C) After a user pays for their drink, they are taken to a page with a link to the complaints page (Didn’t get their drink?” button) as well as a rate your drink section where a user can rate their drink out of 5.
+    * (C) Included will also be an input box that says, "Leave a review"
+  * (M) In addition, there will be an order code displayed (which is what they type in a locked cooler to get their drink).
+  * (S) The order code will also be visible on the home screen should the user leave the app and return. 
+    * The order code goes away 5 minutes after the order number is typed into the cooler.
+  * (C) There will also be a link to Instagram, X, or Facebook that says, "Share my drink"
+    * Once clicked, the app goes to the selected platform and a pre-populated post template that includes the hashtag #socialdrinker appears
+    ---
+* Post-Payment
+  * (M) Order Confirmation Screen
+    * ✓ Order number/code
+    * Order total & itemized receipt
+    * Pickup location & ETA
+    * Store address & hours
+    * (C) Option to print/email receipt
+  * (M) Order code - what they type in a locked cooler to get their drink
+  * (C) Order Tracking
+    * Status updates: "Preparing" → "Ready for Pickup"
+    * Push notification when ready
+    * Live location of order in queue
+  * (C) Feedback/Rating Prompt
+    * "Rate your drink" (5 stars)
+    * "Leave a review" (text)
+    * "Share on social media"
+      * Link to Instagram, X, or Facebook
+      * App transitions to the selected platform and a pre-populated post template that includes the hashtag #socialdrinker
+  
+**(M) Chat page**
 
-* Displays drink details with a timer countdown.  
-* Option to rate each drink and file a complaint if needed.  
-* Refund button if necessary.
+* Simple page with a text entry box with a complaint prompt \- users will receive AI generated response messages after entering complaints
+* (M) Chat Container
+  * Full screen or modal overlay
+  * Close/back button at top
+  * "Chat with CodePop" header
+  * Keyboard-aware (adjust for mobile keyboard)
+* (M) Input Area
+  * Text input with placeholder: "Describe your issue..."
+  * Disable send if empty
+* (C) Typing Indicator
+  * Show "CodePop Bot is typing..." while waiting for response
+  * Animated dots
+* (M) Loading State
+  * Show spinner while waiting for AI response
+  * Prevent user from sending multiple messages while processing
+  * Timeout handling (if AI doesn't respond in 5-10 seconds)
+* (M) Error Handling
+  * If AI response fails: "I'm having trouble right now. Please try again or contact support."
+  * Retry button
+  * Link to support if issue persists
+* (C) Response Confidence Indicator
+  * If AI is unsure: Show disclaimer or "This might help, but..."
+  * Allow user to rate response: "Was this helpful?" with Yes/No buttons
+* (C) Suggested Responses / Quick Replies
+  * Show 2-3 suggested follow-up questions based on topic
+  * One-tap buttons to ask common follow-ups
+  * Examples:
+    * "Report an issue with my order"
+    * "Track my delivery"
+    * "Request a refund"
+* (M) Human Escalation Option
+  * "Talk to a human?" button or link
+  * Shows estimated wait time
+  * Transitions to live support (if available)
+  * Fall back to email: "support@codepop.com"
+* (C) Context Preservation
+  * Include order number in chat (if user has active order)
+  * Pass conversation to human agent if escalated
+  * Show previous issues/complaints in agent view
+* (C) Complaint Categorization
+  * Detect complaint type:
+    - "Order not received"
+    - "Drink quality issue"
+    - "Payment problem"
+    - "App bug"
+    - "Other"
+  * Route to appropriate resolution path
+* (C) Auto-Suggest Solutions
+  * Based on complaint type, suggest actions:
+    - If "Not received": "Track your order" + link
+    - If "Quality issue": "Request refund" button
+    - If "Payment failed": "Update payment method"
+* (C) Satisfaction Rating
+  * After conversation ends: "Rate this support experience" (1-5 stars)
+  * Optional text feedback
+  * Used to improve AI training
+  
+**(M) Profile page**
 
-**Manager Dashboard**
+* (M) Update preferences
+  * Soda, syrups, ice quantity.
+* (M) Settings
+  * (M) Set location for geolocation.
+  * (S) account settings
+    * (S) change email/password.
+    * (C) dark mode/light mode. 
+  * (C) Manage Recurring Orders
+    * View all active recurring orders
+    * Skip next occurrence button
+    * Edit recurrence details
+    * Pause temporarily
+    * Cancel recurrence
+---
+Profile Header
+* (M) User Profile Info
+  * User avatar (initials or image placeholder)
+  * Username / Email display
+  * Member since date
+  * Loyalty points balance (if using rewards program)
+  * Edit Profile button (for avatar/name)
+* (C) Account Quick Actions
+  * Notification settings (toggle)
+  * Help/FAQ link
+  * Logout button (prominent at bottom)
+---
+Update Preferences
+* (M) Preference Categories with Toggles
+  * Sodas: Checkboxes for favorites (Sprite, Coke, Fanta, etc.)
+    - With search bar to filter products
+  * Syrups: Checkboxes for favorites (Vanilla, Caramel, Hazelnut, etc.)
+  * Ice Quantity: Radio buttons or slider
+    - Options: No Ice, Light, Regular, Extra
+    - Visual preview (cup with ice level)
+* (M) Save Changes Button
+  * Only enabled if changes made
+  * Show "Saved!" confirmation message
+  * Auto-save option (toggle)
+* (C) Reset Preferences
+  * "Reset to Defaults" button with confirmation dialog
+  * Clears all selections
+---
+Settings
+* (M) Settings organized in sections (tabs or accordion):
+* TAB 1: LOCATION & DELIVERY
+  * (M) Primary Store Location
+    - Map picker or address search
+    - Shows store name, hours, address
+    - "Change Location" button
+* TAB 2: ACCOUNT SETTINGS
+  * (M) Email
+    - Current email display
+    - "Change Email" button → verification flow
+  * (M) Password
+    - "Change Password" button
+    - Requires current password verification
+    - New password with strength indicator
+    - Confirm new password
+  * (C) Two-Factor Authentication (2FA)
+    - Enable/disable SMS or authenticator app
+    - Phone number verification
+  * (C) Session Management
+    - View active sessions (devices, last login)
+    - Sign out from other devices
+    - View login history
+* TAB 3: PREFERENCES & PRIVACY
+  * (C) Dark Mode / Light Mode
+    - Radio buttons: System Default, Light, Dark
+  * (C) Notifications
+    - Order status notifications (toggle)
+    - Promotional emails (toggle)
+    - New menu items alerts (toggle)
+    - Push notifications (toggle)
+  * (C) Privacy Settings
+    - Share preferences with store (toggle)
+    - Allow personalized recommendations (toggle)
+    - Opt-out analytics (toggle)
+* TAB 4: RECURRING ORDERS
+  * (M) List of all active recurring orders
+    - Order name/items (e.g., "Weekly Vanilla Latte")
+    - Next charge date
+    - Recurrence pattern (e.g., "Every Monday")
+    - Payment method used
+    - Status badge (Active, Paused, Pending)
+  * (M) Per-Order Actions
+    - "View Details" → shows full recurrence config
+    - "Skip Next" button (skip 1 occurrence)
+    - "Edit" → modify items/time/frequency
+    - "Pause" → temporarily pause (with pause duration selector)
+    - "Cancel" → delete recurring order (with confirmation)
+  * (C) Recurrence Summary
+    - Total monthly cost of all recurring orders
+    - Next charge date across all orders
+---
+Tab Navigation / Layout
+* (M) Navigation Structure
+  * Accordion/Collapsible Sections
+    ▼ Update Preferences
+    ▼ Location & Delivery
+    ▼ Account Settings
+    ▼ Manage Recurring Orders
+    ▼ Privacy & Notifications
+---
+Confirmation Dialogs
+* (M) Destructive Actions Need Confirmation
+  * Delete recurring order: "Are you sure? This can't be undone."
+  * Change email: "Verification link will be sent to new email"
+  * Change password: "You'll be logged out after change"
+  * Reset preferences: "This will clear all favorites"
+  * Cancel pause: "Resume order next scheduled time?"
+---
+Data Management & Privacy
+* (C) Data Management Section
+  * Delete Account
+    - Permanent deletion warning
+    - Option to keep order history or delete
+    - Requires password confirmation
+  * Data Privacy
+    - Link to full privacy policy
+    - GDPR/CCPA compliance info
+---
+Visual Design & UX
+* (M) Loading & Success States
+  * Skeleton loaders while fetching user data
+  * "Saving..." indicator during updates
+  * "Saved!" confirmation with checkmark
+  * Error messages with retry button
+  
+**(C) Rewards page**
 
-* Data visualization (charts) of store data like revenue and expenses.  
-* Managers can access this dashboard to view key metrics via `getData()`.
+* Should this be included, there will be a section added to the nav bar called "Rewards":
+  - "Home | Order | Cart | Rewards | Chat | Account"
+* The Loyalty Program will include a dedicated “Rewards” section in the main navigation. Logged-in users can view their total point balance, earning history, and upcoming expirations. Points are awarded after order pickup and excluded for canceled orders. Expiration notifications will appear as dashboard alerts. Checkout will include a placeholder section for future point redemption functionality.
+---
+Points Dashboard / Hero Section
+* (M) Main Points Card
+  * Large, prominent display of total points
+  * Visual: "2,450 Points"
+  * Subtitle: "$24.50 value" (estimated redemption value)
+  * Animated counter (counts up when points earned)
+* (M) Tier/Level System
+  * Current tier badge (e.g., "Epic Member")
+  * Progress bar to next tier
+  * "50 points until Legendary" indicator
+  * Tier benefits display: "2x points on all orders"
+  * Tiers: Common (0), Rare (500), Epic (1500), Legendary (3000)
+* (C) Quick Stats Cards
+  * This month earned: 250 points
+  * Expiring soon: 100 points (30 days)
+  * Lifetime total: 5,200 points
+  * Streak: "5 orders in a row"
+* (C) Earning Breakdown Tooltip
+  * Hover/tap on points to see:
+    - Base points: 100 (1 point per $1)
+    - Bonus multiplier: 25 pts (Gold tier 1.25x)
+    - Total: 135 pts
+---
+Checkout Integration-  this would be integrated into the checkout screen
+* (M) Point Value Calculator
+  * Interactive slider: "Redeem X points"
+  * Shows dollar value: "= $5.00 off"
+  * Minimum redemption: 100 points
+  * Can't redeem more than balance
+* (C) Partial Redemption
+  * Use points + pay difference
+  * Example: Order is $15
+    - "Apply 100 points ($5 off)"
+    - New total: $10 + pay with card
+  * Visual: Show point reduction on total
+* (M) Points Preview
+  * Order Summary Before Payment:
+    - Subtotal: $18.50
+    - Tax: $1.34
+    - Points applied: -$24.50
+    - **New Total: FREE (+ $4.66 credit)**
+  * Warning if points exceed total: "You'll get $4.66 as store credit"
+* (C) Earn Points Display
+  * "You'll earn: XXX points with this order"
+  * Before checkout: Estimate points for order
+---
+Bonus Features & Gamification
+* (C) Birthday Bonus
+  * Month before birthday: Show alert
+  * Birthday month: 50 bonus points automatically awarded
 
-**Admin Dashboard**
 
-* Admin controls for managing user accounts (update, delete, create manager accounts).  
-* Data visualization for user and store statistics.
+**(M) Super Admin Dashboard**
+
+Global Navigation Panel
+* (M) Header/Top Bar
+  * CodePop Logo
+  * "Super Admin Dashboard" title
+  * (S) Current user: "Admin Name" with logout
+  * (S) System status indicator: "All Systems Operational" (green/red)
+  * (C) Time last updated: "Updated 2 min ago"
+* (M) Region Selector (Dropdown/Tabs) - this is for "Regions & Stores" and "Supply Hubs" pages
+  * 7 regional options: Chicago, New Jersey, Logan, Dallas, Phoenix, Atlanta, Seattle
+  * (C) Visual: Map with region highlights
+  * Shows stores/hubs in selected region 
+* (M) Navigation Sidebar/Menu
+  * Dashboard (home)
+  * Regions & Stores
+  * Supply Hubs
+  * User Management
+  * AI Configuration
+  * Reports & Analytics
+  * Audit Logs
+  * System Settings
+  * Help & Documentation
+* (M) Store/Hub Data Views
+  * Searchable store list (search by name, location)
+  * Filterable by: Region, Status (Online/Offline), Issue Level
+  * Quick stats per store:
+    - Store name & location
+    - Current status (green/red/yellow)
+    - Active orders count
+    - Current inventory %
+    - Machine status summary
+    - Revenue this month
+    - Last health check timestamp
+  * Click store to drill down to details
+* (C) Role & Permissions Access
+  * Quick link: "Manage Roles"
+  * Shows current roles: Super Admin, Admin, Logistics Manager, Repair Staff
+  * Hover/tap to view permissions
+  * "Create New Role" button
+---
+System Overview Panel
+* (M) Real-Time Status Board
+  * Large status indicators:
+```  
+    ┌──────────────────────────────┐
+    │ NETWORK STATUS: HEALTHY ✓    │
+    │ Uptime: 99.9% (12 days)      │
+    │ Last Incident: 3 days ago    │
+    └──────────────────────────────┘
+```
+* (M) Key Metrics Cards (4-6 metrics)
+  * Active Orders: 127 (↑ 15% from yesterday)
+  * Revenue Today: $4,250 (target: $5,000)
+  * Inventory Health: 85% (adequate stock)
+  * Machine Uptime: 98.5% (1 down)
+  * API Response Time: 120ms (target <200ms)
+  * Network Latency: 45ms (avg)
+  * Each metric clickable for drill-down=
+* (M) Regional Status Grid
+  * 7 boxes, one per region
+  * Each shows:
+    - Region name
+    - Number of stores online/total
+    - Alerts count (⚠️  2 alerts)
+    - Revenue this month
+    - Status: 🟢 Healthy / 🟡 Degraded / 🔴 Critical
+  * Tap to drill into region details
+* (M) Active Alerts / Issues Panel
+  * List of current issues sorted by severity
+  * Color-coded: 🔴 Critical, 🟡 Warning, 🟢 Info
+  * Examples:
+    - 🔴 "Dallas Hub: High latency detected (500ms)"
+    - 🟡 "Logan Store #3: Machine offline - needs maintenance"
+    - 🟡 "Inventory Alert: Vanilla syrup running low (5% stock)"
+    - 🟢 "Atlanta: 3 new orders received"
+  * Each alert shows:
+    - Time: "2 minutes ago"
+    - Affected region/store
+    - Action button: "View Details" or "Acknowledge"
+  * Auto-dismiss or manual clear
+* (C) Timeline / Alert History
+  * Last 24 hours in timeline view
+  * Shows when each issue occurred
+  * Severity timeline (red/yellow/green bar)
+  * Hover to see details
+  * Export alert history
+* (C) Emergency Override Indicators
+  * Show if any overrides are active:
+    - ⚠️  "System in Maintenance Mode" (red banner)
+    - ⚠️  "Store #5 Manual Override Active"
+  * Show who initiated override and when
+  * "Clear Override" button (with confirmation)
+* (C) Performance Graphs
+  * Network latency over 24h (line graph)
+  * Order volume over time
+  * API response times
+  * Machine uptime trends
+  * Auto-refresh every 30 seconds
+---
+Configuration & Control Section
+* (S) Global AI Parameter Controls
+  * Section: "AI Configuration"
+  * Controls for:
+    - Recommendation Engine
+      * Confidence threshold: [slider 0.5-0.95]
+      * Suggestion frequency: [slider 1-10]
+      * Personalization level: [Low] [Medium] [High]
+    - Chatbot Settings
+      * Response confidence min: [slider]
+      * Enable escalation at: [slider] confidence level
+      * Max retry attempts: [input field]
+    - Forecasting Engine
+      * Update frequency: [Every hour] [Every 6 hours] [Daily]
+      * Prediction accuracy threshold: [slider]
+      * Enable auto-restock: [toggle]
+  * (C) Each setting has "Learn More" tooltip
+  * "Save Changes" button (disabled until changes made)
+  * "Reset to Defaults" button
+* (M) System Override Toggles
+  * Emergency controls (red background)
+  * Toggles with confirmation dialogs:
+    - 🔴 Maintenance Mode (disables all orders)
+      * Show: "Maintenance window until [date/time]"
+      * (C) Broadcast message to users option
+    - 🔴 Pause All Recurring Orders
+      * Show: "Paused 145 recurring orders"
+      * "Resume All" button
+    - 🔴 Disable Geolocation Tracking
+      * (C) Show: "All stores using manual time-based ordering"
+    - 🟡 Rate Limiter Override
+      * Show: "Current limit: XXX requests/minute"
+      * Temporarily increase for testing
+  * (S) All overrides log who activated and when
+* (C) Role Creation & Permission Editor
+  * "Manage Roles" section
+  * List current roles:
+    - Super Admin (read-only)
+    - Admin (edit/delete)
+    - Logistics Manager (edit/delete)
+    - Repair Staff (edit/delete)
+    - [+ Create New Role]
+  * Click role to edit permissions:
+```
+┌─────────────────────────┐
+│ Role: Logistics Manager │
+├─────────────────────────┤
+│ ☑ View Orders           │
+│ ☑ View Inventory        │
+│ ☑ Create Supply Req     │
+│ ☐ Approve Supply Req    │
+│ ☐ Manage Stores         │
+│ ☐ View Analytics        │
+│ ☐ Manage Users          │
+└─────────────────────────┘
+```
+  * "Save Changes" button
+  * "Delete Role" button (if unused)
+* (C) User Management
+  * "Manage Users" section
+  * Admins, logistics managers, repair staff list
+  * Per user:
+    - Name, email, role
+    - Region(s) assigned
+    - Last login
+    - Status (Active/Inactive)
+    - Actions: Edit, Reset Password, Disable, Delete
+  * "Create New User" button with form
+  * Bulk actions: Disable all, Reset passwords
+---
+Additional Sections
+* (S) Store Management
+  * Create new store
+  * Edit store details (address, hours, machines)
+  * Assign stores to regions
+  * View store status
+  * Force offline/maintenance mode per store
+* (S) Hub Management
+  * Create supply hubs
+  * Assign stores to hubs
+  * View hub status
+  * Hub-level metrics
+* (M) Reports & Analytics
+  * Revenue reports (nationwide, by region, by store)
+  * Order trends
+  * Inventory trends
+  * Machine uptime reports
+  * (C) Export to CSV/PDF
+* (C) Audit Logs / Activity History
+  * Who: User performing action
+  * What: Action taken (e.g., "Created user", "Changed AI threshold")
+  * When: Timestamp
+  * Where: Affected resource (store, region, order)
+  * Result: Success/Failure
+  * Filterable by: User, Action type, Date range, Status
+  * Export audit logs
+* (C) Maintenance Mode
+  * Global maintenance toggle
+  * Broadcast message to all users
+  * Schedule maintenance window (date/time)
+  * Auto-resolve after maintenance period
+* (C) Notification/Alert Settings
+  * Configure alert thresholds:
+    - Critical latency: [slider] ms
+    - Low inventory: [slider] %
+    - Machine downtime: [slider] hours
+  * Choose notification channels: Email, In-app, SMS
+  * Alert routing: Who gets notified for what
+* (C) Backup & Recovery
+  * Last backup timestamp: "Yesterday 2:00 AM"
+  * Backup frequency: [Daily] [Weekly]
+  * "Backup Now" button
+  * Restore from backup option
+  * Retention policy: [30 days] [90 days] [1 year]
+* (C) System Health Dashboard
+  * Database health (connection pools, query performance)
+  * Cache health (Redis/Memcache)
+  * Queue health (Celery tasks)
+  * External service status (Stripe, Mapbox, Dialogflow)
+  * Each shows: Status, Uptime, Last checked
+---
+Key Features Needed
+* (M) Real-Time Updates
+  * Dashboard auto-refreshes (every 30 sec)
+* (M) Drill-Down Navigation
+  * Click region → see stores in region
+  * Click store → see details (inventory, machines, orders)
+  * Click alert → see affected resource & remediation options
+* (M) Search & Filter
+  * Global search: Find store, user, hub by name
+  * Filter by: Region, Status, Issue type
+  * Save custom views/filters
+  
+**(M) Repair Staff Dashboard**
+
+* (M) Regional Overview Panel
+  * (M) Store selector
+  * (C) Summary cards to give immediate visibility into machine health
+* (M) Machine Status Table- A sortable, filterable data table showing all machines within the assigned region.
+* (M) Repair Schedule Manager- Calendar or timeline view showing:
+  * Upcoming repairs
+  * In-progress service jobs
+  * Overdue maintenance
+* (S) Machine Detail View
+  * When selecting a machine, show repair status, history, and any notes
+* (C) Schedule Optimization Tool
+  * A utility panel that suggests route grouping and recommends optimal scheduling
+  
+
+**(M) Repair Staff Dashboard**
+
+Global Navigation & Context
+* (M) Header/Top Bar
+  * CodePop Logo
+  * "Repair Staff Dashboard" title
+  * Current user: "Technician Name" with region assignment
+  * Quick support: Help icon, Manager contact button
+  * Logout
+* (M) Regional Filter/Selector (Sticky)
+  * Assigned region display: "Assigned to: [Chicago]"
+  * Shows: "X stores, Y machines" in selected region
+* (M) Breadcrumb Navigation
+  * Dashboard → [Region] → [Store] → [Machine] (context trail)
+  * Quick "Back" to previous view
+* (M) Notifications/Alerts Hub
+  * Alert bell icon with unread count
+  * Dropdown with priority alerts:
+    * 🔴 "Machine X critical downtime (2+ hours)"
+    * 🟡 "Part for Machine Y arrived in stock"
+    * 🟡 "Manager needs approval on your escalation"
+    * 🟢 "Repair #123 marked complete by you"
+  * Toast notifications (push style) for urgent events
+  * Mark as read, dismiss, or act on each alert
+
+---
+Today's Schedule Panel
+* (M) "Today's Schedule" Widget (Sticky/Prominent)
+  * Time*blocked view (8am * 6pm)
+  * Current status card: "Currently: [In Transit] / [Repair: Machine X] / [Free]"
+  * Next 3 jobs with:
+    * Estimated start time
+    * Store location & address (clickable to map)
+    * Machine status (critical/urgent/routine)
+    * Estimated duration
+    * One*click "Navigate" button (to map/GPS)
+  * "Route Optimization" button → shows suggested grouping/order
+* (M) Critical Downtime Alert Banner (Red)
+  * If machines critical: "⚠️   2 machines critical downtime * revenue impact: $XXX/hour"
+  * Filter/focus on these machines
+
+---
+Machine Status Table
+* (M) Sortable, Filterable Data Table showing all machines in assigned region
+  * Columns:
+    * Machine ID & Location (Store name, address)
+    * Model & Serial Number
+    * Status (🔴 Critical Down / 🟡 Degraded / 🟢 Operational)
+    * Downtime Duration (how long offline, if applicable)
+    * Last Service Date & Next Scheduled Maintenance
+    * Assigned Technician (if scheduled repair)
+    * Repair Priority Score (based on downtime cost + urgency)
+    * Revenue Impact (orders affected if down)
+    * Quick Actions buttons → [Details] [Start Repair] [Escalate]
+  * (M) Filters:
+    * By Status: Critical, Degraded, Operational, Offline
+    * By Store
+    * By Machine Type
+    * By Urgency: Today, This Week, Overdue, Maintenance Only
+    * By Parts Availability: "Has parts", "Waiting on parts", "Back*order"
+  * (M) Sort by: Status, Priority, Downtime duration, Revenue impact, Location
+  * (M) Bulk actions: "Select machines" → "Plan route for selected"
+---
+Machine Detail View
+* (M) When clicking machine, open side panel or modal showing:
+  * Machine Info Header
+    * Machine ID, Model, Serial, Location, Status indicator
+    * (C) Current technician (if assigned)
+    * (C) Warranty status, install date
+  * Current Repair Status
+    * Current state: Healthy / In Progress / Awaiting Parts / Scheduled / Overdue
+    * (C) If in progress: Started by [Technician], started [X hours ago]
+    * (S) Estimated completion time
+    * (S) Progress notes (last update)
+  * (M) Quick Actions Bar
+    * [Start Repair] / [Continue Repair] / [Mark Complete]
+    * [Request Parts]
+    * [Add Notes/Photos] (camera icon for field uploads)
+    * [Request Help / Escalate]
+    * [Schedule Future Maintenance]
+  * (C) Machine History
+      * Timeline of last 10 repairs:
+        * Date, technician, issue, resolution, time spent
+      * Parts used, cost
+      * Customer satisfaction rating (if captured)
+    * Common issues for this model (ML-generated insights)
+  * (C) Repair History
+    * Expandable sections per repair with: Issue, diagnosis, steps taken, parts replaced, outcome
+  * (M) Parts Status
+    * Common parts for this model & their availability:
+      * "In stock at hub", "Order pending", "Back-order (ETA: date)"
+    * (C) Quick request button if parts needed
+  * (C) Customer Impact
+    * Number of active orders affected
+    * Estimated revenue loss per hour of downtime
+    * Show to emphasize priority
+  * (S) Notes Section
+    * Internal notes (for staff only)
+    * Customer-facing notes (what was explained to customer)
+    * Attachments: photos, documents, receipts
+---
+Repair Schedule Manager
+* (S) Multi-view calendar/timeline system:
+  * (S) Timeline View (Main)
+    * Horizontal timeline grouped by technician
+    * Each technician has swim lane showing:
+      * Scheduled repairs (time blocks with machine ID, location)
+      * In-progress repairs (highlighted different color)
+      * Free time blocks
+      * Travel time between locations (gray blocks)
+    * Color coding:
+      * 🔴 Critical/urgent repairs
+      * 🟡 Standard repairs
+      * 🟢 Preventive maintenance
+      * Gray: Travel time
+    * Drag-to-reschedule repairs
+    * (C) Suggested optimization: "Reorder for better route?" with accept button
+  * (S) Calendar View (Secondary)
+      * Monthly view showing:
+        * Days with repair load (color intensity)
+      * Hover to see details
+      * Upcoming maintenance deadlines (flagged)
+    * Quick jump to specific date
+  * (M) Categorized Lists
+      * Today's Schedule
+        * All repairs scheduled for today
+      * Grouped by store location for route planning
+      * (S) "Start Route" button launches optimized sequence
+    * Upcoming (This Week)
+      * All scheduled repairs next 7 days
+      * (S) Drag to reschedule
+      * Edit/cancel options
+    * Overdue Maintenance
+      * Machines past maintenance window (red indicator)
+      * "Schedule Now" button with suggested time slots
+    * Scheduled Future Maintenance
+      * Preventive maintenance already scheduled
+      * Edit timing if needed
+    * (S) Waiting on Parts
+      * Repairs on hold waiting for parts delivery
+      * ETA, notification when parts arrive
+---
+Schedule Optimization Tool
+* (C) Dedicated panel for route & time planning:
+  * Input Section
+    * "Select machines to optimize" or "Optimize my today's schedule"
+    * Constraints: [Max drive time] [Parts availability] [Time window]
+    * Preferences: [Group by store] [Minimize travel] [Earliest start time]
+  * Output: Recommended Route
+    * Sorted sequence of machines
+    * Estimated travel time between locations
+    * Total time estimate: "8:30am * 4:15pm (7h 45m job time, 1h 30m travel)"
+    * Map view showing route with pins
+    * One*click: "Accept & Load My Schedule"
+  * Optimization Metrics
+    * "This route saves 45 minutes vs. current order"
+    * Efficiency score (0*100%)
+    * (C) Carbon footprint / fuel estimate
+  * Machine Grouping Suggestions
+    * "Both machines at Chicago Store #2, repair together"
+    * Parts consolidation: "Machine A & B need same part, order once"
+    * Load balancing: "Your schedule is 20% lighter than team average today"
+---
+Quick Actions Bar
+* (C) Persistent fixed at bottom of screen or sticky in machine detail:
+  * Primary actions: [Start Repair] [Complete] [Pause]
+  * Secondary: [Add Notes] [Request Parts] [Take Photo]
+  * Emergency: [Request Help] [Escalate to Manager]
+  * Context: Changes based on currently selected machine
+---
+Performance Metrics Dashboard
+* (C) Personal technician stats (weekly/monthly view):
+  * Repairs completed this week: X
+  * Avg. repair time (vs. estimated)
+  * On-time completion rate: %
+  * First-time fix rate: % (no return visits)
+  * Customer satisfaction (if available): X/5 stars
+  * Parts accuracy: Times ordered correct parts on first try %
+  * Downtime prevented: $X this week
+  * Compare to team average (benchmark)
+  * (C) Trend visualization: Charts showing improvement/decline over time
+---
+Communication & Escalation
+* (S) Quick Escalation Panel
+  * "Contact Manager" button (phone, email, message)
+  * "Request Expert Help" → Select from available senior technicians
+  * Auto-populated with: Machine ID, current status, what you've tried
+  * Message drafting interface
+* (C) Internal Chat/Notes
+  * Message manager or assigned expert in real-time
+  * Attach photos/videos from machine scene
+  * Inline responses don't close dashboard
+* (S) Customer Contact
+  * One-click call/text to store contact
+  * Pre-populated templates: "ETA", "Found issue", "Complete"
+  * Call history & timestamps logged
+
+---
+Parts & Inventory Integration
+* (M) Parts Availability Sidebar (Collapsible)
+  * Search parts by machine or model
+  * Shows:
+    * Part name & number
+    * In stock quantity (location)
+    * Price, lead time if ordering
+    * (S) Similar/compatible parts
+  * One-click: "Request delivery to my location" or "Pick up at hub"
+  * (S) Notification when parts arrive
+* (M) Parts Order Tracking
+  * Show all open parts requests
+  * ETA for each
+  * Received ✓ or delayed ⚠️
+---
+Offline Support
+* (C) App caches today's schedule offline
+* (C) Notes/photos can be drafted offline
+* (C) Auto-sync when connection restored
+* (C) Indicator: "Working offline" banner with sync status
+---
+Color Coding & Status Indicators
+* 🔴 Critical: Machine offline >2 hours, revenue impact immediate
+* 🟡 Urgent: Scheduled repair, degraded performance, preventive maintenance overdue
+* 🟢 Operational: Working normally, preventive maintenance scheduled
+* ⚪ Idle: Not in use
+---
+Key User Flows
+* (M) Daily Start
+  * Log in → See "Today's Schedule" summary
+  * Tap "Load Today's Schedule" → Route optimized, ordered by efficiency
+  * Tap first machine → Navigate to store
+  * Arrive → Tap "Start Repair", take photos, add notes
+  * Complete repair → Tap "Mark Complete", request parts if needed
+  * Move to next machine in optimized route
+* (M) Mid-Day Interruption
+  * Manager assigns new urgent repair (alert notification)
+  * Accept → Dashboard re-optimizes remaining schedule
+  * Finish current job → Navigate to urgent machine
+* (S) End of Day
+  * Complete final repair
+  * Dashboard shows: "Today: 6 repairs, 8h 15m, $12,400 downtime prevented"
+  * Auto-submit performance data
+  
+**(M) Logistics Manager Dashboard**
+Regional Overview
+* (M) Hub Status Panel
+  * Current inventory levels (% full)             
+  * Alert count (🟢/🟡/🔴 badges)
+  * Quick stats: Active deliveries, stores needing restock, orders pending
+* (M) Store Supply Status Grid
+  * Filterable/searchable store list
+  * Per-store display:
+    * Store name & location
+    * Overall supply health (🟢/🟡/🔴)
+    * Days until critical depletion (AI forecast)
+    * Recommended restock date
+    * Action button: [View Details] [Request Supply]
+---
+Supply Inventory Management
+* (M) Supply Levels Summary
+  * Grid showing all ingredient categories: Syrups, Sodas, Add-ins
+  * Per ingredient: Current level, average daily usage, days remaining
+  * Sort by: Days remaining, usage trend, category
+  * (C) Visual indicators: Low/Medium/High stock
+* (M) Usage Trends & Popularity
+  * AI-generated report showing:
+    * Top trending ingredients (this month/week)
+    * Regional variations (which stores prefer what)
+    * Seasonal patterns (time of year trends)
+    * Comparison to historical average
+  * Sortable by: Trend %, Region, Category
+---
+Delivery Planning & Optimization
+* (M) Planning View
+  * Forecasted depletion dates per store (AI calculated)
+  * Suggested restock window (green zone for optimal ordering)
+  * Stores needing immediate restock (red alert)
+  * One-click: [Suggest Delivery Route] or [Manual Planning]
+* (C) Route Optimization View
+  * (C) AI-Suggested Optimal Route
+    * Stores ordered by: delivery efficiency, depletion urgency
+    * Map view with pins & route line
+    * Estimated delivery time per stop
+    * Total route time estimate
+    * One-click: [Accept & Schedule] or [Customize]
+  * (S) Manual Route Builder
+    * Drag stores into delivery sequence
+    * Adjust order as needed
+    * Real-time time estimate updates
+  * (C) Automated Scheduling
+    * Set recurring delivery patterns (weekly, bi-weekly)
+    * System auto-schedules based on depletion forecasts
+    * Edit/pause/cancel recurring deliveries
+
+---
+Supply Request Workflow
+* (M) Quick Request Panel
+  * Pre-filled with: Current hub, requesting store, recommended order quantities (AI)
+  * Two submission options:
+    * [Request from Supply Hub] (default, faster)
+    * [Request from Nearby Store] (choose store within 100-mile radius)
+  * (S) View pending requests with status: Approved, In Transit, Delivered
+  * (C) History of past supply movements & requests
+---
+Key Metrics (Summary Cards)
+* (M) Top-level stats visible on dashboard load:
+  * Stores at critical supply levels: X
+  * Deliveries in transit: X (ETA times)
+  * Pending supply requests: X
+  * Most trending ingredient this week: [Name]
+  * Forecast accuracy: X% (vs. actual usage)
+
+**(M) Manager Dashboard**
+
+Navigation Hub
+* (M) Quick Access Cards (at top of dashboard):
+  * [Notifications] (badge shows count)
+  * [Revenue Report]
+  * [Inventory Report]
+  * [Order Statistics]
+  * [Supply Requests]
+  * (S) [Settings]
+---
+Notifications Center
+* (M) Alert Panel showing:
+  * Stock-level alerts: "Vanilla syrup at 15% - suggest ordering 50 units from Supply Hub by Friday"
+  * (S) Incoming deliveries: "Supply delivery arriving today 2-4pm"
+  * (C) Anomalies: "Order volume 30% above average today"
+  * (S) Auto-acknowledge or dismiss individual alerts
+  * (S) Alerts sorted by: Urgency, timestamp
+---
+Revenue & Performance Report
+* (M) Key Metrics Display:
+  * Total revenue (this month, today, trend vs. last month)
+  * Inventory costs (this month, % of revenue)
+  * Total user accounts assigned to location
+  * Active orders count
+  * (S) Customer satisfaction score (if available)
+* (M) Drill-down capability: Click any metric to see details/breakdown
+---
+Inventory Report
+* (M) Current Inventory Grid
+  * Categories: Syrups, Sodas, Add-ins
+  * Per-item: Current level, % capacity, days remaining, usage trend
+  * Sort/filter by: Category, stock level, urgency
+  * Visual indicators: Low/Medium/High
+* (M) Cooler Status Grid
+  * List of all coolers: Status (🟢 Full / 🟡 Partial / 🔴 Empty)
+  * For full coolers: Age of drink sitting inside, replacement recommendation
+* (M) AI Ordering Recommendation
+  * Suggested quantities for each ingredient this month
+  * Recommended suppliers (ranked by price/delivery time)
+  * "Accept & Order" button (routes to supply request)
+* (C) Nearby Store Inventory Comparison
+  * Quick view of neighboring store levels (for manual transfers if needed)
+* (C) Supply Hub Inventory
+  * View available stock at assigned hub
+---
+Order Statistics
+* (M) Order Trends
+  * Popular items (syrups, sodas, add-ins) ranked by popularity
+  * Time-based trends: Peak hours, peak days
+  * (S) Historical data: Last 30/90 days
+* (M) Performance Metrics
+  * (C) Average order fulfillment time: Order placed → Picked up
+  * Order volume trend: Up/down vs. last week/month
+  * (C) Customer satisfaction with orders (if available)
+---
+Supply Request Management
+* (M) Request Submission Form
+  * (S) Pre-filled with: Current store location, recommended order quantities
+  * Two options:
+    * [Request from Supply Hub] - primary option
+    * (C) [Request from Nearby Store] - select from list of stores within 100 miles
+  * [Submit Request] button
+* (M) Pending Requests Tracker
+  * Status display for each request: Submitted, Approved, In Transit, Delivered
+  * (S) ETA tracking (like package tracking UI)
+  * Click to see: Quantity ordered, submission date, expected delivery
+* (S) Supply Movement History
+  * Timeline of past requests: Date, quantity, source, delivery status
+  * Filter by: Status, date range, item type
+
+**(M) Admin Dashboard**
+
+User Management
+* (M) User Accounts (Searchable/Filterable)
+  * Three tabs: Active, Disabled, Deleted
+  * Per user displayed:
+    * Name, email, assigned location/region
+    * Role (Manager, Staff, etc.)
+    * Last login timestamp
+    * Account status
+  * (M) Quick Actions:
+    * Active accounts: [Edit] [Disable] [Make Manager] [Delete]
+    * Disabled accounts: [Edit] [Enable] [Delete]
+    * Deleted accounts: View only (non-recoverable log)
+  * (M) Bulk actions: [Disable All] [Reset Passwords] [Export List]
+  * (M) Create New User: [+ Add User] button opens form
+---
+Manager Accounts
+* (M) Managers List (Searchable/Filterable)
+  * Per manager displayed:
+    * Name, email, assigned region(s)/store(s)
+    * Last login timestamp
+    * Reports to: (Super Admin or other manager)
+    * Active user count under this manager
+  * (M) Quick Actions: [Edit] [View Reports] [Reset Password] [Disable]
+  * (M) Create New Manager: [+ Promote to Manager] (select user from active accounts)
+---
+Role & Permission Management
+* (M) Roles Overview
+  * List of all roles: Super Admin, Admin, Manager, Staff, Repair Staff
+  * Per role: Permission count, active user count, edit/delete options
+  * (M) Edit Role: Opens permissions editor showing checklist of capabilities
+  * (C) Create New Role: [+ Custom Role] button
+---
+System Audit Trail
+* (S) Recent Admin Actions
+  * Log of: Who, What action, When, Status (Success/Failed)
+  * Filter by: Action type, user, date range
+  * (C) Export audit log
+
+**(M) Error Messages**
+    
+* The system will implement contextual error messaging including inline validation for form inputs, permission-based access alerts, scheduling conflict warnings, payment processing errors, geolocation prompts, and system-level failure notifications. Errors will be visually distinct, non-destructive to user input, and include actionable guidance for resolution.
+  
+**(C) Special messages**
+
+* Store closures:
+  * Home screen message: If the store is closed for a holiday or other reason, a large notification will appear on the home screen stating that it is closed and when it reopens. It will also contain a link that takes the user to store hours/closures.
+  * Cart message: Before the user can checkout there will also be a message in bright text telling reminding the user that the store is closed and that they must schedule out their order. The option for geolocation will be grayed out and the user must click on the "Schedule my order" option.
+    * The scheduling order UI will show the closure dates/times as grayed out and non-selectable, forcing the user to choose a date/time that is open.
+
+**(C) codepop Notifications**
+  * (C) When app is first opened, they will receive a system prompt that says "Allow notifications for this app?"
+  * (C) Failed Payment Handling for Recurring
+    * Notify user when charge fails
+    * Retry logic (e.g., retry next day)
+    * Option to update payment method
 
 ## Database tables
 
