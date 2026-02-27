@@ -1,7 +1,7 @@
 # Codepop Low Level Design Document
 
 ### Introduction
-The purpose of this document is to provide a working description of the product’s system architecture, subsystems, classes, database tables, user interface prototypes, programming languages, libraries, and frameworks that will be used. This document also addresses system performance concerns and potential security risks as well as have a deployment plan for the release of the application. This document borrows heavily from the lasts teams low level desgin document as many technolgies and data structres will remain unchanged. Developers, company management and customers should reference this document to ensure they are on the same page.
+The purpose of this document is to provide a working description of the product’s system architecture, subsystems, classes, database tables, user interface prototypes, programming languages, libraries, and frameworks that will be used. This document also addresses system performance concerns and potential security risks as well as have a deployment plan for the release of the application. This document borrows heavily from the lasts teams low level design document as many technologies and data structures will remain unchanged. Developers, company management and customers should reference this document to ensure they are on the same page.
 
 ### Development plan
 
@@ -31,7 +31,7 @@ Front-end:
 
 Backend: 
 
-**Sprint 2**
+**Sprint 3**
 
 Front-end:
 
@@ -683,7 +683,7 @@ classDiagram
 ```
 
 
-* Main user flow:  
+* Customer user flow:  
 
 ```mermaid
 flowchart TD
@@ -823,7 +823,7 @@ The CodePop interface is carefully designed to support both usability and access
 **(M) Cart page - also links to a payment page and a confirmation page**
 
 * Cart page:
-  * (M) Contains a bar of a graphic of the drink, drink name, edit buttion, price, and quantity controls
+  * (M) Contains a bar of a graphic of the drink, drink name, edit button, price, and quantity controls
   * (M) Quantity Controls
     * +/- buttons for each item (or quantity input field)
     * Price updates automatically
@@ -894,7 +894,7 @@ The CodePop interface is carefully designed to support both usability and access
   ---
   Recurring Orders
   * (M) Recurring Order Confirmation Screen
-    * If this option is selected the user will recieve a text box that says, 
+    * If this option is selected the user will receive a text box that says, 
       "By selecting this option, your order will be automatically placed and your saved payment method will be charged $___ 30 minutes before your scheduled time. You can modify or cancel recurring orders at any time in your account settings."
     * Show full recurrence details:
       - "Every [frequency]"
@@ -2273,7 +2273,12 @@ With the advent of AI we have seen numerous ways to "jailbreak" them and get the
 * **Inter-Node Communication Security**: How to keep communications between servers secure
   * Messages should be passed using HTTPS 
   * Servers must authenticate that they are talking to a legit CodePop server before any communications take place
-    * A list of know servers should be created and maintained to ensure a server can trust another server  
+    * They will first Authenticate with master server on startup with a public key
+    * Once verified they will get a signed certificate that will last 90 days
+      * Certificates will last 90 days so in case a certificate leaks there is a limited time someone can do damage and old certificates become useless
+  * Token Authentication will be used for server to server communcation will be protected by token authentication
+    * Will use the format JWT with RS256 signature.
+    * Tokens will only be valid for an hour.
   * A store servers can be accessed by super admins and a store's admin, manager and repair staff
     * If a supply hub or another regional store needs information from a different store it can request the information
   * Supply hubs can only be accessed by logistic managers and super admins 
