@@ -571,7 +571,7 @@ Subsystems and UML Class Diagrams
 
 ```mermaid
 classDiagram
-    class User {
+        class User {
         -username: String
         -password: String
         -email: String
@@ -613,8 +613,34 @@ classDiagram
         -email: String
         -permissions: List<String>
         +createManager(managerDetails: Manager): void
+        +createRepairStaff(repairStaffDetails: RepairStaff): void
         +updateUser(userId: String, updatedDetails: User): void
         +deleteUser(userId: String): void
+    }
+
+    class SuperAdmin {
+        -superAdminId: String
+        -name: String
+        -email: String
+        -permissions: List<String>
+        +createManager(managerDetails: Manager): void
+        +createAdmin(adminDetails: Admin): void
+        +createRepairStaff(repairStaffDetails: RepairStaff): void
+        +createLogisticsManager(logisticsManagerDetails: LogisticsManager): void
+        +updateUser(userId: String, updatedDetails: User): void
+        +deleteUser(userId: String): void
+    }
+
+    class RepairStaff {
+        -repairStaffId: String
+        -name: String
+        -email: String
+        +viewMachineStatus(regionId:String): List<MachineStatus>
+        +trackPendingRepairs(): List<Machine>
+        +logRepairAction(machineId:String, action:String, notes:String): void
+        +updateMachineStatus(machineId:String, status:String): void
+        +uploadSchedule(csvFile: CSV): void
+        +viewSchedule(): list<Schedule>
     }
 
     class Manager {
@@ -631,17 +657,29 @@ classDiagram
     class Complaints {
         -userId: String
         -message: String
-        +submitComplaint(userId: String, message: String): void
+        +submitComplaint(userId: String, Location: string, message: String): void
         +getComplaints(): List<Complaints>
+    }
+
+    class Preference {
+        +int PreferenceID
+        +int UserID
+        +String Preference
+        +updatePreferences(preferences: List<String>): void
     }
 
     %% relationships
     User --> Cart
     Cart --> Drink
     User <|-- Admin
+    User <|-- SuperAdmin
     User <|-- Manager
+    User <|-- RepairStaff
     User --> Complaints
+    User --> Preference
     Manager --> Complaints
+    Admin --> Complaints
+    SuperAdmin --> Complaints
 ```
 
 
