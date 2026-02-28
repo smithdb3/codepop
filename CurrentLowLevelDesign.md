@@ -2516,6 +2516,49 @@ With the advent of AI we have seen numerous ways to "jailbreak" them and get the
   * Assess damage, see what got out
     * Contact users about their data and account
 
+## Testing Strategy
+
+CodePop uses Django's built-in test framework on the backend and Jest with React Native Testing Library on the frontend. The goal is to automate as much verification as practical and reserve manual testing for visual and user-experience concerns that are difficult to script.
+
+### Backend Testing (Django)
+
+All backend tests live in `codepop_backend/backend/tests.py`. Test classes extend either Django's `TestCase` or DRF's `APITestCase`. Each class creates isolated test users and auth tokens in its `setUp` method using `Token.objects.create(user=...)` and makes requests through a `APIClient()` instance. Authentication is applied with `self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)`. This pattern is already in use across the existing test suites (`PreferenceTests`, `DrinkTests`, `InventoryTests`, etc.) and will be followed for all new test classes.
+
+**New and updated test suites to be added:**
+
+*UserRoleTests* — Verifies role-based access control for every dashboard. Tests will authenticate as each role (customer, manager, admin, logistics manager, repair staff, super admin) and assert that each can only access endpoints appropriate to their scope. For example, a manager token should return 403 when hitting a super admin endpoint, and a logistics manager token should only see their assigned region's data.
+
+*MachineTests and MaintenanceLogTests* — Tests will cover machine status transitions (NORMAL → WARNING → ERROR → OUT_OF_ORDER → REPAIR_START → REPAIR_END → NORMAL), verify that machines in ERROR or OUT_OF_ORDER states cannot accept new orders, and confirm that `MaintenanceLog` entries are created and associated correctly when repair actions are logged.
+
+*StoreRegistryTests* — Covers the hub registration flow: a store's POST to `/api/hub/register/` is accepted, the hub's registry is updated, and the heartbeat/timeout logic marks stores unavailable after 3 missed heartbeats. These will use `unittest.mock.patch` to simulate network calls to peer nodes without requiring a live hub instance.
+
+*UserReplicationTests* — Tests the lazy replication path. When a user is not found locally, the view should call `POST /api/inter-node/user-lookup/` on the hub and then `POST /api/inter-node/user-sync/` to pull and cache data. Both inter-node calls will be mocked with `patch`, and the test will assert the user is created in the local database and a valid token is returned.
+
+*RevenueAggregationTests* — Tests that regional and nationwide revenue rollup endpoints correctly sum store-level `Revenue` records. Hub-level aggregation will use mocked peer responses to simulate multi-store data without a full distributed setup.
+
+*SupplyRequestTests* — Covers the supply request lifecycle: creation by a manager, status transitions (Submitted → Approved → In Transit → Delivered), and approval/rejection by a logistics manager. Tests will assert that only logistics managers and super admins can approve requests.
+
+*StripePaymentTests* — Uses `unittest.mock.patch` to mock the Stripe API client. Tests will verify that a valid order triggers a payment intent creation, that the `Order.PaymentStatus` is updated to `'paid'` upon a simulated `payment_intent.succeeded` webhook, and that a failed payment returns an appropriate error response.
+
+*GeolocationTests* — Mocks the Mapbox API responses to confirm that the backend correctly calculates ETA, triggers drink preparation at the right time, and handles the fallback case where the user opts out of geolocation and selects a manual pickup time instead.
+
+### Frontend Testing (React Native)
+
+Frontend tests use Jest and React Native Testing Library. Component tests verify that each dashboard (manager, admin, logistics manager, repair staff, super admin) renders its key UI elements, handles loading and error states, and shows or hides sections based on the authenticated user's role. UI color scheme, fonts, and logo compliance will be verified through snapshot tests that are updated whenever intentional design changes are made, catching accidental regressions.
+
+Frontend tests use Jest and React Native Testing Library (`@testing-library/react-native`). Each screen and component gets its own test file under a `__tests__/` directory mirroring the `src/pages/` and `src/components/` structure.
+
+**Component rendering tests** use `render()` from React Native Testing Library to mount a component with controlled props and mock navigation. Assertions target rendered text and elements using `getByText()`, `getByTestId()`, and `queryByTestId()`. For example, the manager dashboard test renders `<ManagerDash />` with a mocked manager token and asserts that the revenue card and inventory report link are present.
+
+### Manual Test Cases
+
+For features that are impractical to automate — such as confirming the Stripe payment sheet appears correctly on device or validating the Mapbox map renders at the right location — a manual test checklist is maintained. A record of manual test cases will be kept to ensure repeatability and adequate coverage or each tesing iteration. A potential table for these manual tests may look like the following:
+
+| # | Feature Area | Test Case | Expected Result |
+|---|---|---|---|
+| 1 | e.g. UI/UX | Open every page; check color scheme, fonts, and logo match the UI rules document | All pages consistent |
+| 2 | e.g. Geolocation | Enable GPS, open payment page, proceed to checkout | ETA displayed; drink prep triggered on arrival |
+ 
 ## Programming languages, libraries, frameworks, and third party systems
 
 #### **Front-End**
