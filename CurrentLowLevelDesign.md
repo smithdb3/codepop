@@ -2404,7 +2404,43 @@ AI Recommendation Module Functions:
 
 ## System performance
 
-To address system performance, potential bottlenecks such as high traffic during peak hours, concurrent payment processing, and large database queries are considered. The system is designed with scalability in mind, using load balancing techniques to distribute traffic across multiple server instances. The use of a CDN for static assets ensures faster content delivery to users across different regions. For the backend, Django’s ORM optimizes database queries, and indexing will be employed for frequently accessed data like user preferences and drink details to improve response times. PostgreSQL will handle database connections efficiently, but if demand grows, database read replicas will be deployed to reduce the load on the primary database. Additionally, autoscaling for cloud infrastructure ensures that more server instances can be automatically provisioned during traffic spikes. This architecture allows the system to handle increases in load while maintaining optimal performance.
+**Overview:** The CodePop stack benefits from built-in performance optimizations at every layer. React Native renders UI efficiently through its virtual DOM and only re-renders components when state changes. Django's ORM constructs optimized SQL queries and supports connection pooling to reduce database overhead. PostgreSQL handles concurrent reads and writes efficiently at the store level, and its indexing system keeps query times low even as data grows. Beyond these baseline behaviors, the distributed architecture introduced along with other new features raise additional performance concerns. The sections below address the most significant of these.  
+
+### Load Distribution
+**Problem:** A single centralized server handling all network traffic creates a bottleneck and a single point of failure.  
+**Solution:** Hub-and-spoke distributed node architecture.  
+**Description:** Each store runs its own Django API and PostgreSQL instance, scoping traffic and queries to local data. A spike at one store does not degrade performance at others.  
+Implementation: Each store node is deployed as an independent Django server with its own PostgreSQL database. The hub layer handles only coordination (discovery, aggregation) and does not proxy user requests.  
+
+### Database Indexing
+**Problem:** Frequently repeated queries on large tables slow down response times.  
+**Solution:** Indexed fields on commonly queried columns.  
+**Description:** Fields such as user email (for cross-region discovery), machine status, and order status will be indexed in each store's PostgreSQL instance to minimize query time.  
+**Implementation:** Django model `Meta` classes will define indexes on `email`, `machine_status`, and `order_status` fields. Migrations will apply these indexes to each store's PostgreSQL instance on startup.  
+
+### Asynchronous Task Handling
+**Problem:** Expensive operations like revenue aggregation and hub broadcasts block API responses if run synchronously.  
+**Solution:** Celery and Redis for asynchronous task processing.  
+**Description:** Heavy inter-node operations are offloaded to a Celery task queue backed by Redis, ensuring the store's primary API remains responsive under load.  
+**Implementation:** Celery workers are started as a separate process alongside the Django server (see Store Startup Sequence). Revenue aggregation and hub broadcast calls are wrapped in `@shared_task` decorated functions and dispatched with `.delay()` or `.apply_async()`.  
+
+### Lazy Replication Caching
+**Problem:** Fetching user data from a remote peer store on every login generates unnecessary cross-region network traffic.  
+**Solution:** On-demand user data sync with local caching.  
+**Description:** User data is fetched from peer stores only on a user's first login at a new location, then cached locally. Subsequent logins use the local cache, reducing inter-node traffic under normal conditions.  
+**Implementation:** On login, the authentication view first queries the local database. On a miss, it calls `POST /api/inter-node/user-lookup/` to locate the user, then `POST /api/inter-node/user-sync/` to pull and store their data locally before issuing a token.  
+
+### Inter-Node Timeout Boundaries
+**Problem:** Slow or unreachable nodes can stall request chains and cause cascading failures.  
+**Solution:** Defined timeouts with exponential backoff retry logic.  
+**Description:** Inter-node requests enforce a 5-second connection timeout and 10-second read timeout. Failed requests retry with exponential backoff (1s, 2s, 4s, 8s), ensuring the system degrades gracefully rather than hanging indefinitely.  
+**Implementation:** All inter-node HTTP calls use the `requests` library with explicit `timeout=(5, 10)` parameters. Retry logic is implemented via the `tenacity` library with `wait_exponential(min=1, max=8)` and a maximum of 4 attempts.  
+
+### Dashboard Refresh Rate
+**Problem:** Continuously polling dashboards at high frequency puts unnecessary load on store and hub servers.  
+**Solution:** 30-second auto-refresh intervals on live dashboards.  
+**Description:** Real-time dashboards (Super Admin, Repair Staff, Logistics Manager) refresh every 30 seconds. Auto-refresh only runs on active views and stops in the background, keeping polling traffic proportional to actual usage.  
+**Implementation:** Dashboard components use `setInterval` with a 30-second delay to re-fetch data. The interval is cleared via `clearInterval` in the component's cleanup function (React Native `useEffect` return), stopping polling when the user navigates away.  
 
 ## Security risks
 
