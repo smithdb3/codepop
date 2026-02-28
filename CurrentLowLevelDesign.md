@@ -19,25 +19,138 @@ The purpose of this document is to provide a working description of the product�
 
 ### Sprint Outline
 
-**Sprint 1**
-
-Front-end:
-
-Backend: 
-
-**Sprint 2**
-
-Front-end:
-
-Backend: 
-
 **Sprint 3**
 
-Front-end:
+Focus on implementing new features and updating old ones to meet the new requirements. 
+Tasks that need to be completed
+- [ ] Implement Decentralized Node Network
+  - [ ] P2P communication
+  - [ ] Authentication 
+- [ ] Add new staff Dashboards
+  - [ ] Repair Staff
+  - [ ] Super Admin
+  - [ ] Logistics Manger
+- [ ] Update Old Staff Roles
+  - [ ] Admin
+  - [ ] Manager
+- [ ] Add new database Tables
+  - [ ] Machine table 
+  - [ ] Schedule table
+  - [ ] Super Admin table
+  - [ ] Repair Staff table
+  - [ ] Logistics Manager table
+  - [ ] Region table 
+  - [ ] Supply Hub table
+- [ ] Update UI
+- [ ] Set up API integration
+Tests should be created along side added features to makes future testing easier and more seamless
 
-Backend: 
+**Sprint 4**
+
+Shift away from adding features and to testing existing features. Tests for new features should already be made and ready to go. This sprint will have a heavier focus on integration testing to make sure all systems and modules can run together without error.
+
+**Sprint 5**
+
+Every part of the program should be implemented and tested by this sprint. All thats left now is the user manual for the app. This would detail how to set it up and run it.
 
 ### All Tasks Outline
+**Front End**:
+Update UI:
+  + (M) Change any UI features that apply across the whole app
+    + Create a rule doc for and place under .claude/codepop
+      + Outline the rules for our UI:
+        + (M) color Scheme
+        + (M) logo
+        + (M) buttons/fonts
+  + Assign Claude to change the UI based on the rules in the rules.md
++ (M) Add new dashboards
+  + Logistics manager
+  + Super admin
+  + Repair staff dashboard
++ (M) Update each dashboard with new features from the customer
+  + Change admin restrictions
++ (M) Update each screen with new (M) features that were not yet included
++ (S) Update each screen with new (S) features that were not yet included\
++ (C) Add light/dark mode
++ (C) Update each screen with new (C) features that were not yet included
++ (C) Add rewards page
+
+General User Features (M):
+  + Find nearest store
+
+Logistics Manager Features (M):
++ Logistics bot
++ Approve/Deny requests
+
+Repair Staff Features (M):
++ Upload CSV schedule
++ View schedule
++ Change machine status
+
+Backend:
+Update Database tables (M):
++ Add Machine table 
++ Add Schedule table
++ Add Super Admin table
++ Add Repair Staff table
++ Add Logistics Manager table
++ Add Region table 
++ Add Supply Hub table
+
+Implement Decentralized Node Network
++ (M) Set up Google Cloud Platform (GCP)
++ (M) Create store and hub data
++ (M) Implement P2P communication
+  + Store to store
+  + Store to hub
+  + Hub to hub
++ (M) Implement user information copy
++ (M) Implement revenue aggregation
++ (M) Add certificate Authentication 
++ (M) Add token Authentication 
+
+Machine Tracking (M): 
++ Update a machines status
++ Query stores about Machine status
++ Keep track of repairs
+
+API/Integration (M):
++ Add stripe and fake money
++ secure payments with stripe encryption 
++ Add mapbox for geolocation
++ Calculate when order should be started based on geolocation
++ Update the chat bot with googles dialog flow
+
+Testing
++ We will utilize Django and React native testing frameworks for testing of frontend/backend features.
++ Review existing testing coverage in `codepop_backend/backend/tests.py` and add any missing edge-case tests identified
++ Ensure testing coverage for new/updated features:
++ Geolocation features
++ New UI edits (color scheme, font, images) are present for every page in app
++ Addition of new dashboard for logistics manager and features included
++ Addition of new dashboard for repair staff and features included
++ Addition of new dashboard for super admin and features included
++ Updated database tables (machine table, schedule table, super admin table, repair staff table, logistics manager table, hub table,  store table)
++ Implementation of decentralized node network:
++ Peer to peer communication
++ User information copy
++ Revenue aggregation
++ Certificate/token authentication
++ Proper machine tracking in appropriate databases and dashboards
++ Proper data access for all user roles (customer, manager, admin, logistics manager, repair staff, super admin)
++ Stripe payment system
+
+Create Test Data :
++ Stores and hubs
++ User accounts
++ Super Admins
++ Admins
++ Logistics Managers
++ Mangers
++ Repair staff
++ Machine Data
++ Repair staff schedules 
+
 
 ## System Architecture
 
@@ -2030,6 +2143,46 @@ CodePop uses a **database-per-store architecture** where each physical store loc
 
 ---
 
+### SupplyHub Table
+
+| Field Data | Data Type | Constraints | Notes |
+| :---- | :---- | :---- | :---- |
+| HubID | String | Primary Key | Unique identifier for each supply hub (UUID or short code) |
+| Region | Int | Foreign Key | Two‑character region code; each hub is assigned to one region |
+| Lat | Float | NOT NULL | Latitude coordinate of hub location |
+| Lon | Float | NOT NULL | Longitude coordinate of hub location |
+| stores | List(Store) | Nullable | List of store objects associated with this hub |
+
+**Notes:**
+- Stores metadata about regional supply hubs used in the federated network.
+- `Region` is unique to enforce one hub per geographic area.
+- Coordinates are required for mapping and distance calculations.
+- `stores` provides quick access to related store records; updated when stores register.
+- Hub data is replicated across stores for logistics queries.
+
+---
+
+### Store Table
+
+| Field Data | Data Type | Constraints | Notes |
+| :---- | :---- | :---- | :---- |
+| id | String | Primary Key | Unique store identifier (e.g., UUID) |
+| name | String | Unique | Human-readable store name |
+| hubId | String | Foreign Key → Hub(HubID) | Link to associated supply hub |
+| region | String | NOT NULL | Region code for the store; used in replication logic |
+| lat | Float | NOT NULL | Latitude coordinate of store location |
+| lon | Float | NOT NULL | Longitude coordinate of store location |
+| users | List(User) | Nullable | List of user objects who have visited this store |
+
+**Notes:**
+- `hubId` enforces the hub/store relationship; can be NULL for unassigned stores.
+- `region` mirrors the region field in Hub but is required for quick filtering.
+- Coordinates used for geolocation features and route optimization.
+- `users` is a denormalized list used for quick lookup; updates when user checks in or places order.
+- Store records are replicated to other stores for discovery and logistics.
+
+---
+
 ### Removed/Consolidated Tables
 
 #### Payment Table (Removed)
@@ -2128,6 +2281,7 @@ erDiagram
 
     REGION ||--|| SUPPLYHUB : "1:1"
     REGION ||--o{ STORE : contains
+    STORE ||--|| SUPPLYHUB : "belongs to"
 
     ORDER {
         int OrderID PK
@@ -2167,6 +2321,23 @@ erDiagram
         string ItemType
         int Quantity
         int ThresholdLevel
+    }
+
+    SUPPLYHUB {
+        String HubID PK
+        int Region FK
+        float Lat
+        float Lon
+        List(Store) stores
+    }
+
+    STORE {
+        String id PK
+        String name
+        String hubId FK
+        String region
+        float lat
+        float lon
     }
 
     NOTIFICATION {
