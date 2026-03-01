@@ -22,7 +22,7 @@ The purpose of this document is to provide a working description of the product�
 **Sprint 3**
 
 Focus on implementing new features and updating old ones to meet the new requirements. 
-Tasks that need to be completed
+Tasks that need to be completed:
 - [ ] Implement Decentralized Node Network
   - [ ] P2P communication
   - [ ] Authentication 
@@ -54,102 +54,106 @@ Shift away from adding features and to testing existing features. Tests for new 
 Every part of the program should be implemented and tested by this sprint. All thats left now is the user manual for the app. This would detail how to set it up and run it.
 
 ### All Tasks Outline
-**Front End**:
-Update UI:
-  + (M) Change any UI features that apply across the whole app
-    + Create a rule doc for and place under .claude/codepop
-      + Outline the rules for our UI:
-        + (M) color Scheme
-        + (M) logo
-        + (M) buttons/fonts
-  + Assign Claude to change the UI based on the rules in the rules.md
-+ (M) Add new dashboards
-  + Logistics manager
-  + Super admin
-  + Repair staff dashboard
-+ (M) Update each dashboard with new features from the customer
-  + Change admin restrictions
-+ (M) Update each screen with new (M) features that were not yet included
-+ (S) Update each screen with new (S) features that were not yet included\
-+ (C) Add light/dark mode
-+ (C) Update each screen with new (C) features that were not yet included
-+ (C) Add rewards page
 
-General User Features (M):
-  + Find nearest store
+#### UI/UX
 
-Logistics Manager Features (M):
-+ Logistics bot
-+ Approve/Deny requests
++ Standardize UI features across the entire application
+  + Create a UI design rules document and place under `.claude/codepop`
+    + Define color scheme standards
+    + Define logo usage
+    + Define button styles and font specifications
+  + Apply UI rules consistently across all pages and screens based on the rules document
++ Add new staff dashboards
+  + Implement Logistics Manager dashboard
+  + Implement Super Admin dashboard
+  + Implement Repair Staff dashboard
++ Update all dashboards with new customer-requested features
+  + Update manager role restrictions and access controls
++ Implement light/dark mode toggle across the application
++ Add rewards program page with points tracking and redemption interface
 
-Repair Staff Features (M):
-+ Upload CSV schedule
-+ View schedule
-+ Change machine status
+#### General User Features
 
-Backend:
-Update Database tables (M):
-+ Add Machine table 
-+ Add Schedule table
-+ Add Super Admin table
-+ Add Repair Staff table
-+ Add Logistics Manager table
-+ Add Region table 
-+ Add Supply Hub table
++ Implement nearest store finder based on geolocation
 
-Implement Decentralized Node Network
-+ (M) Set up Google Cloud Platform (GCP)
-+ (M) Create store and hub data
-+ (M) Implement P2P communication
-  + Store to store
-  + Store to hub
-  + Hub to hub
-+ (M) Implement user information copy
-+ (M) Implement revenue aggregation
-+ (M) Add certificate Authentication 
-+ (M) Add token Authentication 
+#### Logistics Manager Features
 
-Machine Tracking (M): 
-+ Update a machines status
-+ Query stores about Machine status
-+ Keep track of repairs
++ Implement logistics optimization bot
++ Implement supply request approval and denial workflow
 
-API/Integration (M):
-+ Add stripe and fake money
-+ secure payments with stripe encryption 
-+ Add mapbox for geolocation
-+ Calculate when order should be started based on geolocation
-+ Update the chat bot with googles dialog flow
+#### Repair Staff Features
 
-Testing
-+ We will utilize Django and React native testing frameworks for testing of frontend/backend features.
-+ Review existing testing coverage in `codepop_backend/backend/tests.py` and add any missing edge-case tests identified
-+ Ensure testing coverage for new/updated features:
-+ Geolocation features
-+ New UI edits (color scheme, font, images) are present for every page in app
-+ Addition of new dashboard for logistics manager and features included
-+ Addition of new dashboard for repair staff and features included
-+ Addition of new dashboard for super admin and features included
-+ Updated database tables (machine table, schedule table, super admin table, repair staff table, logistics manager table, hub table,  store table)
-+ Implementation of decentralized node network:
-+ Peer to peer communication
-+ User information copy
-+ Revenue aggregation
-+ Certificate/token authentication
-+ Proper machine tracking in appropriate databases and dashboards
-+ Proper data access for all user roles (customer, manager, admin, logistics manager, repair staff, super admin)
-+ Stripe payment system
++ Implement CSV schedule upload functionality
++ Implement schedule viewing interface
++ Implement machine status update capabilities
 
-Create Test Data :
-+ Stores and hubs
-+ User accounts
-+ Super Admins
-+ Admins
-+ Logistics Managers
-+ Mangers
-+ Repair staff
-+ Machine Data
-+ Repair staff schedules 
+#### Database Tables
+
++ Add Machine table (tracks robotic machine inventory and status)
++ Add Schedule table (tracks repair staff schedules)
++ Add Super Admin table (tracks super admin accounts and permissions)
++ Add Repair Staff table (tracks repair staff accounts and assignments)
++ Add Logistics Manager table (tracks logistics manager accounts and regional assignments)
++ Add Region table (tracks regional supply hubs and associated stores)
++ Add Supply Hub table (tracks supply hub inventory and operations)
+
+#### Decentralized Node Network Implementation
+
++ Set up Google Cloud Platform (GCP) infrastructure for distributed deployment
++ Create store and supply hub data models and initial configurations
++ Implement P2P communication protocols
+  + Implement store-to-store communication
+  + Implement store-to-hub communication
+  + Implement hub-to-hub communication
++ Implement user information replication across regional nodes
++ Implement revenue aggregation from distributed stores
++ Implement certificate-based authentication between nodes
++ Implement token-based authentication between nodes
+
+#### Machine Tracking
+
++ Implement machine status update functionality (change operational states)
++ Implement store query mechanism for retrieving machine status from peer stores
++ Implement repair tracking system to maintain repair history
+
+#### API Integration
+
++ Integrate Stripe payment processing and implement fake money system for testing
++ Implement Stripe encryption for securing payment transactions
++ Integrate Mapbox for geolocation services
++ Implement ETA calculation based on user geolocation and order queue
++ Update customer service chatbot with Google Dialogflow integration
+
+#### Testing
+
++ Review existing test coverage in `codepop_backend/backend/tests.py` and add missing edge-case tests
++ Ensure comprehensive testing coverage for all new and updated features:
+  + Geolocation features (store discovery, ETA calculation)
+  + UI visual consistency (color scheme, fonts, images) across all pages
+  + Logistics Manager dashboard and all associated features
+  + Repair Staff dashboard and all associated features
+  + Super Admin dashboard and all associated features
+  + All new database tables (Machine, Schedule, Super Admin, Repair Staff, Logistics Manager, Region, Supply Hub)
+  + Decentralized node network implementation including:
+    + Peer-to-peer communication between stores and hubs
+    + User information replication across regions
+    + Revenue aggregation functionality
+    + Certificate and token authentication protocols
+  + Machine tracking in databases and dashboards
+  + Data access control for all user roles (customer, manager, admin, logistics manager, repair staff, super admin)
+  + Stripe payment system integration
+
+#### Test Data Creation
+
++ Create test data for stores and supply hubs across all regions
++ Create test user accounts for each role type
++ Create test Super Admin accounts and configurations
++ Create test Admin accounts and configurations
++ Create test Logistics Manager accounts and regional assignments
++ Create test Manager accounts and store assignments
++ Create test Repair Staff accounts and regional assignments
++ Create test machine inventory data with various statuses
++ Create test repair staff schedules with various scenarios
 
 
 ## System Architecture
@@ -2530,8 +2534,6 @@ All backend tests live in `codepop_backend/backend/tests.py`. Test classes exten
 
 *MachineTests and MaintenanceLogTests* — Tests will cover machine status transitions (NORMAL → WARNING → ERROR → OUT_OF_ORDER → REPAIR_START → REPAIR_END → NORMAL), verify that machines in ERROR or OUT_OF_ORDER states cannot accept new orders, and confirm that `MaintenanceLog` entries are created and associated correctly when repair actions are logged.
 
-*StoreRegistryTests* — Covers the hub registration flow: a store's POST to `/api/hub/register/` is accepted, the hub's registry is updated, and the heartbeat/timeout logic marks stores unavailable after 3 missed heartbeats. These will use `unittest.mock.patch` to simulate network calls to peer nodes without requiring a live hub instance.
-
 *UserReplicationTests* — Tests the lazy replication path. When a user is not found locally, the view should call `POST /api/inter-node/user-lookup/` on the hub and then `POST /api/inter-node/user-sync/` to pull and cache data. Both inter-node calls will be mocked with `patch`, and the test will assert the user is created in the local database and a valid token is returned.
 
 *RevenueAggregationTests* — Tests that regional and nationwide revenue rollup endpoints correctly sum store-level `Revenue` records. Hub-level aggregation will use mocked peer responses to simulate multi-store data without a full distributed setup.
@@ -2552,7 +2554,7 @@ Frontend tests use Jest and React Native Testing Library (`@testing-library/reac
 
 ### Manual Test Cases
 
-For features that are impractical to automate — such as confirming the Stripe payment sheet appears correctly on device or validating the Mapbox map renders at the right location — a manual test checklist is maintained. A record of manual test cases will be kept to ensure repeatability and adequate coverage or each tesing iteration. A potential table for these manual tests may look like the following:
+For features that are impractical to automate — such as ensuring correct images render in the app or validating the Mapbox map renders at the right location — a manual test checklist is maintained. A record of manual test cases will be kept to ensure repeatability and adequate coverage or each tesing iteration. A potential table for these manual tests may look like the following:
 
 | # | Feature Area | Test Case | Expected Result |
 |---|---|---|---|
