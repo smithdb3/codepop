@@ -2720,7 +2720,7 @@ Trigger = Arrival - Prep
 
 ---
 
-**5\. Technical Specifications & Deployment**
+**Technical Specifications & Deployment**
 
 ### **Database Schema (Key Entities)**
 
@@ -2739,7 +2739,6 @@ Trigger = Arrival - Prep
 | **Database** | **Cloud SQL (PostgreSQL)** with automatic backups. |
 | **Security** | **GCP Secret Manager** for API keys; SSL via Cloud Run. |
 | **CI/CD** | **GitHub Actions** for automated testing and deployment to staging/production. |
-
 
 
 ## Deployment plan
