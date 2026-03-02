@@ -1,0 +1,93 @@
+version: '3.9'
+
+services:
+  hub:
+    build:
+      context: ./hub
+      dockerfile: Dockerfile
+    container_name: distributed-prototype-hub
+    ports:
+      - "5001:5001"
+    environment:
+      HUB_PORT: 5001
+      NODE_TOKEN: supersecrettoken
+    networks:
+      - distributed-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    volumes:
+      - hub_data:/app/data
+    command: python app.py
+
+  store_1:
+    build:
+      context: ./store
+      dockerfile: Dockerfile
+    container_name: distributed-prototype-store-1
+    ports:
+      - "5002:5002"
+    environment:
+      STORE_ID: 1
+      STORE_NAME: "CodePop Chicago #1"
+      STORE_REGION: "Chicago"
+      STORE_PORT: 5002
+      STORE_ENDPOINT: "http://store_1:5002"
+      HUB_URL: "http://hub:5001"
+      NODE_TOKEN: supersecrettoken
+    depends_on:
+      hub:
+        condition: service_healthy
+    networks:
+      - distributed-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    volumes:
+      - store_1_data:/app/data
+    command: python app.py
+
+  store_2:
+    build:
+      context: ./store
+      dockerfile: Dockerfile
+    container_name: distributed-prototype-store-2
+    ports:
+      - "5003:5003"
+    environment:
+      STORE_ID: 2
+      STORE_NAME: "CodePop New Jersey #1"
+      STORE_REGION: "New Jersey"
+      STORE_PORT: 5003
+      STORE_ENDPOINT: "http://store_2:5003"
+      HUB_URL: "http://hub:5001"
+      NODE_TOKEN: supersecrettoken
+    depends_on:
+      hub:
+        condition: service_healthy
+    networks:
+      - distributed-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5003/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    volumes:
+      - store_2_data:/app/data
+    command: python app.py
+
+networks:
+  distributed-network:
+    driver: bridge
+
+volumes:
+  hub_data:
+  store_1_data:
+  store_2_data:
