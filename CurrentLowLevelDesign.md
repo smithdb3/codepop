@@ -15,43 +15,52 @@ The purpose of this document is to provide a working description of the productâ
     * Implement must haves that weren't completed from previous sprint  
 * Sprint 3 - 1 Week
     * Create user manual
+    * Test
     * Ensure the application is release ready 
 
 ### Sprint Outline
 
 **Sprint 3**
 
-Focus on implementing new features and updating old ones to meet the new requirements. 
 Tasks that need to be completed:
-- [ ] Implement Decentralized Node Network
-  - [ ] P2P communication
-  - [ ] Authentication 
-- [ ] Add new staff Dashboards
-  - [ ] Repair Staff
-  - [ ] Super Admin
-  - [ ] Logistics Manger
-- [ ] Update Old Staff Roles
-  - [ ] Admin
-  - [ ] Manager
-- [ ] Add new database Tables
-  - [ ] Machine table 
-  - [ ] Schedule table
-  - [ ] Super Admin table
-  - [ ] Repair Staff table
-  - [ ] Logistics Manager table
-  - [ ] Region table 
-  - [ ] Supply Hub table
-- [ ] Update UI
-- [ ] Set up API integration
-Tests should be created along side added features to makes future testing easier and more seamless
+- Implement Decentralized Node Network
+  - P2P communication
+  - Authentication 
+  - Setup GCP
+- Add new staff Dashboards
+  - Repair Staff
+  - Super Admin
+  - Logistics Manger
+- Add new database Tables
+  - Machine table 
+  - Schedule table
+  - Super Admin table
+  - Repair Staff table
+  - Logistics Manager table
+  - Region table 
+  - Supply Hub table
+- Set up API integration
+  - Setup Maxbox
+  - Setup Stripe
 
 **Sprint 4**
-
-Shift away from adding features and to testing existing features. Tests for new features should already be made and ready to go. This sprint will have a heavier focus on integration testing to make sure all systems and modules can run together without error.
+- Update UI
+  - Change Colors
+  - Update customer Dashboard
+  - Add darkmode option
+  - Update manager dashboard
+  - Update Admin dashboard
+- Update Old Staff Roles
+  - Admin
+  - Manager
+- Create Test Data 
+- Finish critical features from sprint 3
 
 **Sprint 5**
 
-Every part of the program should be implemented and tested by this sprint. All thats left now is the user manual for the app. This would detail how to set it up and run it.
+- Feature freeze
+- Begin testing
+- Create User Manual
 
 ### All Tasks Outline
 
