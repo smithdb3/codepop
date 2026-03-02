@@ -2581,33 +2581,165 @@ For features that are impractical to automate — such as ensuring correct image
 
   #### **APIs & External Services**
 
-* Payment System: Stripe API  
-  * Set up stripe account and API keys  
-  * Integrate Stripe’s Mobile SDK for the frontend (checkout screen)  
-  * Create payment intents on backend  
-  * Handle payment confirmation on the frontend   
-    * Pass the `client_secret` to frontend  
-    * Use the Stripe SDK to confirm the payment by calling `confirmPayment`  
-    * Set Up Webhooks for Payment Status Tracking (notifies backend if payment was successful, failed, etc.)  
-* Geolocation: MapBox API  
-  * Create mapBox account and obtain access token  
-  * Integrate MapBox SDK into frontend  
-  * Use the *Geolocation API* or Mapbox’s *GeolocateControl* to get the user’s current coordinates.  
-  * Set up proximity alerts  
-* Random Drink Generation: Content-Based AI Filtering Model (Scikit-Learn)  
-  * Use a pandas DataFrame to prep data  
-  * Convert features into numerical values  
-  * Define a similarity metric for the drinks (probably `cosine_similarity`)  
-  * Build recommendation function  
-  * Integrate model into backend  
-* Complaints Chatbot: DialoGPT (Hugging Face)  
-  * Set up an environment and load DialoGPT model  
-  * Create a function to generate responses  
-  * Set up an API endpoint (so that the app’s frontend can call it)  
-  * Integrate into frontend  
-* Loading Screens: Gemini AI Images  
-  * Preload 1-2 images we like  
-  * Embed the preloaded images into the app
+This is the consolidated **Low-Level Design (LLD)** for the **CodePop** API & Integration architecture. This document bridges the gap between the high-level concept and the technical implementation of AI, payments, and robotic fulfillment.
+
+## **System Architecture & Strategy**
+
+CodePop uses a **Hub-and-Spoke** architecture where the Django backend acts as the central orchestrator. All client requests from React/React Native are routed through Django to secure third-party API keys (Stripe, Mapbox, Dialogflow) and ensure data persistence in PostgreSQL.
+
+---
+
+## **AI Integration: Customer Service (Dialogflow)**
+
+The Customer Service tab will use an asynchronous message exchange. Django acts as the secure gateway to the Dialogflow SessionsClient.
+
+### **Implementation Detail: POST /api/v1/support/chat/**
+
+* **Trigger:** User submits a query in the React/React Native Support tab.  
+* **Logic (Django):** 1\. Receive session\_id and text\_input.  
+  2\. Initialize google.cloud.dialogflow\_v2.SessionsClient.  
+  3\. Call detect\_intent using the session\_path.  
+  4\. Store the interaction in SupportTicket model for human review if the AI "fails" (fallback intent).  
+* **Data Contract:**
+
+JSON
+
+// Request from Mobile/Web  
+{  
+  "session\_id": "uuid-v4",  
+  "query": "Where is my order \#1234?"  
+}
+
+// Response from Django  
+{  
+  "fulfillment\_text": "I've checked order \#1234. It is currently being mixed and will be ready in 2 minutes\!",  
+  "intent": "Order\_Status\_Check",  
+  "confidence": 0.98  
+}
+
+---
+
+## **AI Integration: "Pop-Gen" Randomizer**
+
+This features a "Surprise Me" mechanic where the AI generates a drink based on user preferences (e.g., "Fruity," "Creamy," "Diet-only").
+
+### **Implementation Detail: POST /api/v1/drinks/generate-random/**
+
+* **Trigger:** User clicks the "AI Random Drink" button.  
+* **Logic (Django \+ Dialogflow/LLM):**  
+  1. Fetch available inventory from Soda and Syrup tables in **PostgreSQL** to ensure the AI doesn't suggest out-of-stock items.  
+  2. Pass preferences to a specialized Dialogflow Intent or an OpenAI/Vertex AI prompt.  
+  3. **Constraint Logic:** The backend must validate that the "AI drink" follows business rules (e.g., max 3 syrups) before returning it.  
+* **Data Contract:**
+
+JSON
+
+// Request from Frontend  
+{  
+  "preferences": {  
+    "base\_type": "cola",  
+    "flavor\_profile": "tropical",  
+    "diet\_only": true  
+  }  
+}
+
+// Response from Django  
+{  
+  "generated\_drink\_id": "temp\_99",  
+  "name": "The Tropic Thunder Bolt",  
+  "recipe": {  
+    "base": "Diet Coke",  
+    "add\_ins": \["Coconut Syrup", "Pineapple Shot", "Fresh Lime"\],  
+    "ice\_level": "Extra"  
+  },  
+  "ai\_description": "A crisp cola base with a wave of island coconut."  
+}
+
+---
+
+## 
+
+## **Core Service Integrations**
+
+### **Customer Service AI (Dialogflow)**
+
+The AI is strictly utilized within the **Customer Service Tab** to handle FAQs and order inquiries.
+
+* **Method:** Google Cloud SDK (google-cloud-dialogflow).  
+* **Logic:** Django receives message strings, initiates a session with Dialogflow, and returns the fulfillment\_text.  
+* **Endpoint:** POST /api/v1/support/chat/  
+  * *Input:* { "session\_id": "UUID", "query": "string" }  
+  * *Output:* { "reply": "string", "intent": "string" }
+
+### **"Pop-Gen" AI Randomizer**
+
+A generative beverage engine that creates unique drinks based on preferences.
+
+* **Logic:** 1\. Django queries PostgreSQL for available Soda and Syrup inventory.  
+  2\. Filters by user preference (e.g., "Diet-only," "Tropical").  
+  3\. The AI engine generates a recipe that fits the business logic constraints (max 3 syrups).  
+* **Endpoint:** POST /api/v1/drinks/generate-random/
+
+### **Payment Processing (Stripe)**
+
+Since we are using **React Native (Mobile)** and **React (Web)**, we utilize the **Stripe Payment Intents API** to handle the heavy lifting.
+
+### **Implementation Detail: Checkout Flow**
+
+* **Intent Creation:** Frontend calls POST /api/v1/payments/create-intent/.  
+  * Django calculates the price of the "Random Drink" or standard order.  
+  * Django calls stripe.PaymentIntent.create(amount=total, currency='usd').  
+* **Card Collection:** \* **Web:** React uses \<CardElement /\> from @stripe/react-stripe-js.  
+  * **Mobile:** React Native uses confirmPayment from @stripe/stripe-react-native.  
+* **Webhook Verification:** \* Stripe sends a POST to /api/v1/payments/webhook/.  
+  * **Security:** Django uses stripe.Webhook.construct\_event with the endpoint\_secret to verify the payload hasn't been tampered with.  
+  * **Action:** On payment\_intent.succeeded, Django updates the Order status in PostgreSQL to PAID and triggers a push notification to the user.
+
+---
+
+**4\. Geolocation & Just-In-Time Fulfillment**
+
+This subsystem ensures "freshness" by syncing user proximity with robotic assembly time.
+
+### **The "Golden Window" Calculation**
+
+The system triggers the robot to pour when the User’s ETA matches the Drink Prep Time.
+
+Trigger = Arrival - Prep
+
+### **GPS vs. Manual Trigger**
+
+* **GPS Tracking:** React Native uses Mapbox SDK to send heartbeats to POST /api/v1/fulfillment/proximity-update/.  
+* **Velocity Logic:** Django calculates the rate of approach. If the user stops (e.g., at a red light), the ETA is recalculated to prevent the drink from sitting out too long.  
+* **Manual Override:** If GPS is denied, the UI provides a list of stores that can be sorted by hub to be picked  **"Start" button**. This sends an immediate trigger to the robotic queue via POST /api/v1/fulfillment/manual-trigger/.
+
+### **Scheduled Orders**
+
+* **Implementation:** Utilizes **Celery \+ Redis** task queuing.  
+* **Logic:** Orders are stored in PostgreSQL with a scheduled\_time. A Celery worker checks every 30 seconds for orders whose $T\_{trigger}$ has arrived, then pushes them to the robot controller.
+
+---
+
+**Technical Specifications & Deployment**
+
+### **Database Schema (Key Entities)**
+
+| Table | Key Fields | Purpose |
+| :---- | :---- | :---- |
+| **Order** | id, user\_id, status, total, transaction\_id | Core transaction tracking. |
+| **Fulfillment** | order\_id, type (GPS/Manual/Sched), last\_eta | Manages the "Golden Window" data. |
+| **Inventory** | item\_name, type (Soda/Syrup), is\_in\_stock | Feeds the AI Randomizer. |
+
+### **Infrastructure (GCP Focus)**
+
+| Component | Implementation Detail |
+| :---- | :---- |
+| **Containerization** | **Docker** (Ubuntu-based Python 3.11 image). |
+| **Backend Hosting** | **Google Cloud Run** (Serverless, scales to zero, high AI synergy). |
+| **Database** | **Cloud SQL (PostgreSQL)** with automatic backups. |
+| **Security** | **GCP Secret Manager** for API keys; SSL via Cloud Run. |
+| **CI/CD** | **GitHub Actions** for automated testing and deployment to staging/production. |
+
 
 ## Deployment plan
 
