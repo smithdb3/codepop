@@ -570,6 +570,8 @@ class GenerateAIDrink(APIView):
             else:
                 # Generate drink for general user
                 response_data = self.generate_general_user()
+            if response_data is None:
+                return Response({"message": "AI recommendations temporarily unavailable"}, status=200)
             return Response(response_data)
         except Exception as e:
             return Response({'error': str(e)}, status=400)
@@ -597,6 +599,8 @@ class GenerateAIDrink(APIView):
     def generate_response_data(self, preferences, user_created):
         """Helper function to generate response data."""
         result = generate_soda(preferences)
+        if result is None:
+            return None
         return {
             'SyrupsUsed': result["syrups"],
             'SodaUsed': result["soda"][0],

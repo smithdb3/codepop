@@ -3,17 +3,32 @@ from rest_framework.views import APIView
 from .views import refund_order
 from .models import Order, Revenue
 from django.http import JsonResponse
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
 import re
 
-# Load Flan-T5 model and tokenizer
-tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
-model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
+try:
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+    import torch
+    CHATBOT_AVAILABLE = True
+    # Load Flan-T5 model and tokenizer
+    tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
+    model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
+except ImportError:
+    CHATBOT_AVAILABLE = False
+    tokenizer = None
+    model = None
 
 class Chatbot(APIView):
 
     def post(self, request, *args, **kwargs):
+        if not CHATBOT_AVAILABLE:
+            return JsonResponse({
+                "responses": "Chatbot service is temporarily unavailable",
+                "wrong_drink_phase": "none",
+                "refund_phase": "none",
+                "order_num": "none",
+                "drink_nums": "none"
+            }, status=200)
+
         user_input = request.data.get("message", "")
         wrong_drink_phase = request.data.get("wrong_drink_phase")
         refund_phase = request.data.get("refund_phase")

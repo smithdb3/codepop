@@ -5,10 +5,15 @@ import random
 import pandas as p
 import csv
 import numpy as n
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 import os
 from django.conf import settings
+
+try:
+    from sklearn.feature_extraction.text import CountVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    DRINK_AI_AVAILABLE = True
+except ImportError:
+    DRINK_AI_AVAILABLE = False
 
 # Required for django
 syrup_file_path = os.path.join(settings.BASE_DIR, 'backend/Syrups.csv')
@@ -304,6 +309,9 @@ def create_list(csv_file_name):
 # a) list of the user's preferences
 # b) list of (syrup) flavors, sodas, and add-ins from popular / highly rated drinks
 def generate_soda(user_preferences):
+    if not DRINK_AI_AVAILABLE:
+        return None
+
     drink = {}
     validSyrups = create_list(syrup_file_path)
     validSodas = create_list(soda_file_path)
