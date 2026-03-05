@@ -10,3 +10,5 @@ codepop_virtual_enviroment
 
 .idea
 node_modules
+
+*.env

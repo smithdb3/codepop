@@ -16,12 +16,10 @@ jobs:
           username: peterson_braden2
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            source ~/codepop-env/bin/activate
             cd ~/codepop/codepop_backend
             git pull origin master
-            pip install -r requirements.txt
-            python manage.py migrate
-            sudo systemctl restart codepop
+            docker-compose down
+            docker-compose up -d --build
 
       - name: Deploy to logan-store-1
         uses: appleboy/ssh-action@v1.0.3
@@ -30,12 +28,10 @@ jobs:
           username: peterson_braden2
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            source ~/codepop-env/bin/activate
             cd ~/codepop/codepop_backend
             git pull origin master
-            pip install -r requirements.txt
-            python manage.py migrate
-            sudo systemctl restart codepop
+            docker-compose down
+            docker-compose up -d --build
 
       - name: Deploy to logan-store-2
         uses: appleboy/ssh-action@v1.0.3
@@ -44,12 +40,10 @@ jobs:
           username: peterson_braden2
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            source ~/codepop-env/bin/activate
             cd ~/codepop/codepop_backend
             git pull origin master
-            pip install -r requirements.txt
-            python manage.py migrate
-            sudo systemctl restart codepop
+            docker-compose down
+            docker-compose up -d --build
 
       - name: Deploy to atlanta-hub
         uses: appleboy/ssh-action@v1.0.3
@@ -58,12 +52,10 @@ jobs:
           username: peterson_braden2
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            source ~/codepop-env/bin/activate
             cd ~/codepop/codepop_backend
             git pull origin master
-            pip install -r requirements.txt
-            python manage.py migrate
-            sudo systemctl restart codepop
+            docker-compose down
+            docker-compose up -d --build
 
       - name: Deploy to atlanta-store-1
         uses: appleboy/ssh-action@v1.0.3
@@ -72,12 +64,10 @@ jobs:
           username: peterson_braden2
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            source ~/codepop-env/bin/activate
             cd ~/codepop/codepop_backend
             git pull origin master
-            pip install -r requirements.txt
-            python manage.py migrate
-            sudo systemctl restart codepop
+            docker-compose down
+            docker-compose up -d --build
 
       - name: Deploy to atlanta-store-2
         uses: appleboy/ssh-action@v1.0.3
@@ -86,9 +76,7 @@ jobs:
           username: peterson_braden2
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            source ~/codepop-env/bin/activate
             cd ~/codepop/codepop_backend
             git pull origin master
-            pip install -r requirements.txt
-            python manage.py migrate
-            sudo systemctl restart codepop
+            docker-compose down
+            docker-compose up -d --build

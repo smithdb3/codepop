@@ -10,6 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,21 +24,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-20c3kbxd-=q$-6^1^i@6u)jklu(js%g87$9sko85kirto!8afv'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-20c3kbxd-=q$-6^1^i@6u)jklu(js%g87$9sko85kirto!8afv')
 
 # Stripe Configuration
-STRIPE_SECRET_KEY = 'TODO: get a new secret stripe key'
-STRIPE_PUBLISHABLE_KEY = 'TODO: get a new publishable stripe key'
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'TODO: get a new secret stripe key')
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'TODO: get a new publishable stripe key')
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -42,14 +45,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
     'backend'
 ]
 
-
-
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -88,13 +91,24 @@ WSGI_APPLICATION = 'codepop_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'codepop_database',
-        'USER': 'postgres',  # Replace with your PostgreSQL username
-        'PASSWORD': 'password',  # Replace with your PostgreSQL password
-        'HOST': '127.0.0.1',  # Set to 'localhost' or the IP of your database server
-        'PORT': '5432', 
+        'NAME': os.getenv('DB_NAME', 'codepop'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'password'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
+
+STORE_ID = os.getenv('STORE_ID', '0')
+REGION = os.getenv('REGION', 'logan')
+HUB_URL = os.getenv('HUB_URL', '')
+IS_HUB = os.getenv('IS_HUB', 'False') == 'True'
+IS_MASTER = os.getenv('IS_MASTER', 'False') == 'True'
+
+# Celery
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
