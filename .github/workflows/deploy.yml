@@ -18,8 +18,8 @@ jobs:
           script: |
             cd ~/codepop/codepop_backend
             git pull origin master
-            docker-compose down
-            docker-compose up -d --build
+            docker compose down
+            docker compose up -d --build
 
       - name: Deploy to logan-store-1
         uses: appleboy/ssh-action@v1.0.3
@@ -30,8 +30,8 @@ jobs:
           script: |
             cd ~/codepop/codepop_backend
             git pull origin master
-            docker-compose down
-            docker-compose up -d --build
+            docker compose down
+            docker compose up -d --build
 
       - name: Deploy to logan-store-2
         uses: appleboy/ssh-action@v1.0.3
@@ -42,8 +42,8 @@ jobs:
           script: |
             cd ~/codepop/codepop_backend
             git pull origin master
-            docker-compose down
-            docker-compose up -d --build
+            docker compose down
+            docker compose up -d --build
 
       - name: Deploy to atlanta-hub
         uses: appleboy/ssh-action@v1.0.3
@@ -54,8 +54,8 @@ jobs:
           script: |
             cd ~/codepop/codepop_backend
             git pull origin master
-            docker-compose down
-            docker-compose up -d --build
+            docker compose down
+            docker compose up -d --build
 
       - name: Deploy to atlanta-store-1
         uses: appleboy/ssh-action@v1.0.3
@@ -66,8 +66,8 @@ jobs:
           script: |
             cd ~/codepop/codepop_backend
             git pull origin master
-            docker-compose down
-            docker-compose up -d --build
+            docker compose down
+            docker compose up -d --build
 
       - name: Deploy to atlanta-store-2
         uses: appleboy/ssh-action@v1.0.3
@@ -78,5 +78,5 @@ jobs:
           script: |
             cd ~/codepop/codepop_backend
             git pull origin master
-            docker-compose down
-            docker-compose up -d --build
+            docker compose down
+            docker compose up -d --build
