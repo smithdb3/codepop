@@ -1,0 +1,94 @@
+name: Deploy to GCP VMs
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to logan-master-hub
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LOGAN_HUB_IP }}
+          username: peterson_braden2
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            source ~/codepop-env/bin/activate
+            cd ~/codepop/codepop_backend
+            git pull origin master
+            pip install -r requirements.txt
+            python manage.py migrate
+            sudo systemctl restart codepop
+
+      - name: Deploy to logan-store-1
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LOGAN_STORE1_IP }}
+          username: peterson_braden2
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            source ~/codepop-env/bin/activate
+            cd ~/codepop/codepop_backend
+            git pull origin master
+            pip install -r requirements.txt
+            python manage.py migrate
+            sudo systemctl restart codepop
+
+      - name: Deploy to logan-store-2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LOGAN_STORE2_IP }}
+          username: peterson_braden2
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            source ~/codepop-env/bin/activate
+            cd ~/codepop/codepop_backend
+            git pull origin master
+            pip install -r requirements.txt
+            python manage.py migrate
+            sudo systemctl restart codepop
+
+      - name: Deploy to atlanta-hub
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ATLANTA_HUB_IP }}
+          username: peterson_braden2
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            source ~/codepop-env/bin/activate
+            cd ~/codepop/codepop_backend
+            git pull origin master
+            pip install -r requirements.txt
+            python manage.py migrate
+            sudo systemctl restart codepop
+
+      - name: Deploy to atlanta-store-1
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ATLANTA_STORE1_IP }}
+          username: peterson_braden2
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            source ~/codepop-env/bin/activate
+            cd ~/codepop/codepop_backend
+            git pull origin master
+            pip install -r requirements.txt
+            python manage.py migrate
+            sudo systemctl restart codepop
+
+      - name: Deploy to atlanta-store-2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ATLANTA_STORE2_IP }}
+          username: peterson_braden2
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            source ~/codepop-env/bin/activate
+            cd ~/codepop/codepop_backend
+            git pull origin master
+            pip install -r requirements.txt
+            python manage.py migrate
+            sudo systemctl restart codepop
