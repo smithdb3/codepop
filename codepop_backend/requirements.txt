@@ -24,7 +24,7 @@ PyYAML==6.0.2
 regex==2024.11.6
 requests==2.32.3
 safetensors==0.4.5
-scikit-learn==1.5.2
+# scikit-learn==1.5.2
 scipy==1.14.1
 sentencepiece==0.2.0
 six==1.16.0
@@ -33,9 +33,9 @@ stripe==11.2.0
 sympy==1.13.1
 threadpoolctl==3.5.0
 tokenizers==0.20.3
-torch==2.5.1
+# torch==2.5.1
 tqdm==4.67.0
-transformers==4.46.2
+# transformers==4.46.2
 typing_extensions==4.12.2
 tzdata==2024.2
 urllib3==2.2.3
