@@ -18,7 +18,7 @@ Open `codepop_backend/.env` and fill in:
 - `MAPBOX_ACCESS_TOKEN` — get from [Mapbox](https://account.mapbox.com/)
 - `SECRET_KEY` — any long random string for Django
 
-## 3. Start with Docker (Recommended)
+## 3. Start with Docker
 
 ```bash
 cd codepop_backend
@@ -34,6 +34,3 @@ cd codepop
 npm install
 npm start
 ```
-
-> If you need the frontend to connect to a backend on a different machine or IP, update the URL in `codepop/ip_address.js`.
-
