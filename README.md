@@ -22,7 +22,7 @@ Open `codepop_backend/.env` and fill in:
 
 ```bash
 cd codepop_backend
-docker-compose up
+docker compose up
 ```
 
 The backend runs at `http://localhost:8000`.
@@ -37,19 +37,3 @@ npm start
 
 > If you need the frontend to connect to a backend on a different machine or IP, update the URL in `codepop/ip_address.js`.
 
----
-
-## Local Backend (Without Docker)
-
-If you prefer to run the backend without Docker:
-
-1. Create a PostgreSQL database named `codepop`
-2. Update `DB_HOST=localhost` in your `.env`
-3. From `codepop_backend/`, seed the database:
-   ```bash
-   ./clean_database.sh
-   ```
-4. Start the server:
-   ```bash
-   python manage.py runserver localhost:8000
-   ```
