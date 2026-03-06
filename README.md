@@ -34,3 +34,19 @@ cd codepop
 npm install
 npm start
 ```
+
+## 5. Open the Simulator
+
+**Important:** Make sure your simulator is already running before launching the app.
+
+When you run `npm start`, you'll see an interactive menu. Choose your platform:
+- Press **`i`** to open iOS Simulator (macOS)
+- Press **`a`** to open Android Emulator (Android Studio)
+- Press **`w`** to open in web browser
+
+Or skip the menu and use a platform-specific command:
+```bash
+npm run ios      # iOS Simulator
+npm run android  # Android Emulator
+npm run web      # Web browser
+```
