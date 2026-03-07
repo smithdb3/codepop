@@ -11,4 +11,7 @@ codepop_virtual_enviroment
 .idea
 node_modules
 
+# Environment / secrets (never commit)
 .env
+*.env
+**/.env
