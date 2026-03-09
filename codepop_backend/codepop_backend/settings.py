@@ -105,6 +105,9 @@ HUB_URL = os.getenv('HUB_URL', '')
 IS_HUB = os.getenv('IS_HUB', 'False') == 'True'
 IS_MASTER = os.getenv('IS_MASTER', 'False') == 'True'
 
+# Inter-node Authentication
+INTER_NODE_SECRET = os.getenv('INTER_NODE_SECRET', '')
+
 # Celery
 CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://redis:6379/0')
