@@ -12,6 +12,12 @@ from .views import GenerateAIDrink
 from .views import RevenueViewSet
 from .views import UserOperations
 from .views import emailAPI
+from .views import (
+    HubRegisterView, HubHeartbeatView, HubStoresView, HubStoreLocationView,
+    HubSupplyRequestListView, HubSupplyRequestActionView,
+    InterNodeHealthCheckView, InterNodeStoreRegistryView, InterNodeUserLookupView,
+    InterNodeUserSyncView, InterNodeStatusUpdateView, InterNodeSupplyRequestView
+)
 
 #this ensures that the url calls the right function from the views for each type of request
 preferences_list = PreferencesOperations.as_view({
@@ -211,5 +217,35 @@ urlpatterns = [
     path('users/delete/<int:user_id>/', user_operations, name='delete_user'),
     path('users/edit/<int:user_id>/', user_operations, name='edit_user'),
 
-    path('email/<int:orderId>/', emailAPI.as_view(), name='Create Email')
+    path('email/<int:orderId>/', emailAPI.as_view(), name='Create Email'),
+
+    # ========================================================================
+    # SPRINT 3: HUB & INTER-NODE COMMUNICATION ENDPOINTS
+    # ========================================================================
+
+    # Hub Endpoints (for hub nodes managing registered stores)
+    # - POST /backend/hub/register/: Store registration
+    # - POST /backend/hub/heartbeat/: Store heartbeat (every 30 seconds)
+    # - GET /backend/hub/stores/: List all registered stores
+    # - GET /backend/hub/store-location/: Cross-region user discovery
+    path('hub/register/', HubRegisterView.as_view(), name='hub_register'),
+    path('hub/heartbeat/', HubHeartbeatView.as_view(), name='hub_heartbeat'),
+    path('hub/stores/', HubStoresView.as_view(), name='hub_stores'),
+    path('hub/store-location/', HubStoreLocationView.as_view(), name='hub_store_location'),
+    path('hub/supply-requests/', HubSupplyRequestListView.as_view(), name='hub_supply_requests'),
+    path('hub/supply-requests/<int:pk>/<str:action>/', HubSupplyRequestActionView.as_view(), name='hub_supply_request_action'),
+
+    # Inter-Node Communication Endpoints (all nodes can call these on peers)
+    # - POST /backend/internode/health-check/: Ping/pong
+    # - GET /backend/internode/store-registry/: Get peer's store registry
+    # - POST /backend/internode/user-lookup/: Query for user
+    # - POST /backend/internode/user-sync/: Receive user profile replication
+    # - POST /backend/internode/status-update/: Send machine status
+    # - POST /backend/internode/supply-request/: Send supply request
+    path('internode/health-check/', InterNodeHealthCheckView.as_view(), name='internode_health_check'),
+    path('internode/store-registry/', InterNodeStoreRegistryView.as_view(), name='internode_store_registry'),
+    path('internode/user-lookup/', InterNodeUserLookupView.as_view(), name='internode_user_lookup'),
+    path('internode/user-sync/', InterNodeUserSyncView.as_view(), name='internode_user_sync'),
+    path('internode/status-update/', InterNodeStatusUpdateView.as_view(), name='internode_status_update'),
+    path('internode/supply-request/', InterNodeSupplyRequestView.as_view(), name='internode_supply_request'),
 ]

@@ -5,20 +5,30 @@ from .models import Preference, Drink, Inventory, Order, Notification, Revenue
 
 class CreateUserSerializer(serializers.ModelSerializer):
     username = serializers.CharField()
+    email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True,
                                      style={'input_type': 'password'})
 
     class Meta:
         model = get_user_model()
-        fields = ('username', 'password', 'first_name', 'last_name')
-        write_only_fields = ('password')
+        fields = ('username', 'email', 'password', 'first_name', 'last_name')
         read_only_fields = ('is_staff', 'is_superuser', 'is_active',)
 
+    def validate_email(self, value):
+        User = get_user_model()
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with that email already exists.")
+        return value
+
     def create(self, validated_data):
-        user = super(CreateUserSerializer, self).create(validated_data)
-        user.set_password(validated_data['password'])
-        user.save()
-        return user
+        User = get_user_model()
+        return User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', ''),
+        )
 
 class GetUserSerializer(serializers.ModelSerializer):
     username = serializers.CharField()
@@ -27,8 +37,7 @@ class GetUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = get_user_model()
-        fields = ('id', 'username', 'password', 'first_name', 'last_name', 'is_staff', 'is_superuser')
-        write_only_fields = ('password')
+        fields = ('id', 'username', 'email', 'password', 'first_name', 'last_name', 'is_staff', 'is_superuser')
         read_only_fields = ('is_staff', 'is_superuser', 'is_active',)
 
 
