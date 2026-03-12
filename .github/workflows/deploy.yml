@@ -5,9 +5,8 @@ on:
     branches: [ master ]
 
 jobs:
-  deploy:
+  deploy-logan-hub:
     runs-on: ubuntu-latest
-
     steps:
       - name: Deploy to logan-master-hub
         uses: appleboy/ssh-action@v1.0.3
@@ -18,9 +17,12 @@ jobs:
           script: |
             cd ~/codepop/codepop_backend
             git pull origin master
-            docker compose down
-            docker compose up -d --build
+            docker compose build --pull
+            docker compose up -d
 
+  deploy-logan-store-1:
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to logan-store-1
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -30,9 +32,12 @@ jobs:
           script: |
             cd ~/codepop/codepop_backend
             git pull origin master
-            docker compose down
-            docker compose up -d --build
+            docker compose build --pull
+            docker compose up -d
 
+  deploy-logan-store-2:
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to logan-store-2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -42,9 +47,12 @@ jobs:
           script: |
             cd ~/codepop/codepop_backend
             git pull origin master
-            docker compose down
-            docker compose up -d --build
+            docker compose build --pull
+            docker compose up -d
 
+  deploy-atlanta-hub:
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to atlanta-hub
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -54,9 +62,12 @@ jobs:
           script: |
             cd ~/codepop/codepop_backend
             git pull origin master
-            docker compose down
-            docker compose up -d --build
+            docker compose build --pull
+            docker compose up -d
 
+  deploy-atlanta-store-1:
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to atlanta-store-1
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -66,9 +77,12 @@ jobs:
           script: |
             cd ~/codepop/codepop_backend
             git pull origin master
-            docker compose down
-            docker compose up -d --build
+            docker compose build --pull
+            docker compose up -d
 
+  deploy-atlanta-store-2:
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to atlanta-store-2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -78,5 +92,5 @@ jobs:
           script: |
             cd ~/codepop/codepop_backend
             git pull origin master
-            docker compose down
-            docker compose up -d --build
+            docker compose build --pull
+            docker compose up -d
