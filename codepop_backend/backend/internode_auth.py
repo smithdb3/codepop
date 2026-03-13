@@ -63,12 +63,16 @@ class NodeTokenAuthentication(BaseAuthentication):
         Raises AuthenticationFailed if token is invalid.
         """
         # Sprint 3: First check against settings.INTER_NODE_SECRET (simple shared secret)
-        if settings.INTER_NODE_SECRET and key == settings.INTER_NODE_SECRET:
-            # Create a synthetic user object for DRF permission system
-            from django.contrib.auth.models import AnonymousUser
-            synthetic_user = AnonymousUser()
-            synthetic_user.is_node = True  # Mark as inter-node request
-            return (synthetic_user, key)
+        if settings.INTER_NODE_SECRET:
+            if key == settings.INTER_NODE_SECRET:
+                # Create a synthetic user object for DRF permission system
+                from django.contrib.auth.models import AnonymousUser
+                synthetic_user = AnonymousUser()
+                synthetic_user.is_node = True  # Mark as inter-node request
+                return (synthetic_user, key)
+            else:
+                # Shared secret is configured but token doesn't match — reject immediately
+                raise AuthenticationFailed("Invalid NodeToken.")
 
         # Future: Check against NodeCertificate table
         # For now, we skip this and only use the settings secret
