@@ -11,10 +11,11 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order, Revenue, UserCache
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue, UserCache, EventQueue
 from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import stripe
+import requests
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -98,6 +99,22 @@ class CreateUserAPIView(CreateAPIView):
                 "expires_at": timezone.now() + timezone.timedelta(days=365 * 10),
             }
         )
+
+        # Queue routing pointer sync to upstream hub
+        if settings.HUB_URL and not settings.IS_MASTER:
+            EventQueue.objects.create(
+                event_type="user_registration_sync",
+                target_node=f"{settings.HUB_URL.rstrip('/')}/backend/internode/user-sync/",
+                payload={
+                    "user_data": {
+                        "user_id": serializer.instance.pk,
+                        "email": serializer.instance.email,
+                        "preferences": [],
+                        "favorite_drinks": [],
+                    },
+                    "source_store_id": int(settings.STORE_ID),
+                },
+            )
 
         return Response(
             {**serializer.data, **token_data},
@@ -1095,6 +1112,23 @@ class InterNodeUserLookupView(APIView):
                 )
             except User.DoesNotExist:
                 pass
+
+            # Stage 3: Forward to upstream hub (enables cross-region discovery)
+            if settings.HUB_URL and not settings.IS_MASTER:
+                try:
+                    hub_url = settings.HUB_URL.rstrip('/')
+                    hub_resp = requests.post(
+                        f"{hub_url}/backend/internode/user-lookup/",
+                        json={"email": email, "requesting_store_id": int(settings.STORE_ID)},
+                        headers={"Authorization": f"NodeToken {settings.INTER_NODE_SECRET}"},
+                        timeout=5,
+                    )
+                    if hub_resp.status_code == 200:
+                        hub_data = hub_resp.json()
+                        if hub_data.get("status") == "found":
+                            return Response(hub_data, status=status.HTTP_200_OK)
+                except Exception:
+                    pass  # fall through to not_found
 
             # User not found anywhere
             SyncRecord.objects.create(
