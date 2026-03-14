@@ -28,6 +28,7 @@ from django.utils.dateparse import parse_datetime
 from .drinkAI import generate_soda
 from rest_framework.permissions import BasePermission
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,71 @@ def _get_node_secret():
     except Exception:
         pass
     return settings.INTER_NODE_SECRET
+
+
+def _broadcast_user_lookup(email, requesting_store_id):
+    """
+    Broadcast a user-lookup POST to all peer hubs in parallel.
+    Returns the first successful 'found' response payload, or None.
+    One hub being down does not block the others (timeout=5s per hub).
+    """
+    if not settings.PEER_HUB_URLS:
+        return None
+
+    def query_one_hub(peer_url):
+        try:
+            resp = requests.post(
+                f"{peer_url.rstrip('/')}/backend/internode/user-lookup/",
+                json={"email": email, "requesting_store_id": requesting_store_id},
+                headers={"Authorization": f"NodeToken {settings.INTER_NODE_SECRET}"},
+                timeout=5,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("status") == "found":
+                    return data
+        except Exception as e:
+            logger.warning("Peer hub user-lookup failed (%s): %s", peer_url, e)
+        return None
+
+    with ThreadPoolExecutor(max_workers=len(settings.PEER_HUB_URLS)) as executor:
+        futures = {executor.submit(query_one_hub, url): url for url in settings.PEER_HUB_URLS}
+        for future in as_completed(futures):
+            result = future.result()
+            if result is not None:
+                return result
+    return None
+
+
+def _broadcast_hub_store_location(email):
+    """
+    Broadcast a store-location GET to all peer hubs in parallel.
+    Returns the first successful 'found' response payload, or None.
+    """
+    if not settings.PEER_HUB_URLS:
+        return None
+
+    def query_one_hub(peer_url):
+        try:
+            resp = requests.get(
+                f"{peer_url.rstrip('/')}/backend/hub/store-location/",
+                params={"email": email},
+                headers={"Authorization": f"NodeToken {_get_node_secret()}"},
+                timeout=5,
+            )
+            if resp.status_code == 200 and resp.json().get("status") == "found":
+                return resp.json()
+        except Exception as e:
+            logger.warning("Peer hub store-location failed (%s): %s", peer_url, e)
+        return None
+
+    with ThreadPoolExecutor(max_workers=len(settings.PEER_HUB_URLS)) as executor:
+        futures = {executor.submit(query_one_hub, url): url for url in settings.PEER_HUB_URLS}
+        for future in as_completed(futures):
+            result = future.result()
+            if result is not None:
+                return result
+    return None
 
 
 def _discover_home_store(email):
@@ -274,7 +340,7 @@ class CreateUserAPIView(CreateAPIView):
         _refresh_user_cache(serializer.instance)
 
         # Queue routing pointer sync to upstream hub
-        if settings.HUB_URL and not settings.IS_MASTER:
+        if settings.HUB_URL:
             EventQueue.objects.create(
                 event_type="user_sync",
                 status="pending",
@@ -1126,7 +1192,6 @@ class HubRegisterView(APIView):
                     "hub_name": settings.STORE_NAME,
                     "region": settings.REGION,
                     "api_endpoint": settings.API_ENDPOINT,
-                    "is_master": settings.IS_MASTER,
                     "is_active": True,
                     "issued_secret": node_secret,
                 }
@@ -1145,7 +1210,6 @@ class HubRegisterView(APIView):
                     "hub_id": int(settings.STORE_ID),
                     "hub_name": settings.STORE_NAME,
                     "region": settings.REGION,
-                    "is_master": settings.IS_MASTER,
                     "certificate_expires": cert_expires.isoformat(),
                     "sibling_stores": list(sibling_stores),
                 },
@@ -1278,19 +1342,11 @@ class HubStoreLocationView(APIView):
                         status=status.HTTP_200_OK
                     )
             except UserCache.DoesNotExist:
-                # Not in local cache — if we are a regional hub, ask master
-                if not settings.IS_MASTER and settings.HUB_URL:
-                    try:
-                        master_resp = requests.get(
-                            f"{settings.HUB_URL.rstrip('/')}/backend/hub/store-location/",
-                            params={"email": email},
-                            headers={"Authorization": f"NodeToken {_get_node_secret()}"},
-                            timeout=5,
-                        )
-                        if master_resp.status_code == 200 and master_resp.json().get("status") == "found":
-                            return Response(master_resp.json(), status=status.HTTP_200_OK)
-                    except requests.exceptions.RequestException as e:
-                        logger.error("Master hub cascade failed in HubStoreLocationView for %s: %s", email, str(e))
+                # Not in local cache — if we are a hub, broadcast to peer hubs
+                if settings.IS_HUB and settings.PEER_HUB_URLS:
+                    result = _broadcast_hub_store_location(email)
+                    if result is not None:
+                        return Response(result, status=status.HTTP_200_OK)
                 return Response(
                     {"status": "not_found"},
                     status=status.HTTP_200_OK
@@ -1325,7 +1381,6 @@ class InterNodeHealthCheckView(APIView):
                     "store_id": request.node_identity["store_id"],
                     "region": request.node_identity["region"],
                     "is_hub": request.node_identity["is_hub"],
-                    "is_master": request.node_identity["is_master"],
                     "timestamp": timezone.now().isoformat(),
                 },
                 status=status.HTTP_200_OK
@@ -1429,33 +1484,21 @@ class InterNodeUserLookupView(APIView):
             except User.DoesNotExist:
                 pass
 
-            # Stage 3: Forward to upstream hub (enables cross-region discovery)
-            if settings.HUB_URL and not settings.IS_MASTER:
-                try:
-                    hub_url = settings.HUB_URL.rstrip('/')
-                    hub_resp = requests.post(
-                        f"{hub_url}/backend/internode/user-lookup/",
-                        json={"email": email, "requesting_store_id": int(settings.STORE_ID)},
-                        headers={"Authorization": f"NodeToken {settings.INTER_NODE_SECRET}"},
-                        timeout=5,
+            # Stage 3: Broadcast to peer hubs (enables cross-region discovery)
+            if settings.IS_HUB and settings.PEER_HUB_URLS:
+                hub_data = _broadcast_user_lookup(email, int(settings.STORE_ID))
+                if hub_data is not None:
+                    # Cache the routing pointer locally for faster future lookups
+                    UserCache.objects.update_or_create(
+                        user_email=email,
+                        defaults={
+                            "user_id": hub_data.get("user_id"),
+                            "home_store_id": hub_data.get("home_store_id", 0),
+                            "home_store_endpoint": hub_data.get("home_store_endpoint", ""),
+                            "expires_at": timezone.now() + timedelta(hours=24),
+                        }
                     )
-                    if hub_resp.status_code == 200:
-                        hub_data = hub_resp.json()
-                        if hub_data.get("status") == "found":
-                            # Cache the routing pointer locally for faster future lookups
-                            UserCache.objects.update_or_create(
-                                user_email=email,
-                                defaults={
-                                    "user_id": hub_data.get("user_id"),
-                                    "home_store_id": hub_data.get("home_store_id", 0),
-                                    "home_store_endpoint": hub_data.get("home_store_endpoint", ""),
-                                    "expires_at": timezone.now() + timedelta(hours=24),
-                                }
-                            )
-                            return Response(hub_data, status=status.HTTP_200_OK)
-                except Exception as e:
-                    logger.error("Hub forward failed during user lookup for %s: %s", email, str(e))
-                    # fall through to not_found
+                    return Response(hub_data, status=status.HTTP_200_OK)
 
             # User not found anywhere — do not record as successful sync
             return Response(
@@ -1506,21 +1549,22 @@ class InterNodeUserSyncView(APIView):
                 }
             )
 
-            # If this node is a regional hub, queue the user_sync upstream to master hub
-            # so master's UserCache is populated for cross-region discovery.
+            # If this node is a hub, queue the user_sync to all peer hubs
+            # so all peer hubs' UserCache are populated for cross-region discovery.
             # Only queue if this is a new entry (not an update), to avoid duplicate events.
-            if created and settings.IS_HUB and not settings.IS_MASTER and settings.HUB_URL:
-                EventQueue.objects.create(
-                    event_type="user_sync",
-                    status="pending",
-                    target_node=f"{settings.HUB_URL.rstrip('/')}/backend/internode/user-sync/",
-                    payload={
-                        "email": email,
-                        "user_id": user_id,
-                        "home_store_id": home_store_id,
-                        "home_store_endpoint": home_store_endpoint,
-                    },
-                )
+            if created and settings.IS_HUB:
+                for peer_url in settings.PEER_HUB_URLS:
+                    EventQueue.objects.create(
+                        event_type="user_sync",
+                        status="pending",
+                        target_node=f"{peer_url.rstrip('/')}/backend/internode/user-sync/",
+                        payload={
+                            "email": email,
+                            "user_id": user_id,
+                            "home_store_id": home_store_id,
+                            "home_store_endpoint": home_store_endpoint,
+                        },
+                    )
 
             SyncRecord.objects.create(
                 sync_type="user_pull",

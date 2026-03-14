@@ -104,26 +104,51 @@ DATABASES = {
     }
 }
 
+# ---------------------------------------------------------------------------
+# Node identity (hub mesh + regional stores; no master hub)
+# ---------------------------------------------------------------------------
 STORE_ID = os.getenv('STORE_ID', '0')
 STORE_NAME = os.getenv('STORE_NAME', f'Store {os.getenv("STORE_ID", "0")}')
 REGION = os.getenv('REGION', 'logan')
-HUB_URL = os.getenv('HUB_URL', '')
-IS_HUB = os.getenv('IS_HUB', 'False') == 'True'
-IS_MASTER = os.getenv('IS_MASTER', 'False') == 'True'
 API_ENDPOINT = os.getenv('API_ENDPOINT', '')
 LATITUDE = float(os.getenv('LATITUDE', '0.0'))
 LONGITUDE = float(os.getenv('LONGITUDE', '0.0'))
 
-# Inter-node Authentication
+# Node role: 'hub' (regional coordinator) or 'store' (customer-facing node)
+NODE_ROLE = (os.getenv('NODE_ROLE', 'store') or 'store').strip().lower()
+if NODE_ROLE not in ('hub', 'store'):
+    raise ImproperlyConfigured("NODE_ROLE must be 'hub' or 'store'")
+
+# Stores: URL of this node's regional hub. Hubs: leave empty.
+UPSTREAM_HUB_URL = (os.getenv('UPSTREAM_HUB_URL', '') or os.getenv('HUB_URL', '')).strip()
+
+# Derived: True if this node is a hub (no master hub concept)
+IS_HUB = NODE_ROLE == 'hub'
+
+# Hubs only: comma-separated list of other hub base URLs for hub-to-hub mesh
+PEER_HUB_URLS = [
+    url.strip()
+    for url in os.getenv('PEER_HUB_URLS', '').split(',')
+    if url.strip()
+]
+
+# Inter-node authentication (dev fallback; prefer per-node NodeCertificate in prod)
 INTER_NODE_SECRET = os.getenv('INTER_NODE_SECRET', '')
 
-# Validate INTER_NODE_SECRET is set for distributed deployments
-if not INTER_NODE_SECRET and (IS_HUB or HUB_URL):
+# Distributed mode: this node participates in the network (hub or store with upstream)
+_participates = IS_HUB or bool(UPSTREAM_HUB_URL) or bool(PEER_HUB_URLS)
+if _participates and not INTER_NODE_SECRET:
     raise ImproperlyConfigured(
         "INTER_NODE_SECRET must be set in .env for distributed deployments. "
-        "This secret is required for all inter-node communication (hub registration, user discovery, etc.). "
-        "Set INTER_NODE_SECRET in your .env file before starting the node."
+        "Required for inter-node communication. Set INTER_NODE_SECRET in your .env file."
     )
+if _participates:
+    if str(STORE_ID).strip() == '':
+        raise ImproperlyConfigured("STORE_ID must be set for hub or store nodes in distributed mode")
+    if not REGION:
+        raise ImproperlyConfigured("REGION must be set for hub or store nodes in distributed mode")
+    if not API_ENDPOINT:
+        raise ImproperlyConfigured("API_ENDPOINT must be set for hub or store nodes in distributed mode")
 
 # Celery
 CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')

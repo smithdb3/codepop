@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodePop Distributed System Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: #0d1117;
+            color: #f1f5f9;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        .diagram-panel {
+            width: 40%;
+            padding: 30px;
+            background: #111827;
+            border-right: 1px solid #374151;
+            overflow-y: auto;
+        }
+
+        .demo-panel {
+            width: 60%;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            background: #0d1117;
+            overflow-y: auto;
+        }
+
+        h1 {
+            color: #f1f5f9;
+            margin-bottom: 8px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+            background: #6ee7b7;
+        }
+
+        .status-text {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 20px;
+        }
+
+        /* Info Bar */
+        .info-bar {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .info-bar-icon {
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        /* SVG Diagram */
+        svg {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .node {
+            stroke-width: 2;
+            transition: all 0.3s;
+        }
+
+        .node-master {
+            fill: #92400e;
+            stroke: #f59e0b;
+        }
+
+        .node-hub {
+            fill: #1e3a5f;
+            stroke: #3b82f6;
+        }
+
+        .node-store {
+            fill: #064e3b;
+            stroke: #10b981;
+        }
+
+        .node-active {
+            filter: drop-shadow(0 0 15px currentColor);
+        }
+
+        .node-label {
+            text-anchor: middle;
+            font-size: 12px;
+            fill: #f1f5f9;
+            pointer-events: none;
+            font-weight: 500;
+        }
+
+        .node-ip {
+            text-anchor: middle;
+            font-size: 9px;
+            fill: #94a3b8;
+            pointer-events: none;
+        }
+
+        .connection {
+            stroke: #374151;
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .legend {
+            margin-top: 20px;
+            font-size: 11px;
+            color: #94a3b8;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* Right Panel */
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            gap: 16px;
+        }
+
+        .reset-btn {
+            background: #3b82f6;
+            color: #f1f5f9;
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: #2563eb;
+        }
+
+        .reset-btn:active {
+            background: #1d4ed8;
+        }
+
+        .steps-container {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Step Card */
+        .step {
+            background: #1f2937;
+            border: 1px solid #374151;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+
+        .step:hover {
+            border-color: #4b5563;
+        }
+
+        .step.active {
+            border-color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+            padding-left: 14px;
+        }
+
+        .step-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .step-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: #f1f5f9;
+            font-weight: 600;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .step-meta {
+            flex: 1;
+        }
+
+        .step-title {
+            color: #f1f5f9;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .step-description {
+            color: #94a3b8;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .step-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .run-btn {
+            background: #3b82f6;
+            color: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 5px;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .run-btn:hover {
+            background: #2563eb;
+        }
+
+        .run-btn:active {
+            background: #1d4ed8;
+        }
+
+        .run-btn:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+
+        .curl-toggle {
+            background: transparent;
+            color: #94a3b8;
+            padding: 6px 12px;
+            border: 1px solid #374151;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .curl-toggle:hover {
+            border-color: #4b5563;
+            color: #cbd5e1;
+        }
+
+        .curl-block {
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            padding: 14px;
+            margin-bottom: 12px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            color: #cbd5e1;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            letter-spacing: 0.3px;
+        }
+
+        .curl-block.show {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+
+        .curl-line {
+            word-break: break-word;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .response-panel {
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            padding: 14px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            color: #cbd5e1;
+            max-height: 400px;
+            overflow-y: auto;
+            line-height: 1.8;
+            letter-spacing: 0.3px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .response-panel.error {
+            color: #fca5a5;
+        }
+
+        /* JSON Syntax Highlighting */
+        .json-key {
+            color: #60a5fa;
+            font-weight: 500;
+        }
+
+        .json-string {
+            color: #34d399;
+        }
+
+        .json-number {
+            color: #fbbf24;
+        }
+
+        .json-boolean {
+            color: #a78bfa;
+        }
+
+        .json-null {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .json-brace,
+        .json-bracket {
+            color: #e5e7eb;
+            font-weight: bold;
+        }
+
+        .json-colon {
+            color: #cbd5e1;
+        }
+
+        .json-comma {
+            color: #cbd5e1;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel: Architecture Diagram -->
+        <div class="diagram-panel">
+            <h1>CodePop Network</h1>
+            <p class="subtitle">Distributed System Architecture</p>
+
+            <div id="statusContainer" class="status-text">
+                <span class="status-indicator"></span>
+                <span id="statusText">Waiting for health check...</span>
+            </div>
+
+            <svg viewBox="0 0 400 500">
+                <!-- Master Hub (top center) -->
+                <circle id="master-hub" class="node node-master" cx="200" cy="50" r="35"/>
+                <text class="node-label" x="200" y="55">Master Hub</text>
+                <text class="node-ip" x="200" y="70">34.136.12.86</text>
+
+                <!-- Regional Hubs (middle row) -->
+                <circle id="logan-hub" class="node node-hub" cx="80" cy="180" r="30"/>
+                <text class="node-label" x="80" y="183">Logan Hub</text>
+                <text class="node-ip" x="80" y="200">34.136.12.86</text>
+
+                <circle id="atlanta-hub" class="node node-hub" cx="320" cy="180" r="30"/>
+                <text class="node-label" x="320" y="183">Atlanta Hub</text>
+                <text class="node-ip" x="320" y="200">136.115.168.184</text>
+
+                <!-- Stores (bottom row) -->
+                <circle id="logan-s1" class="node node-store" cx="40" cy="320" r="25"/>
+                <text class="node-label" x="40" y="323">Logan S1</text>
+                <text class="node-ip" x="40" y="338">34.55.170.11</text>
+
+                <circle id="logan-s2" class="node node-store" cx="120" cy="320" r="25"/>
+                <text class="node-label" x="120" y="323">Logan S2</text>
+                <text class="node-ip" x="120" y="338">34.121.91.135</text>
+
+                <circle id="atlanta-s1" class="node node-store" cx="280" cy="320" r="25"/>
+                <text class="node-label" x="280" y="323">Atlanta S1</text>
+                <text class="node-ip" x="280" y="338">136.112.202.76</text>
+
+                <circle id="atlanta-s2" class="node node-store" cx="360" cy="320" r="25"/>
+                <text class="node-label" x="360" y="323">Atlanta S2</text>
+                <text class="node-ip" x="360" y="338">34.173.157.74</text>
+
+                <!-- Connections -->
+                <line class="connection" x1="200" y1="85" x2="80" y2="150"/>
+                <line class="connection" x1="200" y1="85" x2="320" y2="150"/>
+                <line class="connection" x1="80" y1="210" x2="40" y2="295"/>
+                <line class="connection" x1="80" y1="210" x2="120" y2="295"/>
+                <line class="connection" x1="320" y1="210" x2="280" y2="295"/>
+                <line class="connection" x1="320" y1="210" x2="360" y2="295"/>
+            </svg>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #f59e0b;"></div>
+                    <span>Master Hub</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #3b82f6;"></div>
+                    <span>Regional Hubs</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #10b981;"></div>
+                    <span>Stores</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Demo Steps -->
+        <div class="demo-panel">
+            <div class="panel-header">
+                <div>
+                    <h1>Interactive Demo</h1>
+                </div>
+                <button class="reset-btn" onclick="resetDemo()">Reset All</button>
+            </div>
+
+            <div class="info-bar">
+                <span class="info-bar-icon">⚡</span>
+                <span><strong>Live Mode</strong> — requires <code>CORS_ALLOW_ALL_ORIGINS=True</code> on all GCP VMs</span>
+            </div>
+
+            <div class="steps-container" id="stepsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            nodes: {
+                'master-hub': 'http://34.136.12.86:8000',
+                'logan-hub': 'http://34.136.12.86:8000',
+                'atlanta-hub': 'http://136.115.168.184:8000',
+                'logan-s1': 'http://34.55.170.11:8000',
+                'logan-s2': 'http://34.121.91.135:8000',
+                'atlanta-s1': 'http://136.112.202.76:8000',
+                'atlanta-s2': 'http://34.173.157.74:8000'
+            },
+            nodeToken: '3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71',
+            timeout: 5000
+        };
+
+        let testState = {
+            aliceUserId: null,
+            aliceToken: null,
+            aliceS2UserId: null,
+            aliceS2Token: null,
+            bobUserId: null,
+            bobToken: null
+        };
+
+        // Fetch with proper timeout using AbortController
+        async function fetchWithTimeout(url, options = {}, ms = 5000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), ms);
+            try {
+                const res = await fetch(url, { ...options, signal: controller.signal });
+                return res;
+            } finally {
+                clearTimeout(id);
+            }
+        }
+
+        // Demo Steps Definition (12 Phases from GCP Testing Guide)
+        const demoSteps = [
+            // Phase 1: Health Checks
+            {
+                id: 'health-checks',
+                num: 1,
+                title: 'Node Health Checks',
+                description: 'Verify all 6 nodes are online and responding to authenticated requests.',
+                curls: [
+                    `curl -s -X POST http://34.136.12.86:8000/backend/internode/health-check/ \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`,
+                    `curl -s -X POST http://34.55.170.11:8000/backend/internode/health-check/ \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`,
+                    `curl -s -X POST http://34.121.91.135:8000/backend/internode/health-check/ \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`,
+                    `curl -s -X POST http://136.115.168.184:8000/backend/internode/health-check/ \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`,
+                    `curl -s -X POST http://136.112.202.76:8000/backend/internode/health-check/ \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`,
+                    `curl -s -X POST http://34.173.157.74:8000/backend/internode/health-check/ \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
+                ],
+                activeNodes: ['master-hub', 'logan-hub', 'atlanta-hub', 'logan-s1', 'logan-s2', 'atlanta-s1', 'atlanta-s2'],
+                action: async () => {
+                    const results = [];
+                    for (const [nodeId, url] of Object.entries(CONFIG.nodes)) {
+                        try {
+                            const response = await fetchWithTimeout(`${url}/backend/internode/health-check/`, {
+                                method: 'POST',
+                                headers: {'Authorization': `NodeToken ${CONFIG.nodeToken}`}
+                            }, CONFIG.timeout);
+                            if (response.ok) {
+                                const data = await response.json();
+                                results.push({ node: nodeId, status: data.status, online: true });
+                            } else {
+                                results.push({ node: nodeId, status: 'error', online: false });
+                            }
+                        } catch (err) {
+                            results.push({ node: nodeId, status: 'offline', online: false, error: err.message });
+                        }
+                    }
+                    return { health_checks: results, timestamp: new Date().toISOString() };
+                }
+            },
+            // Phase 2: Store Auto-Registration
+            {
+                id: 'store-registry',
+                num: 2,
+                title: 'Store Auto-Registration',
+                description: 'Verify stores have registered with their regional hub and appear in hub store lists.',
+                curls: [
+                    `curl -s http://34.136.12.86:8000/backend/hub/stores/ \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`,
+                    `curl -s http://136.115.168.184:8000/backend/hub/stores/ \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
+                ],
+                activeNodes: ['logan-hub', 'atlanta-hub'],
+                action: async () => {
+                    const results = {};
+                    for (const hubName of ['logan-hub', 'atlanta-hub']) {
+                        try {
+                            const response = await fetchWithTimeout(`${CONFIG.nodes[hubName]}/backend/hub/stores/`, {
+                                headers: {'Authorization': `NodeToken ${CONFIG.nodeToken}`}
+                            }, CONFIG.timeout);
+                            const data = await response.json();
+                            results[hubName] = data;
+                        } catch (err) {
+                            throw new Error(`Failed to fetch stores from ${hubName}: ${err.message}`);
+                        }
+                    }
+                    return { store_registries: results };
+                }
+            },
+            // Phase 3: Register Alice at Logan Store 1
+            {
+                id: 'alice-register',
+                num: 3,
+                title: 'Register Alice at Logan Store 1',
+                description: 'Alice registers with username, email, and password. Store 1 returns user_id and auth token.',
+                curls: [
+                    `curl -s -X POST http://34.55.170.11:8000/backend/auth/register/ \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "username": "alice@codepop.local",
+    "email": "alice@codepop.local",
+    "password": "testpass123",
+    "first_name": "Alice",
+    "last_name": "Test"
+  }'`
+                ],
+                activeNodes: ['logan-s1'],
+                action: async () => {
+                    try {
+                        const response = await fetchWithTimeout(`${CONFIG.nodes['logan-s1']}/backend/auth/register/`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                username: 'alice@codepop.local',
+                                email: 'alice@codepop.local',
+                                password: 'testpass123',
+                                first_name: 'Alice',
+                                last_name: 'Test'
+                            })
+                        }, CONFIG.timeout);
+                        const data = await response.json();
+                        if (data.user_id) testState.aliceUserId = data.user_id;
+                        if (data.token) testState.aliceToken = data.token;
+                        return data;
+                    } catch (err) {
+                        throw new Error(`Registration failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 4: Logan Hub Receives Alice
+            {
+                id: 'logan-hub-sync',
+                num: '4',
+                title: 'Logan Hub Receives Alice',
+                description: 'Logan Hub checks if Alice exists in its UserCache (should find her synced from Store 1).',
+                curls: [
+                    `curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=alice@codepop.local" \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
+                ],
+                activeNodes: ['logan-hub'],
+                action: async () => {
+                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['logan-hub']}/backend/hub/store-location/?email=alice@codepop.local`,
+                            { headers: {'Authorization': `NodeToken ${CONFIG.nodeToken}`} },
+                            CONFIG.timeout
+                        );
+                        return await response.json();
+                    } catch (err) {
+                        throw new Error(`Hub lookup failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 4a: Master Hub Receives Alice
+            {
+                id: 'master-hub-sync',
+                num: '4a',
+                title: 'Master Hub Receives Alice',
+                description: 'Master Hub verifies Alice exists (should have synced from Logan Hub via Celery).',
+                curls: [
+                    `curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=alice@codepop.local" \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
+                ],
+                activeNodes: ['master-hub'],
+                action: async () => {
+                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['master-hub']}/backend/hub/store-location/?email=alice@codepop.local`,
+                            { headers: {'Authorization': `NodeToken ${CONFIG.nodeToken}`} },
+                            CONFIG.timeout
+                        );
+                        return await response.json();
+                    } catch (err) {
+                        throw new Error(`Master hub lookup failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 4b: Atlanta Hub Cascades to Master for Alice
+            {
+                id: 'atlanta-cascade',
+                num: '4b',
+                title: 'Atlanta Hub Cascades to Master',
+                description: 'Atlanta Hub doesn\'t have Alice cached, so it cascades query to Master Hub. Proves cascade working.',
+                curls: [
+                    `curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=alice@codepop.local" \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
+                ],
+                activeNodes: ['atlanta-hub', 'master-hub'],
+                action: async () => {
+                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['atlanta-hub']}/backend/hub/store-location/?email=alice@codepop.local`,
+                            { headers: {'Authorization': `NodeToken ${CONFIG.nodeToken}`} },
+                            CONFIG.timeout
+                        );
+                        return await response.json();
+                    } catch (err) {
+                        throw new Error(`Cascade lookup failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 5: Inter-Node User Lookup
+            {
+                id: 'internode-lookup',
+                num: 5,
+                title: 'Inter-Node User Lookup',
+                description: 'Logan Store 2 looks up Alice (who is at Store 1) via inter-node protocol.',
+                curls: [
+                    `curl -s -X POST http://34.121.91.135:8000/backend/internode/user-lookup/ \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71" \\
+  -H "Content-Type: application/json" \\
+  -d '{"email": "alice@codepop.local", "requesting_store_id": 2}'`
+                ],
+                activeNodes: ['logan-s2'],
+                action: async () => {
+                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['logan-s2']}/backend/internode/user-lookup/`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `NodeToken ${CONFIG.nodeToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    email: 'alice@codepop.local',
+                                    requesting_store_id: 2
+                                })
+                            },
+                            CONFIG.timeout
+                        );
+                        return await response.json();
+                    } catch (err) {
+                        throw new Error(`Inter-node lookup failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 6: Visiting User Login at Logan Store 2 (proxied credential verification)
+            {
+                id: 'visiting-login',
+                num: 6,
+                title: 'Visiting User Login at Store 2',
+                description: 'Alice logs in at Store 2 using her real credentials. Store 2 proxies the password to Store 1 for verification, then issues a local token.',
+                curls: [
+                    `curl -s -X POST http://34.121.91.135:8000/backend/auth/login/ \\
+  -H "Content-Type: application/json" \\
+  -d '{"username": "alice@codepop.local", "password": "testpass123"}'`
+                ],
+                activeNodes: ['logan-s2'],
+                action: async () => {
+                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['logan-s2']}/backend/auth/login/`,
+                            {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({
+                                    username: 'alice@codepop.local',
+                                    password: 'testpass123'
+                                })
+                            },
+                            CONFIG.timeout
+                        );
+                        const data = await response.json();
+                        if (data.user_id) testState.aliceS2UserId = data.user_id;
+                        if (data.token) testState.aliceS2Token = data.token;
+                        return data;
+                    } catch (err) {
+                        throw new Error(`Visiting login failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 7: Visiting User Has No Preferences
+            {
+                id: 'visiting-prefs',
+                num: 7,
+                title: 'Visiting User Has No Preferences',
+                description: 'Verify that Alice (at Store 2) has no local preferences—she was just created there.',
+                curls: [
+                    `curl -s "http://34.121.91.135:8000/backend/users/$ALICE_S2_ID/preferences/" \\
+  -H "Authorization: Token $ALICE_S2_TOKEN"`
+                ],
+                activeNodes: ['logan-s2'],
+                action: async () => {
+                    if (!testState.aliceS2UserId || !testState.aliceS2Token) throw new Error('Run phase 6 first (visiting login at Store 2).');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['logan-s2']}/backend/users/${testState.aliceS2UserId}/preferences/`,
+                            { headers: {'Authorization': `Token ${testState.aliceS2Token}`} },
+                            CONFIG.timeout
+                        );
+                        return await response.json();
+                    } catch (err) {
+                        throw new Error(`Preference lookup failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 8: Block Duplicate Registration (Same Region)
+            {
+                id: 'dup-regional',
+                num: 8,
+                title: 'Block Duplicate (Same Region)',
+                description: 'Try registering Alice again at Logan Store 2 (same region). Should return 400.',
+                curls: [
+                    `curl -s -X POST http://34.121.91.135:8000/backend/auth/register/ \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "username": "alice@codepop.local",
+    "email": "alice@codepop.local",
+    "password": "newpass123",
+    "first_name": "AliceDup",
+    "last_name": "Duplicate"
+  }'`
+                ],
+                activeNodes: ['logan-s2'],
+                action: async () => {
+                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['logan-s2']}/backend/auth/register/`,
+                            {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({
+                                    username: 'alice@codepop.local',
+                                    email: 'alice@codepop.local',
+                                    password: 'newpass123',
+                                    first_name: 'AliceDup',
+                                    last_name: 'Duplicate'
+                                })
+                            },
+                            CONFIG.timeout
+                        );
+                        if (!response.ok) {
+                            const data = await response.json();
+                            return { status: response.status, error: data };
+                        }
+                        return await response.json();
+                    } catch (err) {
+                        throw new Error(`Duplicate check failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 8a: Block Duplicate Registration (Cross-Region)
+            {
+                id: 'dup-crossregion',
+                num: '8a',
+                title: 'Block Duplicate (Cross-Region)',
+                description: 'Try registering Alice at Atlanta Store 1 (different region). Should fail via cascade to Master.',
+                curls: [
+                    `curl -s -X POST http://136.112.202.76:8000/backend/auth/register/ \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "username": "alice@codepop.local",
+    "email": "alice@codepop.local",
+    "password": "newpass123",
+    "first_name": "AliceDup",
+    "last_name": "CrossRegion"
+  }'`
+                ],
+                activeNodes: ['atlanta-s1', 'atlanta-hub', 'master-hub'],
+                action: async () => {
+                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['atlanta-s1']}/backend/auth/register/`,
+                            {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({
+                                    username: 'alice@codepop.local',
+                                    email: 'alice@codepop.local',
+                                    password: 'newpass123',
+                                    first_name: 'AliceDup',
+                                    last_name: 'CrossRegion'
+                                })
+                            },
+                            CONFIG.timeout
+                        );
+                        if (!response.ok) {
+                            const data = await response.json();
+                            return { status: response.status, error: data };
+                        }
+                        return await response.json();
+                    } catch (err) {
+                        throw new Error(`Cross-region duplicate check failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 9: Register Bob at Atlanta Store 1
+            {
+                id: 'bob-register',
+                num: 9,
+                title: 'Register Bob at Atlanta Store 1',
+                description: 'Bob registers at Atlanta Store 1 to verify regions operate independently.',
+                curls: [
+                    `curl -s -X POST http://136.112.202.76:8000/backend/auth/register/ \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "username": "bob@codepop.local",
+    "email": "bob@codepop.local",
+    "password": "testpass456",
+    "first_name": "Bob",
+    "last_name": "Atlanta"
+  }'`
+                ],
+                activeNodes: ['atlanta-s1'],
+                action: async () => {
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['atlanta-s1']}/backend/auth/register/`,
+                            {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({
+                                    username: 'bob@codepop.local',
+                                    email: 'bob@codepop.local',
+                                    password: 'testpass456',
+                                    first_name: 'Bob',
+                                    last_name: 'Atlanta'
+                                })
+                            },
+                            CONFIG.timeout
+                        );
+                        const data = await response.json();
+                        if (data.user_id) testState.bobUserId = data.user_id;
+                        if (data.token) testState.bobToken = data.token;
+                        return data;
+                    } catch (err) {
+                        throw new Error(`Bob registration failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 10: Atlanta Hub Has Bob
+            {
+                id: 'atlanta-bob-sync',
+                num: 10,
+                title: 'Atlanta Hub Has Bob',
+                description: 'Atlanta Hub should have Bob cached after his registration at Store 1.',
+                curls: [
+                    `curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=bob@codepop.local" \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
+                ],
+                activeNodes: ['atlanta-hub'],
+                action: async () => {
+                    if (!testState.bobUserId) throw new Error('Run phase 9 first to register Bob.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['atlanta-hub']}/backend/hub/store-location/?email=bob@codepop.local`,
+                            { headers: {'Authorization': `NodeToken ${CONFIG.nodeToken}`} },
+                            CONFIG.timeout
+                        );
+                        return await response.json();
+                    } catch (err) {
+                        throw new Error(`Atlanta hub lookup failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 11: Logan Hub Finds Bob (via Master)
+            {
+                id: 'cross-region-bob',
+                num: 11,
+                title: 'Logan Hub Finds Bob (Cross-Region)',
+                description: 'Logan Hub should find Bob (registered in Atlanta) by cascading to Master Hub.',
+                curls: [
+                    `curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=bob@codepop.local" \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
+                ],
+                activeNodes: ['logan-hub', 'master-hub'],
+                action: async () => {
+                    if (!testState.bobUserId) throw new Error('Run phase 9 first to register Bob.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['logan-hub']}/backend/hub/store-location/?email=bob@codepop.local`,
+                            { headers: {'Authorization': `NodeToken ${CONFIG.nodeToken}`} },
+                            CONFIG.timeout
+                        );
+                        return await response.json();
+                    } catch (err) {
+                        throw new Error(`Cross-region Bob lookup failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 12: Atlanta Hub Finds Alice (Symmetric)
+            {
+                id: 'cross-region-alice',
+                num: 12,
+                title: 'Atlanta Hub Finds Alice (Symmetric)',
+                description: 'Atlanta Hub should find Alice (registered in Logan) by cascading to Master. Proves symmetric discovery.',
+                curls: [
+                    `curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=alice@codepop.local" \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
+                ],
+                activeNodes: ['atlanta-hub', 'master-hub'],
+                action: async () => {
+                    if (!testState.aliceUserId) throw new Error('Run phases 3 and 9 first to register both users.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['atlanta-hub']}/backend/hub/store-location/?email=alice@codepop.local`,
+                            { headers: {'Authorization': `NodeToken ${CONFIG.nodeToken}`} },
+                            CONFIG.timeout
+                        );
+                        return await response.json();
+                    } catch (err) {
+                        throw new Error(`Symmetric discovery failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 13: Alice Adds a Preference at Home Store
+            {
+                id: 'home-preference-create',
+                num: 13,
+                title: 'Alice Adds a Preference at Home Store',
+                description: 'Home-store preference creation (baseline for proxy tests). Alice creates a preference at Logan S1.',
+                curls: [
+                    `curl -s -X POST "http://127.0.0.1:8001/backend/preferences/" \\
+  -H "Authorization: Token ${testState.aliceToken || 'ALICE_TOKEN'}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"Preference": "Vanilla", "UserID": ${testState.aliceUserId || 1}}'`
+                ],
+                activeNodes: ['logan-s1'],
+                action: async () => {
+                    if (!testState.aliceToken || !testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['logan-s1']}/backend/preferences/`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Token ${testState.aliceToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    'Preference': 'Vanilla',
+                                    'UserID': testState.aliceUserId
+                                })
+                            },
+                            CONFIG.timeout
+                        );
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.detail || 'Failed to create preference');
+                        return data;
+                    } catch (err) {
+                        throw new Error(`Home preference creation failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 14: Visiting User Writes a Preference (Proxied to Home Store)
+            {
+                id: 'visiting-preference-proxy',
+                num: 14,
+                title: 'Visiting User Writes a Preference (Proxied to Home Store)',
+                description: 'Visiting-user write is proxied to home store via JWT. Alice at Logan S2 adds "Cherry" preference, which syncs to S1.',
+                curls: [
+                    `curl -s -X POST "http://127.0.0.1:8002/backend/preferences/" \\
+  -H "Authorization: Token ${testState.aliceS2Token || 'ALICE_S2_TOKEN'}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"Preference": "Cherry", "UserID": ${testState.aliceS2UserId || 2}}'`
+                ],
+                activeNodes: ['logan-s2', 'logan-s1'],
+                action: async () => {
+                    if (!testState.aliceS2Token || !testState.aliceS2UserId) throw new Error('Run phases 6 and 13 first.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['logan-s2']}/backend/preferences/`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Token ${testState.aliceS2Token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    'Preference': 'Cherry',
+                                    'UserID': testState.aliceS2UserId
+                                })
+                            },
+                            CONFIG.timeout
+                        );
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.detail || 'Failed to create preference');
+                        return data;
+                    } catch (err) {
+                        throw new Error(`Visiting preference proxy failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 15: Cross-Region Visiting Login (Alice at Atlanta Store 1)
+            {
+                id: 'cross-region-visiting-login',
+                num: 15,
+                title: 'Cross-Region Visiting Login (Alice at Atlanta Store 1)',
+                description: 'Visiting user from different region logs in. Atlanta S1 discovers Alice via hub cascade, issues JWT, creates VisitingSession.',
+                curls: [
+                    `curl -s -X POST "http://127.0.0.1:8003/backend/auth/login/" \\
+  -H "Content-Type: application/json" \\
+  -d '{"username": "alice@codepop.local", "password": "testpass123"}'`
+                ],
+                activeNodes: ['atlanta-s1', 'atlanta-hub', 'master-hub', 'logan-s1'],
+                action: async () => {
+                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['atlanta-s1']}/backend/auth/login/`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    'username': 'alice@codepop.local',
+                                    'password': 'testpass123'
+                                })
+                            },
+                            CONFIG.timeout
+                        );
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.detail || 'Login failed');
+                        testState.aliceAtlantaUserId = data.user_id;
+                        testState.aliceAtlantaToken = data.token;
+                        return data;
+                    } catch (err) {
+                        throw new Error(`Cross-region visiting login failed: ${err.message}`);
+                    }
+                }
+            },
+            // Phase 16: Cross-Region Visiting User Reads Preferences
+            {
+                id: 'cross-region-visiting-read',
+                num: 16,
+                title: 'Cross-Region Visiting User Reads Preferences',
+                description: 'Visiting user at Atlanta S1 reads preferences from JWT payload (no hop back to Logan). Should include "Vanilla" from Phase 13.',
+                curls: [
+                    `curl -s "http://127.0.0.1:8003/backend/users/${testState.aliceAtlantaUserId || 'ALICE_ATLANTA_USER_ID'}/preferences/" \\
+  -H "Authorization: Token ${testState.aliceAtlantaToken || 'ALICE_ATLANTA_TOKEN'}"`
+                ],
+                activeNodes: ['atlanta-s1'],
+                action: async () => {
+                    if (!testState.aliceAtlantaToken || !testState.aliceAtlantaUserId) throw new Error('Run phase 15 first.');
+                    try {
+                        const response = await fetchWithTimeout(
+                            `${CONFIG.nodes['atlanta-s1']}/backend/users/${testState.aliceAtlantaUserId}/preferences/`,
+                            {
+                                headers: {
+                                    'Authorization': `Token ${testState.aliceAtlantaToken}`
+                                }
+                            },
+                            CONFIG.timeout
+                        );
+                        const data = await response.json();
+                        if (!response.ok) throw new Error(data.detail || 'Failed to read preferences');
+                        return data;
+                    } catch (err) {
+                        throw new Error(`Cross-region preference read failed: ${err.message}`);
+                    }
+                }
+            }
+        ];
+
+        // Render Steps UI
+        function renderSteps() {
+            const container = document.getElementById('stepsContainer');
+            container.innerHTML = demoSteps.map((step) => `
+                <div class="step" data-step="${step.id}">
+                    <div class="step-header">
+                        <span class="step-badge">${step.num}</span>
+                        <div class="step-meta">
+                            <div class="step-title">${step.title}</div>
+                            <div class="step-description">${step.description}</div>
+                        </div>
+                    </div>
+                    <div class="step-controls">
+                        <button class="run-btn" onclick="runStep('${step.id}')">Run</button>
+                        <button class="curl-toggle" onclick="toggleCurl('${step.id}')">curl ▾</button>
+                    </div>
+                    <div class="curl-block" id="curl-${step.id}">
+                        ${step.curls.map(c => `<div class="curl-line">${escapeHtml(c)}</div>`).join('')}
+                    </div>
+                    <div class="response-panel" id="response-${step.id}">Waiting for request...</div>
+                </div>
+            `).join('');
+        }
+
+        function toggleCurl(stepId) {
+            const elem = document.getElementById(`curl-${stepId}`);
+            elem.classList.toggle('show');
+        }
+
+        async function runStep(stepId) {
+            const step = demoSteps.find(s => s.id === stepId);
+            const responseElem = document.getElementById(`response-${stepId}`);
+            const stepElem = document.querySelector(`[data-step="${stepId}"]`);
+
+            // Clear active nodes
+            document.querySelectorAll('.node-active').forEach(n => n.classList.remove('node-active'));
+
+            // Highlight active nodes
+            step.activeNodes.forEach(nodeId => {
+                const node = document.getElementById(nodeId);
+                if (node) node.classList.add('node-active');
+            });
+
+            // Mark step as active
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            stepElem.classList.add('active');
+
+            responseElem.textContent = 'Running...';
+            responseElem.classList.remove('error');
+
+            try {
+                const response = await step.action();
+                const jsonStr = JSON.stringify(response, null, 2);
+                responseElem.innerHTML = syntaxHighlight(jsonStr);
+                responseElem.classList.remove('error');
+            } catch (err) {
+                responseElem.innerHTML = `<span style="color: #fca5a5;">Error: ${escapeHtml(err.message)}</span>`;
+                responseElem.classList.add('error');
+            }
+        }
+
+        function resetDemo() {
+            document.querySelectorAll('.node-active').forEach(n => n.classList.remove('node-active'));
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.response-panel').forEach(r => r.textContent = 'Waiting for request...');
+            document.querySelectorAll('.curl-block').forEach(c => c.classList.remove('show'));
+            testState = {
+                aliceUserId: null,
+                aliceToken: null,
+                aliceS2UserId: null,
+                aliceS2Token: null,
+                bobUserId: null,
+                bobToken: null,
+                aliceAtlantaUserId: null,
+                aliceAtlantaToken: null
+            };
+            updateStatus();
+        }
+
+        function syntaxHighlight(json) {
+            // First escape HTML
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            // Then apply syntax highlighting while preserving whitespace
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                var cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/^(true|false)$/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/^null$/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function updateStatus() {
+            const statusDiv = document.getElementById('statusContainer');
+            statusDiv.innerHTML = `<span class="status-indicator"></span><span id="statusText">Ready for requests</span>`;
+        }
+
+        // Initialize
+        renderSteps();
+        updateStatus();
+    </script>
+</body>
+</html>

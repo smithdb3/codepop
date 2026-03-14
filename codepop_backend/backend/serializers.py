@@ -27,7 +27,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A user with that email already exists.")
 
         # Check if email exists on hub (for cross-region uniqueness)
-        if settings.HUB_URL and not settings.IS_MASTER:
+        if settings.HUB_URL:
             try:
                 hub_url = settings.HUB_URL.rstrip('/')
 
