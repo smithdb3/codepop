@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,7 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-20c3kbxd-=q$-6^1^i@6u)jklu(js%g87$9sko85kirto!8afv')
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured("SECRET_KEY must be set in environment variables (.env file)")
 
 # Stripe Configuration
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'TODO: get a new secret stripe key')
@@ -32,9 +35,9 @@ STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'TODO: get a new pu
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -115,7 +118,6 @@ LONGITUDE = float(os.getenv('LONGITUDE', '0.0'))
 INTER_NODE_SECRET = os.getenv('INTER_NODE_SECRET', '')
 
 # Validate INTER_NODE_SECRET is set for distributed deployments
-from django.core.exceptions import ImproperlyConfigured
 if not INTER_NODE_SECRET and (IS_HUB or HUB_URL):
     raise ImproperlyConfigured(
         "INTER_NODE_SECRET must be set in .env for distributed deployments. "
@@ -195,11 +197,9 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TIMEZONE = 'UTC'
 
 # Celery Beat: Periodic tasks
+# NOTE: register_with_hub is NOT on a beat schedule. It's triggered once on app startup
+# via apps.py BackendConfig.ready() with exponential backoff until the hub is reachable.
 CELERY_BEAT_SCHEDULE = {
-    'register-with-hub-every-5-minutes': {
-        'task': 'backend.tasks.register_with_hub',
-        'schedule': 300.0,  # every 5 minutes; also fires immediately on first startup
-    },
     'heartbeat-every-30-seconds': {
         'task': 'backend.tasks.heartbeat_task',
         'schedule': 30.0,  # every 30 seconds

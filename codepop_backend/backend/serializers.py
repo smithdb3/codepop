@@ -30,10 +30,21 @@ class CreateUserSerializer(serializers.ModelSerializer):
         if settings.HUB_URL and not settings.IS_MASTER:
             try:
                 hub_url = settings.HUB_URL.rstrip('/')
+
+                # Use per-node secret from HubRegistry if available; fall back to global secret
+                node_secret = settings.INTER_NODE_SECRET
+                try:
+                    from .models import HubRegistry
+                    hub_reg = HubRegistry.objects.filter(is_active=True).first()
+                    if hub_reg and hub_reg.issued_secret:
+                        node_secret = hub_reg.issued_secret
+                except Exception:
+                    pass
+
                 hub_resp = requests.get(
                     f"{hub_url}/backend/hub/store-location/",
                     params={"email": value},
-                    headers={"Authorization": f"NodeToken {settings.INTER_NODE_SECRET}"},
+                    headers={"Authorization": f"NodeToken {node_secret}"},
                     timeout=5,
                 )
                 if hub_resp.status_code == 200:

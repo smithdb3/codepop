@@ -59,39 +59,41 @@ class NodeTokenAuthentication(BaseAuthentication):
         """
         Validate the token against NodeCertificate table or settings.INTER_NODE_SECRET.
 
-        Returns (synthetic_user, token) tuple.
+        Correct lookup order:
+        1. Check NodeCertificate table first (per-node secrets issued during registration)
+        2. Fall back to settings.INTER_NODE_SECRET (bootstrap/global fallback)
+        3. Raise AuthenticationFailed if neither match
+
+        Returns (synthetic_user, token) tuple with node_id and node_type set.
         Raises AuthenticationFailed if token is invalid.
         """
-        # Sprint 3: First check against settings.INTER_NODE_SECRET (simple shared secret)
-        if settings.INTER_NODE_SECRET:
-            if key == settings.INTER_NODE_SECRET:
-                # Create a synthetic user object for DRF permission system
-                from django.contrib.auth.models import AnonymousUser
-                synthetic_user = AnonymousUser()
-                synthetic_user.is_node = True  # Mark as inter-node request
-                return (synthetic_user, key)
-            else:
-                # Shared secret is configured but token doesn't match — reject immediately
-                raise AuthenticationFailed("Invalid NodeToken.")
+        from django.contrib.auth.models import AnonymousUser
 
-        # Future: Check against NodeCertificate table
-        # For now, we skip this and only use the settings secret
+        # Step 1: Check NodeCertificate table for per-node secrets
         try:
             cert = NodeCertificate.objects.get(
                 shared_secret=key,
                 is_active=True,
                 expires_at__gt=timezone.now(),
             )
-            # Valid certificate found
-            from django.contrib.auth.models import AnonymousUser
+            # Valid per-node certificate found
             synthetic_user = AnonymousUser()
             synthetic_user.is_node = True
             synthetic_user.node_id = cert.node_id
+            synthetic_user.node_type = cert.node_type
             return (synthetic_user, key)
         except NodeCertificate.DoesNotExist:
             pass
 
-        # No valid token found
+        # Step 2: Fall back to global INTER_NODE_SECRET (bootstrap only)
+        if settings.INTER_NODE_SECRET and key == settings.INTER_NODE_SECRET:
+            synthetic_user = AnonymousUser()
+            synthetic_user.is_node = True
+            synthetic_user.node_id = "global"  # Indicates global fallback was used
+            synthetic_user.node_type = None
+            return (synthetic_user, key)
+
+        # Step 3: No valid token found
         raise AuthenticationFailed("Invalid or expired NodeToken.")
 
     def authenticate_header(self, request):
@@ -113,3 +115,64 @@ class IsInterNodeRequest(BasePermission):
         """Check if the request is from another node."""
         # NodeTokenAuthentication sets is_node=True on synthetic user
         return hasattr(request.user, "is_node") and request.user.is_node
+
+
+def get_node_id_from_request(request):
+    """
+    Extract the node_id from an inter-node authenticated request.
+
+    Returns the node_id if available (from NodeCertificate), or "global" if
+    the global INTER_NODE_SECRET was used for auth.
+
+    Useful for audit logging and tracking which node made the request.
+    """
+    if hasattr(request.user, "node_id"):
+        return request.user.node_id
+    return "unknown"
+
+
+# ============================================================================
+# JWT Token Helpers for Visiting User Authentication
+# ============================================================================
+
+import jwt as pyjwt
+
+
+def jwt_sign(payload: dict, secret: str, expires_in_hours: int = 24) -> str:
+    """
+    Sign a payload as HMAC-SHA256 JWT. Adds iat and exp claims automatically.
+
+    Args:
+        payload: Dictionary to encode in the JWT
+        secret: Shared secret for HMAC-SHA256 signing
+        expires_in_hours: Token lifetime in hours (default 24h)
+
+    Returns:
+        Signed JWT token as string
+    """
+    import time
+    now = int(time.time())
+    payload_with_claims = {
+        **payload,
+        "iat": now,
+        "exp": now + (expires_in_hours * 3600),
+    }
+    return pyjwt.encode(payload_with_claims, secret, algorithm="HS256")
+
+
+def jwt_verify(token: str, secret: str) -> dict:
+    """
+    Decode and verify a JWT. Returns the payload dict on success.
+
+    Args:
+        token: JWT token string
+        secret: Shared secret for HMAC-SHA256 verification
+
+    Returns:
+        Decoded payload dictionary
+
+    Raises:
+        jwt.ExpiredSignatureError: Token has expired
+        jwt.InvalidTokenError: Token signature or format is invalid
+    """
+    return pyjwt.decode(token, secret, algorithms=["HS256"])

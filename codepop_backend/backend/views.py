@@ -11,7 +11,8 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order, Revenue, UserCache, EventQueue
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue, UserCache, EventQueue, VisitingSession, HubRegistry, StoreRegistry
+from datetime import datetime, timedelta, timezone as dt_timezone
 from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import stripe
@@ -32,6 +33,69 @@ logger = logging.getLogger(__name__)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+# ============================================================================
+# Helper Functions for Distributed System & Visiting User Auth
+# ============================================================================
+
+def _get_node_secret():
+    """
+    Return per-node secret from HubRegistry if available, else global INTER_NODE_SECRET.
+    Falls back to global secret during bootstrap or if hub is not yet registered.
+    """
+    try:
+        hub_reg = HubRegistry.objects.filter(is_active=True).first()
+        if hub_reg and hub_reg.issued_secret:
+            return hub_reg.issued_secret
+    except Exception:
+        pass
+    return settings.INTER_NODE_SECRET
+
+
+def _discover_home_store(email):
+    """
+    Discover the home store endpoint for a user email.
+    Checks local UserCache first, then queries the hub.
+    Returns home_store_endpoint string, or None if not found.
+    """
+    # Step 1: Check local routing cache
+    try:
+        entry = UserCache.objects.get(user_email=email, expires_at__gt=timezone.now())
+        if entry.home_store_endpoint:
+            return entry.home_store_endpoint
+    except UserCache.DoesNotExist:
+        pass
+
+    # Step 2: Query hub for cross-region discovery
+    if not settings.HUB_URL:
+        return None
+
+    try:
+        resp = requests.post(
+            f"{settings.HUB_URL.rstrip('/')}/backend/internode/user-lookup/",
+            json={"email": email, "requesting_store_id": int(settings.STORE_ID)},
+            headers={"Authorization": f"NodeToken {_get_node_secret()}"},
+            timeout=5,
+        )
+        if resp.status_code == 200 and resp.json().get("status") == "found":
+            data = resp.json()
+            endpoint = data.get("home_store_endpoint")
+            # Cache the routing pointer locally
+            UserCache.objects.update_or_create(
+                user_email=email,
+                defaults={
+                    "user_id": data.get("user_id"),
+                    "home_store_id": data.get("home_store_id", 0),
+                    "home_store_endpoint": endpoint,
+                    "expires_at": timezone.now() + timedelta(hours=24),
+                }
+            )
+            return endpoint
+    except Exception:
+        pass
+
+    return None
+
+
 class IsSuperUser(BasePermission):
     """
     Custom permission to allow access only to superusers.
@@ -41,102 +105,151 @@ class IsSuperUser(BasePermission):
         # Check if the user is authenticated and a superuser
         return request.user and request.user.is_authenticated and request.user.is_superuser
     
-#Custom login to so that it get's a token but also the user's first name and the user id
+#Custom login token endpoint with JWT support for visiting users
 class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
 
-        # Try local authentication first
+        # --- Step 1: Try local authentication (home store users) ---
         try:
             serializer.is_valid(raise_exception=True)
             user = serializer.validated_data['user']
-            token, created = Token.objects.get_or_create(user=user)
+            token, _ = Token.objects.get_or_create(user=user)
             return Response({
                 'token': token.key,
                 'user_id': user.pk,
                 'first_name': user.first_name,
-                'is_admin' : user.is_superuser,
-                'is_manager' : user.is_staff,
+                'is_admin': user.is_superuser,
+                'is_manager': user.is_staff,
             })
         except Exception as e:
-            # Local auth failed — check if user exists in cache (visiting user from another store)
-            email = request.data.get('username')  # Username can be email
-            if email and '@' in str(email):  # Looks like an email
-                try:
-                    cache_entry = UserCache.objects.get(
-                        user_email=email,
-                        expires_at__gt=timezone.now()
-                    )
-                    # Found user in cache — recreate locally for this store
-                    user_data = cache_entry.user_data
-                    user, created = User.objects.get_or_create(
-                        email=email,
-                        defaults={
-                            'username': email,
-                            'first_name': user_data.get('first_name', ''),
-                            'last_name': user_data.get('last_name', ''),
-                        }
-                    )
-                    # Note: password is not synced (users use separate auth per store for now)
-                    # Set an unusable password to prevent password-based login
-                    if created:
-                        user.set_unusable_password()
-                        user.save()
+            pass  # Fall through to visiting-user path
 
-                    token, created = Token.objects.get_or_create(user=user)
-                    return Response({
-                        'token': token.key,
-                        'user_id': user.pk,
-                        'first_name': user.first_name,
-                        'is_admin': user.is_superuser,
-                        'is_manager': user.is_staff,
-                    })
-                except UserCache.DoesNotExist:
-                    pass  # Fall through to original error
+        # --- Step 2: Visiting user path (email-based, JWT auth from home store) ---
+        email = request.data.get('username')
+        password = request.data.get('password')
 
-            # Re-raise original auth error
-            raise e
+        if not (email and '@' in str(email)):
+            # Not an email login, re-raise original error
+            serializer.is_valid(raise_exception=True)
+
+        # Step 2a: Discover home store endpoint
+        home_endpoint = _discover_home_store(email)
+        if not home_endpoint:
+            return Response(
+                {'error': 'User not found or home store unreachable.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Step 2b: Call home store's issue-token endpoint to get JWT
+        try:
+            node_secret = _get_node_secret()
+            resp = requests.post(
+                f"{home_endpoint.rstrip('/')}/backend/internode/issue-token/",
+                json={'email': email, 'password': password},
+                headers={'Authorization': f'NodeToken {node_secret}'},
+                timeout=5,
+            )
+        except requests.RequestException:
+            return Response(
+                {'error': 'Home store unreachable. Please try again later.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        if resp.status_code != 200 or not resp.json().get('jwt'):
+            # Authentication failed at home store
+            return Response(
+                {'error': 'Invalid credentials.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        data = resp.json()
+        jwt_token = data['jwt']
+
+        # Step 2c: Validate JWT locally
+        from .internode_auth import jwt_verify
+        try:
+            payload = jwt_verify(jwt_token, settings.INTER_NODE_SECRET)
+        except Exception:
+            return Response(
+                {'error': 'Home store issued invalid token.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        # Step 2d: Get or create shadow user locally (for DRF token compatibility)
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                'username': email,
+                'first_name': payload.get('first_name', ''),
+                'last_name': payload.get('last_name', ''),
+            }
+        )
+        if created:
+            user.set_unusable_password()
+            user.save()
+
+        # Step 2e: Create VisitingSession linking local DRF token to JWT
+        token, _ = Token.objects.get_or_create(user=user)
+        VisitingSession.objects.update_or_create(
+            token=token,
+            defaults={
+                'canonical_user_id': payload['user_id'],
+                'home_store_id': payload.get('home_store_id', 0),
+                'home_store_endpoint': payload['home_store_endpoint'],
+                'jwt_payload': payload,
+                'jwt_expires_at': datetime.fromtimestamp(payload['exp'], tz=dt_timezone.utc),
+            }
+        )
+
+        return Response({
+            'token': token.key,
+            'user_id': payload['user_id'],   # CANONICAL home-store pk
+            'first_name': payload.get('first_name', ''),
+            'is_admin': payload.get('is_admin', False),
+            'is_manager': payload.get('is_manager', False),
+        })
 
 def _get_user_with_cache_fallback(user_id):
     """
-    Lookup a user by PK, with fallback to UserCache for visiting users.
-    Returns (user, is_from_cache) tuple, or raises Http404 if not found.
+    Lookup a user by canonical ID.
+    - Local user → return User object (is_from_cache=False)
+    - Visiting user with active VisitingSession → return jwt_payload dict (is_from_cache=True)
+    - Not found → raise Http404
     """
+    from django.http import Http404
+
+    # Local user first
     try:
-        # Try local lookup first
-        user = User.objects.get(pk=user_id)
-        return (user, False)
+        return (User.objects.get(pk=user_id), False)
     except User.DoesNotExist:
-        # Check UserCache for visiting users
-        cache_entries = UserCache.objects.filter(
-            expires_at__gt=timezone.now()
-        ).values_list('user_data', flat=True)
+        pass
 
-        for user_data in cache_entries:
-            if user_data.get('user_id') == user_id:
-                # Found in cache — return the cached data wrapped as a user-like object
-                return (user_data, True)
+    # Visiting user: find VisitingSession by canonical_user_id
+    session = VisitingSession.objects.filter(
+        canonical_user_id=user_id,
+        jwt_expires_at__gt=timezone.now()
+    ).select_related('token__user').first()
+    if session:
+        return (session.jwt_payload, True)
 
-        # Not found anywhere
-        from django.http import Http404
-        raise Http404(f"User with id {user_id} not found")
+    raise Http404(f"User {user_id} not found")
 
 
 def _refresh_user_cache(user):
-    """Rebuild the UserCache entry for a user after preferences or favorites change."""
-    try:
-        cache_entry = UserCache.objects.get(user_email=user.email)
-    except UserCache.DoesNotExist:
-        return
-    preferences = list(Preference.objects.filter(UserID=user).values_list('Preference', flat=True))
-    favorite_drink_ids = list(Drink.objects.filter(Favorite=user).values_list('DrinkID', flat=True))
-    cache_entry.user_data = {
-        "user_id": user.pk,
-        "email": user.email,
-        "preferences": preferences,
-        "favorite_drinks": favorite_drink_ids,
-    }
-    cache_entry.save()
+    """
+    Update the routing cache entry for a home-store user.
+    This user is a home user at the current store, so cache a routing pointer to this store.
+    """
+    UserCache.objects.update_or_create(
+        user_email=user.email,
+        defaults={
+            "user_id": user.pk,
+            "home_store_id": int(settings.STORE_ID),
+            "home_store_endpoint": settings.API_ENDPOINT,
+            "expires_at": timezone.now() + timedelta(days=365 * 10),
+        }
+    )
 
 
 #Code to create a user in the database
@@ -158,19 +271,7 @@ class CreateUserAPIView(CreateAPIView):
         }
 
         # Auto-create UserCache entry for newly registered user
-        UserCache.objects.update_or_create(
-            user_email=serializer.instance.email,
-            defaults={
-                "user_data": {
-                    "user_id": serializer.instance.pk,
-                    "email": serializer.instance.email,
-                    "preferences": [],
-                    "favorite_drinks": [],
-                },
-                "source_store_id": int(settings.STORE_ID),
-                "expires_at": timezone.now() + timezone.timedelta(days=365 * 10),
-            }
-        )
+        _refresh_user_cache(serializer.instance)
 
         # Queue routing pointer sync to upstream hub
         if settings.HUB_URL and not settings.IS_MASTER:
@@ -179,13 +280,10 @@ class CreateUserAPIView(CreateAPIView):
                 status="pending",
                 target_node=f"{settings.HUB_URL.rstrip('/')}/backend/internode/user-sync/",
                 payload={
-                    "user_data": {
-                        "user_id": serializer.instance.pk,
-                        "email": serializer.instance.email,
-                        "preferences": [],
-                        "favorite_drinks": [],
-                    },
-                    "source_store_id": int(settings.STORE_ID),
+                    "email": serializer.instance.email,
+                    "user_id": serializer.instance.pk,
+                    "home_store_id": int(settings.STORE_ID),
+                    "home_store_endpoint": settings.API_ENDPOINT,
                 },
             )
 
@@ -208,7 +306,18 @@ class PreferencesOperations(viewsets.ModelViewSet):
     serializer_class = PreferenceSerializer
     permission_classes = [IsAuthenticated]
 
+    def _get_visiting_session(self, request):
+        """Return VisitingSession if current user is visiting, else None."""
+        try:
+            return request.user.auth_token.visiting_session
+        except (AttributeError, VisitingSession.DoesNotExist):
+            return None
+
     def create(self, request, *args, **kwargs):
+        session = self._get_visiting_session(request)
+        if session and not session.is_expired():
+            return self._proxy_preference_write(session, 'add', request.data)
+        # Normal local write
         response = super().create(request, *args, **kwargs)
         preference_id = response.data.get('PreferenceID')
         if preference_id:
@@ -216,31 +325,79 @@ class PreferencesOperations(viewsets.ModelViewSet):
             _refresh_user_cache(pref.UserID)
         return response
 
-    def update(self, request, *args, **kwargs):
-        # Get the preference object before update to know which user to refresh
-        pref = self.get_object()
-        user = pref.UserID
-        response = super().update(request, *args, **kwargs)
-        _refresh_user_cache(user)
-        return response
-
     def destroy(self, request, *args, **kwargs):
+        session = self._get_visiting_session(request)
+        if session and not session.is_expired():
+            pref = self.get_object()
+            return self._proxy_preference_write(session, 'remove', {'Preference': pref.Preference})
         pref = self.get_object()
         user = pref.UserID
         response = super().destroy(request, *args, **kwargs)
         _refresh_user_cache(user)
         return response
 
+    def _proxy_preference_write(self, session, action, preference_data):
+        """Send preference change to home store, update VisitingSession with new JWT."""
+        try:
+            node_secret = _get_node_secret()
+            resp = requests.post(
+                f"{session.home_store_endpoint.rstrip('/')}/backend/internode/user-preferences/update/",
+                json={
+                    'email': session.jwt_payload['email'],
+                    'action': action,
+                    'preference': preference_data.get('Preference', ''),
+                },
+                headers={'Authorization': f'NodeToken {node_secret}'},
+                timeout=5,
+            )
+        except requests.RequestException:
+            return Response(
+                {'error': 'Home store unreachable. Preferences can only be changed at your home store right now.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        if resp.status_code != 200:
+            return Response({'error': 'Failed to update preference at home store.'}, status=resp.status_code)
+
+        data = resp.json()
+        # Update VisitingSession with refreshed JWT payload
+        from .internode_auth import jwt_verify
+        try:
+            new_payload = jwt_verify(data['jwt'], settings.INTER_NODE_SECRET)
+            session.jwt_payload = new_payload
+            session.jwt_expires_at = datetime.fromtimestamp(new_payload['exp'], tz=dt_timezone.utc)
+            session.save(update_fields=['jwt_payload', 'jwt_expires_at'])
+        except Exception:
+            pass  # JWT refresh failed; stale but not fatal
+
+        return Response({'preferences': data.get('preferences', [])}, status=status.HTTP_200_OK)
+
 class UserPreferenceLookup(ListAPIView):
     serializer_class = PreferenceSerializer
     permission_classes = [IsAuthenticated]
 
-    # Override get_queryset to filter preferences by the provided UserID
-    def get_queryset(self):
-        user_id = self.kwargs['user_id']  # Retrieve the 'user_id' from the URL
-        # Check if the user exists first, and raise a 404 if not
+    def list(self, request, *args, **kwargs):
+        user_id = self.kwargs['user_id']
+
+        # Check if this is a visiting user with an active session
+        session = VisitingSession.objects.filter(
+            canonical_user_id=user_id,
+            jwt_expires_at__gt=timezone.now()
+        ).first()
+
+        if session:
+            # Serve preferences from JWT payload (no DB call to home store needed)
+            prefs = session.jwt_payload.get('preferences', [])
+            return Response([
+                {'PreferenceID': None, 'UserID': user_id, 'Preference': p}
+                for p in prefs
+            ])
+
+        # Local user: normal DB query
         user = get_object_or_404(User, pk=user_id)
-        return Preference.objects.filter(UserID=user_id)
+        queryset = Preference.objects.filter(UserID=user_id)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
     
 from rest_framework import status, viewsets
 from rest_framework.response import Response
@@ -271,25 +428,32 @@ class DrinkOperations(viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         """
         Custom update method to handle updating a drink's fields, favorites, and validation.
+        For visiting users, proxies favorite changes to home store.
         """
-        # Retrieve the drink object to be updated
-        drink = self.get_object()
+        favorite_to_add = request.data.get("addFavorite")
+        favorite_to_remove = request.data.get("removeFavorite")
+        affected_user_id = favorite_to_add or favorite_to_remove
 
-        # Use the serializer to validate and update the data
+        # If this is a favorite change for a visiting user, proxy to home store
+        if affected_user_id:
+            session = VisitingSession.objects.filter(
+                canonical_user_id=affected_user_id,
+                jwt_expires_at__gt=timezone.now()
+            ).select_related('token').first()
+            if session:
+                action = 'add' if favorite_to_add else 'remove'
+                drink = self.get_object()
+                return self._proxy_favorite_write(session, action, drink.DrinkID)
+
+        # Normal local path (home users)
+        drink = self.get_object()
         serializer = self.get_serializer(drink, data=request.data)
 
-        # Validate the data (including Ice and Size field checks)
         if serializer.is_valid():
-            # If valid, update the fields
-            # Explicitly update fields from request data if they exist on the drink model
             for field, value in request.data.items():
                 if hasattr(drink, field):
                     setattr(drink, field, value)
 
-            # Handle adding/removing favorites
-            favorite_to_add = request.data.get("addFavorite", [])
-            favorite_to_remove = request.data.get("removeFavorite", [])
-            
             if favorite_to_add:
                 drink.addFavorite(favorite_to_add)
                 try:
@@ -303,14 +467,40 @@ class DrinkOperations(viewsets.ModelViewSet):
                 except User.DoesNotExist:
                     pass
 
-            # Save the updated drink
             drink.save()
-
-            # Return the updated drink data using the serializer
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            # Return a 400 Bad Request if validation fails
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def _proxy_favorite_write(self, session, action, drink_id):
+        """Send favorite change to home store, update VisitingSession with new JWT."""
+        try:
+            resp = requests.post(
+                f"{session.home_store_endpoint.rstrip('/')}/backend/internode/user-favorites/update/",
+                json={
+                    'email': session.jwt_payload['email'],
+                    'action': action,
+                    'drink_id': drink_id,
+                },
+                headers={'Authorization': f'NodeToken {_get_node_secret()}'},
+                timeout=5,
+            )
+        except requests.RequestException:
+            return Response({'error': 'Home store unreachable.'}, status=503)
+
+        if resp.status_code != 200:
+            return Response({'error': 'Failed to update favorite at home store.'}, status=resp.status_code)
+
+        data = resp.json()
+        from .internode_auth import jwt_verify
+        try:
+            new_payload = jwt_verify(data['jwt'], settings.INTER_NODE_SECRET)
+            session.jwt_payload = new_payload
+            session.jwt_expires_at = datetime.fromtimestamp(new_payload['exp'], tz=dt_timezone.utc)
+            session.save(update_fields=['jwt_payload', 'jwt_expires_at'])
+        except Exception:
+            pass
+        return Response({'favorite_drinks': data.get('favorite_drinks', [])}, status=200)
 
     def destroy(self, request, *args, **kwargs):
         # Custom logic for deleting a drink (optional for customization)
@@ -320,13 +510,27 @@ class UserDrinksLookup(ListAPIView):
     serializer_class = DrinkSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        """
-        Retrieve drinks that are marked as favorites by the provided user ID.
-        """
-        user_id = self.kwargs['user_id']  # Retrieve the 'user_id' from the URL
+    def list(self, request, *args, **kwargs):
+        user_id = self.kwargs['user_id']
+
+        session = VisitingSession.objects.filter(
+            canonical_user_id=user_id,
+            jwt_expires_at__gt=timezone.now()
+        ).first()
+
+        if session:
+            # Favorite drink IDs are from the home store's catalog.
+            # Look up matching drinks in local catalog by DrinkID.
+            favorite_ids = session.jwt_payload.get('favorite_drinks', [])
+            queryset = Drink.objects.filter(DrinkID__in=favorite_ids)
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+
+        # Local user
         user = get_object_or_404(User, pk=user_id)
-        return Drink.objects.filter(Favorite=user_id)
+        queryset = Drink.objects.filter(Favorite=user_id)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class InventoryListAPIView(ListAPIView):
@@ -901,7 +1105,7 @@ class HubRegisterView(APIView):
             )
 
             # Issue a unique per-node secret for this store
-            cert_expires = timezone.now() + timezone.timedelta(days=90)
+            cert_expires = timezone.now() + timedelta(days=90)
             node_secret = secrets_module.token_hex(32)
             NodeCertificate.objects.update_or_create(
                 node_id=f"store-{store_id}",
@@ -910,6 +1114,21 @@ class HubRegisterView(APIView):
                     "shared_secret": node_secret,
                     "expires_at": cert_expires,
                     "is_active": True,
+                }
+            )
+
+            # Also register ourselves (the hub) in HubRegistry on the registering store's behalf
+            # So they know about us and can use our issued_secret for heartbeats
+            from .models import HubRegistry
+            HubRegistry.objects.update_or_create(
+                hub_id=int(settings.STORE_ID),
+                defaults={
+                    "hub_name": settings.STORE_NAME,
+                    "region": settings.REGION,
+                    "api_endpoint": settings.API_ENDPOINT,
+                    "is_master": settings.IS_MASTER,
+                    "is_active": True,
+                    "issued_secret": node_secret,
                 }
             )
 
@@ -923,6 +1142,10 @@ class HubRegisterView(APIView):
                 {
                     "status": "registered",
                     "node_secret": node_secret,
+                    "hub_id": int(settings.STORE_ID),
+                    "hub_name": settings.STORE_NAME,
+                    "region": settings.REGION,
+                    "is_master": settings.IS_MASTER,
                     "certificate_expires": cert_expires.isoformat(),
                     "sibling_stores": list(sibling_stores),
                 },
@@ -954,23 +1177,25 @@ class HubHeartbeatView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Update heartbeat timestamp
-            store_registry = StoreRegistry.objects.get(store_id=store_id)
-            store_registry.last_heartbeat = timezone.now()
-            store_registry.is_active = True
-            store_registry.save()
+            # Update heartbeat timestamp using bulk update (efficient, single DB query)
+            now = timezone.now()
+            updated = StoreRegistry.objects.filter(store_id=store_id).update(
+                last_heartbeat=now,
+                is_active=True,
+            )
+
+            if not updated:
+                return Response(
+                    {"error": "Store not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
             return Response(
                 {
                     "status": "ok",
-                    "timestamp": timezone.now().isoformat(),
+                    "timestamp": now.isoformat(),
                 },
                 status=status.HTTP_200_OK
-            )
-        except StoreRegistry.DoesNotExist:
-            return Response(
-                {"error": "Store not found"},
-                status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
             return Response(
@@ -1027,7 +1252,7 @@ class HubStoreLocationView(APIView):
                 user_cache = UserCache.objects.get(user_email=email, expires_at__gt=timezone.now())
                 # Found cached user; return source store info
                 try:
-                    source_store = StoreRegistry.objects.get(store_id=user_cache.source_store_id)
+                    source_store = StoreRegistry.objects.get(store_id=user_cache.home_store_id)
                     return Response(
                         {
                             "status": "found",
@@ -1037,13 +1262,13 @@ class HubStoreLocationView(APIView):
                         status=status.HTTP_200_OK
                     )
                 except StoreRegistry.DoesNotExist:
-                    # Store not in local registry — try endpoint embedded in user_data
-                    api_endpoint = user_cache.user_data.get("store_api_endpoint", "")
+                    # Store not in local registry — use endpoint directly
+                    api_endpoint = user_cache.home_store_endpoint
                     if api_endpoint:
                         return Response(
                             {
                                 "status": "found",
-                                "store_id": user_cache.source_store_id,
+                                "store_id": user_cache.home_store_id,
                                 "api_endpoint": api_endpoint,
                             },
                             status=status.HTTP_200_OK
@@ -1059,7 +1284,7 @@ class HubStoreLocationView(APIView):
                         master_resp = requests.get(
                             f"{settings.HUB_URL.rstrip('/')}/backend/hub/store-location/",
                             params={"email": email},
-                            headers={"Authorization": f"NodeToken {settings.INTER_NODE_SECRET}"},
+                            headers={"Authorization": f"NodeToken {_get_node_secret()}"},
                             timeout=5,
                         )
                         if master_resp.status_code == 200 and master_resp.json().get("status") == "found":
@@ -1162,8 +1387,8 @@ class InterNodeUserLookupView(APIView):
                 user_cache = UserCache.objects.get(user_email=email, expires_at__gt=timezone.now())
                 # Refresh TTL on cache hit if close to expiry (within 6 hours).
                 # Skips home-store entries (10-year TTL) since they're never close.
-                if user_cache.expires_at < timezone.now() + timezone.timedelta(hours=6):
-                    user_cache.expires_at = timezone.now() + timezone.timedelta(hours=24)
+                if user_cache.expires_at < timezone.now() + timedelta(hours=6):
+                    user_cache.expires_at = timezone.now() + timedelta(hours=24)
                     user_cache.save(update_fields=['expires_at'])
                 SyncRecord.objects.create(
                     sync_type="user_pull",
@@ -1174,8 +1399,9 @@ class InterNodeUserLookupView(APIView):
                 return Response(
                     {
                         "status": "found",
-                        "user": user_cache.user_data,
-                        "located_at_store_id": user_cache.source_store_id,
+                        "user_id": user_cache.user_id,
+                        "home_store_id": user_cache.home_store_id,
+                        "home_store_endpoint": user_cache.home_store_endpoint,
                     },
                     status=status.HTTP_200_OK
                 )
@@ -1185,17 +1411,6 @@ class InterNodeUserLookupView(APIView):
             # Check local users (home store)
             try:
                 user = User.objects.get(email=email)
-                # Construct user profile response
-                user_profile = {
-                    "user_id": user.pk,
-                    "email": user.email,
-                    "preferences": list(
-                        Preference.objects.filter(UserID=user).values_list("Preference", flat=True)
-                    ),
-                    "favorite_drinks": list(
-                        Drink.objects.filter(Favorite=user).values_list("DrinkID", flat=True)
-                    ),
-                }
                 SyncRecord.objects.create(
                     sync_type="user_pull",
                     source_store_id=requesting_store_id,
@@ -1205,8 +1420,9 @@ class InterNodeUserLookupView(APIView):
                 return Response(
                     {
                         "status": "found",
-                        "user": user_profile,
-                        "located_at_store_id": request.node_identity["store_id"],
+                        "user_id": user.pk,
+                        "home_store_id": int(settings.STORE_ID),
+                        "home_store_endpoint": settings.API_ENDPOINT,
                     },
                     status=status.HTTP_200_OK
                 )
@@ -1226,14 +1442,14 @@ class InterNodeUserLookupView(APIView):
                     if hub_resp.status_code == 200:
                         hub_data = hub_resp.json()
                         if hub_data.get("status") == "found":
-                            # Cache the result locally for faster future lookups
-                            user_data = hub_data.get("user", {})
+                            # Cache the routing pointer locally for faster future lookups
                             UserCache.objects.update_or_create(
                                 user_email=email,
                                 defaults={
-                                    "user_data": user_data,
-                                    "source_store_id": hub_data.get("located_at_store_id", requesting_store_id),
-                                    "expires_at": timezone.now() + timezone.timedelta(hours=24),
+                                    "user_id": hub_data.get("user_id"),
+                                    "home_store_id": hub_data.get("home_store_id", 0),
+                                    "home_store_endpoint": hub_data.get("home_store_endpoint", ""),
+                                    "expires_at": timezone.now() + timedelta(hours=24),
                                 }
                             )
                             return Response(hub_data, status=status.HTTP_200_OK)
@@ -1257,58 +1473,59 @@ class InterNodeUserSyncView(APIView):
     """
     POST /backend/internode/user-sync/
 
-    Peer store receives user profile replicated from another store.
-    Saves to UserCache with 24-hour expiration. Requires inter-node authentication.
+    Peer store receives a routing pointer for a user from another store.
+    Saves to UserCache (routing-only) with 24-hour expiration.
+    Requires inter-node authentication.
     """
     authentication_classes = [NodeTokenAuthentication]
     permission_classes = [IsInterNodeRequest]
 
     def post(self, request):
         try:
-            user_data = request.data.get("user_data")
-            source_store_id = request.data.get("source_store_id")
+            email = request.data.get("email")
+            user_id = request.data.get("user_id")
+            home_store_id = request.data.get("home_store_id")
+            home_store_endpoint = request.data.get("home_store_endpoint")
 
-            if not user_data or not user_data.get("email"):
+            if not email or user_id is None or not home_store_endpoint:
                 return Response(
-                    {"error": "user_data with email required"},
+                    {"error": "email, user_id, and home_store_endpoint required"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            email = user_data["email"]
-            expires_at = timezone.now() + timezone.timedelta(hours=24)
+            expires_at = timezone.now() + timedelta(hours=24)
 
-            # Create or update user cache
+            # Create or update user cache (routing table only, no profile data)
             user_cache, created = UserCache.objects.update_or_create(
                 user_email=email,
                 defaults={
-                    "user_data": user_data,
-                    "source_store_id": source_store_id,
+                    "user_id": user_id,
+                    "home_store_id": home_store_id or 0,
+                    "home_store_endpoint": home_store_endpoint,
                     "expires_at": expires_at,
                 }
             )
 
             # If this node is a regional hub, queue the user_sync upstream to master hub
             # so master's UserCache is populated for cross-region discovery.
-            if settings.IS_HUB and not settings.IS_MASTER and settings.HUB_URL:
-                try:
-                    store = StoreRegistry.objects.get(store_id=source_store_id)
-                    forwarded_user_data = {**user_data, "store_api_endpoint": store.api_endpoint}
-                except StoreRegistry.DoesNotExist:
-                    forwarded_user_data = user_data
+            # Only queue if this is a new entry (not an update), to avoid duplicate events.
+            if created and settings.IS_HUB and not settings.IS_MASTER and settings.HUB_URL:
                 EventQueue.objects.create(
                     event_type="user_sync",
                     status="pending",
                     target_node=f"{settings.HUB_URL.rstrip('/')}/backend/internode/user-sync/",
                     payload={
-                        "user_data": forwarded_user_data,
-                        "source_store_id": source_store_id,
+                        "email": email,
+                        "user_id": user_id,
+                        "home_store_id": home_store_id,
+                        "home_store_endpoint": home_store_endpoint,
                     },
                 )
 
             SyncRecord.objects.create(
                 sync_type="user_pull",
-                source_store_id=source_store_id,
-                target_store_id=request.node_identity["store_id"],
+                source_store_id=request.node_identity.get("store_id", 0) if hasattr(request, 'node_identity') else 0,
+                target_store_id=int(settings.STORE_ID),
                 status="success",
                 completed_at=timezone.now(),
             )
@@ -1325,6 +1542,221 @@ class InterNodeUserSyncView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class InterNodeIssueTokenView(APIView):
+    """
+    POST /backend/internode/issue-token/
+
+    Called by visiting stores to authenticate a user and receive a JWT.
+    Validates password, builds full user profile, signs JWT with HMAC-SHA256, returns it.
+    Replaces the old plaintext password proxy approach.
+    """
+    authentication_classes = [NodeTokenAuthentication]
+    permission_classes = [IsInterNodeRequest]
+
+    def post(self, request):
+        from .internode_auth import jwt_sign
+
+        email = request.data.get('email')
+        password = request.data.get('password')
+        if not email or not password:
+            return Response({'error': 'email and password required'}, status=400)
+
+        # Rate limiting: 5 attempts per minute per IP+email combination
+        from django.core.cache import cache
+        client_ip = request.META.get('REMOTE_ADDR', 'unknown')
+        rate_key = f"issue_token:{client_ip}:{email}"
+        attempts = cache.get(rate_key, 0)
+        if attempts >= 5:
+            return Response({'error': 'Too many attempts.'}, status=429)
+        cache.set(rate_key, attempts + 1, 60)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({'error': 'Invalid credentials.'}, status=401)
+
+        if not user.check_password(password):
+            return Response({'error': 'Invalid credentials.'}, status=401)
+
+        # Build full profile for JWT payload
+        preferences = list(Preference.objects.filter(UserID=user).values_list('Preference', flat=True))
+        favorite_drink_ids = list(Drink.objects.filter(Favorite=user).values_list('DrinkID', flat=True))
+
+        payload = {
+            'user_id': user.pk,
+            'email': user.email,
+            'home_store_id': int(settings.STORE_ID),
+            'home_store_endpoint': settings.API_ENDPOINT,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'preferences': preferences,
+            'favorite_drinks': favorite_drink_ids,
+            'is_admin': user.is_superuser,
+            'is_manager': user.is_staff,
+        }
+
+        jwt_token = jwt_sign(payload, settings.INTER_NODE_SECRET, expires_in_hours=24)
+
+        SyncRecord.objects.create(
+            sync_type='credential_check',
+            source_store_id=int(settings.STORE_ID),
+            status='success',
+            completed_at=timezone.now(),
+        )
+
+        return Response({'jwt': jwt_token, **payload})
+
+
+class InterNodeUserPreferencesUpdateView(APIView):
+    """
+    POST /backend/internode/user-preferences/update/
+
+    Called by visiting stores when a visiting user changes a preference.
+    Applies the change locally and returns a refreshed JWT with updated profile.
+    """
+    authentication_classes = [NodeTokenAuthentication]
+    permission_classes = [IsInterNodeRequest]
+
+    def post(self, request):
+        from .internode_auth import jwt_sign
+
+        email = request.data.get('email')
+        action = request.data.get('action')   # 'add' or 'remove'
+        preference_text = request.data.get('preference', '').strip()
+
+        if not email or action not in ('add', 'remove') or not preference_text:
+            return Response({'error': 'email, action (add|remove), and preference required'}, status=400)
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=404)
+
+        if action == 'add':
+            Preference.objects.get_or_create(UserID=user, Preference=preference_text)
+        else:
+            Preference.objects.filter(UserID=user, Preference=preference_text).delete()
+
+        # Rebuild profile and issue fresh JWT
+        preferences = list(Preference.objects.filter(UserID=user).values_list('Preference', flat=True))
+        favorite_drink_ids = list(Drink.objects.filter(Favorite=user).values_list('DrinkID', flat=True))
+
+        payload = {
+            'user_id': user.pk,
+            'email': user.email,
+            'home_store_id': int(settings.STORE_ID),
+            'home_store_endpoint': settings.API_ENDPOINT,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'preferences': preferences,
+            'favorite_drinks': favorite_drink_ids,
+            'is_admin': user.is_superuser,
+            'is_manager': user.is_staff,
+        }
+        jwt_token = jwt_sign(payload, settings.INTER_NODE_SECRET, expires_in_hours=24)
+
+        # Also refresh local UserCache routing entry
+        _refresh_user_cache(user)
+
+        return Response({'jwt': jwt_token, 'preferences': preferences})
+
+
+class InterNodeUserFavoritesUpdateView(APIView):
+    """
+    POST /backend/internode/user-favorites/update/
+
+    Called by visiting stores when a visiting user adds/removes a favorite drink.
+    """
+    authentication_classes = [NodeTokenAuthentication]
+    permission_classes = [IsInterNodeRequest]
+
+    def post(self, request):
+        from .internode_auth import jwt_sign
+
+        email = request.data.get('email')
+        action = request.data.get('action')   # 'add' or 'remove'
+        drink_id = request.data.get('drink_id')
+
+        if not email or action not in ('add', 'remove') or not drink_id:
+            return Response({'error': 'email, action (add|remove), and drink_id required'}, status=400)
+
+        try:
+            user = User.objects.get(email=email)
+            drink = Drink.objects.get(DrinkID=drink_id)
+        except (User.DoesNotExist, Drink.DoesNotExist) as ex:
+            return Response({'error': str(ex)}, status=404)
+
+        if action == 'add':
+            drink.Favorite.add(user)
+        else:
+            drink.Favorite.remove(user)
+
+        favorite_drink_ids = list(Drink.objects.filter(Favorite=user).values_list('DrinkID', flat=True))
+        preferences = list(Preference.objects.filter(UserID=user).values_list('Preference', flat=True))
+
+        payload = {
+            'user_id': user.pk,
+            'email': user.email,
+            'home_store_id': int(settings.STORE_ID),
+            'home_store_endpoint': settings.API_ENDPOINT,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'preferences': preferences,
+            'favorite_drinks': favorite_drink_ids,
+            'is_admin': user.is_superuser,
+            'is_manager': user.is_staff,
+        }
+        jwt_token = jwt_sign(payload, settings.INTER_NODE_SECRET, expires_in_hours=24)
+        _refresh_user_cache(user)
+
+        return Response({'jwt': jwt_token, 'favorite_drinks': favorite_drink_ids})
+
+
+class InterNodeUserProfileUpdateView(APIView):
+    """
+    POST /backend/internode/user-profile/update/
+
+    Called by visiting stores when a visiting user updates their profile (name, etc).
+    """
+    authentication_classes = [NodeTokenAuthentication]
+    permission_classes = [IsInterNodeRequest]
+
+    def post(self, request):
+        from .internode_auth import jwt_sign
+
+        email = request.data.get('email')
+        if not email:
+            return Response({'error': 'email required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        first_name = request.data.get('first_name')
+        last_name = request.data.get('last_name')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=404)
+
+        if first_name is not None:
+            user.first_name = first_name
+        if last_name is not None:
+            user.last_name = last_name
+        user.save(update_fields=['first_name', 'last_name'])
+
+        preferences = list(Preference.objects.filter(UserID=user).values_list('Preference', flat=True))
+        favorite_drink_ids = list(Drink.objects.filter(Favorite=user).values_list('DrinkID', flat=True))
+
+        payload = {
+            'user_id': user.pk, 'email': user.email,
+            'home_store_id': int(settings.STORE_ID),
+            'home_store_endpoint': settings.API_ENDPOINT,
+            'first_name': user.first_name, 'last_name': user.last_name,
+            'preferences': preferences, 'favorite_drinks': favorite_drink_ids,
+            'is_admin': user.is_superuser, 'is_manager': user.is_staff,
+        }
+        jwt_token = jwt_sign(payload, settings.INTER_NODE_SECRET, expires_in_hours=24)
+        return Response({'jwt': jwt_token})
 
 
 class InterNodeStatusUpdateView(APIView):
@@ -1349,8 +1781,21 @@ class InterNodeStatusUpdateView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Update machine status
+            # Validate state machine transition before applying
             machine = Machine.objects.get(machine_id=machine_id)
+            current_status = machine.status
+            valid_next = Machine.VALID_TRANSITIONS.get(current_status, [])
+
+            if status_value not in valid_next:
+                return Response(
+                    {
+                        "error": f"Invalid state transition: {current_status} -> {status_value}. "
+                                f"Valid next states: {valid_next}"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Update machine status
             machine.status = status_value
             if repair_notes:
                 machine.repair_notes = repair_notes

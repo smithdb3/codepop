@@ -182,6 +182,7 @@ class HubRegistry(models.Model):
     is_active = models.BooleanField(default=True)
     last_seen = models.DateTimeField(null=True, blank=True)
     registered_at = models.DateTimeField(auto_now_add=True)
+    issued_secret = models.CharField(max_length=255, blank=True)  # Secret issued by this hub to us
 
     def __str__(self):
         master_str = " (MASTER)" if self.is_master else ""
@@ -192,7 +193,7 @@ class HubRegistry(models.Model):
 
 
 class NodeCertificate(models.Model):
-    """Shared-secret inter-node auth."""
+    """Per-node shared secrets for inter-node authentication."""
     NODE_TYPES = [
         ('store', 'Store'),
         ('hub', 'Hub'),
@@ -201,7 +202,7 @@ class NodeCertificate(models.Model):
 
     node_id = models.CharField(max_length=100, unique=True)
     node_type = models.CharField(max_length=20, choices=NODE_TYPES)
-    shared_secret = models.CharField(max_length=255)
+    shared_secret = models.CharField(max_length=255, db_index=True)  # Indexed for fast lookup in auth
     issued_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     is_active = models.BooleanField(default=True)
@@ -211,18 +212,41 @@ class NodeCertificate(models.Model):
 
 
 class UserCache(models.Model):
-    """Lazy replication cache for users visiting from other stores."""
-    user_email = models.CharField(max_length=255, unique=True)
-    user_data = models.JSONField()
-    source_store_id = models.IntegerField()
-    synced_at = models.DateTimeField(auto_now=True)
-    expires_at = models.DateTimeField()
+    """Routing table: maps user email to their home store endpoint. Lazy replication cache."""
+    user_email = models.CharField(max_length=255, unique=True, db_index=True)
+    user_id = models.IntegerField(null=True, db_index=True)  # Canonical pk at home store
+    home_store_id = models.IntegerField()
+    home_store_endpoint = models.CharField(max_length=500)
+    cached_at = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField(db_index=True)  # Indexed for expiry filtering
 
     def __str__(self):
-        return f"UserCache {self.user_email} (from store {self.source_store_id})"
+        return f"UserCache {self.user_email} → store {self.home_store_id}"
 
     class Meta:
         verbose_name_plural = "User Caches"
+
+
+class VisitingSession(models.Model):
+    """
+    Links a visiting user's local DRF token to their JWT-based home-store session.
+    Created when a visiting user logs in. Expires with the JWT (24h).
+    """
+    token = models.OneToOneField(
+        'authtoken.Token', on_delete=models.CASCADE, related_name='visiting_session'
+    )
+    canonical_user_id = models.IntegerField(db_index=True)   # user_id at home store
+    home_store_id = models.IntegerField()
+    home_store_endpoint = models.CharField(max_length=500)
+    jwt_payload = models.JSONField()   # Decoded JWT: preferences, favorites, profile, etc.
+    jwt_expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self):
+        return timezone.now() >= self.jwt_expires_at
+
+    def __str__(self):
+        return f"VisitingSession user_id={self.canonical_user_id} @ store {self.home_store_id}"
 
 
 class SyncRecord(models.Model):
@@ -231,6 +255,7 @@ class SyncRecord(models.Model):
         ('user_pull', 'User Pull'),
         ('catalog_push', 'Catalog Push'),
         ('status_update', 'Status Update'),
+        ('credential_check', 'Credential Check'),  # For inter-node verify-credentials audit
     ]
 
     STATUS_CHOICES = [
@@ -336,7 +361,7 @@ class SupplyHub(models.Model):
 
 
 class Machine(models.Model):
-    """Robotic machine tracking with full state machine."""
+    """Robotic machine tracking with state machine enforcement."""
     STATUS_CHOICES = [
         ('NORMAL', 'Normal'),
         ('WARNING', 'Warning'),
@@ -347,12 +372,40 @@ class Machine(models.Model):
         ('REPAIR_END', 'Repair End'),
     ]
 
+    # State machine: valid transitions from each state
+    VALID_TRANSITIONS = {
+        'NORMAL': ['WARNING', 'SCHEDULE_SERVICE'],
+        'WARNING': ['NORMAL', 'ERROR', 'SCHEDULE_SERVICE'],
+        'ERROR': ['OUT_OF_ORDER', 'SCHEDULE_SERVICE'],
+        'OUT_OF_ORDER': ['REPAIR_START'],
+        'SCHEDULE_SERVICE': ['REPAIR_START'],
+        'REPAIR_START': ['REPAIR_END'],
+        'REPAIR_END': ['NORMAL'],
+    }
+
     machine_id = models.CharField(max_length=100, unique=True)
     store_id = models.IntegerField()
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='NORMAL')
     last_status_change = models.DateTimeField(auto_now=True)
     repair_notes = models.TextField(blank=True)
     installed_at = models.DateTimeField(null=True, blank=True)
+
+    def clean(self):
+        """Validate state machine transition before save."""
+        from django.core.exceptions import ValidationError
+        if self.pk:  # Only validate if updating (not on creation)
+            original = Machine.objects.get(pk=self.pk)
+            current_status = original.status
+            valid_next = self.VALID_TRANSITIONS.get(current_status, [])
+            if self.status != current_status and self.status not in valid_next:
+                raise ValidationError(
+                    f"Invalid transition: {current_status} -> {self.status}. "
+                    f"Valid transitions: {valid_next}"
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Machine {self.machine_id} (store {self.store_id}): {self.get_status_display()}"
