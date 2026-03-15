@@ -35,11 +35,10 @@ CodePop provides a streamlined, AI-powered ordering experience. By utilizing "ju
 
 ### **Nationwide Logistics Model**
 
-CodePop operates as a nationwide franchise using a **Hub-and-Spoke** architecture:
+CodePop operates as a nationwide franchise using a **federated mesh architecture**:
 
-* **The Hubs:** Central regional centers that act as the "axle" of the wheel, managing supply for their territory.  
-* **The Spokes:** The transfer routes connecting the Hubs to individual store locations.  
-* **The Stores:** Automated fulfillment centers where the robotic "pour" occurs.
+* **The Hubs:** Seven equal regional supply hubs that manage supply coordination, store registry, and user directory for their territory. All hubs are peers; there is no central hub authority.
+* **The Stores:** Automated fulfillment centers where the robotic "pour" occurs. Stores communicate directly with each other (peer-to-peer) for data exchange, and with their regional hub for registration, logistics coordination, and user lookups.
 
 ### **Hardware & Accessibility Strategy**
 
@@ -60,18 +59,22 @@ CodePop operates as a nationwide franchise using a **Hub-and-Spoke** architectur
 
 This section describes a **planned future architecture** for CodePop's transformation from a single-location system to a nationwide distributed network. The current implementation is a centralized single-store system. This document serves as the architectural blueprint for the distributed system upgrade.
 
-CodePop will employ a **federated distributed system architecture** where each physical store location operates as an independent node with regional coordination hubs. This is **not** a true peer-to-peer (P2P) system but rather a **hub-and-spoke model with store-level autonomy**.
+CodePop will employ a **federated mesh architecture** where each physical store location operates as an independent node and all regional hubs are equal peers. Stores communicate directly with each other (peer-to-peer) for data exchange, while hubs provide regional coordination and user directory services.
 
 **Key Architectural Principles:**
 
 * **Decentralization**: No central server controls the entire system. Each store runs its own complete backend stack (Django + PostgreSQL) and can operate independently during network partitions.
 
-* **Regional Coordination**: Seven regional supply hubs provide logistics coordination, peer discovery, and inventory management for stores within their geographic regions. Supply hubs are **not** customer-facing and do not process drink orders.
+* **Regional Coordination**: Seven equal regional supply hubs provide logistics coordination, store registry, user directory, and peer discovery. All hubs are peers; there is no central hub-of-hubs. Supply hubs are **not** customer-facing and do not process drink orders.
+
+* **Hardcoded Hub Discovery**: All hubs know each other's addresses via static configuration. Hub discovery is not dynamic; the list of hub endpoints is configured per-node.
+
+* **Home Store Ownership**: Each user has exactly one permanent home store where their account data resides. When a user visits a different store (visiting store), the visiting store fetches user data from the home store and caches it for 24 hours. After 24 hours, cached data is automatically deleted.
 
 * **Hybrid Communication Model**:
   - **Hub as Service Registry**: Stores register with their regional hub on startup; hub maintains a directory of stores in the region
-  - **Hub for Discovery**: When Store B needs data from Store A, it queries the hub to locate Store A
-  - **Direct Store-to-Store Communication**: Once Store B knows Store A's address, data transfers happen directly between stores without hub mediation
+  - **Hub for Discovery**: When a store needs to locate a user's home store, it queries its regional hub. For same-region users, the hub finds them directly. For cross-region users, the hub broadcasts to all other hubs to locate the user.
+  - **Direct Store-to-Store Communication**: Once a store locates a user's home store, it communicates directly with the home store (peer-to-peer) to fetch or update user data, bypassing the hub
   - **Hub for Logistics**: Supply requests, revenue aggregation, and machine status reporting flow through the hub
 
 * **Fault Isolation**: Failures or outages at one store or hub do not prevent other stores from continuing normal operations. The system gracefully handles network partitions and temporary connectivity loss.
@@ -83,30 +86,30 @@ CodePop will employ a **federated distributed system architecture** where each p
 ### **Network Topology**
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│          Supply Hub Network (7 Regional Hubs)                   │
-│  Chicago IL │ New Jersey NY │ Logan UT │ Dallas TX │ etc.       │
-│  - Service registry (lists stores in region)                    │
-│  - Logistics coordination (supply requests)                     │
-│  - Regional inventory aggregation                               │
-│  - User account lookup service                                  │
-└────────────┬────────────────────────────────┬───────────────────┘
+                     7 Equal Regional Hubs (Hardcoded Mesh)
+        Chicago   New Jersey   Logan   Dallas   Phoenix   Atlanta   Seattle
+            ◄────────────────────────────────────────────────────►
+            (Hubs know each other's addresses via static config)
+
+                              │ Hub-Store Communication
+                              │ (REST APIs + Event Queue)
+                              │
+             ┌────────────────┴─────────────────┐
+             │                                  │
+    ┌────────▼────────┐              ┌──────────▼───────┐
+    │  Store Node A   │              │  Store Node B    │
+    │  - Django API   │◄─────────────►- Django API      │
+    │  - PostgreSQL   │ (Direct P2P) │- PostgreSQL      │
+    │  - Local Data   │              │- Local Data      │
+    │  - Event Queue  │              │- Event Queue     │
+    │  - Visiting     │              │- Visiting User   │
+    │    User Cache   │              │  Cache (24h TTL) │
+    └────────┬────────┘              └────────┬─────────┘
              │                                │
-             │    Hub-Store Communication     │
-             │    (REST APIs + Event Queue)   │
-             │                                │
-    ┌────────▼────────┐              ┌───────▼────────┐
-    │  Store Node A   │              │  Store Node B  │
-    │  - Django API   │◄─────────────►  - Django API  │
-    │  - PostgreSQL   │ (direct P2P) │  - PostgreSQL  │
-    │  - Local Data   │              │  - Local Data  │
-    │  - Event Queue  │              │  - Event Queue │
-    └────────┬────────┘              └───────┬────────┘
-             │                               │
-    ┌────────▼────────┐              ┌───────▼────────┐
-    │  Mobile Client  │              │  Mobile Client │
-    │  (React Native) │              │  (React Native)│
-    └─────────────────┘              └────────────────┘
+    ┌────────▼────────┐               ┌───────▼────────┐
+    │  Mobile Client  │               │  Mobile Client │
+    │  (React Native) │               │  (React Native)│
+    └─────────────────┘               └────────────────┘
 ```
 
 **Store Node Components:**
@@ -168,28 +171,32 @@ If the selected store becomes unavailable (health check fails), the app automati
 
 **Lazy Replication Model for User Data:**
 
-CodePop uses **on-demand replication** rather than proactive synchronization:
+CodePop uses **on-demand replication** with strict home-store ownership:
 
-- **User accounts are NOT automatically replicated** to all stores
-- **No background sync process** propagates user data everywhere
-- **Data replicates only when needed**: When a user logs in at a new store for the first time
+- **Home Store Ownership**: Each user has exactly one permanent home store where their account data resides
+- **No automatic replication** to all stores
+- **Visiting stores cache data temporarily**: When a user logs in at a visiting store, the visiting store fetches data directly from the home store and caches it locally for exactly 24 hours
+- **Automatic cache expiration**: After 24 hours, cached data is automatically deleted. If the user logs in again, the visiting store re-fetches from the home store.
+- **Profile updates propagate back**: Changes made to user profiles at visiting stores are immediately pushed back to the home store for permanent storage
+- **Data replicates only when needed**: On-demand queries happen when a user first visits a new store
 
 **Rationale:**
 - **Scalability**: Replicating millions of accounts to thousands of stores is prohibitively expensive
 - **Data Locality**: Users typically frequent the same store, making local caching efficient
 - **Reduced Network Traffic**: Only active users generate sync traffic
 - **Privacy**: User data only exists at stores where the user has physically visited
+- **Source of Truth**: Home store is always the authoritative source for each user's data
 
 ---
 
 ### **Cross-Region User Discovery**
 
-When a user from one region visits a store in a different region, the system uses **hierarchical hub coordination** to locate their data:
+When a user visits a store in a different region, the system locates their home store through hub broadcast:
 
 **Three-Phase Process:**
-1. **Discovery**: Regional hubs query each other in parallel to find the user's home store
-2. **Data Transfer**: Stores communicate directly (peer-to-peer), bypassing hubs
-3. **Local Caching**: After first login, user data is locally cached for fast subsequent logins
+1. **Discovery**: Visiting store queries its regional hub, which broadcasts to all other hubs simultaneously to find the user's home store
+2. **Data Transfer**: Once home store is found, visiting store communicates directly (peer-to-peer) with the home store to fetch user data
+3. **Local Caching**: Visiting store caches user data for 24 hours; automatic cache expiration after 24 hours
 
 **Example: User traveling from Logan, UT to New York, NY**
 
@@ -259,6 +266,78 @@ Chicago Dallas Phoenix Atlanta Logan  Boise   Seattle   |
 └────────────────────────┘
 ```
 
+**Same-Region User Discovery:**
+
+When a user visits a store within the same region as their home store:
+
+```
+                        User alice@example.com
+                        (Home: NY Region)
+                        logs in at NY Store B
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │  Store B checks       │
+                    │  local database       │
+                    │  → User NOT FOUND     │
+                    └───────────┬───────────┘
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │  Store B asks         │
+                    │  NY Hub: "Find user"  │
+                    └───────────┬───────────┘
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │  NY Hub checks its    │
+                    │  regional directory   │
+                    │  → Found!             │
+                    └───────────┬───────────┘
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │  Hub returns:         │
+                    │  Home Store A address │
+                    └───────────┬───────────┘
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │  Store B contacts     │
+                    │  Store A directly     │
+                    │  (Direct P2P)         │
+                    └───────────┬───────────┘
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │  Store A sends        │
+                    │  user data            │
+                    └───────────┬───────────┘
+                                │
+                                ▼
+                    ┌───────────────────────┐
+                    │  Store B caches data  │
+                    │  (24h TTL)            │
+                    │  User logs in ✓       │
+                    └───────────────────────┘
+```
+
+---
+
+### **Profile Update Propagation**
+
+When a user updates their profile (preferences, favorites, account details) at a visiting store:
+
+1. **Optimistic UI Update**: The change is applied and shown immediately in the app's UI
+2. **Propagation to Home Store**: The update is sent directly to the user's home store (peer-to-peer) for permanent storage
+3. **Confirmation**: If the home store is reachable, it applies the change and confirms back to the visiting store
+4. **Queuing for Offline Home Stores**: If the home store is unreachable at the time of the update:
+   - The change is queued locally in encrypted storage on the visiting store
+   - The visiting store retries delivery with exponential backoff (1s, 2s, 4s, 8s, ...)
+   - The queue persists across container restarts
+5. **Notification on Failure**: If delivery ultimately fails after the maximum retry period, the user is notified in the app
+6. **Cache Consistency**: Once the home store confirms the change, the visiting store updates its local cache with the confirmed values
+
 ---
 
 ### **Revenue Aggregation Architecture**
@@ -290,7 +369,7 @@ Revenue data remains **local to each store** and is aggregated on-demand when ma
 
 **Nationwide Revenue (Super Admins):**
 
-Uses a **master hub** with hierarchical aggregation and **client-side fallback** for resilience.
+The super admin dashboard queries all 7 regional hubs in parallel and aggregates results client-side.
 
 ```
                     ┌──────────────────┐
@@ -298,26 +377,21 @@ Uses a **master hub** with hierarchical aggregation and **client-side fallback**
                     │ Dashboard        │
                     └────────┬─────────┘
                              │
-                  ┌──────────▼──────────┐
-                  │   Primary Path:     │
-                  │   Master Hub        │
-                  │   (Logan Hub)       │
-                  └────────┬────────────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        ▼                  ▼                  ▼
-┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│ Regional Hub │   │ Regional Hub │   │ Regional Hub │
-│ Chicago      │   │ New Jersey   │   │ Logan        │
-└──────┬───────┘   └──────┬───────┘   └──────┬───────┘
-       │                  │                  │
-       ▼                  ▼                  ▼
-   ~20 stores         ~20 stores         ~20 stores
+        ┌────────────────────┼──────────────────────────────────────────┐
+        │          Parallel queries to all 7 hubs                       │
+        │                                                               │
+        ▼          ▼          ▼          ▼        ▼          ▼          ▼
+    Chicago    Dallas    Phoenix    Atlanta     Logan       Boise     Seattle
+       Hub      Hub       Hub         Hub        Hub         Hub       Hub
+        │        │         │           │          │          │          │
+        └────────┴─────────┴───────────┴──────────┴──────────┴──────────┘
+                             │
+                             ▼
+                    Client-side Aggregation
+                    (sum revenue across all hubs)
 ```
 
-**Fallback Path:** If master hub unavailable, dashboard queries all 7 regional hubs directly in parallel and aggregates results client-side.
-
-**Other Metrics:** The same hierarchical aggregation pattern applies to inventory status, order statistics, and machine health monitoring.
+**Other Metrics:** The same parallel fan-out pattern applies to inventory status, order statistics, and machine health monitoring.
 
 ---
 
@@ -498,13 +572,13 @@ CodePop will be deployed using **Google Cloud Platform (GCP)** to support the fe
 
 * **Inter-Node Communication Module (P2P)** Handle how servers communicate to each other to coordinate
 
-- Responsibilities 
-    - Establishes role in hierarchy (store, supply hub or master hub)
-    - Manage inter-server communications 
-    - Ensure messages are processed 
-- Components 
-    - Messenger: Handles outgoing for other stores
-    - Message router: handles incoming messages and gets them to the correct module to be processed
+- Responsibilities
+    - Identifies node type (store or hub) — flat roles, no hierarchy
+    - Manage inter-server communications (store-to-hub, store-to-store, hub-to-hub)
+    - Ensure messages are processed and authenticated
+- Components
+    - Messenger: Handles outgoing requests to other stores/hubs
+    - Message router: Handles incoming requests, validates authentication, routes to correct module
 
 ## **5. Data Design**
 
@@ -513,26 +587,26 @@ The CodePop data model supports distributed operations across multiple stores wi
 ### **Data Distribution Strategy**
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                    DATA CATEGORIES                           │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌────────────────────┐  ┌────────────────────┐              │
-│  │  REPLICATED DATA   │  │    LOCAL DATA      │              │
-│  │  (Synchronized)    │  │  (Never synced)    │              │
-│  ├────────────────────┤  ├────────────────────┤              │
-│  │ • User accounts    │  │ • Orders           │              │
-│  │ • User preferences │  │ • Inventory        │              │
-│  │ • User roles       │  │ • Revenue          │              │
-│  │ • Drink catalog    │  │ • Machines         │              │
-│  │ • Store registry   │  │ • Notifications    │              │
-│  │ • Region data      │  │                    │              │
-│  └────────────────────┘  └────────────────────┘              │
-│         ▲                                                    │
-│         │                                                    │
-│         └─── Lazy replication (on-demand)                    │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                    DATA CATEGORIES                                       │
+├──────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌────────────────────┐  ┌────────────────────┐ ┌──────────────────────┐ │
+│  │  REPLICATED DATA   │  │    LOCAL DATA      │ │  VISITING USER CACHE │ │
+│  │  (Synchronized)    │  │  (Never synced)    │ │  (24h TTL, Isolated) │ │
+│  ├────────────────────┤  ├────────────────────┤ ├──────────────────────┤ │
+│  │ • User accounts    │  │ • Orders           │ │ • Cached user data   │ │
+│  │ • User preferences │  │ • Inventory        │ │   (username, email,  │ │
+│  │ • User roles       │  │ • Revenue          │ │    hashed_password,  │ │
+│  │ • Drink catalog    │  │ • Machines         │ │    preferences,      │ │
+│  │ • Store registry   │  │ • Notifications    │ │    favorite_drinks)  │ │
+│  │ (static config)    │  │                    │ │                      │ │
+│  └────────────────────┘  └────────────────────┘ └──────────────────────┘ │
+│         ▲                                                                │
+│         │                                                                │
+│         └─── Lazy replication (on-demand)                                │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -1095,14 +1169,14 @@ Note: Much of this section may be a repeat of what has already been documented, 
     * Includes Cross site request forgery (CSRF) protection which prevents attacks that perform actions using other people’s credentials.
     
 * **Inter-Node Communication Security**: How to keep communications between servers secure
-  * Messages should be passed using HTTPS 
-  * Servers must authenticate that they are talking to a legit Codepop server before any communications take place
-    * A list of know servers should be created and maintained to ensure a server can trust another server  
-  * A store servers can be accessed by super admins and a store's admin, manager and repair staff
-    * If a supply hub or another regional store needs information from a different store it can request the information
-  * Supply hubs can only be accessed by logistic managers and super admins 
-    * They can send requests to other supply hubs and store inside of their region only
-  * The Master hub can only be accessed by logistic managers and super admins
+  * **Passwords are never transmitted** between nodes — only Django PBKDF2 hashed values are transferred during user data sync
+  * **All inter-node requests must be authenticated** with `Authorization: NodeToken {INTER_NODE_SECRET}` header before any data is exchanged
+  * **All inter-node communication uses encrypted transport**: HTTPS/TLS 1.3 in production; HTTP only acceptable on internal IPs during development
+  * **Only minimum required user data is shared** — visiting stores receive: username, email, hashed password, preferences, favorite drinks, role; sensitive fields (raw passwords, payment methods, Stripe IDs, card details) are never included
+  * **Cached visiting user data is isolated** from home user data in a separate database table with 24-hour TTL
+  * **Queued profile updates for offline home stores are encrypted at rest** to protect user data if the VM is compromised
+  * **Inter-node endpoints are rate limited** to prevent a compromised node from flooding others
+  * **All inter-node data transfers are audit logged** with timestamp, requesting node, data type, and success/failure status; logs retained for at least 30 days
 * **Data Encryption**: Explanation of how data will be encrypted (at rest and in transit).  
   * Django user data encryption  
   * Sha 256 encryption  

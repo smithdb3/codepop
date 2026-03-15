@@ -173,47 +173,9 @@ The High Level Design specifies a future transformation to a **federated distrib
 
 ### Network Topology
 
-CodePop will evolve into a **hub-and-spoke model with 7 regional supply hubs**:
+CodePop will evolve into a **flat hub mesh with 7 equal regional supply hubs**. Hub-to-hub connections are hardcoded static addresses (no dynamic discovery).
 
-```mermaid
-flowchart TB
-    MASTER["Master Hub<br/>Logan UT"]
-
-    MASTER --> CHI["Chicago Hub"]
-    MASTER --> NJ["New Jersey Hub"]
-    MASTER --> DAL["Dallas Hub"]
-    MASTER --> PHX["Phoenix Hub"]
-    MASTER --> ATL["Atlanta Hub"]
-    MASTER --> SEA["Seattle Hub"]
-
-    CHI --> SA1["Store 1<br/>Django + PostgreSQL"]
-    CHI --> SA2["Store 2<br/>Django + PostgreSQL"]
-    SA1 <--> SA2
-
-    NJ --> SB1["Store 1<br/>Django + PostgreSQL"]
-    NJ --> SB2["Store 2<br/>Django + PostgreSQL"]
-    SB1 <--> SB2
-
-    DAL --> SD1["Store 1<br/>Django + PostgreSQL"]
-    DAL --> SD2["Store 2<br/>Django + PostgreSQL"]
-    SD1 <--> SD2
-
-    PHX --> SP1["Store 1<br/>Django + PostgreSQL"]
-    PHX --> SP2["Store 2<br/>Django + PostgreSQL"]
-    SP1 <--> SP2
-
-    ATL --> SAT1["Store 1<br/>Django + PostgreSQL"]
-    ATL --> SAT2["Store 2<br/>Django + PostgreSQL"]
-    SAT1 <--> SAT2
-
-    SEA --> SSE1["Store 1<br/>Django + PostgreSQL"]
-    SEA --> SSE2["Store 2<br/>Django + PostgreSQL"]
-    SSE1 <--> SSE2
-
-    CHI <--> NJ
-    NJ <--> DAL
-    PHX <--> ATL
-```
+**Note:** Hub-to-hub connections are hardcoded static addresses; all hubs know each other's endpoints via configuration (no dynamic hub discovery).
 
 ### Store Discovery & Registration
 
@@ -228,11 +190,10 @@ flowchart TB
   "region": "Chicago",
   "latitude": 41.8781,
   "longitude": -87.6298,
-  "public_key": "-----BEGIN PUBLIC KEY-----...",
   "api_endpoint": "https://store42.codepop.local"
 }
 ```
-4. **Hub Response**: Hub returns signed certificate valid for 90 days and list of other stores in region
+4. **Hub Response**: Hub returns registration acknowledgment and list of other active stores in region
 5. **Cache Update**: Store stores registry in local cache for peer discovery during partition
 
 **Hub Registry Management:**
@@ -241,11 +202,11 @@ flowchart TB
 - Heartbeat every 30 seconds from each store; timeout after 3 failures (90 seconds)
 - Failed stores marked as unavailable; mobile clients redirected to healthy stores
 
-**Peer Discovery Protocol:**
-1. Store needs data from peer store
-2. Queries regional hub: `GET /api/hub/store-location/?email=user@example.com`
-3. Hub responds with peer store's API endpoint and public key
-4. Store directly contacts peer (P2P) with TLS verification
+**User Lookup Protocol:**
+1. Store needs to locate a user's home store
+2. Queries regional hub: `POST /api/hub/user-lookup/` with user email
+3. Hub responds with home store's API endpoint (same-region) or broadcasts to other hubs (cross-region)
+4. Store directly contacts home store (P2P) to fetch user data
 
 ---
 
@@ -257,9 +218,9 @@ flowchart TB
    - Verify schema version matches expected
    - Fail fast if DB unavailable; store cannot operate
 2. **Configuration Load**
-   - Read `config.json`: store_id, region, hub_url, etc.
-   - Load private key from secure storage (environment variable or key management service)
-3. **Register with Hub**
+   - Read `config.json`: store_id, region, regional_hub_url, etc.
+   - Load `INTER_NODE_SECRET` from environment (per-node shared secret)
+3. **Register with Regional Hub**
    - POST to hub's `/api/hub/register/` endpoint
    - Retry with exponential backoff (1s, 2s, 4s, 8s)
    - Log warning if hub unreachable; continue with cached registry
@@ -287,7 +248,7 @@ flowchart TB
 5. Close database connection
 
 **Data Bootstrap Sources:**
-- **Drink Catalog**: Replicated from master hub on first startup
+- **Drink Catalog**: Seeded from CSV or admin upload on first startup
 - **Inventory**: Start empty; manager creates items via UI
 - **User Data**: Lazy-loaded on first login attempts
 - **Machine Data**: Manager configures machines post-deployment
@@ -374,8 +335,8 @@ sequenceDiagram
     LoganHub-->>NYHub: YES! Found at Logan Store #001
     NYHub->>NYStore: User located: Logan Store
     NYStore->>LoganStore: Direct P2P: Request user data
-    LoganStore->>NYStore: Transfer user profile + preferences
-    NYStore->>NYStore: Cache user data locally
+    LoganStore->>NYStore: Transfer user profile + preferences + role
+    NYStore->>NYStore: Cache user data locally (24h TTL)
     NYStore->>User: Login successful ✓
 
     Note over NYStore,LoganStore: Subsequent logins use cached data
@@ -387,10 +348,130 @@ sequenceDiagram
 **Flow Details:**
 1. **Discovery Phase**: NY Store checks local database → user not found → queries NY Hub
 2. **Hub Broadcast**: NY Hub broadcasts to 6 other regional hubs asking for the user
-3. **Peer Response**: Logan Hub responds with user location (Logan Store #001)
-4. **Direct Transfer**: NY Store requests user data directly from Logan Store (P2P)
-5. **Local Caching**: NY Store caches user data; user logs in successfully
+3. **Peer Response**: Logan Hub responds with user location (Logan Store #001) and endpoint
+4. **Direct Transfer**: NY Store requests user data directly from Logan Store (P2P) via `POST /api/inter-node/user-sync/`
+5. **Local Caching**: NY Store caches user data in `VisitingUserCache` table with 24h TTL; user logs in successfully
 6. **Subsequent Logins**: Subsequent NY Store logins use cached data (no hub/peer queries needed)
+7. **Cache Expiration**: After 24 hours, cached data is automatically deleted; next login triggers re-fetch
+
+---
+
+### Same-Region User Discovery
+
+When a user travels to a different store within the same region (e.g., NY user visiting another NY store):
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant StoreB as Store B
+    participant NYHub as NY Hub
+    participant StoreA as Store A (Home)
+
+    User->>StoreB: Login attempt (alice@example.com)
+    StoreB->>StoreB: Check local database
+    Note over StoreB: User NOT FOUND locally
+    StoreB->>NYHub: Query: Find user?
+    NYHub->>NYHub: Check regional directory
+    Note over NYHub: Found in NY region
+    NYHub->>StoreB: Home store: Store A (endpoint)
+    StoreB->>StoreA: Direct P2P: POST /api/inter-node/user-sync/
+    StoreA->>StoreB: Transfer user profile + preferences + role
+    StoreB->>StoreB: Cache user data locally (24h TTL)
+    StoreB->>User: Login successful ✓
+
+    Note over StoreB,StoreA: Subsequent logins use cached data
+    User->>StoreB: Login attempt (2nd visit)
+    StoreB->>StoreB: Found in VisitingUserCache
+    StoreB->>User: Login successful ✓
+```
+
+**Flow Details:**
+1. **Local Check**: Store B checks its local database → user not found
+2. **Hub Query**: Store B queries NY Hub for user location
+3. **Hub Response**: NY Hub checks its regional directory → responds with Store A endpoint
+4. **Direct Transfer**: Store B fetches user data directly from Store A (P2P)
+5. **Cache**: Store B caches in `VisitingUserCache` with 24h TTL
+6. **Subsequent Logins**: Cached data used (no queries needed) until cache expires
+
+---
+
+### Profile Update Propagation
+
+When a user updates their profile (preferences, favorites, account details) at a visiting store:
+
+**Optimistic Update & Immediate Propagation:**
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant VisitingStore as Visiting Store
+    participant UI as Mobile UI
+    participant HomeStore as Home Store
+    participant Queue as Encrypted Queue<br/>(if unreachable)
+
+    User->>UI: Update preferences
+    UI->>VisitingStore: POST /profile/update
+    VisitingStore->>UI: Apply optimistic update (show immediately)
+    VisitingStore->>HomeStore: POST /api/inter-node/profile-update/
+    alt Home Store Reachable
+        HomeStore->>HomeStore: Apply & persist change
+        HomeStore->>VisitingStore: 200 OK { confirmed_data }
+        VisitingStore->>VisitingUserCache: Update with confirmed values
+        UI->>User: Change saved ✓
+    else Home Store Unreachable
+        VisitingStore->>Queue: Persist encrypted update
+        UI->>User: Saving in background...
+        Note over Queue: Retry with backoff: 1s → 2s → 4s → 8s → ...
+        Queue-->>HomeStore: Retry delivery when reachable
+        alt Update Succeeds
+            HomeStore->>VisitingStore: 200 OK
+            VisitingStore->>VisitingUserCache: Update cache
+            UI->>User: Change synced ✓
+        else Max Retries Exceeded
+            Queue-->>UI: Notification: "Change couldn't sync"
+            UI->>User: In-app notification
+        end
+    end
+```
+
+**Detailed Flow:**
+
+1. **Optimistic UI Update**: User makes change → UI shows change immediately (no waiting for server)
+2. **Propagation Attempt**: Visiting store sends `POST /api/inter-node/profile-update/` directly to home store
+3. **If Home Store Reachable**:
+   - Home store applies change and persists to database
+   - Home store returns confirmed data back to visiting store
+   - Visiting store updates its `VisitingUserCache` with confirmed values
+   - User sees "Change saved ✓"
+4. **If Home Store Unreachable**:
+   - Change is queued in encrypted local storage (`PendingProfileUpdates` table, AES-256 encrypted)
+   - UI shows "Saving in background..."
+   - Queue processor retries delivery with exponential backoff: 1s, 2s, 4s, 8s, ...
+   - Queue survives container restarts (persisted to local DB)
+5. **Retry Exhaustion**:
+   - If max retry period exceeded (e.g., 24 hours): stop retrying
+   - User notified in app: "Your profile change couldn't be saved. Please try again when your home store is reachable."
+   - Queued update remains in local storage (can be manually retried or will retry on next startup)
+
+**Queue Implementation:**
+
+```python
+# PendingProfileUpdates table (in VisitingUserCache DB)
+class PendingProfileUpdate(models.Model):
+    user_id = models.IntegerField()
+    changes = models.JSONField()  # encrypted in DB
+    created_at = models.DateTimeField(auto_now_add=True)
+    retry_count = models.IntegerField(default=0)
+    next_retry_at = models.DateTimeField()
+    max_retry_datetime = models.DateTimeField()  # 24h from creation
+```
+
+**Conflict Resolution:**
+
+If the home store receives conflicting updates for the same user from multiple visiting stores, the **last-write-wins** rule applies:
+- Home store compares timestamps
+- Later write takes precedence
+- Visiting stores that sent earlier updates will receive the authoritative data on next login/sync
 
 ---
 
@@ -405,10 +486,10 @@ sequenceDiagram
 - Regional hub queries all stores in region for revenue data
 - Hub aggregates results
 
-**National Level (Master Hub Aggregation):**
+**National Level:**
 - Super admin requests nationwide revenue report
-- **Primary path**: Master hub (Logan Hub) queries all 7 regional hubs
-- **Fallback path**: If master hub unavailable, dashboard queries all 7 hubs in parallel and aggregates client-side
+- Dashboard queries all 7 regional hubs in parallel
+- Results aggregated client-side (sum revenue across all hubs)
 
 ---
 
@@ -498,10 +579,10 @@ stateDiagram-v2
 
 **Protocol Details:**
 - **Transport**: HTTPS/TLS 1.3 for all inter-node communication
-- **Authentication**: Token-based (JWT or Django REST Framework tokens)
-  - Each node has a shared secret or certificate
-  - All requests include `Authorization: NodeToken {token}` header
-  - Nodes validate token before processing requests
+- **Authentication**: Token-based shared secret (Sprint 3); JWT RS256 planned for future
+  - Each node has `INTER_NODE_SECRET` per-node shared secret
+  - All requests include `Authorization: NodeToken {INTER_NODE_SECRET}` header
+  - Endpoints under /api/hub/ and /api/inter-node/ reject requests without valid token (401)
 - **Content Type**: JSON with UTF-8 encoding
 - **Timeouts**:
   - Connection timeout: 5 seconds
@@ -511,8 +592,10 @@ stateDiagram-v2
 
 **Inter-Node REST Endpoints:**
 ```
-POST /api/inter-node/user-lookup/          # Query peer store for user
-POST /api/inter-node/user-sync/            # Transfer user data to peer
+POST /api/hub/user-lookup/                 # Store queries hub to find user's home store
+POST /api/hub/user-broadcast/              # Hub broadcasts cross-region user lookup to other hubs
+POST /api/inter-node/user-sync/            # Store fetches user data from home store (P2P)
+POST /api/inter-node/profile-update/       # Store pushes profile change to home store
 POST /api/inter-node/status-update/        # Machine/store status update to hub
 GET /api/inter-node/store-registry/        # Retrieve list of stores from hub
 POST /api/inter-node/supply-request/       # Submit supply request to hub
@@ -521,30 +604,66 @@ POST /api/inter-node/health-check/         # Peer availability check
 
 **Request/Response Format:**
 ```json
-// User Lookup Request
+// User Lookup Request (POST /api/hub/user-lookup/)
 {
   "email": "user@example.com",
   "requesting_store_id": 42
 }
 
-// User Lookup Response (Success)
+// User Lookup Response (Same-Region or Hub Response)
 {
   "status": "found",
-  "user": {
-    "user_id": 5,
-    "email": "user@example.com",
-    "preferences": ["Coconut", "Fruity"],
-    "favorite_drinks": [42, 87, 105]
-  },
-  "located_at_store_id": 101
+  "home_store_id": 101,
+  "home_store_endpoint": "https://store101.codepop.local"
 }
 
-// User Lookup Response (Not Found)
+// User Sync Request (POST /api/inter-node/user-sync/ to home store)
 {
-  "status": "not_found",
-  "message": "User not found in any store"
+  "email": "user@example.com",
+  "requesting_store_id": 42
+}
+
+// User Sync Response (Allowed Fields Only)
+{
+  "user_id": 5,
+  "username": "alice",
+  "email": "user@example.com",
+  "hashed_password": "$2b$12$...",  // Django PBKDF2 hash only
+  "preferences": ["Coconut", "Fruity"],
+  "favorite_drinks": [42, 87, 105],
+  "role": "customer"
+}
+
+// Profile Update Request (POST /api/inter-node/profile-update/ to home store)
+{
+  "user_id": 5,
+  "changes": {
+    "preferences": ["Fruity", "Sweet"],
+    "favorite_drinks": [42, 87, 110]
+  },
+  "timestamp": "2026-03-15T10:30:00Z"
+}
+
+// Profile Update Response
+{
+  "status": "success",
+  "user": {
+    "user_id": 5,
+    "username": "alice",
+    "email": "user@example.com",
+    "hashed_password": "$2b$12$...",
+    "preferences": ["Fruity", "Sweet"],
+    "favorite_drinks": [42, 87, 110],
+    "role": "customer"
+  }
 }
 ```
+
+**Important:** The following fields are NEVER transmitted between nodes:
+- Raw passwords (only hashed values)
+- Payment methods, card details
+- Stripe customer IDs
+- Any other sensitive financial data
 
 ---
 
@@ -560,9 +679,11 @@ POST /api/inter-node/health-check/         # Peer availability check
 
 | Scenario | Rule | Resolution |
 | :---- | :---- | :---- |
-| User updates preferences at Store A, then logs in at Store B | Preference change wins | Accept most recent timestamp; overwrite cached version |
+| User updates profile at visiting store while home store is reachable | Immediate propagation | Visiting store sends update immediately to home store; home store response is authoritative |
+| User updates profile at visiting store while home store is unreachable | Queued update | Change queued in encrypted local storage; retried with exponential backoff (1s, 2s, 4s, 8s) |
+| Queued update exceeds max retry period | Notification | User notified in app that change may not be persisted yet |
+| User updates preferences at Store A, then logs in at Store B | Store A is authoritative | Store B fetches fresh data from home (Store A); overwrites local cache |
 | User's favorite drinks differ between stores | Union approach | Merge favorite lists; Store B gets all of Store A's favorites |
-| User account modified at multiple stores simultaneously | Last-write-wins | Use server timestamp; later write takes precedence |
 | Duplicate user records created | Merge | Consolidate into single record; redirect references |
 
 **Consistency Model:**
@@ -580,11 +701,14 @@ POST /api/inter-node/health-check/         # Peer availability check
 - **Recovery**: Automatic retry after 30 seconds; manual hub reconnection after 5 minutes
 - **User Experience**: Non-local users see error message with estimated wait time
 
-**Peer Store Unreachable:**
-- **Impact**: Cannot fetch user data from peer; user login fails
-- **Fallback**: Suggest user use their home store; provide offline mode if available
-- **Recovery**: Automatic retry with exponential backoff
-- **HTTP Status**: Return 503 Service Unavailable with retry hint
+**Home Store Unreachable:**
+- **Impact**: Cannot fetch user data from home store; user login may fail
+- **Fallback**:
+  - If visiting user cache exists (data from prior visit within 24h): serve cached data → user can log in
+  - If no cached data: deny login with friendly error: "Your home store is currently unreachable. Please try again later."
+- **Recovery**: Automatic retry with exponential backoff when connectivity restored
+- **HTTP Status**: Return 503 Service Unavailable if no cache available
+- **Cached Data**: Cached data from prior visits remains accessible for 24 hours even if home store goes offline
 
 **Network Partition (Store isolated):**
 - **Impact**: Store operates independently; orders processed normally
@@ -597,36 +721,47 @@ POST /api/inter-node/health-check/         # Peer availability check
 - **Recovery**: Failover to replica (if configured); manual intervention required
 - **User Experience**: Immediate 503 error; recommend contact store management
 
+**Profile Update Retry Exhausted:**
+- **Impact**: Queued profile update never delivered to home store after max retry period
+- **Fallback**: Stop retrying; user notified in app
+- **User Experience**: In-app notification: "Your profile change couldn't be saved to the server. Please try again when your home store is reachable."
+- **Data**: Queued update remains in local encrypted queue; can be manually retried when home store is healthy
+
 ---
 
 ### Inter-Node Authentication & Authorization
 
 **Node Identity & Trust:**
-1. **Node Registration**: Each store/hub registers with master hub on startup
-   - Provides: Node ID, Region, Location, Public Key
-   - Receives: Signed certificate valid for 90 days
-2. **Token Issuance**: Tokens signed with node's private key
-   - Token includes: Node ID, Issuing Time, Expiration (1 hour)
-   - Format: JWT with RS256 signature
-3. **Token Validation**: Receiving node validates signature using sender's public key
-   - Check expiration time
-   - Verify node ID matches certificate
-   - Reject if certificate expired
+1. **Node Shared Secret**: Each node has a unique `INTER_NODE_SECRET` from environment configuration
+   - Store: `export INTER_NODE_SECRET=store42-shared-secret-xyz`
+   - Hub: `export INTER_NODE_SECRET=hub-chicago-shared-secret-abc`
+2. **Token Format**: Current (Sprint 3) uses shared secret; JWT RS256 planned for future upgrade
+   - Current: `Authorization: NodeToken {INTER_NODE_SECRET}`
+   - Future: JWT with RS256 signature, 1-hour expiration
+3. **Request Validation**:
+   - All /api/hub/ and /api/inter-node/ endpoints require `Authorization: NodeToken {INTER_NODE_SECRET}` header
+   - Requests without valid token receive 401 Unauthorized
+   - Token is validated on every request (no caching)
 
 **Authorization Rules:**
 - **Store → Hub**: Can submit supply requests, status updates, revenue reports
-- **Hub → Store**: Can query store data, trigger machine status changes
-- **Store A ↔ Store B**: Can exchange user data and machine status (after hub confirmation)
-- **Manager Access**: Token claims include `user_id` and `store_id`; can only access own store
-- **Logistics Manager**: Token includes `region_id`; can access hub-level data
+- **Hub → Store**: Can query store data, trigger machine status changes, send user lookup responses
+- **Store → Store (P2P)**: Can exchange user data for verified users (after hub confirmation)
+- **Hub → Hub**: Can receive broadcasts for cross-region user lookups; respond with user location
+
+**Rate Limiting:**
+- Inter-node endpoints have rate limits to prevent abuse by compromised nodes
+- Recommended: 100 requests/minute per node, with burst allowance for legitimate traffic
+- Exceeding limits returns 429 Too Many Requests
 
 In the distributed architecture, stores and hubs communicate via:
 
-- **REST APIs** for synchronous requests (user lookup, store discovery)
+- **REST APIs** for synchronous requests (user lookup, user sync, profile update)
 - **Event queues** (Celery + Redis) for asynchronous messaging (status updates, alerts)
 - **HTTPS/TLS 1.3** for all communications (encryption in transit)
-- **Token authentication** between nodes (servers must authenticate before data exchange)
-- **Trusted peer registry**: Hardcoded list of valid CodePop servers prevents unauthorized access
+- **Token authentication** between nodes (all requests must include NodeToken header)
+- **Hardcoded hub discovery**: All hub endpoints known via static config (no dynamic discovery)
+- **Audit logging**: All inter-node transfers logged with timestamp, requesting node, data type, success/failure
 
 ---
 
@@ -2420,9 +2555,9 @@ AI Recommendation Module Functions:
 **Overview:** The CodePop stack benefits from built-in performance optimizations at every layer. React Native renders UI efficiently through its virtual DOM and only re-renders components when state changes. Django's ORM constructs optimized SQL queries and supports connection pooling to reduce database overhead. PostgreSQL handles concurrent reads and writes efficiently at the store level, and its indexing system keeps query times low even as data grows. Beyond these baseline behaviors, the distributed architecture introduced along with other new features raise additional performance concerns. The sections below address the most significant of these.  
 
 ### Load Distribution
-**Problem:** A single centralized server handling all network traffic creates a bottleneck and a single point of failure.  
-**Solution:** Hub-and-spoke distributed node architecture.  
-**Description:** Each store runs its own Django API and PostgreSQL instance, scoping traffic and queries to local data. A spike at one store does not degrade performance at others.  
+**Problem:** A single centralized server handling all network traffic creates a bottleneck and a single point of failure.
+**Solution:** Flat hub mesh with P2P store communication.
+**Description:** Each store runs its own Django API and PostgreSQL instance, scoping traffic and queries to local data. A spike at one store does not degrade performance at others. Stores communicate directly with each other (P2P) for user data; hubs coordinate supply and logistics only (not a data router).  
 Implementation: Each store node is deployed as an independent Django server with its own PostgreSQL database. The hub layer handles only coordination (discovery, aggregation) and does not proxy user requests.  
 
 ### Database Indexing
@@ -2438,10 +2573,10 @@ Implementation: Each store node is deployed as an independent Django server with
 **Implementation:** Celery workers are started as a separate process alongside the Django server (see Store Startup Sequence). Revenue aggregation and hub broadcast calls are wrapped in `@shared_task` decorated functions and dispatched with `.delay()` or `.apply_async()`.  
 
 ### Lazy Replication Caching
-**Problem:** Fetching user data from a remote peer store on every login generates unnecessary cross-region network traffic.  
-**Solution:** On-demand user data sync with local caching.  
-**Description:** User data is fetched from peer stores only on a user's first login at a new location, then cached locally. Subsequent logins use the local cache, reducing inter-node traffic under normal conditions.  
-**Implementation:** On login, the authentication view first queries the local database. On a miss, it calls `POST /api/inter-node/user-lookup/` to locate the user, then `POST /api/inter-node/user-sync/` to pull and store their data locally before issuing a token.  
+**Problem:** Fetching user data from a remote home store on every login generates unnecessary cross-region network traffic.
+**Solution:** On-demand user data sync with local caching (24h TTL).
+**Description:** User data is fetched from the home store only on a user's first login at a visiting store, then cached locally in `VisitingUserCache` table for exactly 24 hours. Subsequent logins within 24h use the local cache, reducing inter-node traffic. After 24h, cache is automatically deleted; next login triggers re-fetch from home store.
+**Implementation:** On login, the authentication view first checks the local `User` table (home users). For visitors, it checks `VisitingUserCache`. On a miss, it calls `POST /api/hub/user-lookup/` to locate the user's home store, then `POST /api/inter-node/user-sync/` to the home store to pull data and cache locally in `VisitingUserCache` (with 24h expiration) before issuing a token.  
 
 ### Inter-Node Timeout Boundaries
 **Problem:** Slow or unreachable nodes can stall request chains and cause cascading failures.  
@@ -2492,22 +2627,17 @@ With the advent of AI we have seen numerous ways to "jailbreak" them and get the
     * Includes Cross site request forgery (CSRF) protection which prevents attacks that perform actions using other people’s credentials.
   * API endpoints will be used to ensure a user can access a endpoint with their role.
 * **Inter-Node Communication Security**: How to keep communications between servers secure
-  * Messages should be passed using HTTPS 
-  * Servers must authenticate that they are talking to a legit CodePop server before any communications take place
-    * They will first Authenticate with master server on startup with a public key
-    * Once verified they will get a signed certificate that will last 90 days
-      * Certificates will last 90 days so in case a certificate leaks there is a limited time someone can do damage and old certificates become useless
-  * Token Authentication will be used for server to server communcation will be protected by token authentication
-    * Will use the format JWT with RS256 signature.
-    * Tokens will only be valid for an hour.
-  * A store servers can be accessed by super admins and a store's admin, manager and repair staff
-    * If a supply hub or another regional store needs information from a different store it can request the information
-  * Supply hubs can only be accessed by logistic managers and super admins 
-    * They can send requests to other supply hubs and store inside of their region only
-  * The Master hub can only be accessed by logistic managers and super admins
-  * Nodes will be ran on Google Cloud platform in Docker containers
-    * Google has plenty of security features for their architecture which we will be using by default
-    * The isolation of Docker containers can make programs more secure as they are harder to get into
+  * **Passwords never transmitted**: Only Django PBKDF2 hashed password values are transferred during user data sync. Raw passwords are never transmitted between nodes under any circumstances.
+  * **HTTPS/TLS 1.3 required**: All inter-node communication uses encrypted transport in production. HTTP acceptable only on internal IPs during development; never transmit sensitive data over public IPs without TLS.
+  * **Token-based authentication**: All inter-node requests require `Authorization: NodeToken {INTER_NODE_SECRET}` header. Endpoints under /api/hub/ and /api/inter-node/ reject requests without valid token (401 Unauthorized).
+  * **Sensitive fields blocked**: The following fields are NEVER transmitted in inter-node data transfers: raw passwords, payment methods, card details, Stripe customer IDs. Only transfer required fields: username, email, hashed_password, preferences, favorite_drinks, role.
+  * **JWT tokens validated**: Tokens are validated for expiry and RS256 signature on every request. Expired or malformed tokens are rejected with 401 (currently using shared secrets; JWT RS256 is planned for future upgrade).
+  * **Visiting user cache isolation**: Visiting user data stored in separate `VisitingUserCache` table, never joined with home user data in same query. Clear separation prevents data leakage.
+  * **Queued updates encrypted**: Profile updates queued for delivery to offline home stores are encrypted at rest (AES-256 or Django encrypted fields). Queued data is protected if the VM is compromised.
+  * **Rate limiting**: Inter-node endpoints are rate limited to prevent a compromised node from flooding others with requests. Recommended: 100 requests/minute per node with burst allowance.
+  * **Audit logging**: All inter-node data transfers logged with timestamp, requesting_node_id, data_type, success/failure status. Logs retained for at least 30 days for forensic analysis.
+  * **Hardcoded hub discovery**: All hub addresses are known via static configuration (no dynamic discovery). This prevents unauthorized hubs from registering.
+  * **Nodes deployed in Docker**: Each node runs in isolated Docker container on Google Cloud Platform. Containers are isolated from each other and the host system.
 * **Data Encryption**: Explanation of how data will be encrypted (at rest and in transit).  
   * Django user data encryption  
   * Sha 256 encryption  
