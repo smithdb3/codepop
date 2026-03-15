@@ -253,7 +253,6 @@ urlpatterns = [
     path('internode/user-lookup/', InterNodeUserLookupView.as_view(), name='internode_user_lookup'),
     path('internode/user-sync/', InterNodeUserSyncView.as_view(), name='internode_user_sync'),
     path('internode/issue-token/', InterNodeIssueTokenView.as_view(), name='internode_issue_token'),
-    path('internode/verify-credentials/', InterNodeIssueTokenView.as_view(), name='internode_verify_credentials'),
     path('internode/user-preferences/update/', InterNodeUserPreferencesUpdateView.as_view(), name='internode_user_preferences_update'),
     path('internode/user-favorites/update/', InterNodeUserFavoritesUpdateView.as_view(), name='internode_user_favorites_update'),
     path('internode/user-profile/update/', InterNodeUserProfileUpdateView.as_view(), name='internode_user_profile_update'),
