@@ -1875,19 +1875,12 @@ class InterNodeUserPreferencesUpdateView(APIView):
     def post(self, request):
         from .internode_auth import jwt_sign
 
-        from .serializers import ALLOWED_PREFERENCES
-
         email = request.data.get('email')
         action = request.data.get('action')   # 'add' or 'remove'
         preference_text = request.data.get('preference', '').strip()
 
         if not email or action not in ('add', 'remove') or not preference_text:
             return Response({'error': 'email, action (add|remove), and preference required'}, status=400)
-
-        # Normalize to lowercase to match main API (PreferenceSerializer) so both preferences persist consistently
-        preference_text = preference_text.lower()
-        if preference_text not in ALLOWED_PREFERENCES:
-            return Response({'error': f'Invalid preference: {preference_text}'}, status=400)
 
         try:
             user = User.objects.get(email=email)
