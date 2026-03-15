@@ -375,8 +375,9 @@ class CreateUserAPIView(CreateAPIView):
         _refresh_user_cache(serializer.instance)
 
         # Queue routing pointer sync to upstream hub (store→hub; HUB_URL is UPSTREAM_HUB_URL for stores)
-        if getattr(settings, "UPSTREAM_HUB_URL", None):
-            target = (getattr(settings, "UPSTREAM_HUB_URL", None)).rstrip("/")
+        upstream = getattr(settings, "UPSTREAM_HUB_URL", None)
+        if upstream:
+            target = upstream.rstrip("/")
             EventQueue.objects.create(
                 event_type="user_sync",
                 status="pending",
@@ -387,6 +388,12 @@ class CreateUserAPIView(CreateAPIView):
                     "home_store_id": int(settings.STORE_ID),
                     "home_store_endpoint": settings.API_ENDPOINT,
                 },
+            )
+            logger.info("Queued user_sync event for %s to %s", serializer.instance.email, target)
+        else:
+            logger.warning(
+                "Registration succeeded but UPSTREAM_HUB_URL is unset or empty; no EventQueue entry created. "
+                "Set UPSTREAM_HUB_URL in .env on this store and restart the container."
             )
 
         return Response(
