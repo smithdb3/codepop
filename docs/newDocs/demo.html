@@ -553,12 +553,12 @@
                     return { health_checks: results, timestamp: new Date().toISOString() };
                 }
             },
-            // Step 2: Store Auto-Registration with Hub
+            // Step 2: Store Auto-Registration
             {
                 id: 'store-registry',
                 num: 2,
-                title: 'Store Auto-Registration with Hub',
-                description: 'Verify stores have registered with their regional hub (StoreNode) and appear in hub store lists.',
+                title: 'Store Auto-Registration',
+                description: 'Verify stores have registered with their regional hub and appear in hub store lists.',
                 curls: [
                     `curl -s http://34.136.12.86:8000/backend/hub/stores/ \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`,
@@ -587,11 +587,12 @@
                 id: 'alice-register',
                 num: 3,
                 title: 'Register Alice at Logan Store 1',
-                description: 'Alice registers with email and password at her home store. Store creates user and queues event for hub sync.',
+                description: 'Alice registers with username, email, and password. Store 1 returns user_id and auth token.',
                 curls: [
                     `curl -s -X POST http://34.55.170.11:8000/backend/auth/register/ \\
   -H "Content-Type: application/json" \\
   -d '{
+    "username": "alice@codepop.local",
     "email": "alice@codepop.local",
     "password": "testpass123",
     "first_name": "Alice",
@@ -605,6 +606,7 @@
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({
+                                username: 'alice@codepop.local',
                                 email: 'alice@codepop.local',
                                 password: 'testpass123',
                                 first_name: 'Alice',
@@ -620,12 +622,12 @@
                     }
                 }
             },
-            // Step 4: Logan Hub Has Alice (UserLocationCache)
+            // Step 4: Logan Hub Has Alice
             {
                 id: 'logan-hub-sync',
                 num: 4,
                 title: 'Logan Hub Has Alice',
-                description: 'Hub received user routing from store (Celery/EventQueue). Hub caches email → home_store mapping.',
+                description: 'Hub received user routing from store (Celery/EventQueue).',
                 curls: [
                     `curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=alice@codepop.local" \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
@@ -645,12 +647,12 @@
                     }
                 }
             },
-            // Step 5: Atlanta Hub Finds Alice (Hub-Mesh P2P)
+            // Step 5: Atlanta Hub Finds Alice (Hub-Mesh)
             {
                 id: 'atlanta-cascade',
                 num: 5,
                 title: 'Atlanta Hub Finds Alice (Hub-Mesh)',
-                description: 'Cross-region P2P discovery: Atlanta Hub broadcasts to peer hubs (hub-mesh); Logan Hub responds with Alice\'s home store endpoint.',
+                description: 'Cross-region discovery: Atlanta Hub asks peer hubs; Logan Hub responds with Alice\'s home store.',
                 curls: [
                     `curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=alice@codepop.local" \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
@@ -670,28 +672,40 @@
                     }
                 }
             },
-            // Step 6: Store 2 Discovers Alice via Hub
+            // Step 6: Inter-Node User Lookup
             {
                 id: 'internode-lookup',
                 num: 6,
-                title: 'Store 2 Discovers Alice via Hub',
-                description: 'Store 2 queries Logan Hub to find Alice\'s home store endpoint before login (part of CustomAuthToken flow).',
+                title: 'Inter-Node User Lookup',
+                description: 'Store 2 finds Alice via hub/lookup before login.',
                 curls: [
-                    `curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=alice@codepop.local" \\
-  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
+                    `curl -s -X POST http://34.121.91.135:8000/backend/internode/user-lookup/ \\
+  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71" \\
+  -H "Content-Type: application/json" \\
+  -d '{"email": "alice@codepop.local", "requesting_store_id": 2}'`
                 ],
-                activeNodes: ['logan-s2', 'logan-hub'],
+                activeNodes: ['logan-s2'],
                 action: async () => {
                     if (!testState.aliceUserId) throw new Error('Run step 3 first to register Alice.');
                     try {
                         const response = await fetchWithTimeout(
-                            `${CONFIG.nodes['logan-hub']}/backend/hub/store-location/?email=alice@codepop.local`,
-                            { headers: {'Authorization': `NodeToken ${CONFIG.nodeToken}`} },
+                            `${CONFIG.nodes['logan-s2']}/backend/internode/user-lookup/`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `NodeToken ${CONFIG.nodeToken}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    email: 'alice@codepop.local',
+                                    requesting_store_id: 2
+                                })
+                            },
                             CONFIG.timeout
                         );
                         return await response.json();
                     } catch (err) {
-                        throw new Error(`Hub discovery failed: ${err.message}`);
+                        throw new Error(`Inter-node lookup failed: ${err.message}`);
                     }
                 }
             },
@@ -700,13 +714,13 @@
                 id: 'visiting-login',
                 num: 7,
                 title: 'Visiting Login at Logan Store 2',
-                description: 'Alice logs in at Store 2 (visiting). Store queries hub for home store, verifies password with home store (P2P), creates VisitingSession with JWT.',
+                description: 'Password verified at home store; Store 2 issues token and creates VisitingSession.',
                 curls: [
                     `curl -s -X POST http://34.121.91.135:8000/backend/auth/login/ \\
   -H "Content-Type: application/json" \\
-  -d '{"email": "alice@codepop.local", "password": "testpass123"}'`
+  -d '{"username": "alice@codepop.local", "password": "testpass123"}'`
                 ],
-                activeNodes: ['logan-s2', 'logan-hub', 'logan-s1'],
+                activeNodes: ['logan-s2'],
                 action: async () => {
                     if (!testState.aliceUserId) throw new Error('Run step 3 first to register Alice.');
                     try {
@@ -716,7 +730,7 @@
                                 method: 'POST',
                                 headers: {'Content-Type': 'application/json'},
                                 body: JSON.stringify({
-                                    email: 'alice@codepop.local',
+                                    username: 'alice@codepop.local',
                                     password: 'testpass123'
                                 })
                             },
@@ -736,18 +750,19 @@
                 id: 'dup-regional',
                 num: 8,
                 title: 'Block Duplicate (Same Region)',
-                description: 'Cannot re-register Alice at Logan Store 2. Hub cache finds her at Logan Store 1. Expect 400.',
+                description: 'Cannot re-register Alice at Logan Store 2. Expect 400.',
                 curls: [
                     `curl -s -X POST http://34.121.91.135:8000/backend/auth/register/ \\
   -H "Content-Type: application/json" \\
   -d '{
+    "username": "alice@codepop.local",
     "email": "alice@codepop.local",
     "password": "newpass123",
     "first_name": "AliceDup",
     "last_name": "Duplicate"
   }'`
                 ],
-                activeNodes: ['logan-s2', 'logan-hub'],
+                activeNodes: ['logan-s2'],
                 action: async () => {
                     if (!testState.aliceUserId) throw new Error('Run step 3 first to register Alice.');
                     try {
@@ -757,6 +772,7 @@
                                 method: 'POST',
                                 headers: {'Content-Type': 'application/json'},
                                 body: JSON.stringify({
+                                    username: 'alice@codepop.local',
                                     email: 'alice@codepop.local',
                                     password: 'newpass123',
                                     first_name: 'AliceDup',
@@ -780,11 +796,12 @@
                 id: 'dup-crossregion',
                 num: 9,
                 title: 'Block Duplicate (Cross-Region)',
-                description: 'Cannot register Alice at Atlanta Store 1. Atlanta Hub broadcasts to Logan Hub (hub-mesh), finds her. Expect 400.',
+                description: 'Cannot register Alice at Atlanta Store 1; hub-mesh finds her at Logan. Expect 400.',
                 curls: [
                     `curl -s -X POST http://136.112.202.76:8000/backend/auth/register/ \\
   -H "Content-Type: application/json" \\
   -d '{
+    "username": "alice@codepop.local",
     "email": "alice@codepop.local",
     "password": "newpass123",
     "first_name": "AliceDup",
@@ -801,6 +818,7 @@
                                 method: 'POST',
                                 headers: {'Content-Type': 'application/json'},
                                 body: JSON.stringify({
+                                    username: 'alice@codepop.local',
                                     email: 'alice@codepop.local',
                                     password: 'newpass123',
                                     first_name: 'AliceDup',
@@ -824,11 +842,12 @@
                 id: 'bob-register',
                 num: 10,
                 title: 'Register Bob at Atlanta Store 1',
-                description: 'Second region (Atlanta) works independently. Bob registers at Atlanta Store 1 (his home store).',
+                description: 'Second region works independently. Bob registers at Atlanta S1.',
                 curls: [
                     `curl -s -X POST http://136.112.202.76:8000/backend/auth/register/ \\
   -H "Content-Type: application/json" \\
   -d '{
+    "username": "bob@codepop.local",
     "email": "bob@codepop.local",
     "password": "testpass456",
     "first_name": "Bob",
@@ -844,6 +863,7 @@
                                 method: 'POST',
                                 headers: {'Content-Type': 'application/json'},
                                 body: JSON.stringify({
+                                    username: 'bob@codepop.local',
                                     email: 'bob@codepop.local',
                                     password: 'testpass456',
                                     first_name: 'Bob',
@@ -861,12 +881,12 @@
                     }
                 }
             },
-            // Step 11: Atlanta Hub Has Bob (UserLocationCache)
+            // Step 11: Atlanta Hub Has Bob
             {
                 id: 'atlanta-bob-sync',
                 num: 11,
                 title: 'Atlanta Hub Has Bob',
-                description: 'Atlanta Hub has Bob in UserLocationCache after his registration (via EventQueue/Celery sync).',
+                description: 'Atlanta Hub has Bob in UserCache after his registration.',
                 curls: [
                     `curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=bob@codepop.local" \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
@@ -886,12 +906,12 @@
                     }
                 }
             },
-            // Step 12: Logan Hub Finds Bob (Hub-Mesh P2P)
+            // Step 12: Logan Hub Finds Bob (Hub-Mesh)
             {
                 id: 'cross-region-bob',
                 num: 12,
                 title: 'Logan Hub Finds Bob (Hub-Mesh)',
-                description: 'Logan Hub finds Bob via hub-mesh broadcast to Atlanta Hub. Symmetric cross-region P2P discovery.',
+                description: 'Logan Hub finds Bob via hub-mesh; Atlanta Hub responds. Symmetric cross-region discovery.',
                 curls: [
                     `curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=bob@codepop.local" \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
@@ -916,12 +936,12 @@
                 id: 'home-preference-create',
                 num: 13,
                 title: 'Alice Adds a Preference at Home Store',
-                description: 'Alice creates a preference at Logan S1 (home store). Baseline for write-through verification.',
+                description: 'Alice creates a preference at Logan S1 (home store). Baseline for write-through.',
                 curls: [
-                    `curl -s -X POST "http://34.55.170.11:8000/backend/preferences/" \\
+                    `curl -s -X POST "http://127.0.0.1:8001/backend/preferences/" \\
   -H "Authorization: Token ${testState.aliceToken || 'ALICE_TOKEN'}" \\
   -H "Content-Type: application/json" \\
-  -d '{"preference": "Vanilla"}'`
+  -d '{"Preference": "Vanilla", "UserID": ${testState.aliceUserId || 1}}'`
                 ],
                 activeNodes: ['logan-s1'],
                 action: async () => {
@@ -936,7 +956,8 @@
                                     'Content-Type': 'application/json'
                                 },
                                 body: JSON.stringify({
-                                    'preference': 'Vanilla'
+                                    'Preference': 'Vanilla',
+                                    'UserID': testState.aliceUserId
                                 })
                             },
                             CONFIG.timeout
@@ -954,12 +975,12 @@
                 id: 'visiting-preference-proxy',
                 num: 14,
                 title: 'Visiting User Writes a Preference (Write-Through)',
-                description: 'Alice at Logan S2 (visiting) adds a preference; Store 2 proxies to home store S1 via /internode/user-preferences/update/.',
+                description: 'Alice at Logan S2 (visiting) adds a preference; proxied to home store S1.',
                 curls: [
-                    `curl -s -X POST "http://34.121.91.135:8000/backend/preferences/" \\
+                    `curl -s -X POST "http://127.0.0.1:8002/backend/preferences/" \\
   -H "Authorization: Token ${testState.aliceS2Token || 'ALICE_S2_TOKEN'}" \\
   -H "Content-Type: application/json" \\
-  -d '{"preference": "Cherry"}'`
+  -d '{"Preference": "Cherry", "UserID": ${testState.aliceS2UserId || 2}}'`
                 ],
                 activeNodes: ['logan-s2', 'logan-s1'],
                 action: async () => {
@@ -974,7 +995,8 @@
                                     'Content-Type': 'application/json'
                                 },
                                 body: JSON.stringify({
-                                    'preference': 'Cherry'
+                                    'Preference': 'Cherry',
+                                    'UserID': testState.aliceS2UserId
                                 })
                             },
                             CONFIG.timeout
@@ -992,9 +1014,9 @@
                 id: 'verify-write-through',
                 num: 15,
                 title: 'Verify Write-Through: Read Preferences at Home Store',
-                description: 'GET Alice\'s preferences from Logan S1 (home). Should include both "Vanilla" (step 13) and "Cherry" (step 14, synced back via write-through).',
+                description: 'GET Alice\'s preferences from Logan S1 (home). Response should include both "Vanilla" (step 13) and "Cherry" (step 14, proxied to S1).',
                 curls: [
-                    `curl -s "http://34.55.170.11:8000/backend/preferences/" \\
+                    `curl -s "http://127.0.0.1:8001/backend/users/${testState.aliceUserId || 'ALICE_USER_ID'}/preferences/" \\
   -H "Authorization: Token ${testState.aliceToken || 'ALICE_TOKEN'}"`
                 ],
                 activeNodes: ['logan-s1'],
@@ -1002,7 +1024,7 @@
                     if (!testState.aliceToken || !testState.aliceUserId) throw new Error('Run step 3 first to register Alice.');
                     try {
                         const response = await fetchWithTimeout(
-                            `${CONFIG.nodes['logan-s1']}/backend/preferences/`,
+                            `${CONFIG.nodes['logan-s1']}/backend/users/${testState.aliceUserId}/preferences/`,
                             {
                                 headers: { 'Authorization': `Token ${testState.aliceToken}` }
                             },
@@ -1010,10 +1032,13 @@
                         );
                         const data = await response.json();
                         if (!response.ok) throw new Error(data.detail || 'Failed to read preferences');
-                        // API returns list of preference objects
-                        const list = Array.isArray(data) ? data : (data || []);
-                        const prefs = list.map(p => (typeof p === 'string' ? p : (p && p.preference))).filter(Boolean);
-                        return { preferences: prefs, full_response: data };
+                        // API returns list of { PreferenceID, UserID, Preference }; extract preference names
+                        const list = Array.isArray(data) ? data : (data.preferences || []);
+                        const prefs = list.map(p => (typeof p === 'string' ? p : (p && p.Preference))).filter(Boolean);
+                        if (!prefs.some(p => p.toLowerCase() === 'vanilla') || !prefs.some(p => p.toLowerCase() === 'cherry')) {
+                            throw new Error(`Expected both "vanilla" and "cherry" at home store; got: ${JSON.stringify(prefs)}`);
+                        }
+                        return data;
                     } catch (err) {
                         throw new Error(`Verify write-through failed: ${err.message}`);
                     }

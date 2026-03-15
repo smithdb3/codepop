@@ -63,6 +63,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'backend.middleware.NodeIdentityMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -154,6 +155,11 @@ if _participates:
     if not API_ENDPOINT:
         raise ImproperlyConfigured("API_ENDPOINT must be set for hub or store nodes in distributed mode")
 
+# Celery
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
@@ -225,15 +231,15 @@ CELERY_TIMEZONE = 'UTC'
 # via apps.py BackendConfig.ready() with exponential backoff until the hub is reachable.
 CELERY_BEAT_SCHEDULE = {
     'heartbeat-every-30-seconds': {
-        'task': 'backend.tasks.heartbeat',
+        'task': 'backend.tasks.heartbeat_task',
         'schedule': 30.0,  # every 30 seconds
     },
-    'drain-event-queue-every-10-seconds': {
-        'task': 'backend.tasks.drain_event_queue',
+    'process-event-queue-every-10-seconds': {
+        'task': 'backend.tasks.process_event_queue',
         'schedule': 10.0,  # every 10 seconds
     },
-    'check-dead-nodes-every-2-minutes': {
-        'task': 'backend.tasks.check_dead_nodes',
+    'check-dead-stores-every-2-minutes': {
+        'task': 'backend.tasks.check_dead_stores',
         'schedule': 120.0,  # every 2 minutes
     },
 }
