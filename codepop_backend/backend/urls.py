@@ -121,7 +121,12 @@ urlpatterns = [
     path('drinks/<int:pk>/', drink_detail, name='drink operations'),
 
     # Retrieve Drinks by UserID
-    path('users/<int:user_id>/drinks/', UserDrinksLookup.as_view(), name='user_drinks_list'),
+    path('users/<int:user_id>/drinks/', UserDrinksLookup.as_view(), name='user drink list'),
+
+    #inventory related URLs
+    # Endpoint to list all drinks created by a specific user identified by their user ID.
+    # - GET: Retrieve a list of drinks for the specified user.
+    path('users/<int:user_id>/drinks/', UserDrinksLookup.as_view(), name='user_preferences_list'),
 
     # Stripe payment
     path('create-payment-intent/', StripePaymentIntentView.as_view(), name='create-payment-intent'),

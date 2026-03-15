@@ -114,15 +114,6 @@ LONGITUDE = float(os.getenv('LONGITUDE', '0.0'))
 # Inter-node Authentication
 INTER_NODE_SECRET = os.getenv('INTER_NODE_SECRET', '')
 
-# Validate INTER_NODE_SECRET is set for distributed deployments
-from django.core.exceptions import ImproperlyConfigured
-if not INTER_NODE_SECRET and (IS_HUB or HUB_URL):
-    raise ImproperlyConfigured(
-        "INTER_NODE_SECRET must be set in .env for distributed deployments. "
-        "This secret is required for all inter-node communication (hub registration, user discovery, etc.). "
-        "Set INTER_NODE_SECRET in your .env file before starting the node."
-    )
-
 # Celery
 CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://redis:6379/0')

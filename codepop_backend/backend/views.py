@@ -26,9 +26,6 @@ from rest_framework.decorators import action
 from django.utils.dateparse import parse_datetime
 from .drinkAI import generate_soda
 from rest_framework.permissions import BasePermission
-import logging
-
-logger = logging.getLogger(__name__)
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -45,82 +42,17 @@ class IsSuperUser(BasePermission):
 class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data, context={'request': request})
-
-        # Try local authentication first
-        try:
-            serializer.is_valid(raise_exception=True)
-            user = serializer.validated_data['user']
-            token, created = Token.objects.get_or_create(user=user)
-            return Response({
-                'token': token.key,
-                'user_id': user.pk,
-                'first_name': user.first_name,
-                'is_admin' : user.is_superuser,
-                'is_manager' : user.is_staff,
-            })
-        except Exception as e:
-            # Local auth failed — check if user exists in cache (visiting user from another store)
-            email = request.data.get('username')  # Username can be email
-            if email and '@' in str(email):  # Looks like an email
-                try:
-                    cache_entry = UserCache.objects.get(
-                        user_email=email,
-                        expires_at__gt=timezone.now()
-                    )
-                    # Found user in cache — recreate locally for this store
-                    user_data = cache_entry.user_data
-                    user, created = User.objects.get_or_create(
-                        email=email,
-                        defaults={
-                            'username': email,
-                            'first_name': user_data.get('first_name', ''),
-                            'last_name': user_data.get('last_name', ''),
-                        }
-                    )
-                    # Note: password is not synced (users use separate auth per store for now)
-                    # Set an unusable password to prevent password-based login
-                    if created:
-                        user.set_unusable_password()
-                        user.save()
-
-                    token, created = Token.objects.get_or_create(user=user)
-                    return Response({
-                        'token': token.key,
-                        'user_id': user.pk,
-                        'first_name': user.first_name,
-                        'is_admin': user.is_superuser,
-                        'is_manager': user.is_staff,
-                    })
-                except UserCache.DoesNotExist:
-                    pass  # Fall through to original error
-
-            # Re-raise original auth error
-            raise e
-
-def _get_user_with_cache_fallback(user_id):
-    """
-    Lookup a user by PK, with fallback to UserCache for visiting users.
-    Returns (user, is_from_cache) tuple, or raises Http404 if not found.
-    """
-    try:
-        # Try local lookup first
-        user = User.objects.get(pk=user_id)
-        return (user, False)
-    except User.DoesNotExist:
-        # Check UserCache for visiting users
-        cache_entries = UserCache.objects.filter(
-            expires_at__gt=timezone.now()
-        ).values_list('user_data', flat=True)
-
-        for user_data in cache_entries:
-            if user_data.get('user_id') == user_id:
-                # Found in cache — return the cached data wrapped as a user-like object
-                return (user_data, True)
-
-        # Not found anywhere
-        from django.http import Http404
-        raise Http404(f"User with id {user_id} not found")
-
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'user_id': user.pk,
+            'first_name': user.first_name,
+            'is_admin' : user.is_superuser,
+            'is_manager' : user.is_staff,
+            
+        })
 
 def _refresh_user_cache(user):
     """Rebuild the UserCache entry for a user after preferences or favorites change."""
@@ -171,8 +103,7 @@ class CreateUserAPIView(CreateAPIView):
         # Queue routing pointer sync to upstream hub
         if settings.HUB_URL and not settings.IS_MASTER:
             EventQueue.objects.create(
-                event_type="user_sync",
-                status="pending",
+                event_type="user_registration_sync",
                 target_node=f"{settings.HUB_URL.rstrip('/')}/backend/internode/user-sync/",
                 payload={
                     "user_data": {
@@ -213,12 +144,7 @@ class PreferencesOperations(viewsets.ModelViewSet):
         return response
 
     def update(self, request, *args, **kwargs):
-        # Get the preference object before update to know which user to refresh
-        pref = self.get_object()
-        user = pref.UserID
-        response = super().update(request, *args, **kwargs)
-        _refresh_user_cache(user)
-        return response
+        return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         pref = self.get_object()
@@ -1018,9 +944,9 @@ class HubStoreLocationView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Check UserCache for this email (only non-expired entries)
+            # Check UserCache for this email
             try:
-                user_cache = UserCache.objects.get(user_email=email, expires_at__gt=timezone.now())
+                user_cache = UserCache.objects.get(user_email=email)
                 # Found cached user; return source store info
                 try:
                     source_store = StoreRegistry.objects.get(store_id=user_cache.source_store_id)
@@ -1200,22 +1126,17 @@ class InterNodeUserLookupView(APIView):
                     if hub_resp.status_code == 200:
                         hub_data = hub_resp.json()
                         if hub_data.get("status") == "found":
-                            # Cache the result locally for faster future lookups
-                            user_data = hub_data.get("user", {})
-                            UserCache.objects.update_or_create(
-                                user_email=email,
-                                defaults={
-                                    "user_data": user_data,
-                                    "source_store_id": hub_data.get("located_at_store_id", requesting_store_id),
-                                    "expires_at": timezone.now() + timezone.timedelta(hours=24),
-                                }
-                            )
                             return Response(hub_data, status=status.HTTP_200_OK)
-                except Exception as e:
-                    logger.error("Hub forward failed during user lookup for %s: %s", email, str(e))
-                    # fall through to not_found
+                except Exception:
+                    pass  # fall through to not_found
 
-            # User not found anywhere — do not record as successful sync
+            # User not found anywhere
+            SyncRecord.objects.create(
+                sync_type="user_pull",
+                source_store_id=requesting_store_id,
+                status="success",
+                completed_at=timezone.now(),
+            )
             return Response(
                 {"status": "not_found"},
                 status=status.HTTP_200_OK

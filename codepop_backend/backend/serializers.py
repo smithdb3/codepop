@@ -1,11 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from .models import Preference, Drink, Inventory, Order, Notification, Revenue
-from django.conf import settings
-import requests
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -21,31 +16,8 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value):
         User = get_user_model()
-
-        # Check local database first
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("A user with that email already exists.")
-
-        # Check if email exists on hub (for cross-region uniqueness)
-        if settings.HUB_URL and not settings.IS_MASTER:
-            try:
-                hub_url = settings.HUB_URL.rstrip('/')
-                hub_resp = requests.get(
-                    f"{hub_url}/backend/hub/store-location/",
-                    params={"email": value},
-                    headers={"Authorization": f"NodeToken {settings.INTER_NODE_SECRET}"},
-                    timeout=5,
-                )
-                if hub_resp.status_code == 200:
-                    hub_data = hub_resp.json()
-                    if hub_data.get("status") == "found":
-                        raise serializers.ValidationError(
-                            "A user with that email already exists in another store."
-                        )
-            except requests.exceptions.RequestException as e:
-                logger.error("Failed to check email uniqueness at hub: %s", str(e))
-                # Don't block registration if hub is unreachable — allow local registration
-
         return value
 
     def create(self, validated_data):
