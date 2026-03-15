@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(required=False, default='')
+    username = serializers.CharField()
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True,
                                      style={'input_type': 'password'})
@@ -61,9 +61,8 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         User = get_user_model()
-        username = validated_data.get('username') or validated_data['email']
         return User.objects.create_user(
-            username=username,
+            username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
             first_name=validated_data.get('first_name', ''),
