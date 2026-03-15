@@ -1,8 +1,8 @@
 """
 Node Identity Middleware
 
-Reads node identity from Django settings (hub mesh + regional stores)
-and attaches it to every request so views can access node info without re-reading settings.
+Reads node identity configuration from Django settings and attaches it to every request
+so views can easily access node information without re-reading settings.
 """
 
 from django.conf import settings
@@ -15,53 +15,43 @@ class NodeIdentityMiddleware:
 
     Provides request.node_identity dict with:
     - store_id: This node's store ID (int)
-    - store_name: Human-readable name (str)
     - region: This node's region (str)
-    - api_endpoint: This node's base URL (str)
-    - node_role: 'hub' or 'store' (str)
-    - is_hub: True if node_role == 'hub' (bool)
-    - upstream_hub_url: For stores, URL of regional hub; for hubs, empty (str)
-    - hub_url: Same as upstream_hub_url (backward compat)
+    - is_hub: Whether this node is a hub (bool)
+    - is_master: Whether this node is the master hub (bool)
+    - hub_url: URL of this node's regional hub (str, empty if this is a hub)
 
-    Validates critical settings at startup when node participates in the distributed system.
+    Validates critical settings at startup (fail-fast if configuration is incomplete).
     """
 
     def __init__(self, get_response):
         self.get_response = get_response
 
         # Cache coerced values for performance
-        try:
-            self.store_id = int(settings.STORE_ID) if str(settings.STORE_ID).strip() else 0
-        except (TypeError, ValueError):
-            self.store_id = 0
-        self.store_name = settings.STORE_NAME or f"Store {self.store_id}"
-        self.region = settings.REGION or ""
-        self.api_endpoint = settings.API_ENDPOINT or ""
-        self.node_role = getattr(settings, "NODE_ROLE", "store")
-        self.is_hub = getattr(settings, "IS_HUB", self.node_role == "hub")
-        self.upstream_hub_url = getattr(settings, "UPSTREAM_HUB_URL", "") or getattr(settings, "HUB_URL", "")
-        self.hub_url = self.upstream_hub_url
+        self.store_id = int(settings.STORE_ID) if settings.STORE_ID else 0
+        self.region = settings.REGION
+        self.is_hub = settings.IS_HUB
+        self.is_master = settings.IS_MASTER
+        self.hub_url = settings.HUB_URL
 
-        # Fail-fast validation when this node participates (hub or store with upstream)
-        participates = self.is_hub or bool(self.upstream_hub_url)
-        if participates:
-            if str(settings.STORE_ID).strip() == "":
+        # Fail-fast validation: if this node participates in distributed system,
+        # ensure critical config is present
+        if self.is_hub or self.hub_url:
+            if not self.store_id:
                 raise ImproperlyConfigured("STORE_ID must be set for hub or store nodes")
             if not self.region:
                 raise ImproperlyConfigured("REGION must be set for hub or store nodes")
-            if not self.api_endpoint:
+            if not settings.API_ENDPOINT:
                 raise ImproperlyConfigured("API_ENDPOINT must be set for hub or store nodes")
 
     def __call__(self, request):
+        # Attach cached node identity to request
         request.node_identity = {
             "store_id": self.store_id,
-            "store_name": self.store_name,
             "region": self.region,
-            "api_endpoint": self.api_endpoint,
-            "node_role": self.node_role,
             "is_hub": self.is_hub,
-            "upstream_hub_url": self.upstream_hub_url,
+            "is_master": self.is_master,
             "hub_url": self.hub_url,
         }
+
         response = self.get_response(request)
         return response

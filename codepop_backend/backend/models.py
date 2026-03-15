@@ -178,13 +178,15 @@ class HubRegistry(models.Model):
     hub_name = models.CharField(max_length=255)
     region = models.CharField(max_length=100)
     api_endpoint = models.URLField()
+    is_master = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     last_seen = models.DateTimeField(null=True, blank=True)
     registered_at = models.DateTimeField(auto_now_add=True)
     issued_secret = models.CharField(max_length=255, blank=True)  # Secret issued by this hub to us
 
     def __str__(self):
-        return f"Hub {self.hub_id}: {self.hub_name}"
+        master_str = " (MASTER)" if self.is_master else ""
+        return f"Hub {self.hub_id}: {self.hub_name}{master_str}"
 
     class Meta:
         verbose_name_plural = "Hub Registries"
@@ -195,6 +197,7 @@ class NodeCertificate(models.Model):
     NODE_TYPES = [
         ('store', 'Store'),
         ('hub', 'Hub'),
+        ('master', 'Master Hub'),
     ]
 
     node_id = models.CharField(max_length=100, unique=True)
@@ -332,12 +335,14 @@ class SupplyRequest(models.Model):
 # Group 2: Sprint 3 Feature Models
 
 class Region(models.Model):
-    """Regional metadata."""
+    """Regional metadata (7 hubs + Logan master)."""
     name = models.CharField(max_length=100, unique=True)
     hub_api_endpoint = models.URLField(blank=True)
+    is_master = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.name}"
+        master_str = " (MASTER)" if self.is_master else ""
+        return f"{self.name}{master_str}"
 
 
 class SupplyHub(models.Model):

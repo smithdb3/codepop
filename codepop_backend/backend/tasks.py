@@ -34,10 +34,10 @@ def register_with_hub(self):
     - Creates/updates NodeCertificate for this node
     - Persists hub info to HubRegistry so heartbeat tasks can use it
 
-    Skips if HUB_URL / API_ENDPOINT are not set (hub nodes don't register anywhere).
+    Skips if this is the master hub or if HUB_URL / API_ENDPOINT are not set.
     """
-    if not settings.HUB_URL or not settings.API_ENDPOINT:
-        logger.info(f"Skipping registration: no HUB_URL or API_ENDPOINT configured (hub node or local dev)")
+    if settings.IS_MASTER or not settings.HUB_URL or not settings.API_ENDPOINT:
+        logger.info(f"Skipping registration: IS_MASTER={settings.IS_MASTER}, HUB_URL={settings.HUB_URL}")
         return
 
     hub_url = settings.HUB_URL.rstrip('/')
@@ -72,6 +72,7 @@ def register_with_hub(self):
                     "hub_name": data.get("hub_name", ""),
                     "region": data.get("region", settings.REGION),
                     "api_endpoint": hub_url,
+                    "is_master": data.get("is_master", False),
                     "is_active": True,
                     "issued_secret": node_secret,
                 }
@@ -114,7 +115,7 @@ def heartbeat_task(self):
     Uses per-node secret from HubRegistry.issued_secret if available, falls back to
     INTER_NODE_SECRET (global) for compatibility during bootstrap.
     """
-    if not settings.HUB_URL:
+    if settings.IS_MASTER or not settings.HUB_URL:
         return
 
     try:
@@ -241,7 +242,7 @@ def check_dead_stores():
 
     Uses efficient bulk update() — no N+1 queries.
     """
-    if not settings.IS_HUB:
+    if not (settings.IS_HUB or settings.IS_MASTER):
         return
 
     threshold = timezone.now() - timezone.timedelta(minutes=5)
