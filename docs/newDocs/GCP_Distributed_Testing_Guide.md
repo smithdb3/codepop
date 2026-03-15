@@ -1,18 +1,18 @@
 # CodePop Distributed System — End-to-End Test Guide
 
-**Date:** 2026-03-13
-**Branch:** bradensDevBranch
+**Date:** 2026-03-14
+**Architecture:** Hub mesh + regional stores (no master hub). Stores use UPSTREAM_HUB_URL; hubs use PEER_HUB_URLS for cross-region discovery.
 
 ## Node Inventory
 
 | Node | IP | Role | STORE_ID |
 |---|---|---|---|
-| Logan Hub (Master) | `34.136.12.86` | Master Hub (IS_HUB=True, IS_MASTER=True) | 0 |
-| Logan Store 1 | `34.55.170.11` | Regional Store | 1 |
-| Logan Store 2 | `34.121.91.135` | Regional Store | 2 |
-| Atlanta Hub | `136.115.168.184` | Regional Hub (IS_HUB=True) | 3 |
-| Atlanta Store 1 | `136.112.202.76` | Regional Store | 4 |
-| Atlanta Store 2 | `34.173.157.74` | Regional Store | 5 |
+| Logan Hub | `34.136.12.86` | Hub (NODE_ROLE=hub) | 0 |
+| Logan Store 1 | `34.55.170.11` | Store | 1 |
+| Logan Store 2 | `34.121.91.135` | Store | 2 |
+| Atlanta Hub | `136.115.168.184` | Hub (NODE_ROLE=hub) | 3 |
+| Atlanta Store 1 | `136.112.202.76` | Store | 4 |
+| Atlanta Store 2 | `34.173.157.74` | Store | 5 |
 
 ---
 
@@ -52,7 +52,7 @@ curl -s -X POST http://34.173.157.74:8000/backend/internode/health-check/ \
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71" | python -m json.tool
 ```
 
-**Expected:** Each returns `{"status": "ok", "store_id": <id>, "is_hub": <bool>, "region": "<region>"}`
+**Expected:** Each returns `{"status": "ok", "store_id": <id>, "is_hub": <bool>, "region": "<region>"}` (no master hub; all nodes are either hub or store).
 
 ---
 
@@ -135,39 +135,18 @@ If `not_found`, the EventQueue hasn't been processed yet. Retry after a few seco
 
 ---
 
-## Phase 4a: Verify Master Hub Received Alice (Cross-Region Feature)
+## Phase 4a: (Optional) Logan Hub has Alice in UserCache
 
-Wait ~15 seconds for Celery to forward the user sync from Logan Hub to Master Hub, then verify master has Alice.
-
-```bash
-echo "=== Master Hub store-location lookup for Alice ==="
-curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=alice@codepop.local" \
-  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71" | python -m json.tool
-```
-
-**Expected:**
-```json
-{
-  "status": "found",
-  "store_id": 1,
-  "api_endpoint": "http://34.55.170.11:8000"
-}
-```
-
-This confirms that the regional hub forwarded Alice's data to the master hub with the store endpoint embedded.
-
-**If `not_found`:**
-- Check Celery is processing EventQueue on Logan Hub
-- Check the EventQueue for a pending event pointing to master hub's `/internode/user-sync/`
+Logan Hub receives user-sync from Logan Store 1 via EventQueue/Celery. Phase 4 already verifies Logan Hub's store-location returns Alice. No separate "master" hub.
 
 ---
 
-## Phase 4b: Verify Atlanta Hub Can Find Alice via Cascade
+## Phase 4b: Verify Atlanta Hub Can Find Alice via Hub-Mesh
 
-Atlanta Hub should NOT have Alice in its local UserCache (she's in Logan), but it should cascade the query to Master Hub and find her.
+Atlanta Hub does not have Alice in its local UserCache (she is in Logan region). Atlanta Hub should **broadcast to peer hubs** via hub-mesh (`/backend/hub-mesh/user-location/?email=...`); Logan Hub responds with Alice's home store.
 
 ```bash
-echo "=== Atlanta Hub store-location lookup for Alice (via cascade) ==="
+echo "=== Atlanta Hub store-location lookup for Alice (via hub-mesh) ==="
 curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=alice@codepop.local" \
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71" | python -m json.tool
 ```
@@ -181,11 +160,12 @@ curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=alice@cod
 }
 ```
 
-This proves the cascade is working: Atlanta Hub → Master Hub → found.
+This proves hub-mesh cross-region discovery: Atlanta Hub → broadcast to peers → Logan Hub has Alice and responds.
 
 **If `not_found`:**
-- Confirm Phase 4a passed (master has Alice)
-- Check for network issues between Atlanta and Master hubs
+- Ensure Logan Hub and Atlanta Hub have each other in PEER_HUB_URLS
+- Check Celery on Logan Hub processed user-sync so Logan Hub's UserCache has Alice
+- Check network between Atlanta Hub and Logan Hub
 
 ---
 
@@ -240,9 +220,9 @@ echo "Saved: ALICE_S2_TOKEN=$ALICE_S2_TOKEN"
 echo "Saved: ALICE_S2_ID=$ALICE_S2_ID"
 ```
 
-**Expected:** `200` with token, user_id, and user details. The password is wrong intentionally — this triggers the UserCache fallback.
+**Expected:** `200` with token, user_id, and user details. Visiting login: Store 2 forwards credentials to Alice's home store (Store 1) via `/backend/internode/verify-credentials/`; home store verifies password and returns JWT; Store 2 creates VisitingSession and returns token to client.
 
-**Note:** If you get `401 Unauthorized`, Alice's UserCache hasn't reached Store 2 yet. Confirm Phase 5 passed.
+**Note:** If you get `401 Unauthorized`, ensure Alice's routing is known (Phase 4/5) and home store (Store 1) is reachable from Store 2.
 
 ---
 
@@ -306,7 +286,7 @@ curl -s -X POST http://136.112.202.76:8000/backend/auth/register/ \
 {"email": ["A user with that email already exists in another store."]}
 ```
 
-This proves the cross-region cascade is working for uniqueness checks. Atlanta Store 1's `validate_email` queried Atlanta Hub → not found locally → cascaded to Master Hub → found Alice.
+This proves cross-region uniqueness: Atlanta Store 1's registration checks email via Atlanta Hub → not found locally → hub broadcasts to peer hubs via hub-mesh → Logan Hub has Alice and responds → duplicate rejected.
 
 ---
 
@@ -353,12 +333,10 @@ curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=bob@codep
 
 ## Phase 11: Verify Cross-Region Discovery Works
 
-Logan Hub should now be able to find Bob (registered at Atlanta Store 1) via the master hub cascade.
-
-**Note:** This now works because regional hubs forward user syncs to the master hub.
+Logan Hub should find Bob (registered at Atlanta Store 1) via **hub-mesh**: Logan Hub broadcasts to peer hubs; Atlanta Hub has Bob in its UserCache and responds.
 
 ```bash
-echo "=== Logan Hub lookup for Bob (via cascade to master) ==="
+echo "=== Logan Hub lookup for Bob (via hub-mesh) ==="
 curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=bob@codepop.local" \
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71" | python -m json.tool
 ```
@@ -372,16 +350,16 @@ curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=bob@codepop.
 }
 ```
 
-This proves cross-region discovery is working: Logan Hub queries Master Hub and finds Bob.
+This proves cross-region discovery: Logan Hub queries peer hubs via hub-mesh and Atlanta Hub returns Bob's home store.
 
 ---
 
 ## Phase 12: Verify Symmetric Cross-Region Discovery
 
-Symmetric test: Atlanta Hub should find Alice (registered in Logan) via the master hub cascade.
+Symmetric test: Atlanta Hub should find Alice (registered in Logan) via **hub-mesh** (broadcast to peer hubs; Logan Hub responds).
 
 ```bash
-echo "=== Atlanta Hub lookup for Alice (via cascade to master) ==="
+echo "=== Atlanta Hub lookup for Alice (via hub-mesh) ==="
 curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=alice@codepop.local" \
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71" | python -m json.tool
 ```
@@ -395,7 +373,7 @@ curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=alice@cod
 }
 ```
 
-This proves symmetric cross-region discovery: Atlanta Hub queries Master Hub and finds Alice.
+This proves symmetric cross-region discovery: Atlanta Hub queries peer hubs via hub-mesh and finds Alice at Logan Store 1.
 
 ---
 
@@ -409,17 +387,17 @@ Use this checklist to track test results:
 | 2 | Store registration | Both hubs list their stores | |
 | 3 | User registration | Alice created at Logan Store 1 | |
 | 4 | Regional hub sync | Logan Hub finds Alice | |
-| 4a | **Master hub sync (NEW)** | **Master Hub finds Alice** | |
-| 4b | **Cross-region cascade (NEW)** | **Atlanta Hub finds Alice via cascade to master** | |
-| 5 | Inter-node lookup | Store 2 finds Alice via cascade | |
-| 6 | Visiting user login | Alice logs in at Store 2 via UserCache | |
-| 7 | Visiting user data | Alice has no local preferences at Store 2 | |
+| 4a | (Optional) | Logan Hub has Alice (same as 4) | |
+| 4b | Cross-region hub-mesh | Atlanta Hub finds Alice via hub-mesh | |
+| 5 | Inter-node lookup | Store 2 finds Alice (local/hub lookup) | |
+| 6 | Visiting user login | Alice logs in at Store 2 (verify-credentials at home store) | |
+| 7 | Visiting user data | Alice has no local preferences at Store 2 (or write-through from home) | |
 | 8 | Duplicate block (regional) | Duplicate registration at Store 2 rejected | |
-| 8a | **Duplicate block (cross-region) (NEW)** | **Duplicate registration at Atlanta Store 1 rejected via cascade** | |
+| 8a | Duplicate block (cross-region) | Duplicate registration at Atlanta Store 1 rejected via hub-mesh | |
 | 9 | Region independence | Bob created at Atlanta Store 1 | |
 | 10 | Atlanta hub sync | Atlanta Hub finds Bob | |
-| 11 | Cross-region gap | Logan Hub finds Bob ✓ (now working!) | |
-| 12 | Symmetric gap | Atlanta Hub finds Alice ✓ (now working!) | |
+| 11 | Cross-region discovery | Logan Hub finds Bob via hub-mesh | |
+| 12 | Symmetric discovery | Atlanta Hub finds Alice via hub-mesh | |
 
 ---
 
@@ -436,7 +414,7 @@ Make sure all nodes have the same `INTER_NODE_SECRET=3597b3480971f2aa46484d2a8ca
 
 ### Store not appearing in hub's `/hub/stores/`
 ```bash
-# SSH into the store and check that HUB_URL is set correctly in .env
+# SSH into the store and check that UPSTREAM_HUB_URL is set correctly in .env (stores only)
 # Then trigger registration manually:
 docker exec <container> python manage.py shell -c "
 from backend.tasks import register_with_hub
@@ -456,7 +434,7 @@ curl -v -m 5 -X POST http://136.115.168.184:8000/backend/internode/health-check/
 
 ## Next Phases (Future Sprints)
 
-- **Master hub aggregation:** Cross-region user discovery via master hub
-- **Preference sync:** Sync user preferences across regions
+- **Hub-mesh:** Cross-region user discovery via hub-mesh (no master hub)
+- **Write-through:** Profile, preferences, and favorites from visiting store to home store (implemented)
 - **Supply chain:** Implement supply request approval workflow
 - **Machine status:** Real-time machine status updates and repair scheduling
