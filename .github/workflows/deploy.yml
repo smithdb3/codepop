@@ -5,78 +5,125 @@ on:
     branches: [ master ]
 
 jobs:
-  deploy:
+  deploy-logan-master-hub:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Deploy to logan-master-hub
+      - name: Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.LOGAN_HUB_IP }}
           username: peterson_braden2
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
           script: |
+            set -e
             cd ~/codepop/codepop_backend
             git pull origin master
             docker compose down
             docker compose up -d --build
+            echo "✓ logan-master-hub deployed successfully"
 
-      - name: Deploy to logan-store-1
+  deploy-logan-store-1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.LOGAN_STORE1_IP }}
           username: peterson_braden2
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
           script: |
+            set -e
             cd ~/codepop/codepop_backend
             git pull origin master
             docker compose down
             docker compose up -d --build
+            echo "✓ logan-store-1 deployed successfully"
 
-      - name: Deploy to logan-store-2
+  deploy-logan-store-2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.LOGAN_STORE2_IP }}
           username: peterson_braden2
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
           script: |
+            set -e
             cd ~/codepop/codepop_backend
             git pull origin master
             docker compose down
             docker compose up -d --build
+            echo "✓ logan-store-2 deployed successfully"
 
-      - name: Deploy to atlanta-hub
+  deploy-atlanta-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.ATLANTA_HUB_IP }}
           username: peterson_braden2
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
           script: |
+            set -e
             cd ~/codepop/codepop_backend
             git pull origin master
             docker compose down
             docker compose up -d --build
+            echo "✓ atlanta-hub deployed successfully"
 
-      - name: Deploy to atlanta-store-1
+  deploy-atlanta-store-1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.ATLANTA_STORE1_IP }}
           username: peterson_braden2
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
           script: |
+            set -e
             cd ~/codepop/codepop_backend
             git pull origin master
             docker compose down
             docker compose up -d --build
+            echo "✓ atlanta-store-1 deployed successfully"
 
-      - name: Deploy to atlanta-store-2
+  deploy-atlanta-store-2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.ATLANTA_STORE2_IP }}
           username: peterson_braden2
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
           script: |
+            set -e
             cd ~/codepop/codepop_backend
             git pull origin master
             docker compose down
             docker compose up -d --build
+            echo "✓ atlanta-store-2 deployed successfully"
+
+  deploy-complete:
+    needs: [deploy-logan-master-hub, deploy-logan-store-1, deploy-logan-store-2, deploy-atlanta-hub, deploy-atlanta-store-1, deploy-atlanta-store-2]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check deployment status
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✓ All deployments completed successfully"
+            exit 0
+          else
+            echo "✗ One or more deployments failed"
+            exit 1
+          fi
