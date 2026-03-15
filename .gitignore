@@ -2,6 +2,10 @@
 **/__pycache__/
 *.pyc
 
+# Ignore Django migration files, except __init__.py
+**/migrations/*
+!**/migrations/__init__.py
+
 codepop_virtual_enviroment
 
 .idea
