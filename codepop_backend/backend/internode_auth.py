@@ -1,208 +1,139 @@
 """
-Inter-Node Authentication
-
-Provides NodeTokenAuthentication (DRF authentication class) and IsInterNodeRequest
-(DRF permission class) for validating requests from other nodes in the distributed system.
-
-Auth flow:
-1. Incoming request has header: Authorization: NodeToken {secret}
-2. NodeTokenAuthentication extracts the secret and validates it
-3. For Sprint 3, falls back to settings.INTER_NODE_SECRET (simple shared secret)
-4. Future: will validate against NodeCertificate table with JWT RS256 signatures
-5. IsInterNodeRequest permission class ensures only inter-node requests proceed
+Clean inter-node authentication using shared secrets.
+Single global INTER_NODE_SECRET for all nodes in the network.
 """
-
-from django.conf import settings
-from django.utils import timezone
-from rest_framework.authentication import BaseAuthentication, get_authorization_header
+import hmac
+import hashlib
+import json
+import base64
+import time
+from rest_framework.authentication import BaseAuthentication
 from rest_framework.permissions import BasePermission
 from rest_framework.exceptions import AuthenticationFailed
-from backend.models import NodeCertificate
+from django.conf import settings
 
 
 class NodeTokenAuthentication(BaseAuthentication):
     """
-    Inter-node authentication using shared secrets.
-
-    Sprint 3 (current): Validates against settings.INTER_NODE_SECRET
-    Future: Will validate against NodeCertificate table with JWT RS256
-
-    Header format: Authorization: NodeToken {secret}
+    Validates Authorization: NodeToken <token> header against INTER_NODE_SECRET.
+    Returns a synthetic AnonymousUser with is_node=True for authorized requests.
     """
-
-    keyword = "NodeToken"
-
-    def get_authorization_header(self, request):
-        """Extract Authorization header."""
-        auth = get_authorization_header(request).split()
-        if not auth or auth[0].lower() != self.keyword.lower().encode():
-            return None
-        if len(auth) == 1:
-            raise AuthenticationFailed("Invalid token header. No credentials provided.")
-        if len(auth) > 2:
-            raise AuthenticationFailed("Invalid token header. Token string should not contain spaces.")
-        return auth[1].decode()
+    keyword = 'NodeToken'
 
     def authenticate(self, request):
-        """
-        Authenticate the request using NodeToken header.
-        Returns (user, auth) tuple on success, None if no auth header, raises AuthenticationFailed on invalid token.
-        """
-        token = self.get_authorization_header(request)
-        if token is None:
-            # No NodeToken header - return None to let other authenticators handle it
+        auth = request.META.get('HTTP_AUTHORIZATION', '').split()
+
+        if not auth or auth[0].lower() != self.keyword.lower():
             return None
 
-        return self.authenticate_credentials(token)
+        if len(auth) != 2:
+            raise AuthenticationFailed('Invalid NodeToken header')
 
-    def authenticate_credentials(self, key):
-        """
-        Validate the token against NodeCertificate table or settings.INTER_NODE_SECRET.
+        token = auth[1]
+        if not self._verify_token(token):
+            raise AuthenticationFailed('Invalid NodeToken')
 
-        Correct lookup order:
-        1. Check NodeCertificate table first (per-node secrets issued during registration)
-        2. Fall back to settings.INTER_NODE_SECRET (bootstrap/global fallback)
-        3. Raise AuthenticationFailed if neither match
+        user = request.user.__class__()
+        user.is_node = True
+        user.is_authenticated = True
+        return (user, token)
 
-        Returns (synthetic_user, token) tuple with node_id and node_type set.
-        Raises AuthenticationFailed if token is invalid.
-        """
-        from django.contrib.auth.models import AnonymousUser
-
-        # Step 1: Check NodeCertificate table for per-node secrets
-        try:
-            cert = NodeCertificate.objects.get(
-                shared_secret=key,
-                is_active=True,
-                expires_at__gt=timezone.now(),
-            )
-            # Valid per-node certificate found
-            synthetic_user = AnonymousUser()
-            synthetic_user.is_node = True
-            synthetic_user.node_id = cert.node_id
-            synthetic_user.node_type = cert.node_type
-            return (synthetic_user, key)
-        except NodeCertificate.DoesNotExist:
-            pass
-
-        # Step 2: Fall back to global INTER_NODE_SECRET (bootstrap / dev only; prefer NodeCertificate in prod)
-        if getattr(settings, "INTER_NODE_SECRET", None) and key == settings.INTER_NODE_SECRET:
-            synthetic_user = AnonymousUser()
-            synthetic_user.is_node = True
-            synthetic_user.node_id = "global"  # Indicates global fallback was used
-            synthetic_user.node_type = None
-            return (synthetic_user, key)
-
-        # Step 3: No valid token found
-        raise AuthenticationFailed("Invalid or expired NodeToken.")
-
-    def authenticate_header(self, request):
-        """Return a string for the WWW-Authenticate header."""
-        return self.keyword
+    def _verify_token(self, token):
+        """Verify token matches INTER_NODE_SECRET."""
+        expected = settings.INTER_NODE_SECRET
+        return hmac.compare_digest(token, expected)
 
 
 class IsInterNodeRequest(BasePermission):
     """
-    Permission class for inter-node communication endpoints.
-
-    Only allows requests that have been authenticated via NodeTokenAuthentication.
-    Checks that request.user.is_node == True (set by NodeTokenAuthentication).
+    Allow only inter-node requests (authenticated via NodeToken).
     """
-
-    message = "Inter-node authentication required."
+    message = 'Only inter-node requests allowed'
 
     def has_permission(self, request, view):
-        """Check if the request is from another node."""
-        # NodeTokenAuthentication sets is_node=True on synthetic user
-        return hasattr(request.user, "is_node") and request.user.is_node
+        return getattr(request.user, 'is_node', False) is True
 
 
-class IsHubMeshCaller(BasePermission):
+class IsHubRequest(BasePermission):
     """
-    Permission for hub-mesh endpoints: only hub nodes (or global secret) may call.
-    Denies when the caller is a store (node_type == 'store').
+    Allow only requests from hub nodes (via X-Node-Role: hub header).
+    Requires NodeTokenAuthentication.
     """
-    message = "Hub-mesh endpoints may only be called by hub nodes."
+    message = 'Only hub nodes allowed'
 
     def has_permission(self, request, view):
-        if not (hasattr(request.user, "is_node") and request.user.is_node):
+        if not getattr(request.user, 'is_node', False):
             return False
-        node_type = getattr(request.user, "node_type", None)
-        # Allow hub or global/None; deny store
-        return node_type != "store"
+        node_role = request.META.get('HTTP_X_NODE_ROLE', '').lower()
+        return node_role == 'hub'
 
 
-class IsStoreNode(BasePermission):
+def b64_encode(data):
+    """Encode to base64url without padding."""
+    return base64.urlsafe_b64encode(
+        json.dumps(data, separators=(',', ':')).encode()
+    ).rstrip(b'=').decode()
+
+
+def b64_decode(s):
+    """Decode from base64url with auto-padding."""
+    padding = 4 - (len(s) % 4)
+    s += '=' * padding
+    return json.loads(base64.urlsafe_b64decode(s))
+
+
+def jwt_sign(payload, secret, hours=24):
     """
-    Permission for store-only endpoints (e.g. hub/register, hub/heartbeat):
-    only store nodes (or global secret) may call. Denies when the caller is a hub.
+    Sign a payload as HMAC-SHA256 JWT.
+    Returns: "header.payload.signature"
     """
-    message = "This endpoint is for store nodes only."
-
-    def has_permission(self, request, view):
-        if not (hasattr(request.user, "is_node") and request.user.is_node):
-            return False
-        node_type = getattr(request.user, "node_type", None)
-        # Allow store or global/None; deny hub
-        return node_type != "hub"
-
-
-def get_node_id_from_request(request):
-    """
-    Extract the node_id from an inter-node authenticated request.
-
-    Returns the node_id if available (from NodeCertificate), or "global" if
-    the global INTER_NODE_SECRET was used for auth.
-
-    Useful for audit logging and tracking which node made the request.
-    """
-    if hasattr(request.user, "node_id"):
-        return request.user.node_id
-    return "unknown"
-
-
-# ============================================================================
-# JWT Token Helpers for Visiting User Authentication
-# ============================================================================
-
-import jwt as pyjwt
-
-
-def jwt_sign(payload: dict, secret: str, expires_in_hours: int = 24) -> str:
-    """
-    Sign a payload as HMAC-SHA256 JWT. Adds iat and exp claims automatically.
-
-    Args:
-        payload: Dictionary to encode in the JWT
-        secret: Shared secret for HMAC-SHA256 signing
-        expires_in_hours: Token lifetime in hours (default 24h)
-
-    Returns:
-        Signed JWT token as string
-    """
-    import time
-    now = int(time.time())
-    payload_with_claims = {
+    header = {'alg': 'HS256', 'typ': 'JWT'}
+    claims = {
         **payload,
-        "iat": now,
-        "exp": now + (expires_in_hours * 3600),
+        'iat': int(time.time()),
+        'exp': int(time.time()) + (hours * 3600),
     }
-    return pyjwt.encode(payload_with_claims, secret, algorithm="HS256")
+
+    msg = b64_encode(header) + '.' + b64_encode(claims)
+    sig = hmac.new(
+        secret.encode() if isinstance(secret, str) else secret,
+        msg.encode(),
+        hashlib.sha256
+    ).digest()
+    sig_b64 = base64.urlsafe_b64encode(sig).rstrip(b'=').decode()
+
+    return msg + '.' + sig_b64
 
 
-def jwt_verify(token: str, secret: str) -> dict:
+def jwt_verify(token, secret):
     """
-    Decode and verify a JWT. Returns the payload dict on success.
-
-    Args:
-        token: JWT token string
-        secret: Shared secret for HMAC-SHA256 verification
-
-    Returns:
-        Decoded payload dictionary
-
-    Raises:
-        jwt.ExpiredSignatureError: Token has expired
-        jwt.InvalidTokenError: Token signature or format is invalid
+    Verify and decode a JWT. Raises AuthenticationFailed on invalid/expired token.
+    Returns: decoded payload dict
     """
-    return pyjwt.decode(token, secret, algorithms=["HS256"])
+    try:
+        parts = token.split('.')
+        if len(parts) != 3:
+            raise Exception('Invalid token format')
+
+        header, payload_b64, sig_b64 = parts
+        payload = b64_decode(payload_b64)
+
+        # Verify signature
+        msg = header + '.' + payload_b64
+        expected_sig = hmac.new(
+            secret.encode() if isinstance(secret, str) else secret,
+            msg.encode(),
+            hashlib.sha256
+        ).digest()
+        expected_sig_b64 = base64.urlsafe_b64encode(expected_sig).rstrip(b'=').decode()
+
+        if not hmac.compare_digest(sig_b64, expected_sig_b64):
+            raise Exception('Invalid signature')
+
+        # Check expiration
+        if payload.get('exp', 0) < time.time():
+            raise Exception('Token expired')
+
+        return payload
+    except Exception as e:
+        raise AuthenticationFailed(f'Invalid JWT: {str(e)}')

@@ -13,13 +13,11 @@ from .views import RevenueViewSet
 from .views import UserOperations
 from .views import emailAPI
 from .views import (
-    HubRegisterView, HubHeartbeatView, HubStoresView, HubStoreLocationView,
-    HubSupplyRequestListView, HubSupplyRequestActionView,
-    HubMeshUserLocationView, HubMeshUserSyncView,
-    InterNodeHealthCheckView, InterNodeStoreRegistryView, InterNodeUserLookupView,
-    InterNodeUserSyncView, InterNodeIssueTokenView, InterNodeUserPreferencesUpdateView,
-    InterNodeUserFavoritesUpdateView, InterNodeUserProfileUpdateView,
-    InterNodeStatusUpdateView, InterNodeSupplyRequestView
+    HubRegisterView, HubHeartbeatView, HubStoresView, HubUserLocationView,
+    HubMeshUserLocationView,
+    InterNodeHealthCheckView, InterNodeVerifyCredentialsView, InterNodeUserDataView,
+    InterNodeUserSyncView, InterNodeStatusUpdateView,
+    InterNodeUserPreferencesUpdateView, InterNodeUserFavoritesUpdateView, InterNodeUserProfileUpdateView
 )
 
 #this ensures that the url calls the right function from the views for each type of request
@@ -218,45 +216,27 @@ urlpatterns = [
     path('email/<int:orderId>/', emailAPI.as_view(), name='Create Email'),
 
     # ========================================================================
-    # SPRINT 3: HUB & INTER-NODE COMMUNICATION ENDPOINTS
+    # SPRINT 3: CLEAN DISTRIBUTED SYSTEM ENDPOINTS
     # ========================================================================
 
-    # Hub Endpoints (for hub nodes managing registered stores)
-    # - POST /backend/hub/register/: Store registration
-    # - POST /backend/hub/heartbeat/: Store heartbeat (every 30 seconds)
-    # - GET /backend/hub/stores/: List all registered stores
-    # - GET /backend/hub/store-location/: Cross-region user discovery
+    # Hub Endpoints (store registration, heartbeat, user location discovery)
     path('hub/register/', HubRegisterView.as_view(), name='hub_register'),
     path('hub/heartbeat/', HubHeartbeatView.as_view(), name='hub_heartbeat'),
     path('hub/stores/', HubStoresView.as_view(), name='hub_stores'),
-    path('hub/store-location/', HubStoreLocationView.as_view(), name='hub_store_location'),
-    path('hub/supply-requests/', HubSupplyRequestListView.as_view(), name='hub_supply_requests'),
-    path('hub/supply-requests/<int:pk>/<str:action>/', HubSupplyRequestActionView.as_view(), name='hub_supply_request_action'),
+    path('hub/user-location/', HubUserLocationView.as_view(), name='hub_user_location'),
 
-    # Hub-mesh endpoints (hub-to-hub only: user routing and discovery)
+    # Hub-Mesh Endpoints (hub-to-hub user discovery via P2P mesh)
     path('hub-mesh/user-location/', HubMeshUserLocationView.as_view(), name='hub_mesh_user_location'),
-    path('hub-mesh/user-sync/', HubMeshUserSyncView.as_view(), name='hub_mesh_user_sync'),
 
-    # Inter-Node Communication Endpoints (all nodes can call these on peers)
-    # - POST /backend/internode/health-check/: Ping/pong
-    # - GET /backend/internode/store-registry/: Get peer's store registry
-    # - POST /backend/internode/user-lookup/: Query for user routing info
-    # - POST /backend/internode/user-sync/: Receive user routing pointer replication
-    # - POST /backend/internode/issue-token/: Issue JWT for visiting user authentication
-    # - POST /backend/internode/user-preferences/update/: Proxy preference changes to home store
-    # - POST /backend/internode/user-favorites/update/: Proxy favorite drink changes to home store
-    # - POST /backend/internode/user-profile/update/: Proxy profile changes to home store
-    # - POST /backend/internode/status-update/: Send machine status
-    # - POST /backend/internode/supply-request/: Send supply request
+    # Inter-Node Communication Endpoints (for P2P communication)
     path('internode/health-check/', InterNodeHealthCheckView.as_view(), name='internode_health_check'),
-    path('internode/store-registry/', InterNodeStoreRegistryView.as_view(), name='internode_store_registry'),
-    path('internode/user-lookup/', InterNodeUserLookupView.as_view(), name='internode_user_lookup'),
+    path('internode/verify-credentials/', InterNodeVerifyCredentialsView.as_view(), name='internode_verify_credentials'),
+    path('internode/user-data/', InterNodeUserDataView.as_view(), name='internode_user_data'),
     path('internode/user-sync/', InterNodeUserSyncView.as_view(), name='internode_user_sync'),
-    path('internode/issue-token/', InterNodeIssueTokenView.as_view(), name='internode_issue_token'),
-    path('internode/verify-credentials/', InterNodeIssueTokenView.as_view(), name='internode_verify_credentials'),
+    path('internode/status-update/', InterNodeStatusUpdateView.as_view(), name='internode_status_update'),
+
+    # Write-Through Endpoints (preference, favorite, profile updates at home store)
     path('internode/user-preferences/update/', InterNodeUserPreferencesUpdateView.as_view(), name='internode_user_preferences_update'),
     path('internode/user-favorites/update/', InterNodeUserFavoritesUpdateView.as_view(), name='internode_user_favorites_update'),
     path('internode/user-profile/update/', InterNodeUserProfileUpdateView.as_view(), name='internode_user_profile_update'),
-    path('internode/status-update/', InterNodeStatusUpdateView.as_view(), name='internode_status_update'),
-    path('internode/supply-request/', InterNodeSupplyRequestView.as_view(), name='internode_supply_request'),
 ]
