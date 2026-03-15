@@ -238,12 +238,16 @@ class CustomAuthToken(ObtainAuthToken):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # Step 2b: Call home store's issue-token endpoint to get JWT
+        # Step 2b: Forward to home store's verify-credentials (password checked only at home store)
         try:
             node_secret = _get_node_secret()
             resp = requests.post(
-                f"{home_endpoint.rstrip('/')}/backend/internode/issue-token/",
-                json={'email': email, 'password': password},
+                f"{home_endpoint.rstrip('/')}/backend/internode/verify-credentials/",
+                json={
+                    'email': email,
+                    'password': password,
+                    'requesting_store_id': request.node_identity.get('store_id'),
+                },
                 headers={'Authorization': f'NodeToken {node_secret}'},
                 timeout=5,
             )
@@ -435,7 +439,7 @@ class PreferencesOperations(viewsets.ModelViewSet):
         return response
 
     def _proxy_preference_write(self, session, action, preference_data):
-        """Send preference change to home store, update VisitingSession with new JWT."""
+        """Write-through: send preference change to home store; update VisitingSession JWT."""
         try:
             node_secret = _get_node_secret()
             resp = requests.post(
@@ -571,7 +575,7 @@ class DrinkOperations(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def _proxy_favorite_write(self, session, action, drink_id):
-        """Send favorite change to home store, update VisitingSession with new JWT."""
+        """Write-through: send favorite change to home store; update VisitingSession JWT."""
         try:
             resp = requests.post(
                 f"{session.home_store_endpoint.rstrip('/')}/backend/internode/user-favorites/update/",
@@ -1107,14 +1111,31 @@ class UserOperations(viewsets.ModelViewSet):
 
     def edit(self, request, user_id):
         try:
-            user = User.objects.get(id=user_id)
-
             data = json.loads(request.body)
             edits = data.get('edits', {})
 
-            username = edits.get("username", None)
             first_name = edits.get("firstName", None)
             last_name = edits.get("lastName", None)
+            # Check for visiting user: by canonical_user_id (no local user) or by token session
+            session = VisitingSession.objects.filter(
+                canonical_user_id=user_id,
+                jwt_expires_at__gt=timezone.now()
+            ).select_related('token').first()
+            if not session and request.user.is_authenticated:
+                try:
+                    token = request.user.auth_token
+                    session = getattr(token, 'visiting_session', None)
+                    if session and session.canonical_user_id != user_id:
+                        session = None
+                except Exception:
+                    pass
+
+            if session and not session.is_expired():
+                # Write-through: proxy profile update to home store (first_name, last_name only)
+                return self._proxy_profile_update(session, first_name, last_name)
+
+            user = User.objects.get(id=user_id)
+            username = edits.get("username", None)
             password = edits.get("password", None)
             role = edits.get("role", None)
 
@@ -1144,8 +1165,60 @@ class UserOperations(viewsets.ModelViewSet):
 
             user.save()
             return JsonResponse({"message":"User edited successfully"}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            # user_id might be canonical id; try proxy via session
+            session = VisitingSession.objects.filter(
+                canonical_user_id=user_id,
+                jwt_expires_at__gt=timezone.now()
+            ).first()
+            if session and not session.is_expired():
+                return self._proxy_profile_update(
+                    session,
+                    edits.get("firstName"),
+                    edits.get("lastName"),
+                )
+            return JsonResponse({'Error': 'User not found'}, status=404)
         except Exception as e:
             return JsonResponse({'Error': str(e)}, status=400)
+
+    def _proxy_profile_update(self, session, first_name, last_name):
+        """Send profile (first_name, last_name) update to home store; refresh VisitingSession JWT."""
+        if first_name == "unchanged":
+            first_name = None
+        if last_name == "unchanged":
+            last_name = None
+        if first_name is None and last_name is None:
+            return JsonResponse({"message": "User edited successfully"}, status=status.HTTP_200_OK)
+        payload = {'email': session.jwt_payload['email']}
+        if first_name is not None:
+            payload['first_name'] = first_name
+        if last_name is not None:
+            payload['last_name'] = last_name
+        try:
+            resp = requests.post(
+                f"{session.home_store_endpoint.rstrip('/')}/backend/internode/user-profile/update/",
+                json=payload,
+                headers={'Authorization': f'NodeToken {_get_node_secret()}'},
+                timeout=5,
+            )
+        except requests.RequestException:
+            return JsonResponse(
+                {'Error': 'Home store unreachable. Profile can only be updated at your home store right now.'},
+                status=503,
+            )
+        if resp.status_code != 200:
+            return JsonResponse({'Error': resp.json().get('error', 'Failed to update profile at home store')}, status=resp.status_code)
+        data = resp.json()
+        from .internode_auth import jwt_verify
+        try:
+            if data.get('jwt'):
+                new_payload = jwt_verify(data['jwt'], settings.INTER_NODE_SECRET)
+                session.jwt_payload = new_payload
+                session.jwt_expires_at = datetime.fromtimestamp(new_payload['exp'], tz=dt_timezone.utc)
+                session.save(update_fields=['jwt_payload', 'jwt_expires_at'])
+        except Exception:
+            pass
+        return JsonResponse({"message": "User edited successfully"}, status=status.HTTP_200_OK)
 
 
 # ============================================================================
@@ -1717,11 +1790,11 @@ class InterNodeUserSyncView(APIView):
 
 class InterNodeIssueTokenView(APIView):
     """
-    POST /backend/internode/issue-token/
+    POST /backend/internode/issue-token/ or /backend/internode/verify-credentials/
 
-    Called by visiting stores to authenticate a user and receive a JWT.
-    Validates password, builds full user profile, signs JWT with HMAC-SHA256, returns it.
-    Replaces the old plaintext password proxy approach.
+    Verify-credentials flow: only the home store verifies the password.
+    Visiting stores forward email+password here; we validate with User.check_password,
+    then build JWT and return it. Visiting store never stores the password.
     """
     authentication_classes = [NodeTokenAuthentication]
     permission_classes = [IsInterNodeRequest]
@@ -1731,6 +1804,7 @@ class InterNodeIssueTokenView(APIView):
 
         email = request.data.get('email')
         password = request.data.get('password')
+        requesting_store_id = request.data.get('requesting_store_id')
         if not email or not password:
             return Response({'error': 'email and password required'}, status=400)
 
@@ -1770,9 +1844,11 @@ class InterNodeIssueTokenView(APIView):
 
         jwt_token = jwt_sign(payload, settings.INTER_NODE_SECRET, expires_in_hours=24)
 
+        # Audit: source = visiting store (if provided), target = this home store
         SyncRecord.objects.create(
             sync_type='credential_check',
-            source_store_id=int(settings.STORE_ID),
+            source_store_id=requesting_store_id if requesting_store_id is not None else int(settings.STORE_ID),
+            target_store_id=int(settings.STORE_ID),
             status='success',
             completed_at=timezone.now(),
         )
