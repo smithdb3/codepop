@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Preference, Drink, Inventory, Notification, Order, Revenue,
-    StoreRegistry, HubRegistry, NodeCertificate, UserCache, VisitingSession, SyncRecord, EventQueue, SupplyRequest,
+    StoreRegistry, HubRegistry, NodeCertificate, UserCache, SyncRecord, EventQueue, SupplyRequest,
     Region, SupplyHub, Machine, Schedule,
     RepairStaffProfile, LogisticsManagerProfile
 )
@@ -19,7 +19,6 @@ admin.site.register(StoreRegistry)
 admin.site.register(HubRegistry)
 admin.site.register(NodeCertificate)
 admin.site.register(UserCache)
-admin.site.register(VisitingSession)
 admin.site.register(SyncRecord)
 admin.site.register(EventQueue)
 admin.site.register(SupplyRequest)

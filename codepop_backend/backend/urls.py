@@ -16,9 +16,7 @@ from .views import (
     HubRegisterView, HubHeartbeatView, HubStoresView, HubStoreLocationView,
     HubSupplyRequestListView, HubSupplyRequestActionView,
     InterNodeHealthCheckView, InterNodeStoreRegistryView, InterNodeUserLookupView,
-    InterNodeUserSyncView, InterNodeIssueTokenView, InterNodeUserPreferencesUpdateView,
-    InterNodeUserFavoritesUpdateView, InterNodeUserProfileUpdateView,
-    InterNodeStatusUpdateView, InterNodeSupplyRequestView
+    InterNodeUserSyncView, InterNodeStatusUpdateView, InterNodeSupplyRequestView
 )
 
 #this ensures that the url calls the right function from the views for each type of request
@@ -235,22 +233,14 @@ urlpatterns = [
     # Inter-Node Communication Endpoints (all nodes can call these on peers)
     # - POST /backend/internode/health-check/: Ping/pong
     # - GET /backend/internode/store-registry/: Get peer's store registry
-    # - POST /backend/internode/user-lookup/: Query for user routing info
-    # - POST /backend/internode/user-sync/: Receive user routing pointer replication
-    # - POST /backend/internode/issue-token/: Issue JWT for visiting user authentication
-    # - POST /backend/internode/user-preferences/update/: Proxy preference changes to home store
-    # - POST /backend/internode/user-favorites/update/: Proxy favorite drink changes to home store
-    # - POST /backend/internode/user-profile/update/: Proxy profile changes to home store
+    # - POST /backend/internode/user-lookup/: Query for user
+    # - POST /backend/internode/user-sync/: Receive user profile replication
     # - POST /backend/internode/status-update/: Send machine status
     # - POST /backend/internode/supply-request/: Send supply request
     path('internode/health-check/', InterNodeHealthCheckView.as_view(), name='internode_health_check'),
     path('internode/store-registry/', InterNodeStoreRegistryView.as_view(), name='internode_store_registry'),
     path('internode/user-lookup/', InterNodeUserLookupView.as_view(), name='internode_user_lookup'),
     path('internode/user-sync/', InterNodeUserSyncView.as_view(), name='internode_user_sync'),
-    path('internode/issue-token/', InterNodeIssueTokenView.as_view(), name='internode_issue_token'),
-    path('internode/user-preferences/update/', InterNodeUserPreferencesUpdateView.as_view(), name='internode_user_preferences_update'),
-    path('internode/user-favorites/update/', InterNodeUserFavoritesUpdateView.as_view(), name='internode_user_favorites_update'),
-    path('internode/user-profile/update/', InterNodeUserProfileUpdateView.as_view(), name='internode_user_profile_update'),
     path('internode/status-update/', InterNodeStatusUpdateView.as_view(), name='internode_status_update'),
     path('internode/supply-request/', InterNodeSupplyRequestView.as_view(), name='internode_supply_request'),
 ]
