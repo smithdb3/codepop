@@ -151,11 +151,7 @@ class CreateUserAPIView(CreateAPIView):
         headers = self.get_success_headers(serializer.data)
         # We create a token than will be used for future auth
         token = Token.objects.create(user=serializer.instance)
-        token_data = {
-            "token": token.key,
-            "user_id": serializer.instance.pk,
-            "first_name": serializer.instance.first_name,
-        }
+        token_data = {"token": token.key}
 
         # Auto-create UserCache entry for newly registered user
         UserCache.objects.update_or_create(
