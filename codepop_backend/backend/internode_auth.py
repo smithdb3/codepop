@@ -117,36 +117,6 @@ class IsInterNodeRequest(BasePermission):
         return hasattr(request.user, "is_node") and request.user.is_node
 
 
-class IsHubMeshCaller(BasePermission):
-    """
-    Permission for hub-mesh endpoints: only hub nodes (or global secret) may call.
-    Denies when the caller is a store (node_type == 'store').
-    """
-    message = "Hub-mesh endpoints may only be called by hub nodes."
-
-    def has_permission(self, request, view):
-        if not (hasattr(request.user, "is_node") and request.user.is_node):
-            return False
-        node_type = getattr(request.user, "node_type", None)
-        # Allow hub or global/None; deny store
-        return node_type != "store"
-
-
-class IsStoreNode(BasePermission):
-    """
-    Permission for store-only endpoints (e.g. hub/register, hub/heartbeat):
-    only store nodes (or global secret) may call. Denies when the caller is a hub.
-    """
-    message = "This endpoint is for store nodes only."
-
-    def has_permission(self, request, view):
-        if not (hasattr(request.user, "is_node") and request.user.is_node):
-            return False
-        node_type = getattr(request.user, "node_type", None)
-        # Allow store or global/None; deny hub
-        return node_type != "hub"
-
-
 def get_node_id_from_request(request):
     """
     Extract the node_id from an inter-node authenticated request.

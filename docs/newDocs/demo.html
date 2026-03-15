@@ -97,6 +97,11 @@
             transition: all 0.3s;
         }
 
+        .node-master {
+            fill: #92400e;
+            stroke: #f59e0b;
+        }
+
         .node-hub {
             fill: #1e3a5f;
             stroke: #3b82f6;
@@ -409,44 +414,54 @@
             </div>
 
             <svg viewBox="0 0 400 500">
-                <!-- Hub mesh: Logan Hub and Atlanta Hub (top row, peers) -->
-                <circle id="logan-hub" class="node node-hub" cx="120" cy="80" r="30"/>
-                <text class="node-label" x="120" y="83">Logan Hub</text>
-                <text class="node-ip" x="120" y="98">34.136.12.86</text>
+                <!-- Master Hub (top center) -->
+                <circle id="master-hub" class="node node-master" cx="200" cy="50" r="35"/>
+                <text class="node-label" x="200" y="55">Master Hub</text>
+                <text class="node-ip" x="200" y="70">34.136.12.86</text>
 
-                <circle id="atlanta-hub" class="node node-hub" cx="280" cy="80" r="30"/>
-                <text class="node-label" x="280" y="83">Atlanta Hub</text>
-                <text class="node-ip" x="280" y="98">136.115.168.184</text>
+                <!-- Regional Hubs (middle row) -->
+                <circle id="logan-hub" class="node node-hub" cx="80" cy="180" r="30"/>
+                <text class="node-label" x="80" y="183">Logan Hub</text>
+                <text class="node-ip" x="80" y="200">34.136.12.86</text>
 
-                <!-- Stores (below respective hubs) -->
-                <circle id="logan-s1" class="node node-store" cx="40" cy="280" r="25"/>
-                <text class="node-label" x="40" y="283">Logan S1</text>
-                <text class="node-ip" x="40" y="298">34.55.170.11</text>
+                <circle id="atlanta-hub" class="node node-hub" cx="320" cy="180" r="30"/>
+                <text class="node-label" x="320" y="183">Atlanta Hub</text>
+                <text class="node-ip" x="320" y="200">136.115.168.184</text>
 
-                <circle id="logan-s2" class="node node-store" cx="120" cy="280" r="25"/>
-                <text class="node-label" x="120" y="283">Logan S2</text>
-                <text class="node-ip" x="120" y="298">34.121.91.135</text>
+                <!-- Stores (bottom row) -->
+                <circle id="logan-s1" class="node node-store" cx="40" cy="320" r="25"/>
+                <text class="node-label" x="40" y="323">Logan S1</text>
+                <text class="node-ip" x="40" y="338">34.55.170.11</text>
 
-                <circle id="atlanta-s1" class="node node-store" cx="280" cy="280" r="25"/>
-                <text class="node-label" x="280" y="283">Atlanta S1</text>
-                <text class="node-ip" x="280" y="298">136.112.202.76</text>
+                <circle id="logan-s2" class="node node-store" cx="120" cy="320" r="25"/>
+                <text class="node-label" x="120" y="323">Logan S2</text>
+                <text class="node-ip" x="120" y="338">34.121.91.135</text>
 
-                <circle id="atlanta-s2" class="node node-store" cx="360" cy="280" r="25"/>
-                <text class="node-label" x="360" y="283">Atlanta S2</text>
-                <text class="node-ip" x="360" y="298">34.173.157.74</text>
+                <circle id="atlanta-s1" class="node node-store" cx="280" cy="320" r="25"/>
+                <text class="node-label" x="280" y="323">Atlanta S1</text>
+                <text class="node-ip" x="280" y="338">136.112.202.76</text>
 
-                <!-- Connections: hub-mesh (peer hubs), hub-to-stores -->
-                <line class="connection" x1="150" y1="80" x2="250" y2="80"/>
-                <line class="connection" x1="120" y1="110" x2="40" y2="255"/>
-                <line class="connection" x1="120" y1="110" x2="120" y2="255"/>
-                <line class="connection" x1="280" y1="110" x2="280" y2="255"/>
-                <line class="connection" x1="280" y1="110" x2="360" y2="255"/>
+                <circle id="atlanta-s2" class="node node-store" cx="360" cy="320" r="25"/>
+                <text class="node-label" x="360" y="323">Atlanta S2</text>
+                <text class="node-ip" x="360" y="338">34.173.157.74</text>
+
+                <!-- Connections -->
+                <line class="connection" x1="200" y1="85" x2="80" y2="150"/>
+                <line class="connection" x1="200" y1="85" x2="320" y2="150"/>
+                <line class="connection" x1="80" y1="210" x2="40" y2="295"/>
+                <line class="connection" x1="80" y1="210" x2="120" y2="295"/>
+                <line class="connection" x1="320" y1="210" x2="280" y2="295"/>
+                <line class="connection" x1="320" y1="210" x2="360" y2="295"/>
             </svg>
 
             <div class="legend">
                 <div class="legend-item">
+                    <div class="legend-dot" style="background: #f59e0b;"></div>
+                    <span>Master Hub</span>
+                </div>
+                <div class="legend-item">
                     <div class="legend-dot" style="background: #3b82f6;"></div>
-                    <span>Hubs (mesh)</span>
+                    <span>Regional Hubs</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-dot" style="background: #10b981;"></div>
@@ -477,6 +492,7 @@
         // Configuration
         const CONFIG = {
             nodes: {
+                'master-hub': 'http://34.136.12.86:8000',
                 'logan-hub': 'http://34.136.12.86:8000',
                 'atlanta-hub': 'http://136.115.168.184:8000',
                 'logan-s1': 'http://34.55.170.11:8000',
@@ -531,7 +547,7 @@
                     `curl -s -X POST http://34.173.157.74:8000/backend/internode/health-check/ \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
                 ],
-                activeNodes: ['logan-hub', 'atlanta-hub', 'logan-s1', 'logan-s2', 'atlanta-s1', 'atlanta-s2'],
+                activeNodes: ['master-hub', 'logan-hub', 'atlanta-hub', 'logan-s1', 'logan-s2', 'atlanta-s1', 'atlanta-s2'],
                 action: async () => {
                     const results = [];
                     for (const [nodeId, url] of Object.entries(CONFIG.nodes)) {
@@ -647,42 +663,42 @@
                     }
                 }
             },
-            // Phase 4a: Logan Hub Has Alice (same as Phase 4)
+            // Phase 4a: Master Hub Receives Alice
             {
-                id: 'logan-hub-alice',
+                id: 'master-hub-sync',
                 num: '4a',
-                title: 'Logan Hub Has Alice',
-                description: 'Logan Hub has Alice in UserCache (synced from Store 1 via Celery). No master hub.',
+                title: 'Master Hub Receives Alice',
+                description: 'Master Hub verifies Alice exists (should have synced from Logan Hub via Celery).',
                 curls: [
                     `curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=alice@codepop.local" \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
                 ],
-                activeNodes: ['logan-hub'],
+                activeNodes: ['master-hub'],
                 action: async () => {
                     if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
                     try {
                         const response = await fetchWithTimeout(
-                            `${CONFIG.nodes['logan-hub']}/backend/hub/store-location/?email=alice@codepop.local`,
+                            `${CONFIG.nodes['master-hub']}/backend/hub/store-location/?email=alice@codepop.local`,
                             { headers: {'Authorization': `NodeToken ${CONFIG.nodeToken}`} },
                             CONFIG.timeout
                         );
                         return await response.json();
                     } catch (err) {
-                        throw new Error(`Logan hub lookup failed: ${err.message}`);
+                        throw new Error(`Master hub lookup failed: ${err.message}`);
                     }
                 }
             },
-            // Phase 4b: Atlanta Hub Finds Alice via Hub-Mesh
+            // Phase 4b: Atlanta Hub Cascades to Master for Alice
             {
                 id: 'atlanta-cascade',
                 num: '4b',
-                title: 'Atlanta Hub Finds Alice (Hub-Mesh)',
-                description: 'Atlanta Hub doesn\'t have Alice locally; broadcasts to peer hubs via hub-mesh; Logan Hub responds.',
+                title: 'Atlanta Hub Cascades to Master',
+                description: 'Atlanta Hub doesn\'t have Alice cached, so it cascades query to Master Hub. Proves cascade working.',
                 curls: [
                     `curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=alice@codepop.local" \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
                 ],
-                activeNodes: ['atlanta-hub', 'logan-hub'],
+                activeNodes: ['atlanta-hub', 'master-hub'],
                 action: async () => {
                     if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
                     try {
@@ -846,7 +862,7 @@
                 id: 'dup-crossregion',
                 num: '8a',
                 title: 'Block Duplicate (Cross-Region)',
-                description: 'Try registering Alice at Atlanta Store 1 (different region). Should fail via hub-mesh (Atlanta Hub asks peers; Logan has Alice).',
+                description: 'Try registering Alice at Atlanta Store 1 (different region). Should fail via cascade to Master.',
                 curls: [
                     `curl -s -X POST http://136.112.202.76:8000/backend/auth/register/ \\
   -H "Content-Type: application/json" \\
@@ -858,7 +874,7 @@
     "last_name": "CrossRegion"
   }'`
                 ],
-                activeNodes: ['atlanta-s1', 'atlanta-hub', 'logan-hub'],
+                activeNodes: ['atlanta-s1', 'atlanta-hub', 'master-hub'],
                 action: async () => {
                     if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
                     try {
@@ -956,17 +972,17 @@
                     }
                 }
             },
-            // Phase 11: Logan Hub Finds Bob (via Hub-Mesh)
+            // Phase 11: Logan Hub Finds Bob (via Master)
             {
                 id: 'cross-region-bob',
                 num: 11,
                 title: 'Logan Hub Finds Bob (Cross-Region)',
-                description: 'Logan Hub finds Bob (registered in Atlanta) via hub-mesh broadcast; Atlanta Hub responds.',
+                description: 'Logan Hub should find Bob (registered in Atlanta) by cascading to Master Hub.',
                 curls: [
                     `curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=bob@codepop.local" \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
                 ],
-                activeNodes: ['logan-hub', 'atlanta-hub'],
+                activeNodes: ['logan-hub', 'master-hub'],
                 action: async () => {
                     if (!testState.bobUserId) throw new Error('Run phase 9 first to register Bob.');
                     try {
@@ -986,12 +1002,12 @@
                 id: 'cross-region-alice',
                 num: 12,
                 title: 'Atlanta Hub Finds Alice (Symmetric)',
-                description: 'Atlanta Hub finds Alice (registered in Logan) via hub-mesh. Proves symmetric cross-region discovery.',
+                description: 'Atlanta Hub should find Alice (registered in Logan) by cascading to Master. Proves symmetric discovery.',
                 curls: [
                     `curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=alice@codepop.local" \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
                 ],
-                activeNodes: ['atlanta-hub', 'logan-hub'],
+                activeNodes: ['atlanta-hub', 'master-hub'],
                 action: async () => {
                     if (!testState.aliceUserId) throw new Error('Run phases 3 and 9 first to register both users.');
                     try {
@@ -1095,7 +1111,7 @@
   -H "Content-Type: application/json" \\
   -d '{"username": "alice@codepop.local", "password": "testpass123"}'`
                 ],
-                activeNodes: ['atlanta-s1', 'atlanta-hub', 'logan-hub', 'logan-s1'],
+                activeNodes: ['atlanta-s1', 'atlanta-hub', 'master-hub', 'logan-s1'],
                 action: async () => {
                     if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
                     try {

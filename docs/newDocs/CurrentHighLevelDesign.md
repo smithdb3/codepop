@@ -184,12 +184,12 @@ CodePop uses **on-demand replication** rather than proactive synchronization:
 
 ### **Cross-Region User Discovery**
 
-When a user from one region visits a store in a different region, the system uses **hub-mesh coordination** (no master hub). Regional hubs form a mesh and cooperate to find the user's home store:
+When a user from one region visits a store in a different region, the system uses **hierarchical hub coordination** to locate their data:
 
 **Three-Phase Process:**
-1. **Discovery**: The store's regional hub checks its local UserCache; if not found, it **broadcasts** to peer hubs via the hub-mesh API. The hub that has the user in its routing table responds with home store location.
-2. **Data Transfer**: Stores communicate directly with the home store for user data (read) and write-through (profile, preferences, favorites), bypassing hubs for data payloads.
-3. **Local Caching**: After first login, the visiting store caches user data with a short TTL and creates a VisitingSession linked to the home-store-issued JWT.
+1. **Discovery**: Regional hubs query each other in parallel to find the user's home store
+2. **Data Transfer**: Stores communicate directly (peer-to-peer), bypassing hubs
+3. **Local Caching**: After first login, user data is locally cached for fast subsequent logins
 
 **Example: User traveling from Logan, UT to New York, NY**
 
@@ -213,8 +213,8 @@ When a user from one region visits a store in a different region, the system use
                                 │
                                 ▼
         ┌───────────────────────────────────────────────┐
-        │  NY Hub broadcasts to peer hubs (hub-mesh):    │
-        │  "Does anyone have alice@example.com?"         │
+        │  NY Hub broadcasts to 6 other regional hubs:  │
+        │  "Does anyone have alice@example.com?"        │
         └───────┬───────────────────────────────────────┘
                 │
                 ▼
@@ -290,40 +290,34 @@ Revenue data remains **local to each store** and is aggregated on-demand when ma
 
 **Nationwide Revenue (Super Admins):**
 
-Super Admin dashboards obtain nationwide totals by querying **all seven regional hubs in parallel** and aggregating results in the client (browser or app).
-
-**Flow:**
-1. Super Admin opens the nationwide revenue view.
-2. The client sends parallel requests to each regional hub’s revenue-aggregation endpoint (hub URLs come from configuration or a discovery endpoint).
-3. Each hub returns aggregated revenue for its region (hub queries its registered stores and sums results).
-4. The client sums the seven regional totals and displays nationwide revenue, with optional drill-down by region.
-
-**Resilience:** If one or more hubs are unavailable, the client can still show partial totals and indicate which regions are missing. No single point of failure.
+Uses a **master hub** with hierarchical aggregation and **client-side fallback** for resilience.
 
 ```
-                    ┌──────────────────────────┐
-                    │  Super Admin Dashboard   │
-                    │  (nationwide revenue)    │
-                    └─────────────┬────────────┘
-                                  │
-          ┌───────────────────────┼───────────────────────┐
-          │  Parallel queries     │                       │
-          ▼           ▼           ▼           ▼           ▼
-    ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  ...
-    │ Chicago  │ │New Jersey│ │ Dallas   │ │ Phoenix  │
-    │ Hub      │ | Hub      │ │ Hub      │ │ Hub      │
-    │ (region) │ │ (region) │ │ (region) │ │ (region) │
-    └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘
-         │            │            │            │
-         ▼            ▼            ▼            ▼
-    Store totals  Store totals  Store totals  Store totals
-         │            │            │            │
-         └────────────┴────────────┴────────────┘
-                                 │
-                    Client aggregates → Nationwide total
+                    ┌──────────────────┐
+                    │ Super Admin      │
+                    │ Dashboard        │
+                    └────────┬─────────┘
+                             │
+                  ┌──────────▼──────────┐
+                  │   Primary Path:     │
+                  │   Master Hub        │
+                  │   (Logan Hub)       │
+                  └────────┬────────────┘
+                           │
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+│ Regional Hub │   │ Regional Hub │   │ Regional Hub │
+│ Chicago      │   │ New Jersey   │   │ Logan        │
+└──────┬───────┘   └──────┬───────┘   └──────┬───────┘
+       │                  │                  │
+       ▼                  ▼                  ▼
+   ~20 stores         ~20 stores         ~20 stores
 ```
 
-**Other Metrics:** The same pattern applies to inventory status, order statistics, and machine health: client queries all regional hubs in parallel and aggregates (or displays per-region) as needed.
+**Fallback Path:** If master hub unavailable, dashboard queries all 7 regional hubs directly in parallel and aggregates results client-side.
+
+**Other Metrics:** The same hierarchical aggregation pattern applies to inventory status, order statistics, and machine health monitoring.
 
 ---
 
@@ -502,16 +496,15 @@ CodePop will be deployed using **Google Cloud Platform (GCP)** to support the fe
     - CSV upload: A way to upload a CSV file 
     - AI analyze: Looks at the CSV file to try and find patterns
 
-* **Inter-Node Communication Module** Handles how nodes communicate in a **hub mesh + regional stores** topology.
+* **Inter-Node Communication Module (P2P)** Handle how servers communicate to each other to coordinate
 
 - Responsibilities 
-    - Establishes node role
-    - Manages inter-node communications
-    - Ensures user routing and write-through messages are processed
+    - Establishes role in hierarchy (store, supply hub or master hub)
+    - Manage inter-server communications 
+    - Ensure messages are processed 
 - Components 
-    - Store↔Hub: Registration, heartbeat, store-location lookup; user-sync from store to upstream hub
-    - Hub-mesh: User location broadcast and user-sync between hubs for cross-region discovery
-    - Internode: Health-check, user-lookup, verify-credentials, issue-token, and write-through endpoints (preferences, favorites, profile)
+    - Messenger: Handles outgoing for other stores
+    - Message router: handles incoming messages and gets them to the correct module to be processed
 
 ## **5. Data Design**
 
@@ -1109,7 +1102,7 @@ Note: Much of this section may be a repeat of what has already been documented, 
     * If a supply hub or another regional store needs information from a different store it can request the information
   * Supply hubs can only be accessed by logistic managers and super admins 
     * They can send requests to other supply hubs and store inside of their region only
-  * Regional hubs can only be accessed by logistic managers and super admins
+  * The Master hub can only be accessed by logistic managers and super admins
 * **Data Encryption**: Explanation of how data will be encrypted (at rest and in transit).  
   * Django user data encryption  
   * Sha 256 encryption  

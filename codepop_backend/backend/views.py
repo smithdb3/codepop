@@ -515,12 +515,6 @@ class DrinkOperations(viewsets.ModelViewSet):
     serializer_class = DrinkSerializer
     permission_classes = [AllowAny]
 
-    def get_permissions(self):
-        """Public read (list/retrieve); authenticated write (create/update/destroy)."""
-        if self.action in ("list", "retrieve"):
-            return [AllowAny()]
-        return [IsAuthenticated()]
-
     def get_queryset(self):
         """
         Modify the basic GET request behavior so it only returns drinks not user created
@@ -1071,7 +1065,7 @@ class RevenueViewSet(viewsets.ModelViewSet):
     """
     queryset = Revenue.objects.all()
     serializer_class = RevenueSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
         """
@@ -1232,7 +1226,7 @@ class UserOperations(viewsets.ModelViewSet):
 # ============================================================================
 
 import secrets as secrets_module
-from .internode_auth import IsHubMeshCaller, IsInterNodeRequest, IsStoreNode, NodeTokenAuthentication
+from .internode_auth import IsInterNodeRequest, NodeTokenAuthentication
 from .models import StoreRegistry, UserCache, SyncRecord, SupplyRequest, Machine, NodeCertificate
 
 
@@ -1248,7 +1242,7 @@ class HubRegisterView(APIView):
     Requires inter-node authentication.
     """
     authentication_classes = [NodeTokenAuthentication]
-    permission_classes = [IsInterNodeRequest, IsStoreNode]
+    permission_classes = [IsInterNodeRequest]
 
     def post(self, request):
         try:
@@ -1341,7 +1335,7 @@ class HubHeartbeatView(APIView):
     Requires inter-node authentication.
     """
     authentication_classes = [NodeTokenAuthentication]
-    permission_classes = [IsInterNodeRequest, IsStoreNode]
+    permission_classes = [IsInterNodeRequest]
 
     def post(self, request):
         try:
@@ -1485,7 +1479,7 @@ class HubMeshUserLocationView(APIView):
     Only hub nodes should expose this; callers are other hubs in the mesh.
     """
     authentication_classes = [NodeTokenAuthentication]
-    permission_classes = [IsInterNodeRequest, IsHubMeshCaller]
+    permission_classes = [IsInterNodeRequest]
 
     def get(self, request):
         if not request.node_identity.get("is_hub"):
@@ -1520,7 +1514,7 @@ class HubMeshUserSyncView(APIView):
     Only hub nodes should expose this.
     """
     authentication_classes = [NodeTokenAuthentication]
-    permission_classes = [IsInterNodeRequest, IsHubMeshCaller]
+    permission_classes = [IsInterNodeRequest]
 
     def post(self, request):
         if not request.node_identity.get("is_hub"):

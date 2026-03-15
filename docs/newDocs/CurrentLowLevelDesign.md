@@ -173,11 +173,47 @@ The High Level Design specifies a future transformation to a **federated distrib
 
 ### Network Topology
 
-CodePop uses a **hub mesh + regional stores** model. Each store has one **UPSTREAM_HUB_URL** (its regional hub). Hubs form a **mesh** via **PEER_HUB_URLS**: each of the seven regional hubs can communicate with every other hub for cross-region user discovery and coordination.
+CodePop will evolve into a **hub-and-spoke model with 7 regional supply hubs**:
 
-**Hub mesh (7 regional hubs, peer-to-peer):**
+```mermaid
+flowchart TB
+    MASTER["Master Hub<br/>Logan UT"]
 
-Each hub also has **stores** in its region (not shown above). Stores register with a single hub via **UPSTREAM_HUB_URL**; they do not connect directly to other hubs.
+    MASTER --> CHI["Chicago Hub"]
+    MASTER --> NJ["New Jersey Hub"]
+    MASTER --> DAL["Dallas Hub"]
+    MASTER --> PHX["Phoenix Hub"]
+    MASTER --> ATL["Atlanta Hub"]
+    MASTER --> SEA["Seattle Hub"]
+
+    CHI --> SA1["Store 1<br/>Django + PostgreSQL"]
+    CHI --> SA2["Store 2<br/>Django + PostgreSQL"]
+    SA1 <--> SA2
+
+    NJ --> SB1["Store 1<br/>Django + PostgreSQL"]
+    NJ --> SB2["Store 2<br/>Django + PostgreSQL"]
+    SB1 <--> SB2
+
+    DAL --> SD1["Store 1<br/>Django + PostgreSQL"]
+    DAL --> SD2["Store 2<br/>Django + PostgreSQL"]
+    SD1 <--> SD2
+
+    PHX --> SP1["Store 1<br/>Django + PostgreSQL"]
+    PHX --> SP2["Store 2<br/>Django + PostgreSQL"]
+    SP1 <--> SP2
+
+    ATL --> SAT1["Store 1<br/>Django + PostgreSQL"]
+    ATL --> SAT2["Store 2<br/>Django + PostgreSQL"]
+    SAT1 <--> SAT2
+
+    SEA --> SSE1["Store 1<br/>Django + PostgreSQL"]
+    SEA --> SSE2["Store 2<br/>Django + PostgreSQL"]
+    SSE1 <--> SSE2
+
+    CHI <--> NJ
+    NJ <--> DAL
+    PHX <--> ATL
+```
 
 ### Store Discovery & Registration
 
@@ -221,7 +257,7 @@ Each hub also has **stores** in its region (not shown above). Stores register wi
    - Verify schema version matches expected
    - Fail fast if DB unavailable; store cannot operate
 2. **Configuration Load**
-   - Read environment/settings: STORE_ID, REGION, NODE_ROLE (hub|store), UPSTREAM_HUB_URL (stores only), PEER_HUB_URLS (hubs only), API_ENDPOINT, etc.
+   - Read `config.json`: store_id, region, hub_url, etc.
    - Load private key from secure storage (environment variable or key management service)
 3. **Register with Hub**
    - POST to hub's `/api/hub/register/` endpoint
@@ -251,7 +287,7 @@ Each hub also has **stores** in its region (not shown above). Stores register wi
 5. Close database connection
 
 **Data Bootstrap Sources:**
-- **Drink Catalog**: Replicated from seed/catalog source or regional hub on first startup
+- **Drink Catalog**: Replicated from master hub on first startup
 - **Inventory**: Start empty; manager creates items via UI
 - **User Data**: Lazy-loaded on first login attempts
 - **Machine Data**: Manager configures machines post-deployment
@@ -369,9 +405,10 @@ sequenceDiagram
 - Regional hub queries all stores in region for revenue data
 - Hub aggregates results
 
-**National Level:**
+**National Level (Master Hub Aggregation):**
 - Super admin requests nationwide revenue report
-- Dashboard queries all regional hubs in parallel and aggregates results client-side
+- **Primary path**: Master hub (Logan Hub) queries all 7 regional hubs
+- **Fallback path**: If master hub unavailable, dashboard queries all 7 hubs in parallel and aggregates client-side
 
 ---
 
@@ -565,9 +602,9 @@ POST /api/inter-node/health-check/         # Peer availability check
 ### Inter-Node Authentication & Authorization
 
 **Node Identity & Trust:**
-1. **Node Registration**: Each **store** registers with its **regional hub** (UPSTREAM_HUB_URL) on startup
-   - Store provides: store_id, store_name, region, location, api_endpoint, optional public_key
-   - Hub responds with per-node secret (NodeCertificate) valid for 90 days and sibling stores in region
+1. **Node Registration**: Each store/hub registers with master hub on startup
+   - Provides: Node ID, Region, Location, Public Key
+   - Receives: Signed certificate valid for 90 days
 2. **Token Issuance**: Tokens signed with node's private key
    - Token includes: Node ID, Issuing Time, Expiration (1 hour)
    - Format: JWT with RS256 signature
@@ -2457,8 +2494,8 @@ With the advent of AI we have seen numerous ways to "jailbreak" them and get the
 * **Inter-Node Communication Security**: How to keep communications between servers secure
   * Messages should be passed using HTTPS 
   * Servers must authenticate that they are talking to a legit CodePop server before any communications take place
-    * Stores authenticate with their regional hub (UPSTREAM_HUB_URL) on startup and receive a per-node certificate/secret valid for 90 days
-    * Once verified they receive a NodeCertificate (shared secret) that lasts 90 days
+    * They will first Authenticate with master server on startup with a public key
+    * Once verified they will get a signed certificate that will last 90 days
       * Certificates will last 90 days so in case a certificate leaks there is a limited time someone can do damage and old certificates become useless
   * Token Authentication will be used for server to server communcation will be protected by token authentication
     * Will use the format JWT with RS256 signature.
@@ -2467,7 +2504,7 @@ With the advent of AI we have seen numerous ways to "jailbreak" them and get the
     * If a supply hub or another regional store needs information from a different store it can request the information
   * Supply hubs can only be accessed by logistic managers and super admins 
     * They can send requests to other supply hubs and store inside of their region only
-  * Regional hubs are accessed by logistic managers and super admins; hubs are peers in a mesh
+  * The Master hub can only be accessed by logistic managers and super admins
   * Nodes will be ran on Google Cloud platform in Docker containers
     * Google has plenty of security features for their architecture which we will be using by default
     * The isolation of Docker containers can make programs more secure as they are harder to get into
