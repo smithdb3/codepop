@@ -509,9 +509,9 @@
             }
         }
 
-        // Demo Steps Definition (12 Phases from GCP Testing Guide)
+        // Demo Steps: health, registration, hub-mesh discovery, visiting login, duplicate block, second region, write-through, verify (15 steps)
         const demoSteps = [
-            // Phase 1: Health Checks
+            // Step 1: Health Checks
             {
                 id: 'health-checks',
                 num: 1,
@@ -553,7 +553,7 @@
                     return { health_checks: results, timestamp: new Date().toISOString() };
                 }
             },
-            // Phase 2: Store Auto-Registration
+            // Step 2: Store Auto-Registration
             {
                 id: 'store-registry',
                 num: 2,
@@ -582,7 +582,7 @@
                     return { store_registries: results };
                 }
             },
-            // Phase 3: Register Alice at Logan Store 1
+            // Step 3: Register Alice at Logan Store 1
             {
                 id: 'alice-register',
                 num: 3,
@@ -622,19 +622,19 @@
                     }
                 }
             },
-            // Phase 4: Logan Hub Receives Alice
+            // Step 4: Logan Hub Has Alice
             {
                 id: 'logan-hub-sync',
-                num: '4',
-                title: 'Logan Hub Receives Alice',
-                description: 'Logan Hub checks if Alice exists in its UserCache (should find her synced from Store 1).',
+                num: 4,
+                title: 'Logan Hub Has Alice',
+                description: 'Hub received user routing from store (Celery/EventQueue).',
                 curls: [
                     `curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=alice@codepop.local" \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
                 ],
                 activeNodes: ['logan-hub'],
                 action: async () => {
-                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    if (!testState.aliceUserId) throw new Error('Run step 3 first to register Alice.');
                     try {
                         const response = await fetchWithTimeout(
                             `${CONFIG.nodes['logan-hub']}/backend/hub/store-location/?email=alice@codepop.local`,
@@ -647,44 +647,19 @@
                     }
                 }
             },
-            // Phase 4a: Logan Hub Has Alice (same as Phase 4)
-            {
-                id: 'logan-hub-alice',
-                num: '4a',
-                title: 'Logan Hub Has Alice',
-                description: 'Logan Hub has Alice in UserCache (synced from Store 1 via Celery). No master hub.',
-                curls: [
-                    `curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=alice@codepop.local" \\
-  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
-                ],
-                activeNodes: ['logan-hub'],
-                action: async () => {
-                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
-                    try {
-                        const response = await fetchWithTimeout(
-                            `${CONFIG.nodes['logan-hub']}/backend/hub/store-location/?email=alice@codepop.local`,
-                            { headers: {'Authorization': `NodeToken ${CONFIG.nodeToken}`} },
-                            CONFIG.timeout
-                        );
-                        return await response.json();
-                    } catch (err) {
-                        throw new Error(`Logan hub lookup failed: ${err.message}`);
-                    }
-                }
-            },
-            // Phase 4b: Atlanta Hub Finds Alice via Hub-Mesh
+            // Step 5: Atlanta Hub Finds Alice (Hub-Mesh)
             {
                 id: 'atlanta-cascade',
-                num: '4b',
+                num: 5,
                 title: 'Atlanta Hub Finds Alice (Hub-Mesh)',
-                description: 'Atlanta Hub doesn\'t have Alice locally; broadcasts to peer hubs via hub-mesh; Logan Hub responds.',
+                description: 'Cross-region discovery: Atlanta Hub asks peer hubs; Logan Hub responds with Alice\'s home store.',
                 curls: [
                     `curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=alice@codepop.local" \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
                 ],
                 activeNodes: ['atlanta-hub', 'logan-hub'],
                 action: async () => {
-                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    if (!testState.aliceUserId) throw new Error('Run step 3 first to register Alice.');
                     try {
                         const response = await fetchWithTimeout(
                             `${CONFIG.nodes['atlanta-hub']}/backend/hub/store-location/?email=alice@codepop.local`,
@@ -693,16 +668,16 @@
                         );
                         return await response.json();
                     } catch (err) {
-                        throw new Error(`Cascade lookup failed: ${err.message}`);
+                        throw new Error(`Hub-mesh lookup failed: ${err.message}`);
                     }
                 }
             },
-            // Phase 5: Inter-Node User Lookup
+            // Step 6: Inter-Node User Lookup
             {
                 id: 'internode-lookup',
-                num: 5,
+                num: 6,
                 title: 'Inter-Node User Lookup',
-                description: 'Logan Store 2 looks up Alice (who is at Store 1) via inter-node protocol.',
+                description: 'Store 2 finds Alice via hub/lookup before login.',
                 curls: [
                     `curl -s -X POST http://34.121.91.135:8000/backend/internode/user-lookup/ \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71" \\
@@ -711,7 +686,7 @@
                 ],
                 activeNodes: ['logan-s2'],
                 action: async () => {
-                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    if (!testState.aliceUserId) throw new Error('Run step 3 first to register Alice.');
                     try {
                         const response = await fetchWithTimeout(
                             `${CONFIG.nodes['logan-s2']}/backend/internode/user-lookup/`,
@@ -734,12 +709,12 @@
                     }
                 }
             },
-            // Phase 6: Visiting User Login at Logan Store 2 (proxied credential verification)
+            // Step 7: Visiting Login at Logan Store 2
             {
                 id: 'visiting-login',
-                num: 6,
-                title: 'Visiting User Login at Store 2',
-                description: 'Alice logs in at Store 2 using her real credentials. Store 2 proxies the password to Store 1 for verification, then issues a local token.',
+                num: 7,
+                title: 'Visiting Login at Logan Store 2',
+                description: 'Password verified at home store; Store 2 issues token and creates VisitingSession.',
                 curls: [
                     `curl -s -X POST http://34.121.91.135:8000/backend/auth/login/ \\
   -H "Content-Type: application/json" \\
@@ -747,7 +722,7 @@
                 ],
                 activeNodes: ['logan-s2'],
                 action: async () => {
-                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    if (!testState.aliceUserId) throw new Error('Run step 3 first to register Alice.');
                     try {
                         const response = await fetchWithTimeout(
                             `${CONFIG.nodes['logan-s2']}/backend/auth/login/`,
@@ -770,37 +745,12 @@
                     }
                 }
             },
-            // Phase 7: Visiting User Has No Preferences
-            {
-                id: 'visiting-prefs',
-                num: 7,
-                title: 'Visiting User Has No Preferences',
-                description: 'Verify that Alice (at Store 2) has no local preferences—she was just created there.',
-                curls: [
-                    `curl -s "http://34.121.91.135:8000/backend/users/$ALICE_S2_ID/preferences/" \\
-  -H "Authorization: Token $ALICE_S2_TOKEN"`
-                ],
-                activeNodes: ['logan-s2'],
-                action: async () => {
-                    if (!testState.aliceS2UserId || !testState.aliceS2Token) throw new Error('Run phase 6 first (visiting login at Store 2).');
-                    try {
-                        const response = await fetchWithTimeout(
-                            `${CONFIG.nodes['logan-s2']}/backend/users/${testState.aliceS2UserId}/preferences/`,
-                            { headers: {'Authorization': `Token ${testState.aliceS2Token}`} },
-                            CONFIG.timeout
-                        );
-                        return await response.json();
-                    } catch (err) {
-                        throw new Error(`Preference lookup failed: ${err.message}`);
-                    }
-                }
-            },
-            // Phase 8: Block Duplicate Registration (Same Region)
+            // Step 8: Block Duplicate (Same Region)
             {
                 id: 'dup-regional',
                 num: 8,
                 title: 'Block Duplicate (Same Region)',
-                description: 'Try registering Alice again at Logan Store 2 (same region). Should return 400.',
+                description: 'Cannot re-register Alice at Logan Store 2. Expect 400.',
                 curls: [
                     `curl -s -X POST http://34.121.91.135:8000/backend/auth/register/ \\
   -H "Content-Type: application/json" \\
@@ -814,7 +764,7 @@
                 ],
                 activeNodes: ['logan-s2'],
                 action: async () => {
-                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    if (!testState.aliceUserId) throw new Error('Run step 3 first to register Alice.');
                     try {
                         const response = await fetchWithTimeout(
                             `${CONFIG.nodes['logan-s2']}/backend/auth/register/`,
@@ -841,12 +791,12 @@
                     }
                 }
             },
-            // Phase 8a: Block Duplicate Registration (Cross-Region)
+            // Step 9: Block Duplicate (Cross-Region)
             {
                 id: 'dup-crossregion',
-                num: '8a',
+                num: 9,
                 title: 'Block Duplicate (Cross-Region)',
-                description: 'Try registering Alice at Atlanta Store 1 (different region). Should fail via hub-mesh (Atlanta Hub asks peers; Logan has Alice).',
+                description: 'Cannot register Alice at Atlanta Store 1; hub-mesh finds her at Logan. Expect 400.',
                 curls: [
                     `curl -s -X POST http://136.112.202.76:8000/backend/auth/register/ \\
   -H "Content-Type: application/json" \\
@@ -860,7 +810,7 @@
                 ],
                 activeNodes: ['atlanta-s1', 'atlanta-hub', 'logan-hub'],
                 action: async () => {
-                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    if (!testState.aliceUserId) throw new Error('Run step 3 first to register Alice.');
                     try {
                         const response = await fetchWithTimeout(
                             `${CONFIG.nodes['atlanta-s1']}/backend/auth/register/`,
@@ -887,12 +837,12 @@
                     }
                 }
             },
-            // Phase 9: Register Bob at Atlanta Store 1
+            // Step 10: Register Bob at Atlanta Store 1
             {
                 id: 'bob-register',
-                num: 9,
+                num: 10,
                 title: 'Register Bob at Atlanta Store 1',
-                description: 'Bob registers at Atlanta Store 1 to verify regions operate independently.',
+                description: 'Second region works independently. Bob registers at Atlanta S1.',
                 curls: [
                     `curl -s -X POST http://136.112.202.76:8000/backend/auth/register/ \\
   -H "Content-Type: application/json" \\
@@ -931,19 +881,19 @@
                     }
                 }
             },
-            // Phase 10: Atlanta Hub Has Bob
+            // Step 11: Atlanta Hub Has Bob
             {
                 id: 'atlanta-bob-sync',
-                num: 10,
+                num: 11,
                 title: 'Atlanta Hub Has Bob',
-                description: 'Atlanta Hub should have Bob cached after his registration at Store 1.',
+                description: 'Atlanta Hub has Bob in UserCache after his registration.',
                 curls: [
                     `curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=bob@codepop.local" \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
                 ],
                 activeNodes: ['atlanta-hub'],
                 action: async () => {
-                    if (!testState.bobUserId) throw new Error('Run phase 9 first to register Bob.');
+                    if (!testState.bobUserId) throw new Error('Run step 10 first to register Bob.');
                     try {
                         const response = await fetchWithTimeout(
                             `${CONFIG.nodes['atlanta-hub']}/backend/hub/store-location/?email=bob@codepop.local`,
@@ -956,19 +906,19 @@
                     }
                 }
             },
-            // Phase 11: Logan Hub Finds Bob (via Hub-Mesh)
+            // Step 12: Logan Hub Finds Bob (Hub-Mesh)
             {
                 id: 'cross-region-bob',
-                num: 11,
-                title: 'Logan Hub Finds Bob (Cross-Region)',
-                description: 'Logan Hub finds Bob (registered in Atlanta) via hub-mesh broadcast; Atlanta Hub responds.',
+                num: 12,
+                title: 'Logan Hub Finds Bob (Hub-Mesh)',
+                description: 'Logan Hub finds Bob via hub-mesh; Atlanta Hub responds. Symmetric cross-region discovery.',
                 curls: [
                     `curl -s "http://34.136.12.86:8000/backend/hub/store-location/?email=bob@codepop.local" \\
   -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
                 ],
                 activeNodes: ['logan-hub', 'atlanta-hub'],
                 action: async () => {
-                    if (!testState.bobUserId) throw new Error('Run phase 9 first to register Bob.');
+                    if (!testState.bobUserId) throw new Error('Run step 10 first to register Bob.');
                     try {
                         const response = await fetchWithTimeout(
                             `${CONFIG.nodes['logan-hub']}/backend/hub/store-location/?email=bob@codepop.local`,
@@ -981,37 +931,12 @@
                     }
                 }
             },
-            // Phase 12: Atlanta Hub Finds Alice (Symmetric)
-            {
-                id: 'cross-region-alice',
-                num: 12,
-                title: 'Atlanta Hub Finds Alice (Symmetric)',
-                description: 'Atlanta Hub finds Alice (registered in Logan) via hub-mesh. Proves symmetric cross-region discovery.',
-                curls: [
-                    `curl -s "http://136.115.168.184:8000/backend/hub/store-location/?email=alice@codepop.local" \\
-  -H "Authorization: NodeToken 3597b3480971f2aa46484d2a8cad6aa55a979ba01292630d6f247d8224d76d71"`
-                ],
-                activeNodes: ['atlanta-hub', 'logan-hub'],
-                action: async () => {
-                    if (!testState.aliceUserId) throw new Error('Run phases 3 and 9 first to register both users.');
-                    try {
-                        const response = await fetchWithTimeout(
-                            `${CONFIG.nodes['atlanta-hub']}/backend/hub/store-location/?email=alice@codepop.local`,
-                            { headers: {'Authorization': `NodeToken ${CONFIG.nodeToken}`} },
-                            CONFIG.timeout
-                        );
-                        return await response.json();
-                    } catch (err) {
-                        throw new Error(`Symmetric discovery failed: ${err.message}`);
-                    }
-                }
-            },
-            // Phase 13: Alice Adds a Preference at Home Store
+            // Step 13: Alice Adds a Preference at Home Store
             {
                 id: 'home-preference-create',
                 num: 13,
                 title: 'Alice Adds a Preference at Home Store',
-                description: 'Home-store preference creation (baseline for proxy tests). Alice creates a preference at Logan S1.',
+                description: 'Alice creates a preference at Logan S1 (home store). Baseline for write-through.',
                 curls: [
                     `curl -s -X POST "http://127.0.0.1:8001/backend/preferences/" \\
   -H "Authorization: Token ${testState.aliceToken || 'ALICE_TOKEN'}" \\
@@ -1020,7 +945,7 @@
                 ],
                 activeNodes: ['logan-s1'],
                 action: async () => {
-                    if (!testState.aliceToken || !testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    if (!testState.aliceToken || !testState.aliceUserId) throw new Error('Run step 3 first to register Alice.');
                     try {
                         const response = await fetchWithTimeout(
                             `${CONFIG.nodes['logan-s1']}/backend/preferences/`,
@@ -1045,12 +970,12 @@
                     }
                 }
             },
-            // Phase 14: Visiting User Writes a Preference (Proxied to Home Store)
+            // Step 14: Visiting User Writes a Preference (Write-Through)
             {
                 id: 'visiting-preference-proxy',
                 num: 14,
-                title: 'Visiting User Writes a Preference (Proxied to Home Store)',
-                description: 'Visiting-user write is proxied to home store via JWT. Alice at Logan S2 adds "Cherry" preference, which syncs to S1.',
+                title: 'Visiting User Writes a Preference (Write-Through)',
+                description: 'Alice at Logan S2 (visiting) adds a preference; proxied to home store S1.',
                 curls: [
                     `curl -s -X POST "http://127.0.0.1:8002/backend/preferences/" \\
   -H "Authorization: Token ${testState.aliceS2Token || 'ALICE_S2_TOKEN'}" \\
@@ -1059,7 +984,7 @@
                 ],
                 activeNodes: ['logan-s2', 'logan-s1'],
                 action: async () => {
-                    if (!testState.aliceS2Token || !testState.aliceS2UserId) throw new Error('Run phases 6 and 13 first.');
+                    if (!testState.aliceS2Token || !testState.aliceS2UserId) throw new Error('Run steps 7 and 13 first.');
                     try {
                         const response = await fetchWithTimeout(
                             `${CONFIG.nodes['logan-s2']}/backend/preferences/`,
@@ -1084,73 +1009,38 @@
                     }
                 }
             },
-            // Phase 15: Cross-Region Visiting Login (Alice at Atlanta Store 1)
+            // Step 15: Verify Write-Through — Read Preferences at Home Store
             {
-                id: 'cross-region-visiting-login',
+                id: 'verify-write-through',
                 num: 15,
-                title: 'Cross-Region Visiting Login (Alice at Atlanta Store 1)',
-                description: 'Visiting user from different region logs in. Atlanta S1 discovers Alice via hub cascade, issues JWT, creates VisitingSession.',
+                title: 'Verify Write-Through: Read Preferences at Home Store',
+                description: 'GET Alice\'s preferences from Logan S1 (home). Response should include both "Vanilla" (step 13) and "Cherry" (step 14, proxied to S1).',
                 curls: [
-                    `curl -s -X POST "http://127.0.0.1:8003/backend/auth/login/" \\
-  -H "Content-Type: application/json" \\
-  -d '{"username": "alice@codepop.local", "password": "testpass123"}'`
+                    `curl -s "http://127.0.0.1:8001/backend/users/${testState.aliceUserId || 'ALICE_USER_ID'}/preferences/" \\
+  -H "Authorization: Token ${testState.aliceToken || 'ALICE_TOKEN'}"`
                 ],
-                activeNodes: ['atlanta-s1', 'atlanta-hub', 'logan-hub', 'logan-s1'],
+                activeNodes: ['logan-s1'],
                 action: async () => {
-                    if (!testState.aliceUserId) throw new Error('Run phase 3 first to register Alice.');
+                    if (!testState.aliceToken || !testState.aliceUserId) throw new Error('Run step 3 first to register Alice.');
                     try {
                         const response = await fetchWithTimeout(
-                            `${CONFIG.nodes['atlanta-s1']}/backend/auth/login/`,
+                            `${CONFIG.nodes['logan-s1']}/backend/users/${testState.aliceUserId}/preferences/`,
                             {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    'username': 'alice@codepop.local',
-                                    'password': 'testpass123'
-                                })
-                            },
-                            CONFIG.timeout
-                        );
-                        const data = await response.json();
-                        if (!response.ok) throw new Error(data.detail || 'Login failed');
-                        testState.aliceAtlantaUserId = data.user_id;
-                        testState.aliceAtlantaToken = data.token;
-                        return data;
-                    } catch (err) {
-                        throw new Error(`Cross-region visiting login failed: ${err.message}`);
-                    }
-                }
-            },
-            // Phase 16: Cross-Region Visiting User Reads Preferences
-            {
-                id: 'cross-region-visiting-read',
-                num: 16,
-                title: 'Cross-Region Visiting User Reads Preferences',
-                description: 'Visiting user at Atlanta S1 reads preferences from JWT payload (no hop back to Logan). Should include "Vanilla" from Phase 13.',
-                curls: [
-                    `curl -s "http://127.0.0.1:8003/backend/users/${testState.aliceAtlantaUserId || 'ALICE_ATLANTA_USER_ID'}/preferences/" \\
-  -H "Authorization: Token ${testState.aliceAtlantaToken || 'ALICE_ATLANTA_TOKEN'}"`
-                ],
-                activeNodes: ['atlanta-s1'],
-                action: async () => {
-                    if (!testState.aliceAtlantaToken || !testState.aliceAtlantaUserId) throw new Error('Run phase 15 first.');
-                    try {
-                        const response = await fetchWithTimeout(
-                            `${CONFIG.nodes['atlanta-s1']}/backend/users/${testState.aliceAtlantaUserId}/preferences/`,
-                            {
-                                headers: {
-                                    'Authorization': `Token ${testState.aliceAtlantaToken}`
-                                }
+                                headers: { 'Authorization': `Token ${testState.aliceToken}` }
                             },
                             CONFIG.timeout
                         );
                         const data = await response.json();
                         if (!response.ok) throw new Error(data.detail || 'Failed to read preferences');
+                        // API returns list of { PreferenceID, UserID, Preference }; extract preference names
+                        const list = Array.isArray(data) ? data : (data.preferences || []);
+                        const prefs = list.map(p => (typeof p === 'string' ? p : (p && p.Preference))).filter(Boolean);
+                        if (!prefs.some(p => p.toLowerCase() === 'vanilla') || !prefs.some(p => p.toLowerCase() === 'cherry')) {
+                            throw new Error(`Expected both "vanilla" and "cherry" at home store; got: ${JSON.stringify(prefs)}`);
+                        }
                         return data;
                     } catch (err) {
-                        throw new Error(`Cross-region preference read failed: ${err.message}`);
+                        throw new Error(`Verify write-through failed: ${err.message}`);
                     }
                 }
             }
@@ -1228,9 +1118,7 @@
                 aliceS2UserId: null,
                 aliceS2Token: null,
                 bobUserId: null,
-                bobToken: null,
-                aliceAtlantaUserId: null,
-                aliceAtlantaToken: null
+                bobToken: null
             };
             updateStatus();
         }

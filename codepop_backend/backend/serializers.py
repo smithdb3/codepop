@@ -80,6 +80,24 @@ class GetUserSerializer(serializers.ModelSerializer):
         read_only_fields = ('is_staff', 'is_superuser', 'is_active',)
 
 
+# Shared allowed preference values (lowercase); used by PreferenceSerializer and internode preference update
+ALLOWED_PREFERENCES = [
+    "mtn. dew", "diet mtn. dew", "dr. pepper", "diet dr. pepper", "dr. pepper zero",
+    "dr pepper cream soda", "sprite", "sprite zero", "coke", "diet coke", "coke zero",
+    "pepsi", "diet pepsi", "rootbeer", "fanta", "big red", "powerade", "lemonade",
+    "light lemonade", "coconut", "pineapple", "passion fruit", "mango", "guava", "banana",
+    "strawberry", "raspberry", "blackberry", "pomegranate", "cranberry", "grape", "kiwi",
+    "huckleberry", "peach", "watermelon", "green apple", "pear", "cherry", "orange",
+    "blood orange", "grapefruit", "sweetened lime", "lemon", "lime", "vanilla", "cupcake",
+    "salted caramel", "chocolate milano", "cinnamon", "choc chip cookie dough",
+    "brown sugar cinnamon", "hazelnut", "white chocolate", "butterscotch", "blue raspberry",
+    "sour", "blue curacao", "bubble gum", "cotton candy", "mojito", "cucumber", "lavender",
+    "pumpkin spice", "peppermint", "irish cream", "gingerbread", "butterbrew mix", "cream",
+    "coconut cream", "whip", "lemon wedge", "lime wedge", "french vanilla creamer", "candy",
+    "sprinkles", "strawberry puree", "peach puree", "mango puree", "raspberry puree", "candy sprinkles", "chocolate"
+]
+
+
 class PreferenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Preference
@@ -90,26 +108,9 @@ class PreferenceSerializer(serializers.ModelSerializer):
         # Convert the value to lowercase for consistent validation
         value = value.lower()
 
-        # Define the allowed preference values (in lowercase for consistency)
-        allowed_preferences = [
-            "mtn. dew", "diet mtn. dew", "dr. pepper", "diet dr. pepper", "dr. pepper zero",
-            "dr pepper cream soda", "sprite", "sprite zero", "coke", "diet coke", "coke zero",
-            "pepsi", "diet pepsi", "rootbeer", "fanta", "big red", "powerade", "lemonade",
-            "light lemonade", "coconut", "pineapple", "passion fruit", "mango", "guava", "banana",
-            "strawberry", "raspberry", "blackberry", "pomegranate", "cranberry", "grape", "kiwi", 
-            "huckleberry", "peach", "watermelon", "green apple", "pear", "cherry", "orange", 
-            "blood orange", "grapefruit", "sweetened lime", "lemon", "lime", "vanilla", "cupcake",
-            "salted caramel", "chocolate milano", "cinnamon", "choc chip cookie dough", 
-            "brown sugar cinnamon", "hazelnut", "white chocolate", "butterscotch", "blue raspberry", 
-            "sour", "blue curacao", "bubble gum", "cotton candy", "mojito", "cucumber", "lavender",
-            "pumpkin spice", "peppermint", "irish cream", "gingerbread", "butterbrew mix", "cream", 
-            "coconut cream", "whip", "lemon wedge", "lime wedge", "french vanilla creamer", "candy",
-            "sprinkles", "strawberry puree", "peach puree", "mango puree", "raspberry puree", "candy sprinkles", "chocolate"
-        ]
-
         # Check if the value is in the allowed preferences
-        if value not in allowed_preferences:
-            raise serializers.ValidationError(f"{value} is not a valid preference. Allowed preferences are: {allowed_preferences}.")
+        if value not in ALLOWED_PREFERENCES:
+            raise serializers.ValidationError(f"{value} is not a valid preference. Allowed preferences are: {ALLOWED_PREFERENCES}.")
 
         # Return the lowercase value for saving
         return value
