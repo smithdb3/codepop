@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.postgres',
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
@@ -108,11 +107,8 @@ DATABASES = {
 # ---------------------------------------------------------------------------
 # Node identity (hub mesh + regional stores; no master hub)
 # ---------------------------------------------------------------------------
-try:
-    STORE_ID = int(os.getenv('STORE_ID', '0'))
-except ValueError:
-    raise ImproperlyConfigured("STORE_ID must be a valid integer")
-STORE_NAME = os.getenv('STORE_NAME', f'Store {STORE_ID}')
+STORE_ID = os.getenv('STORE_ID', '0')
+STORE_NAME = os.getenv('STORE_NAME', f'Store {os.getenv("STORE_ID", "0")}')
 REGION = os.getenv('REGION', 'logan')
 API_ENDPOINT = os.getenv('API_ENDPOINT', '')
 LATITUDE = float(os.getenv('LATITUDE', '0.0'))

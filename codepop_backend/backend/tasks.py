@@ -11,7 +11,6 @@ No master hub: stores talk only to UPSTREAM_HUB_URL; hubs do not register or hea
 
 import logging
 import requests
-from datetime import timedelta
 from django.conf import settings
 from django.utils import timezone
 from celery import shared_task
@@ -78,7 +77,7 @@ def register_with_hub(self):
                 defaults={
                     "node_type": "store",
                     "shared_secret": node_secret,
-                    "expires_at": timezone.now() + timedelta(days=90),
+                    "expires_at": timezone.now() + timezone.timedelta(days=90),
                     "is_active": True,
                 }
             )
@@ -150,72 +149,70 @@ def process_event_queue(self):
     Max 10 attempts before permanent failure (vs 4 in old code).
     Backoff is capped at 5 minutes between retries.
     """
-    from django.db import transaction
     try:
-        with transaction.atomic():
-            pending_events = EventQueue.objects.select_for_update(skip_locked=True).filter(status='pending', attempts__lt=10)
+        pending_events = EventQueue.objects.filter(status='pending', attempts__lt=10)
 
-            for event in pending_events:
-                # Check exponential backoff: if we've tried before, wait before retrying
-                if event.last_attempt:
-                    # Exponential: 2^0=1s, 2^1=2s, ..., capped at 300s (5 min)
-                    retry_delay = min(2 ** event.attempts, 300)
-                    next_retry_time = event.last_attempt + timezone.timedelta(seconds=retry_delay)
-                    if timezone.now() < next_retry_time:
-                        continue  # Not time to retry yet
+        for event in pending_events:
+            # Check exponential backoff: if we've tried before, wait before retrying
+            if event.last_attempt:
+                # Exponential: 2^0=1s, 2^1=2s, ..., capped at 300s (5 min)
+                retry_delay = min(2 ** event.attempts, 300)
+                next_retry_time = event.last_attempt + timezone.timedelta(seconds=retry_delay)
+                if timezone.now() < next_retry_time:
+                    continue  # Not time to retry yet
 
+            try:
+                # Use per-node secret if available, fall back to global
+                node_secret = settings.INTER_NODE_SECRET
                 try:
-                    # Use per-node secret if available, fall back to global
-                    node_secret = settings.INTER_NODE_SECRET
-                    try:
-                        hub_reg = HubRegistry.objects.filter(is_active=True).first()
-                        if hub_reg and hub_reg.issued_secret:
-                            node_secret = hub_reg.issued_secret
-                    except Exception:
-                        pass
+                    hub_reg = HubRegistry.objects.filter(is_active=True).first()
+                    if hub_reg and hub_reg.issued_secret:
+                        node_secret = hub_reg.issued_secret
+                except Exception:
+                    pass
 
-                    headers = {
-                        "Authorization": f"NodeToken {node_secret}",
-                        "Content-Type": "application/json",
-                    }
+                headers = {
+                    "Authorization": f"NodeToken {node_secret}",
+                    "Content-Type": "application/json",
+                }
 
-                    response = requests.post(
-                        event.target_node,
-                        json=event.payload,
-                        headers=headers,
-                        timeout=10
+                response = requests.post(
+                    event.target_node,
+                    json=event.payload,
+                    headers=headers,
+                    timeout=10
+                )
+                response.raise_for_status()
+
+                # Success: mark event as sent
+                event.status = 'sent'
+                event.attempts += 1
+                event.last_attempt = timezone.now()
+                event.save()
+                logger.info(f"Event {event.id} delivered to {event.target_node}")
+
+            except requests.RequestException as e:
+                # Failure: increment attempts, update last_attempt
+                event.attempts += 1
+                event.last_attempt = timezone.now()
+
+                if event.attempts >= 10:
+                    # Max retries exceeded: mark as failed and write audit record
+                    event.status = 'failed'
+                    logger.error(f"Event {event.id} failed after 10 attempts: {e}")
+                    SyncRecord.objects.create(
+                        sync_type="status_update",
+                        source_store_id=int(settings.STORE_ID),
+                        target_store_id=None,
+                        status="failed",
+                        completed_at=timezone.now(),
+                        error_message=f"EventQueue {event.id} ({event.event_type}) → {event.target_node}: {e}",
                     )
-                    response.raise_for_status()
+                else:
+                    # Will retry on next task execution
+                    logger.warning(f"Event {event.id} failed (attempt {event.attempts}/10): {e}")
 
-                    # Success: mark event as sent
-                    event.status = 'sent'
-                    event.attempts += 1
-                    event.last_attempt = timezone.now()
-                    event.save()
-                    logger.info(f"Event {event.id} delivered to {event.target_node}")
-
-                except requests.RequestException as e:
-                    # Failure: increment attempts, update last_attempt
-                    event.attempts += 1
-                    event.last_attempt = timezone.now()
-
-                    if event.attempts >= 10:
-                        # Max retries exceeded: mark as failed and write audit record
-                        event.status = 'failed'
-                        logger.error(f"Event {event.id} failed after 10 attempts: {e}")
-                        SyncRecord.objects.create(
-                            sync_type="status_update",
-                            source_store_id=int(settings.STORE_ID),
-                            target_store_id=None,
-                            status="failed",
-                            completed_at=timezone.now(),
-                            error_message=f"EventQueue {event.id} ({event.event_type}) → {event.target_node}: {e}",
-                        )
-                    else:
-                        # Will retry on next task execution
-                        logger.warning(f"Event {event.id} failed (attempt {event.attempts}/10): {e}")
-
-                    event.save()
+                event.save()
 
     except Exception as e:
         logger.error(f"Error processing event queue: {e}")

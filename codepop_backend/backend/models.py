@@ -25,8 +25,8 @@ class Drink(models.Model):
     AddIns = ArrayField(models.CharField(max_length=255), blank=True, null=True)
     Rating = models.FloatField(null=True, blank=True)
     Price = models.FloatField()
-    Size = models.CharField(default="16oz")
-    Ice = models.CharField(default="regular")
+    Size = models.CharField(default="m")
+    Ice = models.CharField(default="normal")
     User_Created = models.BooleanField()
     Favorite = models.ManyToManyField('auth.User', blank=True)
 
@@ -95,7 +95,7 @@ class Order(models.Model):
     PickupTime = models.DateTimeField(null=True, blank=True)
     CreationTime = models.DateTimeField(auto_now_add=True)
     LockerCombo = models.BigIntegerField(null=True)
-    StripeID = models.CharField(max_length=255, blank=True, default='')
+    StripeID = models.CharField()
     
     def add_drinks(self, drink_ids):
         # Assuming you have a ManyToMany field for drinks in your Order model
@@ -116,7 +116,7 @@ class Order(models.Model):
 
 class Revenue(models.Model):
     RevenueID = models.AutoField(primary_key=True)
-    OrderID = models.ForeignKey(Order, on_delete=models.CASCADE, db_column='OrderID', null=True, blank=True)
+    OrderID = models.IntegerField(default=1)
     TotalAmount = models.FloatField(default=0.0)
     SaleDate = models.DateTimeField(default=timezone.now)
     Refunded = models.BooleanField(default= False)
@@ -264,7 +264,7 @@ class SyncRecord(models.Model):
     sync_type = models.CharField(max_length=50, choices=SYNC_TYPES)
     source_store_id = models.IntegerField()
     target_store_id = models.IntegerField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     error_message = models.TextField(blank=True)
@@ -291,7 +291,7 @@ class EventQueue(models.Model):
     event_type = models.CharField(max_length=50, choices=EVENT_TYPES)
     payload = models.JSONField()
     target_node = models.CharField(max_length=255)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     last_attempt = models.DateTimeField(null=True, blank=True)
     attempts = models.IntegerField(default=0)
@@ -320,7 +320,7 @@ class SupplyRequest(models.Model):
     item_name = models.CharField(max_length=255)
     item_type = models.CharField(max_length=50, choices=ITEM_TYPES)
     quantity_requested = models.PositiveIntegerField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)

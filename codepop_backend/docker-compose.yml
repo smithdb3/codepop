@@ -1,16 +1,14 @@
 services:
   web:
     build: .
-    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn codepop_backend.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
     env_file:
       - .env
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
     volumes:
       - .:/app
       - huggingface_cache:/root/.cache/huggingface
@@ -27,31 +25,19 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   redis:
     image: redis:8-alpine
     restart: always
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   celery:
     build: .
-    command: celery -A codepop_backend worker --loglevel=info
+    command: sh -c "python manage.py migrate --noinput && celery -A codepop_backend worker --loglevel=info"
     env_file:
       - .env
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
     volumes:
       - .:/app
       - huggingface_cache:/root/.cache/huggingface
@@ -59,14 +45,12 @@ services:
 
   celery-beat:
     build: .
-    command: celery -A codepop_backend beat --loglevel=info
+    command: sh -c "python manage.py migrate --noinput && celery -A codepop_backend beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
     env_file:
       - .env
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - db
+      - redis
     volumes:
       - .:/app
       - huggingface_cache:/root/.cache/huggingface
