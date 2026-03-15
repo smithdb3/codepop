@@ -85,8 +85,8 @@ class NodeTokenAuthentication(BaseAuthentication):
         except NodeCertificate.DoesNotExist:
             pass
 
-        # Step 2: Fall back to global INTER_NODE_SECRET (bootstrap only)
-        if settings.INTER_NODE_SECRET and key == settings.INTER_NODE_SECRET:
+        # Step 2: Fall back to global INTER_NODE_SECRET (bootstrap / dev only; prefer NodeCertificate in prod)
+        if getattr(settings, "INTER_NODE_SECRET", None) and key == settings.INTER_NODE_SECRET:
             synthetic_user = AnonymousUser()
             synthetic_user.is_node = True
             synthetic_user.node_id = "global"  # Indicates global fallback was used

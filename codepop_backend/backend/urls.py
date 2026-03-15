@@ -15,6 +15,7 @@ from .views import emailAPI
 from .views import (
     HubRegisterView, HubHeartbeatView, HubStoresView, HubStoreLocationView,
     HubSupplyRequestListView, HubSupplyRequestActionView,
+    HubMeshUserLocationView, HubMeshUserSyncView,
     InterNodeHealthCheckView, InterNodeStoreRegistryView, InterNodeUserLookupView,
     InterNodeUserSyncView, InterNodeIssueTokenView, InterNodeUserPreferencesUpdateView,
     InterNodeUserFavoritesUpdateView, InterNodeUserProfileUpdateView,
@@ -231,6 +232,10 @@ urlpatterns = [
     path('hub/store-location/', HubStoreLocationView.as_view(), name='hub_store_location'),
     path('hub/supply-requests/', HubSupplyRequestListView.as_view(), name='hub_supply_requests'),
     path('hub/supply-requests/<int:pk>/<str:action>/', HubSupplyRequestActionView.as_view(), name='hub_supply_request_action'),
+
+    # Hub-mesh endpoints (hub-to-hub only: user routing and discovery)
+    path('hub-mesh/user-location/', HubMeshUserLocationView.as_view(), name='hub_mesh_user_location'),
+    path('hub-mesh/user-sync/', HubMeshUserSyncView.as_view(), name='hub_mesh_user_sync'),
 
     # Inter-Node Communication Endpoints (all nodes can call these on peers)
     # - POST /backend/internode/health-check/: Ping/pong

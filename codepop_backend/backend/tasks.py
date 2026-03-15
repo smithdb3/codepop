@@ -1,13 +1,12 @@
 """
-Celery Tasks for Distributed System
+Celery Tasks for Distributed System (hub mesh + regional stores)
 
-Implements periodic tasks:
-- heartbeat_task: Every 30 seconds, stores send heartbeat to their hub
-- process_event_queue: Every 10 seconds, process queued inter-node events with exponential backoff
-- check_dead_stores: Every 2 minutes, mark stores with stale heartbeats as inactive
+- register_with_hub: Store registers with its upstream hub (once on startup via apps.py).
+- heartbeat_task: Every 30s, stores send heartbeat to their upstream hub.
+- process_event_queue: Every 10s, process queued inter-node events (user_sync, etc.) with backoff.
+- check_dead_stores: Hub-only; every 2 min, mark stores with stale heartbeats as inactive.
 
-NOTE: register_with_hub is NOT on a beat schedule. It's triggered on app startup via apps.py ready().
-It uses exponential backoff with max_retries=None to retry indefinitely until the hub is reachable.
+No master hub: stores talk only to UPSTREAM_HUB_URL; hubs do not register or heartbeat elsewhere.
 """
 
 import logging
@@ -23,24 +22,19 @@ logger = logging.getLogger(__name__)
 @shared_task(bind=True)
 def register_with_hub(self):
     """
-    Register this node with its upstream hub.
+    Store registers with its upstream (regional) hub.
 
-    Called once on app startup (from apps.py) with exponential backoff.
-    Uses self.retry() to retry indefinitely with capped backoff (max 5 minutes)
-    until the hub is reachable.
+    Called once on app startup from apps.py (store nodes only) with exponential backoff
+    until the hub is reachable. Hubs skip (no upstream).
 
-    On success:
-    - Saves the returned node_secret to HubRegistry.issued_secret
-    - Creates/updates NodeCertificate for this node
-    - Persists hub info to HubRegistry so heartbeat tasks can use it
-
-    Skips if HUB_URL / API_ENDPOINT are not set (hub nodes don't register anywhere).
+    On success: saves node_secret to HubRegistry and NodeCertificate for heartbeat/auth.
+    Skips if UPSTREAM_HUB_URL or API_ENDPOINT not set (hub node or local dev).
     """
-    if not settings.HUB_URL or not settings.API_ENDPOINT:
-        logger.info(f"Skipping registration: no HUB_URL or API_ENDPOINT configured (hub node or local dev)")
+    if not getattr(settings, "UPSTREAM_HUB_URL", None) or not settings.API_ENDPOINT:
+        logger.info("Skipping registration: no UPSTREAM_HUB_URL or API_ENDPOINT (hub or local dev)")
         return
 
-    hub_url = settings.HUB_URL.rstrip('/')
+    hub_url = settings.UPSTREAM_HUB_URL.rstrip('/')
     endpoint = f"{hub_url}/backend/hub/register/"
     headers = {
         "Authorization": f"NodeToken {settings.INTER_NODE_SECRET}",
@@ -104,21 +98,16 @@ def register_with_hub(self):
 @shared_task(bind=True, max_retries=1)
 def heartbeat_task(self):
     """
-    Periodic task: Every 30 seconds, send heartbeat to upstream hub.
+    Periodic task: Every 30 seconds, store sends heartbeat to its upstream hub.
 
-    - Stores heartbeat to their regional hub (HUB_URL or HubRegistry endpoint)
-    - Regional hubs heartbeat to the master hub (HUB_URL)
-    - Master hub skips (nothing upstream to report to)
-    - Skip if HUB_URL not configured (local dev mode)
-
-    Uses per-node secret from HubRegistry.issued_secret if available, falls back to
-    INTER_NODE_SECRET (global) for compatibility during bootstrap.
+    Only store nodes have UPSTREAM_HUB_URL; hubs skip. Uses per-node secret from
+    HubRegistry.issued_secret if available, else INTER_NODE_SECRET (bootstrap).
     """
-    if not settings.HUB_URL:
+    if not getattr(settings, "UPSTREAM_HUB_URL", None):
         return
 
     try:
-        hub_url = settings.HUB_URL.rstrip('/')
+        hub_url = settings.UPSTREAM_HUB_URL.rstrip('/')
         endpoint = f"{hub_url}/backend/hub/heartbeat/"
 
         # Try to use per-node secret from HubRegistry; fall back to global secret
@@ -232,16 +221,10 @@ def process_event_queue(self):
 @shared_task
 def check_dead_stores():
     """
-    Hub-only periodic task: Mark stores as inactive if they haven't sent a heartbeat
-    in the last 5 minutes. Runs every 2 minutes via Celery Beat.
-
-    Two cases are handled:
-    - Stores that sent a heartbeat at some point but it's now stale
-    - Stores that registered but never sent any heartbeat
-
-    Uses efficient bulk update() — no N+1 queries.
+    Hub-only: mark stores in StoreRegistry as inactive if no heartbeat in 5 minutes.
+    Runs every 2 minutes via Celery Beat. Store nodes skip (no StoreRegistry).
     """
-    if not settings.IS_HUB:
+    if not getattr(settings, "IS_HUB", False):
         return
 
     threshold = timezone.now() - timezone.timedelta(minutes=5)
