@@ -117,37 +117,6 @@ def _broadcast_hub_store_location(email):
     return None
 
 
-def _broadcast_hub_mesh_user_location(email):
-    """
-    Hub-to-hub: broadcast GET hub-mesh/user-location to all PEER_HUB_URLS.
-    Returns first 'found' payload with store_id, api_endpoint, user_id, home_store_id, home_store_endpoint, or None.
-    """
-    if not getattr(settings, "PEER_HUB_URLS", None):
-        return None
-
-    def query_one(peer_url):
-        try:
-            resp = requests.get(
-                f"{peer_url.rstrip('/')}/backend/hub-mesh/user-location/",
-                params={"email": email},
-                headers={"Authorization": f"NodeToken {_get_node_secret()}"},
-                timeout=5,
-            )
-            if resp.status_code == 200 and resp.json().get("status") == "found":
-                return resp.json()
-        except Exception as e:
-            logger.warning("Hub-mesh user-location failed (%s): %s", peer_url, e)
-        return None
-
-    with ThreadPoolExecutor(max_workers=len(settings.PEER_HUB_URLS)) as executor:
-        futures = {executor.submit(query_one, url): url for url in settings.PEER_HUB_URLS}
-        for future in as_completed(futures):
-            result = future.result()
-            if result is not None:
-                return result
-    return None
-
-
 def _discover_home_store(email):
     """
     Discover the home store endpoint for a user email.
@@ -370,13 +339,12 @@ class CreateUserAPIView(CreateAPIView):
         # Auto-create UserCache entry for newly registered user
         _refresh_user_cache(serializer.instance)
 
-        # Queue routing pointer sync to upstream hub (store→hub; HUB_URL is UPSTREAM_HUB_URL for stores)
-        if getattr(settings, "UPSTREAM_HUB_URL", None):
-            target = (getattr(settings, "UPSTREAM_HUB_URL", None)).rstrip("/")
+        # Queue routing pointer sync to upstream hub
+        if settings.HUB_URL:
             EventQueue.objects.create(
                 event_type="user_sync",
                 status="pending",
-                target_node=f"{target}/backend/internode/user-sync/",
+                target_node=f"{settings.HUB_URL.rstrip('/')}/backend/internode/user-sync/",
                 payload={
                     "email": serializer.instance.email,
                     "user_id": serializer.instance.pk,
@@ -1374,14 +1342,11 @@ class HubStoreLocationView(APIView):
                         status=status.HTTP_200_OK
                     )
             except UserCache.DoesNotExist:
-                # Not in local cache — if we are a hub, broadcast to peer hubs via hub-mesh
-                if getattr(settings, "IS_HUB", False) and getattr(settings, "PEER_HUB_URLS", None):
-                    result = _broadcast_hub_mesh_user_location(email)
+                # Not in local cache — if we are a hub, broadcast to peer hubs
+                if settings.IS_HUB and settings.PEER_HUB_URLS:
+                    result = _broadcast_hub_store_location(email)
                     if result is not None:
-                        return Response(
-                            {"status": "found", "store_id": result.get("store_id"), "api_endpoint": result.get("api_endpoint")},
-                            status=status.HTTP_200_OK,
-                        )
+                        return Response(result, status=status.HTTP_200_OK)
                 return Response(
                     {"status": "not_found"},
                     status=status.HTTP_200_OK
@@ -1391,91 +1356,6 @@ class HubStoreLocationView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-
-# ============================================================================
-# HUB-MESH ENDPOINTS (hub-to-hub only; for user routing and discovery)
-# ============================================================================
-
-class HubMeshUserLocationView(APIView):
-    """
-    GET /backend/hub-mesh/user-location/?email=...
-
-    Hub-to-hub: answer "where is this user's home store?" from local UserCache.
-    Returns status, store_id, api_endpoint, user_id, home_store_id, home_store_endpoint when found.
-    Only hub nodes should expose this; callers are other hubs in the mesh.
-    """
-    authentication_classes = [NodeTokenAuthentication]
-    permission_classes = [IsInterNodeRequest]
-
-    def get(self, request):
-        if not request.node_identity.get("is_hub"):
-            return Response({"error": "Hub-mesh endpoint only available on hub nodes"}, status=status.HTTP_403_FORBIDDEN)
-        email = request.query_params.get("email")
-        if not email:
-            return Response({"error": "email query parameter required"}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            user_cache = UserCache.objects.get(user_email=email, expires_at__gt=timezone.now())
-            return Response(
-                {
-                    "status": "found",
-                    "store_id": user_cache.home_store_id,
-                    "api_endpoint": user_cache.home_store_endpoint,
-                    "user_id": user_cache.user_id,
-                    "home_store_id": user_cache.home_store_id,
-                    "home_store_endpoint": user_cache.home_store_endpoint,
-                },
-                status=status.HTTP_200_OK,
-            )
-        except UserCache.DoesNotExist:
-            return Response({"status": "not_found"}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class HubMeshUserSyncView(APIView):
-    """
-    POST /backend/hub-mesh/user-sync/
-
-    Hub-to-hub: receive user routing from another hub. Upserts UserCache with TTL.
-    Only hub nodes should expose this.
-    """
-    authentication_classes = [NodeTokenAuthentication]
-    permission_classes = [IsInterNodeRequest]
-
-    def post(self, request):
-        if not request.node_identity.get("is_hub"):
-            return Response({"error": "Hub-mesh endpoint only available on hub nodes"}, status=status.HTTP_403_FORBIDDEN)
-        try:
-            email = request.data.get("email")
-            user_id = request.data.get("user_id")
-            home_store_id = request.data.get("home_store_id")
-            home_store_endpoint = request.data.get("home_store_endpoint")
-            if not email or user_id is None or not home_store_endpoint:
-                return Response(
-                    {"error": "email, user_id, and home_store_endpoint required"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            expires_at = timezone.now() + timedelta(hours=24)
-            UserCache.objects.update_or_create(
-                user_email=email,
-                defaults={
-                    "user_id": user_id,
-                    "home_store_id": home_store_id or 0,
-                    "home_store_endpoint": home_store_endpoint,
-                    "expires_at": expires_at,
-                },
-            )
-            SyncRecord.objects.create(
-                sync_type="user_pull",
-                source_store_id=request.node_identity.get("store_id", 0),
-                target_store_id=int(settings.STORE_ID),
-                status="success",
-                completed_at=timezone.now(),
-            )
-            return Response({"status": "cached", "expires_at": expires_at.isoformat()}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # ============================================================================
@@ -1604,9 +1484,9 @@ class InterNodeUserLookupView(APIView):
             except User.DoesNotExist:
                 pass
 
-            # Stage 3: If we are a hub, broadcast to peer hubs via hub-mesh user-location
-            if getattr(settings, "IS_HUB", False) and getattr(settings, "PEER_HUB_URLS", None):
-                hub_data = _broadcast_hub_mesh_user_location(email)
+            # Stage 3: Broadcast to peer hubs (enables cross-region discovery)
+            if settings.IS_HUB and settings.PEER_HUB_URLS:
+                hub_data = _broadcast_user_lookup(email, int(settings.STORE_ID))
                 if hub_data is not None:
                     # Cache the routing pointer locally for faster future lookups
                     UserCache.objects.update_or_create(
@@ -1618,15 +1498,7 @@ class InterNodeUserLookupView(APIView):
                             "expires_at": timezone.now() + timedelta(hours=24),
                         }
                     )
-                    return Response(
-                        {
-                            "status": "found",
-                            "user_id": hub_data.get("user_id"),
-                            "home_store_id": hub_data.get("home_store_id", 0),
-                            "home_store_endpoint": hub_data.get("home_store_endpoint", ""),
-                        },
-                        status=status.HTTP_200_OK,
-                    )
+                    return Response(hub_data, status=status.HTTP_200_OK)
 
             # User not found anywhere — do not record as successful sync
             return Response(
@@ -1677,14 +1549,15 @@ class InterNodeUserSyncView(APIView):
                 }
             )
 
-            # If this node is a hub, queue user_sync to all peer hubs via hub-mesh (cross-region discovery).
+            # If this node is a hub, queue the user_sync to all peer hubs
+            # so all peer hubs' UserCache are populated for cross-region discovery.
             # Only queue if this is a new entry (not an update), to avoid duplicate events.
-            if created and getattr(settings, "IS_HUB", False) and getattr(settings, "PEER_HUB_URLS", None):
+            if created and settings.IS_HUB:
                 for peer_url in settings.PEER_HUB_URLS:
                     EventQueue.objects.create(
                         event_type="user_sync",
                         status="pending",
-                        target_node=f"{peer_url.rstrip('/')}/backend/hub-mesh/user-sync/",
+                        target_node=f"{peer_url.rstrip('/')}/backend/internode/user-sync/",
                         payload={
                             "email": email,
                             "user_id": user_id,
