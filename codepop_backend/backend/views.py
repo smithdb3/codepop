@@ -1037,35 +1037,13 @@ class HubStoreLocationView(APIView):
                         status=status.HTTP_200_OK
                     )
                 except StoreRegistry.DoesNotExist:
-                    # Store not in local registry — try endpoint embedded in user_data
-                    api_endpoint = user_cache.user_data.get("store_api_endpoint", "")
-                    if api_endpoint:
-                        return Response(
-                            {
-                                "status": "found",
-                                "store_id": user_cache.source_store_id,
-                                "api_endpoint": api_endpoint,
-                            },
-                            status=status.HTTP_200_OK
-                        )
+                    # User cached but source store no longer registered
                     return Response(
                         {"status": "not_found"},
                         status=status.HTTP_200_OK
                     )
             except UserCache.DoesNotExist:
-                # Not in local cache — if we are a regional hub, ask master
-                if not settings.IS_MASTER and settings.HUB_URL:
-                    try:
-                        master_resp = requests.get(
-                            f"{settings.HUB_URL.rstrip('/')}/backend/hub/store-location/",
-                            params={"email": email},
-                            headers={"Authorization": f"NodeToken {settings.INTER_NODE_SECRET}"},
-                            timeout=5,
-                        )
-                        if master_resp.status_code == 200 and master_resp.json().get("status") == "found":
-                            return Response(master_resp.json(), status=status.HTTP_200_OK)
-                    except requests.exceptions.RequestException as e:
-                        logger.error("Master hub cascade failed in HubStoreLocationView for %s: %s", email, str(e))
+                # User not found in cache
                 return Response(
                     {"status": "not_found"},
                     status=status.HTTP_200_OK
@@ -1286,24 +1264,6 @@ class InterNodeUserSyncView(APIView):
                     "expires_at": expires_at,
                 }
             )
-
-            # If this node is a regional hub, queue the user_sync upstream to master hub
-            # so master's UserCache is populated for cross-region discovery.
-            if settings.IS_HUB and not settings.IS_MASTER and settings.HUB_URL:
-                try:
-                    store = StoreRegistry.objects.get(store_id=source_store_id)
-                    forwarded_user_data = {**user_data, "store_api_endpoint": store.api_endpoint}
-                except StoreRegistry.DoesNotExist:
-                    forwarded_user_data = user_data
-                EventQueue.objects.create(
-                    event_type="user_sync",
-                    status="pending",
-                    target_node=f"{settings.HUB_URL.rstrip('/')}/backend/internode/user-sync/",
-                    payload={
-                        "user_data": forwarded_user_data,
-                        "source_store_id": source_store_id,
-                    },
-                )
 
             SyncRecord.objects.create(
                 sync_type="user_pull",
