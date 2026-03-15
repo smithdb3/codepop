@@ -121,6 +121,7 @@ if NODE_ROLE not in ('hub', 'store'):
 
 # Stores: URL of this node's regional hub. Hubs: leave empty.
 UPSTREAM_HUB_URL = (os.getenv('UPSTREAM_HUB_URL', '') or os.getenv('HUB_URL', '')).strip()
+HUB_URL = UPSTREAM_HUB_URL
 
 # Derived: True if this node is a hub (no master hub concept)
 IS_HUB = NODE_ROLE == 'hub'
