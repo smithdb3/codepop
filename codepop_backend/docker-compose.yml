@@ -1,7 +1,6 @@
 services:
   web:
     build: .
-    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
     env_file:
@@ -28,32 +27,6 @@ services:
 
   redis:
     image: redis:8-alpine
-    restart: always
-
-  celery:
-    build: .
-    command: sh -c "python manage.py migrate --noinput && celery -A codepop_backend worker --loglevel=info"
-    env_file:
-      - .env
-    depends_on:
-      - db
-      - redis
-    volumes:
-      - .:/app
-      - huggingface_cache:/root/.cache/huggingface
-    restart: always
-
-  celery-beat:
-    build: .
-    command: sh -c "python manage.py migrate --noinput && celery -A codepop_backend beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
-    env_file:
-      - .env
-    depends_on:
-      - db
-      - redis
-    volumes:
-      - .:/app
-      - huggingface_cache:/root/.cache/huggingface
     restart: always
 
 volumes:

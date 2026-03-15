@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
-    'django_celery_beat',
     'backend'
 ]
 
@@ -59,14 +58,13 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'backend.middleware.NodeIdentityMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'codepop_backend.urls'
 
-CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True') == 'True'
+CORS_ALLOW_ALL_ORIGINS = True
 
 TEMPLATES = [
     {
@@ -102,14 +100,10 @@ DATABASES = {
 }
 
 STORE_ID = os.getenv('STORE_ID', '0')
-STORE_NAME = os.getenv('STORE_NAME', f'Store {os.getenv("STORE_ID", "0")}')
 REGION = os.getenv('REGION', 'logan')
 HUB_URL = os.getenv('HUB_URL', '')
 IS_HUB = os.getenv('IS_HUB', 'False') == 'True'
 IS_MASTER = os.getenv('IS_MASTER', 'False') == 'True'
-API_ENDPOINT = os.getenv('API_ENDPOINT', '')
-LATITUDE = float(os.getenv('LATITUDE', '0.0'))
-LONGITUDE = float(os.getenv('LONGITUDE', '0.0'))
 
 # Inter-node Authentication
 INTER_NODE_SECRET = os.getenv('INTER_NODE_SECRET', '')
@@ -164,43 +158,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# ============================================================================
-# CELERY CONFIGURATION
-# ============================================================================
-
-# Celery broker: Redis (same instance used for caching)
-CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://redis:6379/0')
-
-# Celery task settings
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TIMEZONE = 'UTC'
-
-# Celery Beat: Periodic tasks
-CELERY_BEAT_SCHEDULE = {
-    'register-with-hub-every-5-minutes': {
-        'task': 'backend.tasks.register_with_hub',
-        'schedule': 300.0,  # every 5 minutes; also fires immediately on first startup
-    },
-    'heartbeat-every-30-seconds': {
-        'task': 'backend.tasks.heartbeat_task',
-        'schedule': 30.0,  # every 30 seconds
-    },
-    'process-event-queue-every-10-seconds': {
-        'task': 'backend.tasks.process_event_queue',
-        'schedule': 10.0,  # every 10 seconds
-    },
-    'check-dead-stores-every-2-minutes': {
-        'task': 'backend.tasks.check_dead_stores',
-        'schedule': 120.0,  # every 2 minutes
-    },
-}
