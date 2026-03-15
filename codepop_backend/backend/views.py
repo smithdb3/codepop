@@ -63,10 +63,11 @@ def _broadcast_user_lookup(email, requesting_store_id):
 
     def query_one_hub(peer_url):
         try:
+            node_secret = _get_node_secret()
             resp = requests.post(
                 f"{peer_url.rstrip('/')}/backend/internode/user-lookup/",
                 json={"email": email, "requesting_store_id": requesting_store_id},
-                headers={"Authorization": f"NodeToken {settings.INTER_NODE_SECRET}"},
+                headers={"Authorization": f"NodeToken {node_secret}"},
                 timeout=5,
             )
             if resp.status_code == 200:
@@ -246,7 +247,7 @@ class CustomAuthToken(ObtainAuthToken):
                 json={
                     'email': email,
                     'password': password,
-                    'requesting_store_id': request.node_identity.get('store_id'),
+                    'requesting_store_id': getattr(request, 'node_identity', {}).get('store_id'),
                 },
                 headers={'Authorization': f'NodeToken {node_secret}'},
                 timeout=5,
@@ -278,14 +279,19 @@ class CustomAuthToken(ObtainAuthToken):
             )
 
         # Step 2d: Get or create shadow user locally (for DRF token compatibility)
-        user, created = User.objects.get_or_create(
-            email=email,
-            defaults={
-                'username': email,
-                'first_name': payload.get('first_name', ''),
-                'last_name': payload.get('last_name', ''),
-            }
-        )
+        from django.db import IntegrityError
+        try:
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'username': email,
+                    'first_name': payload.get('first_name', ''),
+                    'last_name': payload.get('last_name', ''),
+                }
+            )
+        except IntegrityError:
+            # Race condition: another request created this user concurrently
+            user = User.objects.get(email=email)
         if created:
             user.set_unusable_password()
             user.save()
@@ -811,13 +817,13 @@ class UserNotificationLookup(ListAPIView):
 class OrderOperations(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def patch(self, request, *args, **kwargs):
         order = self.get_object()
         drinks_to_add = request.data.get("AddDrinks", [])
         drinks_to_remove = request.data.get("RemoveDrinks", [])
-        
+
         # Adding drinks
         if drinks_to_add:
             order.add_drinks(drinks_to_add)
@@ -825,17 +831,17 @@ class OrderOperations(viewsets.ModelViewSet):
         # Removing drinks
         if drinks_to_remove:
             order.remove_drinks(drinks_to_remove)
-        
+
         serializer = self.get_serializer(order, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
-        
-    # def get_permissions(self):
-    #     """Only authenticated users can create, update, or delete orders."""
-    #     if self.action in ['create', 'update', 'destroy']:
-    #         return [IsAuthenticated()]
-    #     return super().get_permissions()
+
+    def get_permissions(self):
+        """Only authenticated users can create, update, or delete orders."""
+        if self.action in ['create', 'update', 'destroy']:
+            return [IsAuthenticated()]
+        return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
         # Extract data from the request
@@ -900,9 +906,10 @@ class StripePaymentIntentView(View):
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body)
-            amount = int(data.get("amount") * 100)  # Stripe uses cents, so multiply dollars by 100
+            amount = data.get("amount")
             if amount is None:
                 return JsonResponse({'error': 'Amount is required.'}, status=400)
+            amount = int(amount * 100)  # Stripe uses cents, so multiply dollars by 100
 
             # Create a new customer
             customer = stripe.Customer.create()
@@ -1124,7 +1131,7 @@ class UserOperations(viewsets.ModelViewSet):
 
     def edit(self, request, user_id):
         try:
-            data = json.loads(request.body)
+            data = request.data
             edits = data.get('edits', {})
 
             first_name = edits.get("firstName", None)
@@ -1267,7 +1274,8 @@ class HubRegisterView(APIView):
             api_endpoint = request.data.get("api_endpoint")
             public_key = request.data.get("public_key", "")
 
-            if not all([store_id, store_name, region, latitude, longitude, api_endpoint]):
+            # Check required fields. Note: 0 and 0.0 are valid values for store_id, latitude, longitude
+            if store_id is None or not store_name or not region or not api_endpoint:
                 return Response(
                     {"error": "Missing required fields"},
                     status=status.HTTP_400_BAD_REQUEST
@@ -1298,20 +1306,6 @@ class HubRegisterView(APIView):
                     "shared_secret": node_secret,
                     "expires_at": cert_expires,
                     "is_active": True,
-                }
-            )
-
-            # Also register ourselves (the hub) in HubRegistry on the registering store's behalf
-            # So they know about us and can use our issued_secret for heartbeats
-            from .models import HubRegistry
-            HubRegistry.objects.update_or_create(
-                hub_id=int(settings.STORE_ID),
-                defaults={
-                    "hub_name": settings.STORE_NAME,
-                    "region": settings.REGION,
-                    "api_endpoint": settings.API_ENDPOINT,
-                    "is_active": True,
-                    "issued_secret": node_secret,
                 }
             )
 
@@ -1581,12 +1575,13 @@ class InterNodeHealthCheckView(APIView):
     def post(self, request):
         try:
             requesting_store_id = request.data.get("requesting_store_id")
+            node_identity = getattr(request, 'node_identity', {})
             return Response(
                 {
                     "status": "ok",
-                    "store_id": request.node_identity["store_id"],
-                    "region": request.node_identity["region"],
-                    "is_hub": request.node_identity["is_hub"],
+                    "store_id": node_identity.get("store_id"),
+                    "region": node_identity.get("region"),
+                    "is_hub": node_identity.get("is_hub"),
                     "timestamp": timezone.now().isoformat(),
                 },
                 status=status.HTTP_200_OK
@@ -1654,6 +1649,7 @@ class InterNodeUserLookupView(APIView):
                 SyncRecord.objects.create(
                     sync_type="user_pull",
                     source_store_id=requesting_store_id,
+                    target_store_id=int(settings.STORE_ID),
                     status="success",
                     completed_at=timezone.now(),
                 )
@@ -1675,6 +1671,7 @@ class InterNodeUserLookupView(APIView):
                 SyncRecord.objects.create(
                     sync_type="user_pull",
                     source_store_id=requesting_store_id,
+                    target_store_id=int(settings.STORE_ID),
                     status="success",
                     completed_at=timezone.now(),
                 )
@@ -1764,19 +1761,35 @@ class InterNodeUserSyncView(APIView):
             )
 
             # If this node is a hub, queue user_sync to all peer hubs via hub-mesh (cross-region discovery).
-            # Only queue if this is a new entry (not an update), to avoid duplicate events.
-            if created and getattr(settings, "IS_HUB", False) and getattr(settings, "PEER_HUB_URLS", None):
-                for peer_url in settings.PEER_HUB_URLS:
-                    EventQueue.objects.create(
-                        event_type="user_sync",
-                        status="pending",
-                        target_node=f"{peer_url.rstrip('/')}/backend/hub-mesh/user-sync/",
-                        payload={
-                            "email": email,
-                            "user_id": user_id,
-                            "home_store_id": home_store_id,
-                            "home_store_endpoint": home_store_endpoint,
-                        },
+            # Use deduplication to avoid duplicate events on re-registration or cache updates.
+            if getattr(settings, "IS_HUB", False):
+                peer_urls = getattr(settings, "PEER_HUB_URLS", [])
+                if peer_urls:
+                    for peer_url in peer_urls:
+                        target = f"{peer_url.rstrip('/')}/backend/hub-mesh/user-sync/"
+                        # Dedup: skip if a pending event for this email+target already exists
+                        already_queued = EventQueue.objects.filter(
+                            event_type="user_sync",
+                            status="pending",
+                            target_node=target,
+                            payload__email=email,
+                        ).exists()
+                        if not already_queued:
+                            EventQueue.objects.create(
+                                event_type="user_sync",
+                                status="pending",
+                                target_node=target,
+                                payload={
+                                    "email": email,
+                                    "user_id": user_id,
+                                    "home_store_id": home_store_id,
+                                    "home_store_endpoint": home_store_endpoint,
+                                },
+                            )
+                else:
+                    logger.info(
+                        "Hub received user_sync for %s but PEER_HUB_URLS is empty — no mesh fan-out needed.",
+                        email,
                     )
 
             SyncRecord.objects.create(
@@ -1823,7 +1836,9 @@ class InterNodeIssueTokenView(APIView):
 
         # Rate limiting: 5 attempts per minute per IP+email combination
         from django.core.cache import cache
-        client_ip = request.META.get('REMOTE_ADDR', 'unknown')
+        # Parse X-Forwarded-For header (first IP) for rate limit key, fallback to REMOTE_ADDR
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        client_ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR', 'unknown')
         rate_key = f"issue_token:{client_ip}:{email}"
         attempts = cache.get(rate_key, 0)
         if attempts >= 5:
@@ -2038,6 +2053,7 @@ class InterNodeStatusUpdateView(APIView):
 
     def post(self, request):
         try:
+            from django.db import transaction
             machine_id = request.data.get("machine_id")
             status_value = request.data.get("status")
             repair_notes = request.data.get("repair_notes", "")
@@ -2048,29 +2064,31 @@ class InterNodeStatusUpdateView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Validate state machine transition before applying
-            machine = Machine.objects.get(machine_id=machine_id)
-            current_status = machine.status
-            valid_next = Machine.VALID_TRANSITIONS.get(current_status, [])
+            # Use atomic transaction with select_for_update to prevent TOCTOU race
+            with transaction.atomic():
+                machine = Machine.objects.select_for_update().get(machine_id=machine_id)
+                current_status = machine.status
+                valid_next = Machine.VALID_TRANSITIONS.get(current_status, [])
 
-            if status_value not in valid_next:
-                return Response(
-                    {
-                        "error": f"Invalid state transition: {current_status} -> {status_value}. "
-                                f"Valid next states: {valid_next}"
-                    },
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                if status_value not in valid_next:
+                    return Response(
+                        {
+                            "error": f"Invalid state transition: {current_status} -> {status_value}. "
+                                    f"Valid next states: {valid_next}"
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
-            # Update machine status
-            machine.status = status_value
-            if repair_notes:
-                machine.repair_notes = repair_notes
-            machine.save()
+                # Update machine status
+                machine.status = status_value
+                if repair_notes:
+                    machine.repair_notes = repair_notes
+                machine.save()
 
             SyncRecord.objects.create(
                 sync_type="status_update",
-                source_store_id=request.node_identity["store_id"],
+                source_store_id=getattr(request, 'node_identity', {}).get("store_id", 0),
+                target_store_id=int(settings.STORE_ID),
                 status="success",
                 completed_at=timezone.now(),
             )
@@ -2149,7 +2167,7 @@ class HubSupplyRequestListView(APIView):
     Requires inter-node authentication.
     """
     authentication_classes = [NodeTokenAuthentication]
-    permission_classes = [IsInterNodeRequest]
+    permission_classes = [IsInterNodeRequest, IsHubMeshCaller]
 
     def get(self, request):
         qs = SupplyRequest.objects.all().order_by('-created_at')
@@ -2177,7 +2195,7 @@ class HubSupplyRequestActionView(APIView):
     Requires inter-node authentication.
     """
     authentication_classes = [NodeTokenAuthentication]
-    permission_classes = [IsInterNodeRequest]
+    permission_classes = [IsInterNodeRequest, IsHubMeshCaller]
 
     VALID_TRANSITIONS = {
         'approve':  ('pending',  'approved'),

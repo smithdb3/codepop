@@ -11,7 +11,7 @@ class BackendConfig(AppConfig):
         Store nodes: fire register_with_hub once on startup (exponential backoff until hub is reachable).
         Hubs skip (no UPSTREAM_HUB_URL). RUN_MAIN guard prevents double-firing in dev reloader.
         """
-        if os.environ.get('RUN_MAIN'):
+        if not os.environ.get('RUN_MAIN'):
             return
         try:
             from django.conf import settings
@@ -19,5 +19,7 @@ class BackendConfig(AppConfig):
                 return  # Hub or local dev: no registration
             from .tasks import register_with_hub
             register_with_hub.delay()
-        except Exception:
-            pass  # Celery or DB not ready
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to trigger register_with_hub on app startup: {e}. Celery or DB may not be ready yet.")
