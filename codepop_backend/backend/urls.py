@@ -17,7 +17,7 @@ from .views import NotificationOperations, UserNotificationLookup
 from .views import OrderOperations, UserOrdersLookup
 from .customerAI import Chatbot
 from .views import GenerateAIDrink
-from .views import RevenueViewSet
+from .views import RevenueViewSet, NationalRevenueView
 from .views import UserOperations
 from .views import emailAPI
 
@@ -204,6 +204,7 @@ urlpatterns = [
     # - GET: Retrieve a list of all revenues.
     # - POST: Create a new revenue. Requires authentication and revenue details in the request body.
     path('revenues/', revenue_list, name='revenue_list_create'),
+    path('revenues/national/', NationalRevenueView.as_view(), name='revenue_national'),
 
     # Endpoint to retrieve, update, or delete a specific revenue by its primary key (ID).
     # - GET: Retrieve details of a specific revenue.

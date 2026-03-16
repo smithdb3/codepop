@@ -848,7 +848,52 @@ class RevenueViewSet(viewsets.ModelViewSet):
 
         # Proceed with the standard update process
         return super().update(request, *args, **kwargs)
-    
+
+
+class NationalRevenueView(APIView):
+    """
+    GET /backend/revenues/national/
+    Fans out to all configured hubs in parallel; returns per-hub and grand total.
+    Restricted to superusers only.
+    """
+    permission_classes = [IsSuperUser]
+
+    def get(self, request):
+        import concurrent.futures
+
+        def query_hub(region, hub_url):
+            if not hub_url:
+                return None
+            try:
+                resp = requests.get(
+                    f"{hub_url}/api/hub/revenue/",
+                    headers={'Authorization': f'NodeToken {settings.INTER_NODE_SECRET}'},
+                    timeout=10,
+                )
+                if resp.status_code == 200:
+                    return resp.json()
+            except requests.RequestException:
+                return None
+
+        results = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=7) as executor:
+            futures = {
+                executor.submit(query_hub, region, url): region
+                for region, url in settings.HUB_ENDPOINTS.items()
+                if url
+            }
+            for future in concurrent.futures.as_completed(futures):
+                result = future.result()
+                if result:
+                    results.append(result)
+
+        grand_total = sum(r.get('total_revenue', 0) for r in results)
+        return Response({
+            'grand_total': round(grand_total, 2),
+            'by_region':   results,
+        })
+
+
 class UserOperations(viewsets.ModelViewSet):
     permission_classes = [IsSuperUser]
     serializer_class = GetUserSerializer
