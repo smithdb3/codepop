@@ -4,6 +4,10 @@ from .hub_views import (
     HubRegisterView, HubHeartbeatView, HubUserLookupView,
     HubUserBroadcastView, HubStoreRegistryView, HubRevenueView,
 )
+from .internode_views import (
+    InterNodeUserExistsView, InterNodeUserSyncView,
+    InterNodeProfileUpdateView, InterNodeHealthCheckView,
+)
 from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken
 from .views import StripePaymentIntentView
 from .views import UserPreferenceLookup, PreferencesOperations
@@ -224,4 +228,10 @@ urlpatterns = [
     path('api/hub/user-broadcast/', HubUserBroadcastView.as_view(),  name='hub_user_broadcast'),
     path('api/hub/store-registry/', HubStoreRegistryView.as_view(),  name='hub_store_registry'),
     path('api/hub/revenue/',        HubRevenueView.as_view(),        name='hub_revenue'),
+
+    # Inter-node endpoints (store-to-store and hub-to-store communication)
+    path('api/inter-node/user-exists/',    InterNodeUserExistsView.as_view(),    name='internode_user_exists'),
+    path('api/inter-node/user-sync/',      InterNodeUserSyncView.as_view(),      name='internode_user_sync'),
+    path('api/inter-node/profile-update/', InterNodeProfileUpdateView.as_view(), name='internode_profile_update'),
+    path('api/inter-node/health-check/',   InterNodeHealthCheckView.as_view(),   name='internode_health_check'),
 ]
