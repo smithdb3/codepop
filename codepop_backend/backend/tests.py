@@ -8,9 +8,10 @@ from unittest.mock import patch
 from .models import Preference, Drink, Inventory, Notification, Order, Revenue
 from django.utils import timezone
 from datetime import timedelta
-from .drinkAI import generate_soda
+from .drinkAI import generate_soda, DRINK_AI_AVAILABLE
 import csv
 import os
+import unittest
 from django.conf import settings
 
 class PreferenceTests(TestCase):
@@ -1008,6 +1009,7 @@ class RevenueTests(TestCase):
 
 # Some Inner-method comments follow this format:
 # Input: expected output
+@unittest.skipUnless(DRINK_AI_AVAILABLE, "scikit-learn not installed")
 class AITests(TestCase):
     # Create users and add preferences
     def setUp(self):
