@@ -30,6 +30,56 @@ from rest_framework.permissions import BasePermission
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+
+def _propagate_to_home_store(user_id: int):
+    """
+    If the user is a visiting user (in VisitingUserCache), push their current
+    preferences and favorites back to their home store via P2P.
+    If home store unreachable, queue in PendingProfileUpdate.
+    """
+    from .models import VisitingUserCache, PendingProfileUpdate
+
+    cache = VisitingUserCache.objects.filter(
+        user_id=user_id, expires_at__gt=timezone.now()
+    ).first()
+    if not cache:
+        return  # Home user — no propagation needed
+
+    changes = {
+        'preferences':        list(Preference.objects.filter(
+            UserID__pk=user_id).values_list('Preference', flat=True)),
+        'favorite_drink_ids': cache.favorite_drink_ids,
+    }
+
+    # Try immediate delivery to home store
+    try:
+        resp = requests.post(
+            f"{cache.home_store_endpoint}/api/inter-node/profile-update/",
+            json={'user_id': user_id, 'changes': changes,
+                  'timestamp': timezone.now().isoformat()},
+            headers={'Authorization': f'NodeToken {settings.INTER_NODE_SECRET}',
+                     'Content-Type': 'application/json'},
+            timeout=5,
+        )
+        if resp.status_code == 200:
+            confirmed = resp.json()
+            cache.preferences = confirmed.get('preferences', changes['preferences'])
+            cache.save(update_fields=['preferences'])
+            return
+    except requests.RequestException:
+        pass  # Fall through to queueing
+
+    # Home store unreachable — queue the update
+    now = timezone.now()
+    PendingProfileUpdate.objects.create(
+        user_id=user_id,
+        home_store_id=cache.home_store_id,
+        home_store_endpoint=cache.home_store_endpoint,
+        changes_encrypted=PendingProfileUpdate.encrypt(changes),
+        next_retry_at=now + timedelta(seconds=1),
+        max_retry_until=now + timedelta(hours=24),
+    )
+
 class IsSuperUser(BasePermission):
     """
     Custom permission to allow access only to superusers.
@@ -240,16 +290,17 @@ class PreferencesOperations(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        # Custom logic for creating a drink can go here
-        return super().create(request, *args, **kwargs)
+        response = super().create(request, *args, **kwargs)
+        _propagate_to_home_store(request.user.pk)
+        return response
 
     def update(self, request, *args, **kwargs):
-        # Custom logic for updating a drink can go here
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
-        # Custom logic for deleting a drink can go here
-        return super().destroy(request, *args, **kwargs)
+        response = super().destroy(request, *args, **kwargs)
+        _propagate_to_home_store(request.user.pk)
+        return response
 
 class UserPreferenceLookup(ListAPIView):
     serializer_class = PreferenceSerializer
