@@ -5,7 +5,50 @@ on:
     branches: [ master ]
 
 jobs:
-  deploy-logan-master-hub:
+  # ── CI: Tests must pass before any VM is touched ─────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: codepop
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:8-alpine
+        options: --health-cmd "redis-cli ping"
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          cd codepop_backend
+          pip install -r requirements.txt
+      - name: Run tests
+        env:
+          DB_HOST: localhost
+          DB_NAME: codepop
+          DB_USER: postgres
+          DB_PASSWORD: password
+          REDIS_URL: redis://localhost:6379/0
+          INTER_NODE_SECRET: test-secret
+          IS_HUB: 'False'
+        run: |
+          cd codepop_backend
+          python manage.py migrate
+          python manage.py test backend
+
+  # ── Hub deployments ───────────────────────────────────────────────────────────
+  deploy-logan-hub:
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
       - name: Deploy
@@ -18,48 +61,23 @@ jobs:
           script: |
             set -e
             cd ~/codepop/codepop_backend
-            git pull origin master
-            docker compose down
-            docker compose up -d --build
-            echo "✓ logan-master-hub deployed successfully"
 
-  deploy-logan-store-1:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.LOGAN_STORE1_IP }}
-          username: peterson_braden2
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          command_timeout: 10m
-          script: |
-            set -e
-            cd ~/codepop/codepop_backend
-            git pull origin master
-            docker compose down
-            docker compose up -d --build
-            echo "✓ logan-store-1 deployed successfully"
+            # Update distributed system env vars (remove old values, append fresh ones)
+            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^HUB_LOGAN_URL=\|^HUB_ATLANTA_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
+            echo "IS_HUB=True" >> .env
+            echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+            echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
+            echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
+            echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
 
-  deploy-logan-store-2:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.LOGAN_STORE2_IP }}
-          username: peterson_braden2
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          command_timeout: 10m
-          script: |
-            set -e
-            cd ~/codepop/codepop_backend
             git pull origin master
             docker compose down
             docker compose up -d --build
-            echo "✓ logan-store-2 deployed successfully"
+            docker compose run --rm web python manage.py migrate
+            echo "✓ logan-hub deployed successfully"
 
   deploy-atlanta-hub:
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
       - name: Deploy
@@ -72,12 +90,75 @@ jobs:
           script: |
             set -e
             cd ~/codepop/codepop_backend
+
+            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^HUB_LOGAN_URL=\|^HUB_ATLANTA_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
+            echo "IS_HUB=True" >> .env
+            echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+            echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
+            echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
+            echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
+
             git pull origin master
             docker compose down
             docker compose up -d --build
+            docker compose run --rm web python manage.py migrate
             echo "✓ atlanta-hub deployed successfully"
 
+  # ── Store deployments ─────────────────────────────────────────────────────────
+  deploy-logan-store-1:
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LOGAN_STORE1_IP }}
+          username: peterson_braden2
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
+          script: |
+            set -e
+            cd ~/codepop/codepop_backend
+
+            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
+            echo "IS_HUB=False" >> .env
+            echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+            echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
+
+            git pull origin master
+            docker compose down
+            docker compose up -d --build
+            docker compose run --rm web python manage.py migrate
+            echo "✓ logan-store-1 deployed successfully"
+
+  deploy-logan-store-2:
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LOGAN_STORE2_IP }}
+          username: peterson_braden2
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 10m
+          script: |
+            set -e
+            cd ~/codepop/codepop_backend
+
+            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
+            echo "IS_HUB=False" >> .env
+            echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+            echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
+
+            git pull origin master
+            docker compose down
+            docker compose up -d --build
+            docker compose run --rm web python manage.py migrate
+            echo "✓ logan-store-2 deployed successfully"
+
   deploy-atlanta-store-1:
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
       - name: Deploy
@@ -90,12 +171,20 @@ jobs:
           script: |
             set -e
             cd ~/codepop/codepop_backend
+
+            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
+            echo "IS_HUB=False" >> .env
+            echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+            echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
+
             git pull origin master
             docker compose down
             docker compose up -d --build
+            docker compose run --rm web python manage.py migrate
             echo "✓ atlanta-store-1 deployed successfully"
 
   deploy-atlanta-store-2:
+    needs: [test]
     runs-on: ubuntu-latest
     steps:
       - name: Deploy
@@ -108,13 +197,49 @@ jobs:
           script: |
             set -e
             cd ~/codepop/codepop_backend
+
+            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
+            echo "IS_HUB=False" >> .env
+            echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+            echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
+
             git pull origin master
             docker compose down
             docker compose up -d --build
+            docker compose run --rm web python manage.py migrate
             echo "✓ atlanta-store-2 deployed successfully"
 
+  # ── Future region templates (uncomment when VMs are provisioned) ──────────────
+  # deploy-chicago-hub:
+  #   needs: [test]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Deploy
+  #       uses: appleboy/ssh-action@v1.0.3
+  #       with:
+  #         host: ${{ secrets.CHICAGO_HUB_IP }}
+  #         username: peterson_braden2
+  #         key: ${{ secrets.SSH_PRIVATE_KEY }}
+  #         command_timeout: 10m
+  #         script: |
+  #           set -e
+  #           cd ~/codepop/codepop_backend
+  #           grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^HUB_LOGAN_URL=\|^HUB_ATLANTA_URL=\|^HUB_CHICAGO_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
+  #           echo "IS_HUB=True" >> .env
+  #           echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+  #           echo "HUB_URL=http://${{ secrets.CHICAGO_HUB_IP }}:8000" >> .env
+  #           echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
+  #           echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
+  #           echo "HUB_CHICAGO_URL=http://${{ secrets.CHICAGO_HUB_IP }}:8000" >> .env
+  #           git pull origin master
+  #           docker compose down
+  #           docker compose up -d --build
+  #           docker compose run --rm web python manage.py migrate
+  #           echo "✓ chicago-hub deployed successfully"
+
+  # ── Completion gate ───────────────────────────────────────────────────────────
   deploy-complete:
-    needs: [deploy-logan-master-hub, deploy-logan-store-1, deploy-logan-store-2, deploy-atlanta-hub, deploy-atlanta-store-1, deploy-atlanta-store-2]
+    needs: [deploy-logan-hub, deploy-logan-store-1, deploy-logan-store-2, deploy-atlanta-hub, deploy-atlanta-store-1, deploy-atlanta-store-2]
     runs-on: ubuntu-latest
     if: always()
     steps:
