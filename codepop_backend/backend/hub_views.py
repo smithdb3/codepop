@@ -147,7 +147,7 @@ class HubUserLookupView(APIView):
         for store in active_stores:
             try:
                 resp = requests.post(
-                    f"{store.api_endpoint}/api/inter-node/user-exists/",
+                    f"{store.api_endpoint}/backend/api/inter-node/user-exists/",
                     json={'email': email},
                     headers=_node_token_headers(),
                     timeout=3,
@@ -170,7 +170,7 @@ class HubUserLookupView(APIView):
                 continue  # skip self and unconfigured hubs
             try:
                 resp = requests.post(
-                    f"{hub_url}/api/hub/user-broadcast/",
+                    f"{hub_url}/backend/api/hub/user-broadcast/",
                     json={'email': email, 'requesting_region': settings.REGION},
                     headers=_node_token_headers(),
                     timeout=5,
@@ -210,7 +210,7 @@ class HubUserBroadcastView(APIView):
         for store in active_stores:
             try:
                 resp = requests.post(
-                    f"{store.api_endpoint}/api/inter-node/user-exists/",
+                    f"{store.api_endpoint}/backend/api/inter-node/user-exists/",
                     json={'email': email},
                     headers=_node_token_headers(),
                     timeout=3,

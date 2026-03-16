@@ -37,7 +37,7 @@ def send_heartbeat():
 
     try:
         resp = requests.post(
-            f"{hub_url}/api/hub/heartbeat/",
+            f"{hub_url}/backend/api/hub/heartbeat/",
             json={'store_id': settings.STORE_ID, 'status': 'active'},
             headers=_node_headers(),
             timeout=5,
@@ -82,7 +82,7 @@ def process_pending_updates():
         try:
             changes = PendingProfileUpdate.decrypt(update.changes_encrypted)
             resp = requests.post(
-                f"{update.home_store_endpoint}/api/inter-node/profile-update/",
+                f"{update.home_store_endpoint}/backend/api/inter-node/profile-update/",
                 json={'user_id': update.user_id, 'changes': changes,
                       'timestamp': now.isoformat()},
                 headers=_node_headers(),

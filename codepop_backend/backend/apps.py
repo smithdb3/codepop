@@ -45,7 +45,7 @@ class BackendConfig(AppConfig):
         for attempt, delay in enumerate([1, 2, 4, 8]):
             try:
                 resp = requests.post(
-                    f"{hub_url}/api/hub/register/",
+                    f"{hub_url}/backend/api/hub/register/",
                     json=payload,
                     headers={'Authorization': f'NodeToken {settings.INTER_NODE_SECRET}',
                              'Content-Type': 'application/json'},

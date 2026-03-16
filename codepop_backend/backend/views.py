@@ -54,7 +54,7 @@ def _propagate_to_home_store(user_id: int):
     # Try immediate delivery to home store
     try:
         resp = requests.post(
-            f"{cache.home_store_endpoint}/api/inter-node/profile-update/",
+            f"{cache.home_store_endpoint}/backend/api/inter-node/profile-update/",
             json={'user_id': user_id, 'changes': changes,
                   'timestamp': timezone.now().isoformat()},
             headers={'Authorization': f'NodeToken {settings.INTER_NODE_SECRET}',
@@ -161,7 +161,7 @@ class CustomAuthToken(ObtainAuthToken):
         # Step 3a: Ask hub to locate user's home store
         try:
             hub_resp = requests.post(
-                f"{hub_url}/api/hub/user-lookup/",
+                f"{hub_url}/backend/api/hub/user-lookup/",
                 json={'email': email, 'requesting_store_id': settings.STORE_ID},
                 headers={'Authorization': f'NodeToken {settings.INTER_NODE_SECRET}',
                          'Content-Type': 'application/json'},
@@ -189,7 +189,7 @@ class CustomAuthToken(ObtainAuthToken):
         # Step 3b: Fetch user data directly from home store (P2P)
         try:
             sync_resp = requests.post(
-                f"{home_store_endpoint}/api/inter-node/user-sync/",
+                f"{home_store_endpoint}/backend/api/inter-node/user-sync/",
                 json={'email': email, 'requesting_store_id': settings.STORE_ID},
                 headers={'Authorization': f'NodeToken {settings.INTER_NODE_SECRET}',
                          'Content-Type': 'application/json'},
@@ -866,7 +866,7 @@ class NationalRevenueView(APIView):
                 return None
             try:
                 resp = requests.get(
-                    f"{hub_url}/api/hub/revenue/",
+                    f"{hub_url}/backend/api/hub/revenue/",
                     headers={'Authorization': f'NodeToken {settings.INTER_NODE_SECRET}'},
                     timeout=10,
                 )
