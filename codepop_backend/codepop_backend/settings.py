@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
+    'django_celery_beat',
     'backend'
 ]
 
@@ -99,15 +100,51 @@ DATABASES = {
     }
 }
 
-STORE_ID = os.getenv('STORE_ID', '0')
-REGION = os.getenv('REGION', 'logan')
+# --- Distributed System Config ---
+STORE_ID     = os.getenv('STORE_ID', '0')
+REGION       = os.getenv('REGION', 'logan')
+IS_HUB       = os.getenv('IS_HUB', 'False') == 'True'
+NODE_TYPE    = 'hub' if IS_HUB else 'store'  # convenience property
+
+# Shared cluster secret for all inter-node requests.
+# Must be the same on every node. In production, use a strong random value.
+INTER_NODE_SECRET = os.getenv('INTER_NODE_SECRET', '')
+
+# URL of this node's own regional hub.
+# Stores use this for registration, heartbeat, and user-lookup.
+# Hubs set this to their own public address (used as self-reference).
 HUB_URL = os.getenv('HUB_URL', '')
-IS_HUB = os.getenv('IS_HUB', 'False') == 'True'
-IS_MASTER = os.getenv('IS_MASTER', 'False') == 'True'
+
+# Hub-to-hub mesh — only meaningful when IS_HUB=True.
+# Stores do NOT need these; they only ever talk to their own hub.
+# Values are read from .env so IPs never appear in source code.
+# Logan and Atlanta are active. Remaining 5 are provisioned later.
+HUB_ENDPOINTS = {
+    'logan':      os.getenv('HUB_LOGAN_URL',      ''),  # Active
+    'atlanta':    os.getenv('HUB_ATLANTA_URL',     ''),  # Active
+    'chicago':    os.getenv('HUB_CHICAGO_URL',     ''),  # Provision later
+    'newjersey':  os.getenv('HUB_NEWJERSEY_URL',   ''),  # Provision later
+    'dallas':     os.getenv('HUB_DALLAS_URL',      ''),  # Provision later
+    'phoenix':    os.getenv('HUB_PHOENIX_URL',     ''),  # Provision later
+    'seattle':    os.getenv('HUB_SEATTLE_URL',     ''),  # Provision later
+}
+
+# Rate limiting — inter-node endpoints only
+RATELIMIT_ENABLE = True
+RATELIMIT_USE_CACHE = 'default'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': os.getenv('REDIS_URL', 'redis://redis:6379/0'),
+    }
+}
 
 # Celery
 CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
 
 
 REST_FRAMEWORK = {
