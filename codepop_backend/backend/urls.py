@@ -1,5 +1,9 @@
 from django.urls import path
 from rest_framework.authtoken.views import obtain_auth_token
+from .hub_views import (
+    HubRegisterView, HubHeartbeatView, HubUserLookupView,
+    HubUserBroadcastView, HubStoreRegistryView, HubRevenueView,
+)
 from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken
 from .views import StripePaymentIntentView
 from .views import UserPreferenceLookup, PreferencesOperations
@@ -211,5 +215,13 @@ urlpatterns = [
     path('users/delete/<int:user_id>/', user_operations, name='delete_user'),
     path('users/edit/<int:user_id>/', user_operations, name='edit_user'),
 
-    path('email/<int:orderId>/', emailAPI.as_view(), name='Create Email')
+    path('email/<int:orderId>/', emailAPI.as_view(), name='Create Email'),
+
+    # Hub endpoints (only meaningful when IS_HUB=True, but available on all nodes)
+    path('api/hub/register/',       HubRegisterView.as_view(),       name='hub_register'),
+    path('api/hub/heartbeat/',      HubHeartbeatView.as_view(),      name='hub_heartbeat'),
+    path('api/hub/user-lookup/',    HubUserLookupView.as_view(),     name='hub_user_lookup'),
+    path('api/hub/user-broadcast/', HubUserBroadcastView.as_view(),  name='hub_user_broadcast'),
+    path('api/hub/store-registry/', HubStoreRegistryView.as_view(),  name='hub_store_registry'),
+    path('api/hub/revenue/',        HubRevenueView.as_view(),        name='hub_revenue'),
 ]
