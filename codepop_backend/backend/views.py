@@ -21,6 +21,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views import View #maybe delete these three?
 from django.utils.decorators import method_decorator
 import json
+import requests
+from datetime import timedelta
 from rest_framework.decorators import action
 from django.utils.dateparse import parse_datetime
 from .drinkAI import generate_soda
@@ -37,20 +39,172 @@ class IsSuperUser(BasePermission):
         # Check if the user is authenticated and a superuser
         return request.user and request.user.is_authenticated and request.user.is_superuser
     
-#Custom login to so that it get's a token but also the user's first name and the user id
 class CustomAuthToken(ObtainAuthToken):
+    """
+    POST /backend/auth/login/
+    Extended login that supports visiting users via the distributed lookup flow.
+
+    Login attempt order:
+    1. Check local auth.User (home users on this store)
+    2. Check VisitingUserCache (visiting users cached within 24h)
+    3. Query hub → hub broadcasts → P2P fetch from home store → cache result
+    4. If home store unreachable and no cache: deny with friendly error
+    """
+
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        token, created = Token.objects.get_or_create(user=user)
+        from rest_framework.authtoken.models import Token
+        from .models import VisitingUserCache
+        from django.contrib.auth import authenticate
+
+        username_or_email = request.data.get('username', '')
+        password = request.data.get('password', '')
+
+        # ── Path 1: Local home user ──────────────────────────────────────────
+        user = authenticate(request, username=username_or_email, password=password)
+        if user:
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({
+                'token':      token.key,
+                'user_id':    user.pk,
+                'first_name': user.first_name,
+                'userRole':   'admin' if user.is_superuser else ('manager' if user.is_staff else 'user'),
+            })
+
+        # ── Path 2: Visiting user in local cache ─────────────────────────────
+        # Check by email (username may differ from email)
+        email = username_or_email if '@' in username_or_email else None
+        if not email:
+            from django.contrib.auth.models import User as DjangoUser
+            try:
+                local = DjangoUser.objects.get(username=username_or_email)
+                email = local.email
+            except DjangoUser.DoesNotExist:
+                email = username_or_email  # Try as email anyway
+
+        cached = VisitingUserCache.objects.filter(
+            email=email, expires_at__gt=timezone.now()
+        ).first()
+        if cached:
+            from django.contrib.auth.hashers import check_password
+            if check_password(password, cached.hashed_password):
+                token_key = f"visiting_{cached.user_id}_{cached.home_store_id}"
+                return Response({
+                    'token':      token_key,
+                    'user_id':    cached.user_id,
+                    'first_name': cached.username,
+                    'userRole':   cached.role,
+                    'visiting':   True,
+                    'home_store': cached.home_store_endpoint,
+                })
+            else:
+                return Response({'error': 'Invalid credentials'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+
+        # ── Path 3: Unknown user — trigger distributed lookup ─────────────────
+        hub_url = settings.HUB_URL
+        if not hub_url:
+            return Response(
+                {'error': 'This store cannot reach its regional hub. Please try your home store.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        # Step 3a: Ask hub to locate user's home store
+        try:
+            hub_resp = requests.post(
+                f"{hub_url}/api/hub/user-lookup/",
+                json={'email': email, 'requesting_store_id': settings.STORE_ID},
+                headers={'Authorization': f'NodeToken {settings.INTER_NODE_SECRET}',
+                         'Content-Type': 'application/json'},
+                timeout=8,
+            )
+        except requests.RequestException:
+            return Response(
+                {'error': 'Your regional hub is currently unreachable. Please try again shortly.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        if hub_resp.status_code == 404:
+            return Response({'error': 'Invalid credentials'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        if hub_resp.status_code != 200:
+            return Response(
+                {'error': 'Hub returned an unexpected error. Please try again.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        hub_data = hub_resp.json()
+        home_store_endpoint = hub_data['home_store_endpoint']
+
+        # Step 3b: Fetch user data directly from home store (P2P)
+        try:
+            sync_resp = requests.post(
+                f"{home_store_endpoint}/api/inter-node/user-sync/",
+                json={'email': email, 'requesting_store_id': settings.STORE_ID},
+                headers={'Authorization': f'NodeToken {settings.INTER_NODE_SECRET}',
+                         'Content-Type': 'application/json'},
+                timeout=8,
+            )
+        except requests.RequestException:
+            return Response(
+                {'error': 'Your home store is currently unreachable. '
+                          'If you have visited this store before, your session may have expired. '
+                          'Please try again later.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        if sync_resp.status_code != 200:
+            return Response({'error': 'Could not retrieve user data from home store.'},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        user_data = sync_resp.json()
+
+        # Step 3c: Verify password against home store's PBKDF2 hash
+        from django.contrib.auth.hashers import check_password
+        if not check_password(password, user_data['hashed_password']):
+            return Response({'error': 'Invalid credentials'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+
+        # Step 3d: Cache user data locally for 24 hours
+        VisitingUserCache.objects.update_or_create(
+            user_id=user_data['user_id'],
+            home_store_id=user_data['home_store_id'],
+            defaults={
+                'username':           user_data['username'],
+                'email':              user_data['email'],
+                'hashed_password':    user_data['hashed_password'],
+                'role':               user_data['role'],
+                'home_store_endpoint': home_store_endpoint,
+                'preferences':        user_data.get('preferences', []),
+                'favorite_drink_ids': user_data.get('favorite_drink_ids', []),
+                'expires_at':         timezone.now() + timedelta(hours=24),
+            }
+        )
+
+        # Step 3e: Create a shadow auth.User + real DRF Token so subsequent API calls work.
+        # The shadow user is prefixed "visiting_" to distinguish from home users.
+        # It is cleaned up by the cleanup_expired_visiting_cache Celery task.
+        from django.contrib.auth.models import User as DjangoUser
+        from rest_framework.authtoken.models import Token as DRFToken
+
+        shadow_user, _ = DjangoUser.objects.update_or_create(
+            username=f"visiting_{user_data['user_id']}_{user_data['home_store_id']}",
+            defaults={
+                'email':      user_data['email'],
+                'password':   user_data['hashed_password'],  # already PBKDF2 hashed
+                'first_name': user_data.get('username', ''),
+                'is_active':  True,
+            }
+        )
+        drf_token, _ = DRFToken.objects.get_or_create(user=shadow_user)
+
         return Response({
-            'token': token.key,
-            'user_id': user.pk,
-            'first_name': user.first_name,
-            'is_admin' : user.is_superuser,
-            'is_manager' : user.is_staff,
-            
+            'token':      drf_token.key,
+            'user_id':    user_data['user_id'],
+            'first_name': user_data['username'],
+            'userRole':   user_data['role'],
+            'visiting':   True,
+            'home_store': home_store_endpoint,
         })
 
 #Code to create a user in the database
