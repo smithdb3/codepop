@@ -54,12 +54,12 @@ const App = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="GeneralHome" screenOptions={{headerStyle: {backgroundColor: '#c8c8ee'}}}>
-        <Stack.Screen 
-          name="Auth" 
-          component={AuthPage} 
-          options={{ 
-            title: title, 
+      <Stack.Navigator initialRouteName="GeneralHome" screenOptions={{headerStyle: {backgroundColor: '#FFFFFF'}}}>
+        <Stack.Screen
+          name="Auth"
+          component={AuthPage}
+          options={{
+            title: title,
             headerTitleStyle: {
               // fontFamily: 'CherryBombOne',
           },}}
@@ -67,7 +67,7 @@ const App = () => {
         <Stack.Screen
           name="CreateAccount"
           component={CreateAccountPage}
-          options={{ 
+          options={{
             title: title,
             headerTitleStyle: {
               // fontFamily: 'CherryBombOne',
@@ -76,21 +76,21 @@ const App = () => {
         <Stack.Screen
           name="Cart"
           component={CartPage}
-          options={{ 
-            title: title, 
+          options={{
+            title: title,
             headerTitleStyle: {
               // fontFamily: 'CherryBombOne',
-          },}}        
+          },}}
         />
         <Stack.Screen
           name="CreateDrink"
           component={CreateDrinkPage}
-          options={{ 
-            title: title, 
+          options={{
+            title: title,
             headerTitleStyle: {
               // fontFamily: 'CherryBombOne',
-          },}}  
-                
+          },}}
+
         />
         <Stack.Screen
           name="ComplaintsPage"
@@ -100,23 +100,20 @@ const App = () => {
         <Stack.Screen
           name="Preferences"
           component={PreferencesPage}
-          options={{ 
-            title: title, 
+          options={{
+            title: title,
             headerTitleStyle: {
               // fontFamily: 'CherryBombOne',
-            },}}        
+            },}}
         />
         <Stack.Screen
           name="GeneralHome"
           component={GeneralHomePage}
-          options={{ 
-            title: title, 
+          options={{
+            headerShown: false,
             headerTitleStyle: {
               // fontFamily: 'CherryBombOne',
-            },
-            headerRight: () => (
-              <ProfileButton />
-            ),}}
+            },}}
         />
         <Stack.Screen
           name="payment"

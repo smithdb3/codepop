@@ -8,7 +8,7 @@ from .internode_views import (
     InterNodeUserExistsView, InterNodeUserSyncView,
     InterNodeProfileUpdateView, InterNodeHealthCheckView,
 )
-from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken
+from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken, CheckEmailView
 from .views import StripePaymentIntentView
 from .views import UserPreferenceLookup, PreferencesOperations
 from .views import DrinkOperations, UserDrinksLookup
@@ -92,6 +92,10 @@ urlpatterns = [
     # Endpoint for user logout
     # - POST: Logs out the user by invalidating the auth token.
     path('auth/logout/', LogoutUserAPIView.as_view(), name='auth_user_logout'),
+
+    # Endpoint to check if email exists
+    # - POST: Checks if an email is already registered.
+    path('auth/check-email/', CheckEmailView.as_view(), name='auth_check_email'),
 
     # Preference-related URLs
     # Endpoint to list all preferences or create a new preference

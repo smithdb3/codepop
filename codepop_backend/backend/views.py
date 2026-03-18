@@ -283,6 +283,16 @@ class LogoutUserAPIView(APIView):
         # Delete the token to log out the user
         request.user.auth_token.delete()
         return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+
+class CheckEmailView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email', '').strip().lower()
+        if not email:
+            return Response({'error': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        exists = User.objects.filter(email__iexact=email).exists()
+        return Response({'exists': exists}, status=status.HTTP_200_OK)
     
 class PreferencesOperations(viewsets.ModelViewSet):
     queryset = Preference.objects.all()

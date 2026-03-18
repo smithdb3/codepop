@@ -1,34 +1,60 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Font from 'expo-font';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { BASE_URL } from '../../ip_address';
 
 
-const AuthPage = ({ navigation }) => {
+const AuthPage = ({ navigation, route }) => {
+  const prefillEmail = route.params?.email ?? '';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [token, setToken] = useState(null);
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    const loadFonts = async () => {
-        await Font.loadAsync({
-            'CherryBombOne': require('./../../assets/fonts/CherryBombOne-Regular.ttf'), // Adjust path as necessary
-        });
-    };
-
-    loadFonts();
-  }, []);
-
   const handleRegister = async () => {
-    // Registration logic... Go to CreateAccountPage
     navigation.navigate('CreateAccount');
+  };
+
+  const handleLoginWithEmail = async (emailValue) => {
+    try {
+      const response = await fetch(`${BASE_URL}/backend/auth/login/`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username: emailValue, password }),
+      });
+
+      if (response.status === 200) {
+          const data = await response.json();
+
+          await AsyncStorage.setItem('userToken', data.token);
+          await AsyncStorage.setItem('userId', data.user_id.toString());
+          await AsyncStorage.setItem('first_name', data.first_name);
+          if(data.userRole === 'admin'){
+            await AsyncStorage.setItem('userRole', 'admin');
+            Alert.alert('Login successful!');
+            navigation.navigate('AdminDash');
+          }else if(data.userRole === 'manager'){
+            await AsyncStorage.setItem('userRole', 'manager');
+            Alert.alert('Login successful!');
+            navigation.navigate('ManagerDash');
+          } else{
+            await AsyncStorage.setItem('userRole', 'user');
+            Alert.alert('Login successful!');
+            navigation.navigate('GeneralHome');
+          }
+      } else {
+          Alert.alert('Invalid credentials, please try again.');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Login failed. Please try again later.');
+    }
   };
 
   const handleLogin = async () => {
     try {
-      // Send credentials to Django backend
       const response = await fetch(`${BASE_URL}/backend/auth/login/`, {
           method: 'POST',
           headers: {
@@ -39,17 +65,15 @@ const AuthPage = ({ navigation }) => {
 
       if (response.status === 200) {
           const data = await response.json();
-          const token = data.token; // Get token from response
 
-          // Store the token, username, and user ID in AsyncStorage
           await AsyncStorage.setItem('userToken', data.token);
-          await AsyncStorage.setItem('userId', data.user_id.toString());  // Store user ID as string
+          await AsyncStorage.setItem('userId', data.user_id.toString());
           await AsyncStorage.setItem('first_name', data.first_name);
-           if(data.is_admin){
+          if(data.userRole === 'admin'){
             await AsyncStorage.setItem('userRole', 'admin');
             Alert.alert('Login successful!');
             navigation.navigate('AdminDash');
-          }else if(data.is_manager){
+          }else if(data.userRole === 'manager'){
             await AsyncStorage.setItem('userRole', 'manager');
             Alert.alert('Login successful!');
             navigation.navigate('ManagerDash');
@@ -58,8 +82,6 @@ const AuthPage = ({ navigation }) => {
             Alert.alert('Login successful!');
             navigation.navigate('GeneralHome');
           }
-        
-           // Navigate to Home screen on success
       } else {
           Alert.alert('Invalid credentials, please try again.');
       }
@@ -71,34 +93,55 @@ const AuthPage = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require('../../assets/robot-with-soda.png')}
-        style={styles.image}
-      />
-      <Text style={styles.title}>CodePop</Text>
-      <TextInput
-        placeholder="Username"
-        value={username}
-        onChangeText={setUsername}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Password"
-        value={password}
-        secureTextEntry
-        onChangeText={setPassword}
-        style={styles.input}
-      />
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.mediumButton} onPress={handleRegister}>
-          <Text style={styles.buttonText}>Create Account</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.mediumButton} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Login</Text>
-        </TouchableOpacity>
-      </View>
-      {token && <Text>Your token: {token}</Text>}
-      {message && <Text>{message}</Text>}
+      {prefillEmail ? (
+        <>
+          <Text style={styles.title}>Sign In</Text>
+          <Text style={styles.emailDisplay}>{prefillEmail}</Text>
+          <TextInput
+            placeholder="Password"
+            value={password}
+            secureTextEntry
+            onChangeText={setPassword}
+            style={styles.input}
+          />
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.primaryButton} onPress={() => handleLoginWithEmail(prefillEmail)}>
+              <Text style={styles.buttonText}>Sign In</Text>
+            </TouchableOpacity>
+          </View>
+          {message && <Text style={styles.errorMessage}>{message}</Text>}
+        </>
+      ) : (
+        <>
+          <Image
+            source={require('../../assets/robot-with-soda.png')}
+            style={styles.image}
+          />
+          <Text style={styles.title}>CodePop</Text>
+          <TextInput
+            placeholder="Username"
+            value={username}
+            onChangeText={setUsername}
+            style={styles.input}
+          />
+          <TextInput
+            placeholder="Password"
+            value={password}
+            secureTextEntry
+            onChangeText={setPassword}
+            style={styles.input}
+          />
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}>
+              <Text style={styles.buttonText}>Create Account</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
+              <Text style={styles.buttonText}>Login</Text>
+            </TouchableOpacity>
+          </View>
+          {message && <Text style={styles.errorMessage}>{message}</Text>}
+        </>
+      )}
     </View>
   );
 };
@@ -109,43 +152,66 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#C6C8EE',
+    backgroundColor: '#FFFFFF',
   },
   title: {
-    fontFamily: 'CherryBombOne',
-    fontSize: 52,
+    fontSize: 28,
+    fontWeight: '700',
     paddingBottom: 30,
+    color: '#222831',
+  },
+  emailDisplay: {
+    fontSize: 16,
+    color: '#222831',
+    marginBottom: 24,
+    fontWeight: '600',
   },
   input: {
-    marginBottom: 10,
+    marginBottom: 16,
     borderWidth: 1,
-    padding: 5,
+    borderColor: '#E5E7EB',
+    padding: 12,
     width: '100%',
-    borderRadius: 10,
-    backgroundColor: '#FFA686',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    fontSize: 14,
+    color: '#222831',
   },
   buttonContainer: {
     flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
   },
-  mediumButton: {
-    margin: 10,
-    padding: 15,
-    backgroundColor: '#8df1d3',
-    borderRadius: 10,
+  primaryButton: {
+    flex: 1,
+    padding: 12,
+    backgroundColor: '#FF2E63',
+    borderRadius: 8,
     alignItems: 'center',
-    elevation: 3,
+    justifyContent: 'center',
+    minHeight: 44,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   buttonText: {
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  errorMessage: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: 12,
+    textAlign: 'center',
   },
   image: {
     width: 150,
     height: 150,
     borderRadius: 10,
+    marginBottom: 20,
   },
 });
 

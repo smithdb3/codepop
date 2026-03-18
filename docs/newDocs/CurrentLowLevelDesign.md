@@ -999,7 +999,7 @@ The CodePop interface is carefully designed to support both usability and access
 **(M) Nav bar**
 
 * Home page  
-* Drink design page  
+* Drink design page
 * Cart button
 * Chat page
 * Profile page
@@ -1007,14 +1007,19 @@ The CodePop interface is carefully designed to support both usability and access
 **(M) Home page**
 
 * (S) Seasonal drinks menu carousel
+* If not signed in:
+  * (M) Large CodePop logo displayed
+  * (S) "Sign in or create an account" message
+  * (S) Email input field
+  * (S) "Continue with email" button
+    * If email recognized → navigate to password entry screen
+    * If email not recognized → navigate to sign-up screen with email pre-filled
 * If signed in:
+  * (S) CodePop logo in header bar
   * (M) Generate random button (from AI) - 2 options:
     * (S) Generate based off my preferences
     * (S) Try something new
   * (M) Saved drinks - with options to delete or add to cart (UI for size selection follows 'add to cart' button)
-* (M) If not signed in:
-  * (M) Generate random button (from AI) - no options
-  * Create account button (for non-account users)
   
 **(M) Sign-in page**
 
