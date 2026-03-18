@@ -6,6 +6,7 @@ import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, Image } fr
 import { BASE_URL } from '../../ip_address';
 import NavBar from '../components/NavBar';
 import SeasonalCarousel from '../components/SeasonalCarousel';
+import Scheduler from '../components/Scheduler';
 
 const GeneralHomePage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -141,6 +142,7 @@ const GeneralHomePage = () => {
             <Text style={styles.title}>Welcome to the CodePop App!</Text>
             <SeasonalCarousel style={styles.carousel}/>
             <View style={styles.buttonContainer}>
+              <Scheduler />
               <TouchableOpacity onPress={generateDrinks} style={styles.mediumButton}>
                 <Text style={styles.buttonText}>Generate Drinks</Text>
               </TouchableOpacity>
@@ -162,7 +164,7 @@ const GeneralHomePage = () => {
                   <Text style={styles.buttonText}>Manager Dash</Text>
                 </TouchableOpacity>
                 </>
-              ): (<></>)}  
+              ): (<></>)}
             </View>
           </>
         ) : (
