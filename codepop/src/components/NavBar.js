@@ -1,13 +1,3 @@
-// src/components/NavBar.js
-/*
-colors:
-D30C7B - dark pink
-8DF1D3 - teal
-C6C8EE - purple
-F92758 - light pink
-FFA686 - peach
- */
-
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -16,29 +6,26 @@ import Icon from 'react-native-vector-icons/Ionicons';
 const NavBar = () => {
   const navigation = useNavigation();
 
+  const navItems = [
+    { label: 'Home', icon: 'home-outline', route: 'GeneralHome' },
+    { label: 'Design', icon: 'cafe-outline', route: 'CreateDrink' },
+    { label: 'Cart', icon: 'cart-outline', route: 'Cart' },
+    { label: 'Chat', icon: 'chatbubbles-outline', route: 'ComplaintsPage' },
+    { label: 'Profile', icon: 'person-outline', route: 'Preferences' },
+  ];
+
   return (
     <View style={styles.navbar}>
-      <TouchableOpacity onPress={() => navigation.navigate('GeneralHome')}>
-        <Icon name="home-outline" size={24} color="#000" />
-        {/* <Text style={styles.navItem}>Home</Text> */}
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate('CreateDrink')}>
-        <Icon name="cafe-outline" size={24} color="#000" />
-        {/* <Text style={styles.navItem}>Create Drink</Text> */}
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
-        <Icon name="cart-outline" size={24} color="#000" />
-        {/* <Text style={styles.navItem}>Cart</Text> */}
-      </TouchableOpacity>
-      
-      <TouchableOpacity onPress={() => navigation.navigate('ComplaintsPage')}>
-        <Icon name="chatbubbles-outline" size={24} color="#000" />
-        {/* <Text style={styles.navItem}>Home</Text> */}
-      </TouchableOpacity>
-
-      {/* Add more navigation items as needed */}
+      {navItems.map((item, index) => (
+        <TouchableOpacity
+          key={index}
+          style={styles.navButton}
+          onPress={() => navigation.navigate(item.route)}
+        >
+          <Icon name={item.icon} size={24} color="#222831" />
+          <Text style={styles.navLabel}>{item.label}</Text>
+        </TouchableOpacity>
+      ))}
     </View>
   );
 };
@@ -48,18 +35,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#c8c8ee',
-    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingVertical: 8,
     width: '100%',
-    height: 70,
-    position: 'absolute', 
+    height: 80,
+    position: 'absolute',
     bottom: 0,
     left: 0,
-    marginTop: 10,
-    alignSelf: 'center',
   },
-  navItem: {
-    fontSize: 18,
+  navButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  navLabel: {
+    fontSize: 10,
+    color: '#222831',
+    marginTop: 4,
   },
 });
 

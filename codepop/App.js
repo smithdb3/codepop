@@ -338,6 +338,105 @@ const App = () => {
         </Stack.Navigator>
       </NavigationContainer>
     </GestureHandlerRootView>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="GeneralHome" screenOptions={{headerStyle: {backgroundColor: '#FFFFFF'}}}>
+        <Stack.Screen
+          name="Auth"
+          component={AuthPage}
+          options={{
+            title: title,
+            headerTitleStyle: {
+              // fontFamily: 'CherryBombOne',
+          },}}
+        />
+        <Stack.Screen
+          name="CreateAccount"
+          component={CreateAccountPage}
+          options={{
+            title: title,
+            headerTitleStyle: {
+              // fontFamily: 'CherryBombOne',
+          },}}
+        />
+        <Stack.Screen
+          name="Cart"
+          component={CartPage}
+          options={{
+            title: title,
+            headerTitleStyle: {
+              // fontFamily: 'CherryBombOne',
+          },}}
+        />
+        <Stack.Screen
+          name="CreateDrink"
+          component={CreateDrinkPage}
+          options={{
+            title: title,
+            headerTitleStyle: {
+              // fontFamily: 'CherryBombOne',
+          },}}
+
+        />
+        <Stack.Screen
+          name="ComplaintsPage"
+          component={ComplaintsPage}
+          options={{ title: 'ComplaintsPage' }}
+        />
+        <Stack.Screen
+          name="Preferences"
+          component={PreferencesPage}
+          options={{
+            title: title,
+            headerTitleStyle: {
+              // fontFamily: 'CherryBombOne',
+            },}}
+        />
+        <Stack.Screen
+          name="GeneralHome"
+          component={GeneralHomePage}
+          options={{
+            headerShown: false,
+            headerTitleStyle: {
+              // fontFamily: 'CherryBombOne',
+            },}}
+        />
+        <Stack.Screen
+          name="payment"
+          component={PaymentPage}
+          options={{ title: 'Payment' }}
+        />
+        <Stack.Screen
+          name="UpdateDrink"
+          component={UpdateDrink}
+          options={{ title: 'UpdateDrink' }}
+        />
+        <Stack.Screen
+          name="ManagerDash"
+          component={ManagerDash}
+          options={{ title: 'ManagerDash', headerRight: () => (<LogoutButton />) }}
+        />
+        <Stack.Screen
+          name="AdminDash"
+          component={AdminDash}
+          options={{ title: 'AdminDash', headerRight: () => (<LogoutButton />) }}
+        />
+        <Stack.Screen
+          name="Complete"
+          component={CompletePage}
+          options={{ title: 'Complete' }}
+        />
+        <Stack.Screen
+          name="Checkout"
+          component={CheckoutForm}
+          options={{ title: 'Checkout Form' }}
+        />
+        <Stack.Screen
+          name="PostCheckout"
+          component={PostCheckout}
+          options={{ title: 'PostCheckout' , headerBackVisible: false,}}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 

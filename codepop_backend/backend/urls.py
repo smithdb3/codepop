@@ -1,6 +1,14 @@
 from django.urls import path
 from rest_framework.authtoken.views import obtain_auth_token
-from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken
+from .hub_views import (
+    HubRegisterView, HubHeartbeatView, HubUserLookupView,
+    HubUserBroadcastView, HubStoreRegistryView, HubRevenueView,
+)
+from .internode_views import (
+    InterNodeUserExistsView, InterNodeUserSyncView,
+    InterNodeProfileUpdateView, InterNodeHealthCheckView,
+)
+from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken, CheckEmailView
 from .views import StripePaymentIntentView
 from .views import UserPreferenceLookup, PreferencesOperations
 from .views import DrinkOperations, UserDrinksLookup
@@ -9,7 +17,7 @@ from .views import NotificationOperations, UserNotificationLookup
 from .views import OrderOperations, UserOrdersLookup
 from .customerAI import Chatbot
 from .views import GenerateAIDrink
-from .views import RevenueViewSet
+from .views import RevenueViewSet, NationalRevenueView
 from .views import UserOperations
 from .views import emailAPI
 
@@ -84,6 +92,10 @@ urlpatterns = [
     # Endpoint for user logout
     # - POST: Logs out the user by invalidating the auth token.
     path('auth/logout/', LogoutUserAPIView.as_view(), name='auth_user_logout'),
+
+    # Endpoint to check if email exists
+    # - POST: Checks if an email is already registered.
+    path('auth/check-email/', CheckEmailView.as_view(), name='auth_check_email'),
 
     # Preference-related URLs
     # Endpoint to list all preferences or create a new preference
@@ -196,6 +208,7 @@ urlpatterns = [
     # - GET: Retrieve a list of all revenues.
     # - POST: Create a new revenue. Requires authentication and revenue details in the request body.
     path('revenues/', revenue_list, name='revenue_list_create'),
+    path('revenues/national/', NationalRevenueView.as_view(), name='revenue_national'),
 
     # Endpoint to retrieve, update, or delete a specific revenue by its primary key (ID).
     # - GET: Retrieve details of a specific revenue.
@@ -211,5 +224,19 @@ urlpatterns = [
     path('users/delete/<int:user_id>/', user_operations, name='delete_user'),
     path('users/edit/<int:user_id>/', user_operations, name='edit_user'),
 
-    path('email/<int:orderId>/', emailAPI.as_view(), name='Create Email')
+    path('email/<int:orderId>/', emailAPI.as_view(), name='Create Email'),
+
+    # Hub endpoints (only meaningful when IS_HUB=True, but available on all nodes)
+    path('api/hub/register/',       HubRegisterView.as_view(),       name='hub_register'),
+    path('api/hub/heartbeat/',      HubHeartbeatView.as_view(),      name='hub_heartbeat'),
+    path('api/hub/user-lookup/',    HubUserLookupView.as_view(),     name='hub_user_lookup'),
+    path('api/hub/user-broadcast/', HubUserBroadcastView.as_view(),  name='hub_user_broadcast'),
+    path('api/hub/store-registry/', HubStoreRegistryView.as_view(),  name='hub_store_registry'),
+    path('api/hub/revenue/',        HubRevenueView.as_view(),        name='hub_revenue'),
+
+    # Inter-node endpoints (store-to-store and hub-to-store communication)
+    path('api/inter-node/user-exists/',    InterNodeUserExistsView.as_view(),    name='internode_user_exists'),
+    path('api/inter-node/user-sync/',      InterNodeUserSyncView.as_view(),      name='internode_user_sync'),
+    path('api/inter-node/profile-update/', InterNodeProfileUpdateView.as_view(), name='internode_profile_update'),
+    path('api/inter-node/health-check/',   InterNodeHealthCheckView.as_view(),   name='internode_health_check'),
 ]

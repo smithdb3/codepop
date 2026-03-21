@@ -144,3 +144,295 @@ class Revenue(models.Model):
             return f"Revenue {self.RevenueID} for Order {self.OrderID}: ${self.TotalAmount:.2f}"
         except Order.DoesNotExist:
             return f"Revenue {self.RevenueID} for unknown Order {self.OrderID}: ${self.TotalAmount:.2f}"
+
+
+# ─────────────────────────────────────────────
+# DISTRIBUTED SYSTEM MODELS
+# ─────────────────────────────────────────────
+
+import uuid
+from cryptography.fernet import Fernet
+
+
+class Region(models.Model):
+    """
+    Represents one of the 7 regional supply hubs.
+    Created by fixture/migration seed data; not user-created.
+    """
+    REGION_CHOICES = [
+        ('logan',     'Logan, UT'),
+        ('atlanta',   'Atlanta, GA'),
+        ('chicago',   'Chicago, IL'),
+        ('newjersey', 'New Jersey, NY'),
+        ('dallas',    'Dallas, TX'),
+        ('phoenix',   'Phoenix, AZ'),
+        ('seattle',   'Seattle, WA'),
+    ]
+    name         = models.CharField(max_length=50, choices=REGION_CHOICES, unique=True)
+    display_name = models.CharField(max_length=100)
+    hub_api_endpoint = models.URLField(blank=True)  # e.g. http://10.0.0.1:8000
+
+    def __str__(self):
+        return self.display_name
+
+
+class StoreRegistry(models.Model):
+    """
+    Used by hubs (IS_HUB=True) to track all registered stores in their region.
+    Stores register on startup via POST /api/hub/register/.
+    Status is updated by heartbeat and timeout logic.
+    """
+    STATUS_CHOICES = [
+        ('active',       'Active'),
+        ('unreachable',  'Unreachable'),  # missed 3 heartbeats
+        ('deregistered', 'Deregistered'),
+    ]
+    store_id     = models.IntegerField(unique=True)
+    store_name   = models.CharField(max_length=255)
+    region       = models.CharField(max_length=50)
+    api_endpoint = models.URLField()           # e.g. http://10.0.0.2:8000
+    latitude     = models.FloatField(null=True, blank=True)
+    longitude    = models.FloatField(null=True, blank=True)
+    status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    registered_at    = models.DateTimeField(auto_now_add=True)
+    last_heartbeat   = models.DateTimeField(null=True, blank=True)
+    missed_heartbeats = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"Store {self.store_id} ({self.store_name}) — {self.status}"
+
+
+class VisitingUserCache(models.Model):
+    """
+    Stores a temporary copy of a user's profile when they visit this store.
+    This is SEPARATE from auth.User — it is a cache only, NOT the source of truth.
+
+    Why separate table:
+    - Prevents home users and visiting users from ever being mixed in a query
+    - Cache can be bulk-deleted by expiry without touching real user accounts
+    - Clear audit boundary: visiting users can only do what their cache allows
+
+    TTL: 24 hours from cached_at. Celery cleanup task deletes expired rows.
+    On next login after expiry, store re-fetches from home store.
+    """
+    user_id       = models.IntegerField()          # ID from home store
+    username      = models.CharField(max_length=150)
+    email         = models.EmailField()
+    hashed_password = models.CharField(max_length=255)  # PBKDF2 hash only, NEVER plaintext
+    role          = models.CharField(max_length=50, default='customer')
+    home_store_id = models.IntegerField()          # Which store owns this user
+    home_store_endpoint = models.URLField()        # Where to send profile updates
+
+    # Preferences and favorites stored as JSON for portability
+    preferences   = models.JSONField(default=list)     # e.g. ["Fruity", "Sweet"]
+    favorite_drink_ids = models.JSONField(default=list) # e.g. [42, 87, 105]
+
+    cached_at     = models.DateTimeField(auto_now_add=True)
+    expires_at    = models.DateTimeField()  # cached_at + 24h; set on create
+
+    class Meta:
+        unique_together = ('user_id', 'home_store_id')
+        indexes = [
+            models.Index(fields=['email']),
+            models.Index(fields=['expires_at']),  # for cleanup task
+        ]
+
+    def __str__(self):
+        return f"VisitingUser {self.username} (home: store {self.home_store_id}, expires: {self.expires_at})"
+
+    def is_expired(self):
+        from django.utils import timezone
+        return timezone.now() >= self.expires_at
+
+
+class PendingProfileUpdate(models.Model):
+    """
+    Queue for profile updates that could not be delivered to the home store
+    because it was unreachable at the time of the update.
+
+    Security: `changes_encrypted` stores AES-256 encrypted JSON. Never store
+    plaintext user data here — if the VM is compromised, this data must be
+    unreadable without the encryption key.
+
+    Retry logic: Celery `process_pending_updates` task retries with exponential
+    backoff (1s, 2s, 4s, 8s, ...). Max retry period is 24 hours from created_at.
+    After that, the record is marked `failed` and the user is notified.
+
+    Encryption key: Stored in INTER_NODE_SECRET (derived, not raw). In production,
+    use a dedicated ENCRYPTION_KEY env var.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('delivered', 'Delivered'),
+        ('failed', 'Failed — max retries exceeded'),
+    ]
+    id               = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user_id          = models.IntegerField()
+    home_store_id    = models.IntegerField()
+    home_store_endpoint = models.URLField()
+    changes_encrypted = models.TextField()  # AES-256 encrypted JSON blob
+    status           = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at       = models.DateTimeField(auto_now_add=True)
+    retry_count      = models.IntegerField(default=0)
+    next_retry_at    = models.DateTimeField()    # when to attempt next delivery
+    max_retry_until  = models.DateTimeField()    # created_at + 24h; give up after this
+    last_error       = models.TextField(blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['status', 'next_retry_at']),
+        ]
+
+    def __str__(self):
+        return f"PendingUpdate {self.id} for user {self.user_id} → store {self.home_store_id} ({self.status})"
+
+    @staticmethod
+    def encrypt(data_dict: dict) -> str:
+        """Encrypt a dict to a base64 Fernet token."""
+        from django.conf import settings
+        import json, base64, hashlib
+        key_bytes = hashlib.sha256(settings.INTER_NODE_SECRET.encode()).digest()
+        f = Fernet(base64.urlsafe_b64encode(key_bytes))
+        return f.encrypt(json.dumps(data_dict).encode()).decode()
+
+    @staticmethod
+    def decrypt(token: str) -> dict:
+        """Decrypt a Fernet token back to a dict."""
+        from django.conf import settings
+        import json, base64, hashlib
+        key_bytes = hashlib.sha256(settings.INTER_NODE_SECRET.encode()).digest()
+        f = Fernet(base64.urlsafe_b64encode(key_bytes))
+        return json.loads(f.decrypt(token.encode()).decode())
+
+
+class SyncAuditLog(models.Model):
+    """
+    Immutable audit log of every inter-node data transfer.
+    Retained for 30 days minimum. Used for security forensics.
+
+    Written by:
+    - hub_views.py when a hub receives a user-lookup or broadcast
+    - internode_views.py when a store processes user-sync or profile-update
+    """
+    EVENT_CHOICES = [
+        ('user_lookup',       'User Lookup (store → hub)'),
+        ('hub_broadcast',     'Hub Broadcast (hub → hubs)'),
+        ('user_sync',         'User Sync (visiting store ← home store)'),
+        ('profile_update',    'Profile Update (visiting store → home store)'),
+        ('store_register',    'Store Registration'),
+        ('heartbeat',         'Heartbeat'),
+    ]
+    timestamp         = models.DateTimeField(auto_now_add=True)
+    event_type        = models.CharField(max_length=30, choices=EVENT_CHOICES)
+    requesting_node   = models.CharField(max_length=255)  # IP or node ID of requester
+    target_node       = models.CharField(max_length=255)  # IP or endpoint of target
+    user_email        = models.EmailField(blank=True)      # user involved (if any)
+    data_types        = models.CharField(max_length=255)   # comma-separated: "email,preferences,role"
+    success           = models.BooleanField()
+    error_message     = models.TextField(blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['timestamp']),
+            models.Index(fields=['event_type']),
+        ]
+
+    def __str__(self):
+        status = 'OK' if self.success else 'FAIL'
+        return f"[{status}] {self.event_type} by {self.requesting_node} at {self.timestamp}"
+
+
+class SupplyRequest(models.Model):
+    """
+    A restocking request from a store to its regional hub.
+    Submitted via POST /api/hub/supply-request/ (not yet implemented — Phase 10 extension).
+    """
+    STATUS_CHOICES = [
+        ('pending',   'Pending'),
+        ('approved',  'Approved'),
+        ('denied',    'Denied'),
+        ('fulfilled', 'Fulfilled'),
+    ]
+    store_id     = models.IntegerField()
+    region       = models.CharField(max_length=50)
+    item_name    = models.CharField(max_length=100)
+    quantity     = models.PositiveIntegerField()
+    status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+    notes        = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"SupplyRequest store {self.store_id}: {self.quantity}x {self.item_name} ({self.status})"
+
+
+class Machine(models.Model):
+    """
+    Represents one robotic drink-dispensing machine at a store.
+    Status follows a defined state machine (see Architecture docs).
+    Machine status is LOCAL — it does not replicate to other stores.
+    Repair staff and hub dashboards query this directly.
+    """
+    STATUS_CHOICES = [
+        ('NORMAL',           'Normal'),
+        ('WARNING',          'Warning'),
+        ('ERROR',            'Error'),
+        ('OUT_OF_ORDER',     'Out of Order'),
+        ('SCHEDULE_SERVICE', 'Service Scheduled'),
+        ('REPAIR_START',     'Repair In Progress'),
+        ('REPAIR_END',       'Repair Complete — Testing'),
+    ]
+    machine_id   = models.CharField(max_length=50, unique=True)
+    name         = models.CharField(max_length=100)
+    location     = models.CharField(max_length=100, blank=True)  # e.g. "Bay 3"
+    status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='NORMAL')
+    last_status_change = models.DateTimeField(auto_now=True)
+    notes        = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Machine {self.machine_id} ({self.name}) — {self.status}"
+
+
+class Schedule(models.Model):
+    """
+    Repair staff schedule. Supports CSV upload by logistics managers.
+    Tied to Machine and auth.User (repair staff member).
+    """
+    machine      = models.ForeignKey(Machine, on_delete=models.CASCADE, related_name='schedules')
+    assigned_to  = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)
+    scheduled_at = models.DateTimeField()
+    completed_at = models.DateTimeField(null=True, blank=True)
+    description  = models.TextField(blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Schedule for {self.machine} at {self.scheduled_at}"
+
+
+class RepairStaffProfile(models.Model):
+    """
+    Extends auth.User for repair staff members.
+    One-to-one with User. Created when admin assigns role='repair_staff'.
+    """
+    user             = models.OneToOneField('auth.User', on_delete=models.CASCADE,
+                                            related_name='repair_profile')
+    region           = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True)
+    assigned_store_id = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return f"RepairStaff: {self.user.username} (region: {self.region})"
+
+
+class LogisticsManagerProfile(models.Model):
+    """
+    Extends auth.User for logistics managers.
+    One-to-one with User. Created when admin assigns role='logistics_manager'.
+    Logistics managers can view regional revenue, approve supply requests,
+    and manage repair schedules for their region.
+    """
+    user   = models.OneToOneField('auth.User', on_delete=models.CASCADE,
+                                  related_name='logistics_profile')
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True)
+
+    def __str__(self):
+        return f"LogisticsManager: {self.user.username} (region: {self.region})"

@@ -17,9 +17,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
+# Copy and make entrypoint executable
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 # Expose Django port
 EXPOSE 8000
 
-# Run gunicorn (production-ready WSGI server)
-# 4 workers + 2 threads each balances CPU and concurrency for typical GCP VMs
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--threads", "2", "--worker-class", "gthread", "--access-logfile", "-", "--error-logfile", "-", "codepop_backend.wsgi:application"]
+# Run entrypoint script (handles migrations + starts gunicorn)
+ENTRYPOINT ["/entrypoint.sh"]
