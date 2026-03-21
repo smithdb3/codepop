@@ -16,12 +16,12 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
       const sodaUsed = Array.isArray(drinkDict.SodaUsed) && drinkDict.SodaUsed.length > 0 ? drinkDict.SodaUsed : [drinkDict.SodaUsed];
       const syrupsUsed = Array.isArray(drinkDict.SyrupsUsed) ? drinkDict.SyrupsUsed : [];
       const addIns = Array.isArray(drinkDict.AddIns) ? drinkDict.AddIns : [];
-  
+
       // If SodaUsed is empty, set it to ["DefaultSoda"] (or any default soda)
       if (sodaUsed.length === 0) {
         console.warn('SodaUsed is empty, setting to default soda.');
       }
-  
+
       const response = await fetch(`${BASE_URL}/backend/drinks/`, {
         method: 'POST',
         headers: {
@@ -38,7 +38,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
           Ice: drinkDict.Ice || "regular", // Default ice amount
         }),
       });
-  
+
       // Check if the response is not OK (status code not in the range 200-299)
       if (!response.ok) {
         const errorText = await response.text(); // Get the error message from the response body
@@ -46,27 +46,27 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
         console.error('Response Text:', errorText);
         throw new Error(`Failed to create drink: ${response.status} - ${errorText}`);
       }
-  
+
       const data = await response.json();
       // gets list of out of storage on your phone
       let cartList = await AsyncStorage.getItem("checkoutList");
       const currentList = cartList ? JSON.parse(cartList) : [];
-  
+
       const drinkID = data.DrinkID; // assuming the response contains DrinkID
       const updatedList = [...currentList, drinkID];
       await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
 
       console.log("created drink obj")
       return data; // Return the created drink object
-  
+
     } catch (error) {
       console.error('Error in createObj:', error); // Log any other errors
       throw error; // Rethrow error to be handled by the caller
     }
   };
-  
-  
-  
+
+
+
   const edit = async () => {
     try {
       const drink = await createObj(); // Wait for the drink object to be created
@@ -89,7 +89,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
   const getLayers = (soda, syrups, addins) => {
     const layers = [];
     const totalItems = soda.length + syrups.length + addins.length;
-  
+
     soda.forEach((sodaName) => {
       const sodaOption = sodaOptions.find((opt) => opt.label === sodaName);
       if (sodaOption) {
@@ -97,7 +97,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
       } else {
       }
     });
-  
+
     syrups.forEach((syrupName) => {
       const syrupOption = syrupOptions.find((opt) => opt.label === syrupName);
       if (syrupOption) {
@@ -105,7 +105,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
       } else {
       }
     });
-  
+
     addins.forEach((addinName) => {
       const addInOption = AddInOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
       if (addInOption) {
@@ -119,7 +119,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
   const syrupsUsed = Array.isArray(drinkDict.SyrupsUsed) ? drinkDict.SyrupsUsed : [];
   const addIns = Array.isArray(drinkDict.AddIns) ? drinkDict.AddIns : [];
 
-  
+
 
   const layers = getLayers(sodaUsed, syrupsUsed, addIns);
   console.log(layers);

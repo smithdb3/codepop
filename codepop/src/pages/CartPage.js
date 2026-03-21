@@ -77,14 +77,25 @@ const CartPage = () => {
   };
 
 
-  const calculateTotalPrice = (drinksList) => {
-    let total = 0; // Initialize total here
+//  const calculateTotalPrice = (drinksList) => {
+//    let total = 0; // Initialize total here
+//
+//    for (let i = 0; i < drinksList.length; i++) {
+//      total += calculatePrice(drinksList[i]);
+//    }
+//    setTotalPrice(total); // Update the total price state
+//  };
+const calculateTotalPrice = (drinksList) => {
+  let total = 0;
 
-    for (let i = 0; i < drinksList.length; i++) {
-      total += calculatePrice(drinksList[i]);      
-    }
-    setTotalPrice(total); // Update the total price state
-  };
+  for (let i = 0; i < drinksList.length; i++) {
+    total += calculatePrice(drinksList[i]);
+  }
+
+  // CRITICAL: Convert to cents and ensure it is an Integer
+  const totalInCents = Math.round(total * 100);
+  setTotalPrice(totalInCents);
+};
 
   const removeDrink = async (drinkId) => {
     try {
@@ -179,7 +190,10 @@ const CartPage = () => {
 
         <View style={styles.padding}>
 
-          <Text style={styles.totalText}>Cart Total: ${totalPrice.toFixed(2)}</Text>
+
+          <Text style={styles.totalText}>
+            {`Cart Total: $${(totalPrice / 100).toFixed(2)}`}
+          </Text>
 
           <TouchableOpacity onPress={openPaymentSheet} style={styles.payButton}>
             <Icon name="card-outline" size={24} color="#fff" />

@@ -47,58 +47,122 @@ const CreateDrinkPage = () => {
     setSize(null);  // Clear selected size
   };
   
-  const addToCart = async () => {
-    try {
-      // check if ice and size have been selected
-      if(selectedIce == null || selectedSize == null || SodaUsed.length == 0){
-
-        Alert.alert("Dont forget to choose a Soda, Size and, Ice Ammount!")
-
-      }else{
-        const token = await AsyncStorage.getItem('userToken');
-    
-        const response = await fetch(`${BASE_URL}/backend/drinks/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            Name: "Drink in User Cart",  // Example name for the drink
-            SodaUsed: SodaUsed,  // Default value if SodaUsed is null
-            SyrupsUsed: SyrupsUsed,
-            AddIns: AddIns,
-            Price: 2.00,
-            User_Created: true,    // Assuming the user is creating the drink
-            Size: selectedSize,
-            Ice: selectedIce,
-          })
-        });
-    
-        if (!response.ok) {
-          throw new Error(`Failed to add drink. Status: ${response.status}`);
-        }
-        // add drink item (the drinks ID) to the checkout list from App.js
-        try{
-          // gets list of out of storage on your phone
-          cartList = await AsyncStorage.getItem("checkoutList");
-          const currentList = cartList ? JSON.parse(cartList) : [];
-          // takes the response (what we get after we create a drink) and extracts the drinkID
-          const data = await response.json();
-          const drinkID = data.DrinkID;
-          // add the drinkID to the checkoutList
-          const updatedList = [...currentList, drinkID]
-          // Saves the checkoutlist back into the storage on the phone
-          await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
-        }catch (error){
-          console.log(error)
-        }
-
-        navigation.navigate('Cart');
-      }
-    } catch (error) {
-      console.error('Error adding drink to cart:', error);
+//  const addToCart = async () => {
+//    try {
+//      // check if ice and size have been selected
+//      if(selectedIce == null || selectedSize == null || SodaUsed.length == 0){
+//
+//        Alert.alert("Dont forget to choose a Soda, Size and, Ice Ammount!")
+//
+//      }else{
+//        const token = await AsyncStorage.getItem('userToken');
+//
+//        const response = await fetch(`${BASE_URL}/backend/drinks/`, {
+//          method: 'POST',
+//          headers: {
+//            'Content-Type': 'application/json',
+//          },
+//          body: JSON.stringify({
+//            Name: "Drink in User Cart",  // Example name for the drink
+//            SodaUsed: SodaUsed,  // Default value if SodaUsed is null
+//            SyrupsUsed: SyrupsUsed,
+//            AddIns: AddIns,
+//            Price: 2.00,
+//            User_Created: true,    // Assuming the user is creating the drink
+//            Size: selectedSize,
+//            Ice: selectedIce,
+//          })
+//        });
+//
+//        if (!response.ok) {
+//          throw new Error(`Failed to add drink. Status: ${response.status}`);
+//        }
+//        // add drink item (the drinks ID) to the checkout list from App.js
+//        try{
+//          // gets list of out of storage on your phone
+//          cartList = await AsyncStorage.getItem("checkoutList");
+//          const currentList = cartList ? JSON.parse(cartList) : [];
+//          // takes the response (what we get after we create a drink) and extracts the drinkID
+//          const data = await response.json();
+//          const drinkID = data.DrinkID;
+//          // add the drinkID to the checkoutList
+//          const updatedList = [...currentList, drinkID]
+//          // Saves the checkoutlist back into the storage on the phone
+//          await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
+//        }catch (error){
+//          console.log(error)
+//        }
+//
+//        navigation.navigate('Cart');
+//      }
+//    } catch (error) {
+//      console.error('Error adding drink to cart:', error);
+//    }
+//  };
+const addToCart = async () => {
+  try {
+    // 1. Validation check
+    if (!selectedIce || !selectedSize || SodaUsed.length === 0) {
+      Alert.alert("Wait!", "Don't forget to choose a Soda, Size, and Ice Amount!");
+      return; // Stop execution here
     }
-  };  
+
+    // 2. Create the drink on the backend
+    const response = await fetch(`${BASE_URL}/backend/drinks/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        Name: "Drink in User Cart",
+        SodaUsed: SodaUsed,
+        SyrupsUsed: SyrupsUsed,
+        AddIns: AddIns,
+        Price: 2.00,
+        User_Created: true,
+        Size: selectedSize,
+        Ice: selectedIce,
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Server error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    // CRITICAL: Check if the ID actually exists in the response
+    // Change 'DrinkID' to 'id' if that's what your backend uses!
+    const newDrinkID = data.DrinkID || data.id;
+
+    if (!newDrinkID) {
+      console.error("Backend did not return a Drink ID. Check response:", data);
+      Alert.alert("Error", "Could not retrieve drink ID from server.");
+      return;
+    }
+
+    // 3. Update AsyncStorage
+    try {
+      const existingCartRaw = await AsyncStorage.getItem("checkoutList");
+      const currentList = existingCartRaw ? JSON.parse(existingCartRaw) : [];
+
+      const updatedList = [...currentList, newDrinkID];
+
+      await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
+      console.log("Successfully added ID to cart:", newDrinkID);
+
+      // 4. Navigate only AFTER storage is confirmed saved
+      navigation.navigate('Cart');
+
+    } catch (storageError) {
+      console.error('AsyncStorage Error:', storageError);
+      Alert.alert("Storage Error", "Failed to save item to your phone.");
+    }
+
+  } catch (error) {
+    console.error('Request Error:', error);
+    Alert.alert("Network Error", "Could not connect to the server.");
+  }
+};
   
 
   const handleSizeSelection = (size) => {
