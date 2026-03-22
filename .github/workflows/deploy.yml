@@ -74,7 +74,8 @@ jobs:
             echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
             echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
 
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
             docker compose down
             docker compose up -d --build
             echo "✓ logan-hub deployed successfully"
@@ -101,7 +102,8 @@ jobs:
             echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
             echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
 
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
             docker compose down
             docker compose up -d --build
             echo "✓ atlanta-hub deployed successfully"
@@ -127,7 +129,8 @@ jobs:
             echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
             echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
 
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
             docker compose down
             docker compose up -d --build
             echo "✓ logan-store-1 deployed successfully"
@@ -152,7 +155,8 @@ jobs:
             echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
             echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
 
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
             docker compose down
             docker compose up -d --build
             echo "✓ logan-store-2 deployed successfully"
@@ -177,7 +181,8 @@ jobs:
             echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
             echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
 
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
             docker compose down
             docker compose up -d --build
             echo "✓ atlanta-store-1 deployed successfully"
@@ -202,7 +207,8 @@ jobs:
             echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
             echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
 
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
             docker compose down
             docker compose up -d --build
             echo "✓ atlanta-store-2 deployed successfully"
@@ -229,7 +235,8 @@ jobs:
   #           echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
   #           echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
   #           echo "HUB_CHICAGO_URL=http://${{ secrets.CHICAGO_HUB_IP }}:8000" >> .env
-  #           git pull origin master
+  #           git fetch origin master
+  #           git reset --hard origin/master
   #           docker compose down
   #           docker compose up -d --build
   #           docker compose run --rm web python manage.py migrate
