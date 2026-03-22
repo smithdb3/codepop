@@ -1,21 +1,24 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState } from 'react';
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { BASE_URL } from '../../ip_address';
+import { CodePopLogo } from '../components/CodePopLogo';
 
 
 const AuthPage = ({ navigation, route }) => {
   const prefillEmail = route.params?.email ?? '';
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [token, setToken] = useState(null);
   const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async () => {
     navigation.navigate('CreateAccount');
   };
 
   const handleLoginWithEmail = async (emailValue) => {
+    setIsLoading(true);
     try {
       const response = await fetch(`${BASE_URL}/backend/auth/login/`, {
           method: 'POST',
@@ -33,34 +36,34 @@ const AuthPage = ({ navigation, route }) => {
           await AsyncStorage.setItem('first_name', data.first_name);
           if(data.userRole === 'admin'){
             await AsyncStorage.setItem('userRole', 'admin');
-            Alert.alert('Login successful!');
             navigation.navigate('AdminDash');
           }else if(data.userRole === 'manager'){
             await AsyncStorage.setItem('userRole', 'manager');
-            Alert.alert('Login successful!');
             navigation.navigate('ManagerDash');
           } else{
             await AsyncStorage.setItem('userRole', 'user');
-            Alert.alert('Login successful!');
             navigation.navigate('GeneralHome');
           }
       } else {
           Alert.alert('Invalid credentials, please try again.');
+          setIsLoading(false);
       }
     } catch (error) {
       console.error(error);
       Alert.alert('Login failed. Please try again later.');
+      setIsLoading(false);
     }
   };
 
   const handleLogin = async () => {
+    setIsLoading(true);
     try {
       const response = await fetch(`${BASE_URL}/backend/auth/login/`, {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username: email, password }),
       });
 
       if (response.status === 200) {
@@ -71,78 +74,54 @@ const AuthPage = ({ navigation, route }) => {
           await AsyncStorage.setItem('first_name', data.first_name);
           if(data.userRole === 'admin'){
             await AsyncStorage.setItem('userRole', 'admin');
-            Alert.alert('Login successful!');
             navigation.navigate('AdminDash');
           }else if(data.userRole === 'manager'){
             await AsyncStorage.setItem('userRole', 'manager');
-            Alert.alert('Login successful!');
             navigation.navigate('ManagerDash');
           } else{
             await AsyncStorage.setItem('userRole', 'user');
-            Alert.alert('Login successful!');
             navigation.navigate('GeneralHome');
           }
       } else {
           Alert.alert('Invalid credentials, please try again.');
+          setIsLoading(false);
       }
     } catch (error) {
       console.error(error);
       Alert.alert('Login failed. Please try again later.');
+      setIsLoading(false);
     }
   };
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
     <View style={styles.container}>
-      {prefillEmail ? (
-        <>
-          <Text style={styles.title}>Sign In</Text>
-          <Text style={styles.emailDisplay}>{prefillEmail}</Text>
-          <TextInput
-            placeholder="Password"
-            value={password}
-            secureTextEntry
-            onChangeText={setPassword}
-            style={styles.input}
-          />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.primaryButton} onPress={() => handleLoginWithEmail(prefillEmail)}>
-              <Text style={styles.buttonText}>Sign In</Text>
-            </TouchableOpacity>
-          </View>
-          {message && <Text style={styles.errorMessage}>{message}</Text>}
-        </>
-      ) : (
-        <>
-          <Image
-            source={require('../../assets/robot-with-soda.png')}
-            style={styles.image}
-          />
-          <Text style={styles.title}>CodePop</Text>
-          <TextInput
-            placeholder="Username"
-            value={username}
-            onChangeText={setUsername}
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="Password"
-            value={password}
-            secureTextEntry
-            onChangeText={setPassword}
-            style={styles.input}
-          />
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}>
-              <Text style={styles.buttonText}>Create Account</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
-              <Text style={styles.buttonText}>Login</Text>
-            </TouchableOpacity>
-          </View>
-          {message && <Text style={styles.errorMessage}>{message}</Text>}
-        </>
-      )}
+      <View style={{ marginBottom: 32 }}>
+        <CodePopLogo size={64} />
+      </View>
+      <Text style={styles.title}>Sign In</Text>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.emailPill}>
+        <Text style={styles.emailPillText}>{prefillEmail} ✎</Text>
+      </TouchableOpacity>
+      <TextInput
+        placeholder="Password"
+        value={password}
+        secureTextEntry
+        onChangeText={setPassword}
+        style={styles.input}
+      />
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]} onPress={() => handleLoginWithEmail(prefillEmail)} disabled={isLoading}>
+          {isLoading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.buttonText}>Sign In</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+      {message && <Text style={styles.errorMessage}>{message}</Text>}
     </View>
+    </SafeAreaView>
   );
 };
 
@@ -160,10 +139,16 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     color: '#222831',
   },
-  emailDisplay: {
-    fontSize: 16,
-    color: '#222831',
+  emailPill: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
     marginBottom: 24,
+  },
+  emailPillText: {
+    fontSize: 14,
+    color: '#222831',
     fontWeight: '600',
   },
   input: {
@@ -196,6 +181,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
+  primaryButtonDisabled: {
+    opacity: 0.6,
+  },
   buttonText: {
     fontSize: 14,
     fontWeight: '600',
@@ -207,11 +195,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: 'center',
   },
-  image: {
-    width: 150,
-    height: 150,
-    borderRadius: 10,
-    marginBottom: 20,
+  ghostButton: {
+    marginTop: 16,
+  },
+  ghostButtonText: {
+    color: '#08D9D6',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

@@ -8,6 +8,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import AdminDash from './src/pages/AdminDash';
 import AuthPage from './src/pages/AuthPage';
 import CartPage from './src/pages/CartPage';
+import EmailCheckPage from './src/pages/EmailCheckPage';
 import CheckoutForm from './src/pages/CheckoutForm';
 import ComplaintsPage from './src/pages/ComplaintsPage';
 import CompletePage from './src/pages/CompletePage';
@@ -56,13 +57,14 @@ const App = () => {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="GeneralHome" screenOptions={{headerStyle: {backgroundColor: '#FFFFFF'}}}>
         <Stack.Screen
+          name="EmailCheck"
+          component={EmailCheckPage}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="Auth"
           component={AuthPage}
-          options={{
-            title: title,
-            headerTitleStyle: {
-              // fontFamily: 'CherryBombOne',
-          },}}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="CreateAccount"

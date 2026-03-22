@@ -7,9 +7,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: windowWidth } = Dimensions.get('window');
 
-const SeasonalCarousel = () => {
+const SeasonalCarousel = ({ readOnly = false }) => {
     const navigation = useNavigation();
     const [data, setData] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -38,7 +39,9 @@ const SeasonalCarousel = () => {
             setData(parsedDrinks);
             } catch (error) {
                 console.error(error);
-            } 
+            } finally {
+                setIsLoading(false);
+            }
         };
         fetchData();
     }, []);
@@ -103,27 +106,31 @@ const SeasonalCarousel = () => {
     }
 
     const renderItem = ({ item }) => (
-        <TouchableOpacity style={styles.carouselItem} onPress={() => createDrink(item)}>
+        <TouchableOpacity style={styles.carouselItem} onPress={readOnly ? undefined : () => createDrink(item)}>
             <Image
                 source={require('../../assets/temp-carousel-drink.png')}
                 style={styles.image}
             />
             <Text style={styles.drinkName}>{item.name}</Text>
-            <Text style={styles.drinkPrice}>${item.price.toFixed(2)}</Text>
+            <Text style={styles.drinkPrice}>${typeof item.price === 'number' ? item.price.toFixed(2) : '—'}</Text>
         </TouchableOpacity>
     );
 
     return (
-        <View style={{ height: 250 }}>
-            <Carousel
-                width={250}
-                sliderWidth={windowWidth}
-                itemWidth={windowWidth * 0.8}
-                height={250}
-                autoPlay={true}
-                data={data}
-                renderItem={renderItem}
-            />
+        <View style={{ height: 250, justifyContent: 'center' }}>
+            {isLoading ? (
+                <Text style={styles.emptyText}>Loading...</Text>
+            ) : data.length === 0 ? (
+                <Text style={styles.emptyText}>No seasonal drinks available.</Text>
+            ) : (
+                <Carousel
+                    width={windowWidth}
+                    height={250}
+                    autoPlay={true}
+                    data={data}
+                    renderItem={renderItem}
+                />
+            )}
         </View>
     );
 };
@@ -137,7 +144,9 @@ const styles = StyleSheet.create({
         margin: 0,
     },
     carouselItem: {
-        backgroundColor: '#FFA686',
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
         borderRadius: 8,
         padding: 20,
         margin: 10,
@@ -160,6 +169,11 @@ const styles = StyleSheet.create({
         height: 150,
         borderRadius: 10,
       },
+    emptyText: {
+        textAlign: 'center',
+        color: '#9CA3AF',
+        fontSize: 14,
+    },
 });
 
 export default SeasonalCarousel;

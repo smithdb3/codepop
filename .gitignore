@@ -12,3 +12,7 @@ node_modules
 .env
 *.env
 **/.env
+
+# Expo native build folders
+android/
+ios/

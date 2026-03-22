@@ -110,7 +110,13 @@ class CustomAuthToken(ObtainAuthToken):
         password = request.data.get('password', '')
 
         # ── Path 1: Local home user ──────────────────────────────────────────
-        user = authenticate(request, username=username_or_email, password=password)
+        # Support email-based login for local users
+        if '@' in username_or_email:
+            from django.contrib.auth.models import User as DjangoUser
+            local_user = DjangoUser.objects.filter(email__iexact=username_or_email).first()
+            user = authenticate(request, username=local_user.username, password=password) if local_user else None
+        else:
+            user = authenticate(request, username=username_or_email, password=password)
         if user:
             token, _ = Token.objects.get_or_create(user=user)
             return Response({

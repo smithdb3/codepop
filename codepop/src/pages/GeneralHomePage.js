@@ -1,10 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
-import { Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { BASE_URL } from '../../ip_address';
 import NavBar from '../components/NavBar';
 import SeasonalCarousel from '../components/SeasonalCarousel';
+import { CodePopLogo } from '../components/CodePopLogo';
 
 const SAVED_DRINKS = [
   { id: 1, name: 'Cherry Fizz', description: 'Cherry syrup + lemon-lime soda', price: 4.99 },
@@ -19,9 +20,6 @@ const GeneralHomePage = () => {
   const [name, setName] = useState(null);
   const [showSizeSelector, setShowSizeSelector] = useState({});
   const [selectedSize, setSelectedSize] = useState({});
-  const [email, setEmail] = useState('');
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-  const [emailError, setEmailError] = useState('');
   const navigation = useNavigation();
 
   // Check login status when the screen gains focus
@@ -54,34 +52,6 @@ const GeneralHomePage = () => {
       checkLoginStatus();
     }, [])
   );
-
-  // Handle continue with email for not-signed-in flow
-  const handleContinueWithEmail = async () => {
-    const trimmedEmail = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setEmailError('Please enter a valid email address.');
-      return;
-    }
-    setEmailError('');
-    setIsCheckingEmail(true);
-    try {
-      const response = await fetch(`${BASE_URL}/backend/auth/check-email/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmedEmail }),
-      });
-      const data = await response.json();
-      if (data.exists) {
-        navigation.navigate('Auth', { email: trimmedEmail });
-      } else {
-        navigation.navigate('CreateAccount', { email: trimmedEmail });
-      }
-    } catch (error) {
-      setEmailError('Network error. Please check your connection.');
-    } finally {
-      setIsCheckingEmail(false);
-    }
-  };
 
   // Logout function
   const handleLogout = async () => {
@@ -118,7 +88,7 @@ const GeneralHomePage = () => {
 
   // Login button press
   const goToLoginPage = () => {
-    navigation.navigate('Auth');  // Navigate to the login page
+    navigation.navigate('EmailCheck');  // Navigate to email check
   };
 
   const goToAdminDash = () => {
@@ -196,24 +166,24 @@ const GeneralHomePage = () => {
       {isLoggedIn ? (
         <>
           <View style={styles.customHeader}>
-            <Image
-              source={require('../../assets/icon.png')}
-              style={styles.headerLogo}
-              resizeMode="contain"
-            />
+            <CodePopLogo size={32} />
           </View>
           <ScrollView contentContainerStyle={styles.contentContainer}>
             {name && <Text style={styles.greeting}>Hello {name}!</Text>}
 
             <SeasonalCarousel style={styles.carousel} />
 
-            <View style={styles.generateSection}>
-              <TouchableOpacity style={styles.primaryButton}>
-                <Text style={styles.primaryButtonText}>Based on My Preferences</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryButton}>
-                <Text style={styles.secondaryButtonText}>Try Something New</Text>
-              </TouchableOpacity>
+            <View style={styles.tonicSection}>
+              <Text style={styles.tonicSectionHeader}>Generate a Drink with Tonic</Text>
+              <Text style={styles.tonicSectionSub}>Your AI bartender — choose how it creates your drink</Text>
+              <View style={styles.tonicButtonRow}>
+                <TouchableOpacity style={styles.primaryButton} onPress={generateDrinks}>
+                  <Text style={styles.primaryButtonText}>Based on My{'\n'}Preferences</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.secondaryButton}>
+                  <Text style={styles.secondaryButtonText}>Try Something{'\n'}New</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.savedDrinksSection}>
@@ -239,34 +209,32 @@ const GeneralHomePage = () => {
           </ScrollView>
         </>
       ) : (
-        <View style={styles.notSignedInContainer}>
-          <Image
-            source={require('../../assets/icon.png')}
-            style={styles.heroLogo}
-            resizeMode="contain"
-          />
-          <Text style={styles.signInPrompt}>Sign in or create an account</Text>
-          <TextInput
-            style={[styles.emailInput, emailError ? styles.inputError : null]}
-            placeholder="Email address"
-            placeholderTextColor="#9CA3AF"
-            value={email}
-            onChangeText={(text) => { setEmail(text); setEmailError(''); }}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-          <TouchableOpacity
-            style={[styles.primaryButton, isCheckingEmail && styles.primaryButtonDisabled]}
-            onPress={handleContinueWithEmail}
-            disabled={isCheckingEmail}
-          >
-            <Text style={styles.primaryButtonText}>
-              {isCheckingEmail ? 'Checking...' : 'Continue with email'}
-            </Text>
+        <ScrollView contentContainerStyle={styles.notSignedInContainer}>
+          {/* Logo at top */}
+          <View style={styles.logoBlock}>
+            <CodePopLogo size={64} />
+          </View>
+
+          <Text style={styles.tagline}>Your custom drink, your way.</Text>
+          <Text style={styles.notSignedInLabel}>You are not signed in.</Text>
+
+          {/* Sign In — primary, centered */}
+          <TouchableOpacity style={styles.signInButton} onPress={goToLoginPage}>
+            <Text style={styles.primaryButtonText}>Sign In</Text>
           </TouchableOpacity>
-        </View>
+
+          {/* Tonic AI generate button */}
+          <TouchableOpacity style={styles.tonicGuestButton} onPress={generateDrinks}>
+            <Text style={styles.tonicGuestButtonLabel}>Generate a Drink</Text>
+            <Text style={styles.tonicGuestButtonSub}>Powered by Tonic, your AI bartender</Text>
+          </TouchableOpacity>
+
+          {/* Seasonal carousel — read-only */}
+          <View style={styles.carouselSection}>
+            <Text style={styles.sectionTitle}>Seasonal Drinks</Text>
+            <SeasonalCarousel readOnly={true} />
+          </View>
+        </ScrollView>
       )}
       <NavBar />
     </SafeAreaView>
@@ -285,9 +253,9 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   notSignedInContainer: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: 24,
     paddingTop: 64,
     paddingBottom: 100,
@@ -300,41 +268,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerLogo: {
-    height: 32,
-    width: 120,
-  },
-  heroLogo: {
-    width: '70%',
-    height: 120,
-    marginBottom: 32,
-  },
-  signInPrompt: {
+  tagline: {
     fontSize: 16,
-    color: '#222831',
+    color: '#6B7280',
+    marginBottom: 8,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  notSignedInLabel: {
+    fontSize: 14,
+    color: '#6B7280',
     marginBottom: 24,
     textAlign: 'center',
-  },
-  emailInput: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: '#222831',
-    marginBottom: 8,
-    minHeight: 44,
-  },
-  inputError: {
-    borderColor: '#EF4444',
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#EF4444',
-    alignSelf: 'flex-start',
-    marginBottom: 8,
   },
   greeting: {
     fontSize: 32,
@@ -345,10 +290,68 @@ const styles = StyleSheet.create({
   carousel: {
     marginBottom: 24,
   },
-  generateSection: {
+  tonicSection: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 16,
+    marginBottom: 32,
+  },
+  tonicSectionHeader: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#222831',
+    marginBottom: 4,
+  },
+  tonicSectionSub: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 16,
+  },
+  tonicButtonRow: {
     flexDirection: 'row',
     gap: 12,
+  },
+  logoBlock: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  signInButton: {
+    width: 280,
+    backgroundColor: '#FF2E63',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  tonicGuestButton: {
+    width: 280,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    alignItems: 'center',
     marginBottom: 32,
+  },
+  tonicGuestButtonLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#222831',
+    marginBottom: 4,
+  },
+  tonicGuestButtonSub: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  carouselSection: {
+    alignSelf: 'stretch',
+    marginTop: 8,
   },
   primaryButton: {
     flex: 1,
@@ -364,9 +367,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
-  },
-  primaryButtonDisabled: {
-    backgroundColor: '#D1D5DB',
+    textAlign: 'center',
   },
   secondaryButton: {
     flex: 1,
