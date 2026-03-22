@@ -8,6 +8,7 @@ import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredien
 import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AIAlert from '../components/AIAlert';
+import CodePopLogo from '../components/CodePopLogo';
 
 
 const CreateDrinkPage = () => {
@@ -230,107 +231,133 @@ const CreateDrinkPage = () => {
 
   return (
     <View style={styles.wholePage}>
+      <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
+        {/* Page Title */}
+        <Text style={styles.pageTitle}>Design Your Drink</Text>
 
-      <ScrollView style={styles.padding}>
-      <View style={styles.rowContainer}>
-        {/* Size buttons on the left */}
-        <View style={styles.buttonContainerLeft}>
-          {['16oz', '24oz', '32oz'].map((size) => (
-            <TouchableOpacity
-              key={size}
-              onPress={() => handleSizeSelection(size)}
-              style={[
-                styles.circularButton,
-                selectedSize === size && styles.circularButtonSelected,
-              ]}
-            >
-              <Text style={[styles.buttonText, selectedSize === size && styles.selectedButtonText]}>
-                {size}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        
-        <View style={styles.graphicContainer}>
-          <View style={styles.straw}></View>
-          {/* Drink graphic in the center */}
-          <Gif layers={layers}/>
-
-          {/* Button to generate drinks */}
-          <TouchableOpacity onPress={GenerateAI} style={styles.button}>
-            <Text style={styles.buttonText}>Generate Drink With AI!</Text>
-          </TouchableOpacity>
+        {/* Drink Graphic Card */}
+        <View style={styles.graphicCard}>
+          <Gif layers={layers} />
 
           {/* AIAlert Modal */}
-        {drinkDict && (
-          <AIAlert
-            isModalVisible={isModalVisible}
-            toggleModal={() => (setModalVisible(false))}
-            drinkDict={drinkDict}
-          />
-        )}
+          {drinkDict && (
+            <AIAlert
+              isModalVisible={isModalVisible}
+              toggleModal={() => (setModalVisible(false))}
+              drinkDict={drinkDict}
+            />
+          )}
         </View>
 
-        {/* Ice buttons on the right */}
-        <View style={styles.buttonContainerRight}>
-          {['No Ice', 'Light', 'Regular', 'Extra'].map((ice) => (
-            <TouchableOpacity
-              key={ice}
-              onPress={() => handleIceSelection(ice)}
-              style={[
-                styles.circularButton,
-                selectedIce === ice && styles.circularButtonSelected,
-              ]}
-            >
-              <Text style={[styles.buttonText, selectedIce === ice && styles.selectedButtonText]}>{ice}</Text>
-            </TouchableOpacity>
-          ))}
+        {/* Size and Ice Selector Row */}
+        <View style={styles.selectorRow}>
+          {/* Size Selector */}
+          <View style={styles.selectorCard}>
+            <Text style={styles.selectorLabel}>Size 📏</Text>
+            <View style={styles.pillButtonRow}>
+              {[
+                { size: '16oz', emoji: '🥤' },
+                { size: '24oz', emoji: '🧋' },
+                { size: '32oz', emoji: '🍹' }
+              ].map(({ size, emoji }) => (
+                <TouchableOpacity
+                  key={size}
+                  onPress={() => handleSizeSelection(size)}
+                  style={[
+                    styles.pillButton,
+                    selectedSize === size && styles.pillButtonSelected,
+                  ]}
+                >
+                  <Text style={[
+                    styles.pillButtonText,
+                    selectedSize === size && styles.pillButtonTextSelected
+                  ]}>
+                    {emoji} {size}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Ice Selector */}
+          <View style={styles.selectorCard}>
+            <Text style={styles.selectorLabel}>Ice 🧊</Text>
+            <View style={styles.pillButtonRow}>
+              {[
+                { ice: 'No Ice', emoji: '🚫' },
+                { ice: 'Light', emoji: '💧' },
+                { ice: 'Regular', emoji: '🧊' },
+                { ice: 'Extra', emoji: '❄️' }
+              ].map(({ ice, emoji }) => (
+                <TouchableOpacity
+                  key={ice}
+                  onPress={() => handleIceSelection(ice)}
+                  style={[
+                    styles.pillButton,
+                    selectedIce === ice && styles.pillButtonSelected,
+                  ]}
+                >
+                  <Text style={[
+                    styles.pillButtonText,
+                    selectedIce === ice && styles.pillButtonTextSelected
+                  ]}>
+                    {emoji} {ice}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </View>
-      </View>
 
-      {/* Button to add to cart */}
-      <TouchableOpacity onPress={addToCart} style={styles.button}>
-        <Text style={styles.buttonText}>Add to Cart</Text>
-      </TouchableOpacity>
+        {/* Primary Buttons */}
+        <TouchableOpacity onPress={GenerateAI} style={styles.secondaryButton}>
+          <Text style={styles.secondaryButtonText}>Ask Tonic to Mix My Drink</Text>
+        </TouchableOpacity>
 
-      {/* Search Input */}
-      <TextInput
-        placeholder="Search ingredients"
-        style={styles.searchInput}
-        value={searchText}
-        onChangeText={handleSearch}
-      />
+        <TouchableOpacity onPress={addToCart} style={styles.primaryButton}>
+          <Text style={styles.primaryButtonText}>Add to My Order</Text>
+        </TouchableOpacity>
 
-      {/* Dropdowns */}
-      <View style={styles.navBarSpace}>
-        <DropDown 
-          title="Sodas" 
-          options={filterOptions(sodaOptions)} 
-          onSelect={handleSodaSelection} 
+        {/* Search Input */}
+        <TextInput
+          placeholder="Search ingredients"
+          style={styles.searchInput}
+          value={searchText}
+          onChangeText={handleSearch}
+          placeholderTextColor="#999"
+        />
+
+        {/* Dropdowns */}
+        <DropDown
+          title="🥤 Sodas"
+          options={filterOptions(sodaOptions)}
+          onSelect={handleSodaSelection}
           isOpen={openDropdown.sodas}
           setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
           selectedValues={SodaUsed}
         />
-        <DropDown 
-          title="Syrups" 
-          options={filterOptions(syrupOptions)} 
-          onSelect={handleSyrupSelection} 
+        <DropDown
+          title="🍯 Syrups"
+          options={filterOptions(syrupOptions)}
+          onSelect={handleSyrupSelection}
           isOpen={openDropdown.syrups}
           setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
           selectedValues={SyrupsUsed}
         />
-        <DropDown 
-          title="AddIns" 
-          options={filterOptions(AddInOptions)} 
-          onSelect={handleAddInSelection} 
+        <DropDown
+          title="✨ Add-Ins"
+          options={filterOptions(AddInOptions)}
+          onSelect={handleAddInSelection}
           isOpen={openDropdown.addins}
           setOpen={() => setOpenDropdown(prev => ({ ...prev, addins: !prev.addins }))}
           selectedValues={AddIns}
         />
-      </View>
+
+        {/* Bottom spacing for NavBar */}
+        <View style={styles.navBarSpace} />
       </ScrollView>
-      <NavBar/>
+
+      <NavBar />
     </View>
   );
 };
@@ -338,100 +365,130 @@ const CreateDrinkPage = () => {
 const styles = StyleSheet.create({
   wholePage: {
     flex: 1,
-    backgroundColor: '#FFA686',
-    // padding: 10,
+    backgroundColor: '#FFFFFF',
   },
-  padding: {
-    padding: 10,
+  scrollContent: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#222831',
+    marginBottom: 16,
+  },
+  graphicCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+    alignItems: 'center',
+  },
+  selectorRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginVertical: 16,
+  },
+  selectorCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  selectorLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#222831',
+    marginBottom: 8,
+  },
+  pillButtonRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  pillButton: {
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    minHeight: 44,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    borderWidth: 0,
+  },
+  pillButtonSelected: {
+    backgroundColor: '#FF2E63',
+  },
+  pillButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#222831',
+  },
+  pillButtonTextSelected: {
+    color: '#FFFFFF',
+  },
+  primaryButton: {
+    backgroundColor: '#FF2E63',
+    borderRadius: 8,
+    minHeight: 44,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    minHeight: 44,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginVertical: 8,
+    borderWidth: 2,
+    borderColor: '#08D9D6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryButtonText: {
+    color: '#08D9D6',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  searchInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    marginVertical: 16,
+    color: '#222831',
   },
   navBarSpace: {
     marginBottom: 80,
-  },
-  rowContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10, // Add padding on sides
-    flex: 1,
-  },
-  buttonContainerLeft: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'space-around',
-    width: '30%', // Adjust width as needed
-  },
-  buttonContainerRight: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    width: '30%', // Adjust width as needed
-  },
-  graphicContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1, // Center the graphic
-  },
-  drinkGraphicText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: '#D30C7B',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    marginVertical: 5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  circularButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 2,
-    borderColor: '#D30C7B',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F92758',
-    margin: 5,
-  },
-  circularButtonSelected: {
-    borderColor: '#8DF1D3',
-    backgroundColor: '#E8F5E9',
-  },
-  selectedButtonText: {
-    color: '#000', // Black color for selected text
-  },
-  searchInput: {
-    height: 40,
-    borderColor: '#ddd',
-    borderWidth: 3,
-    paddingHorizontal: 10,
-    width: '80%',
-    marginVertical: 15,
-    borderRadius: 5,
-    alignSelf: 'center', // Center the search input
-  },
-  straw: {
-    position: 'absolute',
-    top: 10, // Position the straw above the cup
-    left: '50%',
-    width: 10,
-    height: 240,
-    backgroundColor: 'F92758',  // Straw color
-    borderRadius: 5,
-    transform: [{ translateX: -5 }],  // Center the straw horizontally
-    zIndex: 1, // Ensure straw appears on top of the drink container
   },
 });
 

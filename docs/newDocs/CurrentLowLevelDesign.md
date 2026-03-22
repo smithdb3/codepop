@@ -1120,33 +1120,34 @@ The CodePop interface is carefully designed to support both usability and access
     * Show estimated pickup time
     * Show total amount to be charged
   * (M) Payment Method Selection
-    * Stripe API used to take user payment information
+    * Stripe API used to take user payment information *(BACKEND NOT IMPLEMENTED)*
     * Radio buttons or tabs:
       - Credit/Debit Card
-      - Apple Pay / Google Pay
-      - Saved cards (if (C) "Save this card" implemented)
-  * (C) Save Card Checkbox
+      - Apple Pay / Google Pay *(BACKEND NOT IMPLEMENTED)*
+      - Saved cards (if (C) "Save this card" implemented) *(BACKEND NOT IMPLEMENTED)*
+  * (C) Save Card Checkbox *(BACKEND NOT IMPLEMENTED)*
     * Link to privacy policy
     * Show saved card last 4 digits for future orders
   * (M) Security Indicators
     * SSL lock icon
     * "Secure payment powered by Stripe"
     * Disclaimer: "Your card info is secure"
-  * (M) Error Handling & Retry
+  * (M) Error Handling & Retry *(BACKEND NOT IMPLEMENTED)*
     * If payment fails: "Payment declined. Please try again or use different card"
     * Retry button with attempt counter
-    * Link to contact support for persistent issues
+    * Link to chat page for persistent issues
   * (M) Loading State During Payment
     * Disable button during processing
     * Show spinner: "Processing payment..."
     * Prevent accidental double-clicks
+  * (C) Input that says "make this order recurring"
   ---
   Geolocation/Timing
-  * (M) Visual Store Location
+  * (M) Visual Store Location *(BACKEND NOT IMPLEMENTED)*
     * Show selected store name prominently
     * (C) Small map preview showing store location
     * Store hours display
-  * (M) ETA/Timing Summary
+  * (M) ETA/Timing Summary *(BACKEND NOT IMPLEMENTED)*
     * If geolocation selected:
       * "Estimated pickup: 8 minutes from now"
       * Real-time ETA updates as user location changes
@@ -1158,7 +1159,7 @@ The CodePop interface is carefully designed to support both usability and access
     * Users can switch between geolocation/scheduled time
     * Doesn't require restarting payment flow
   ---
-  Recurring Orders
+  Recurring Orders *(BACKEND NOT IMPLEMENTED)*
   * (M) Recurring Order Confirmation Screen
     * If this option is selected the user will receive a text box that says, 
       "By selecting this option, your order will be automatically placed and your saved payment method will be charged $___ 30 minutes before your scheduled time. You can modify or cancel recurring orders at any time in your account settings."
@@ -1195,7 +1196,7 @@ The CodePop interface is carefully designed to support both usability and access
   * (S) The order code will also be visible on the home screen should the user leave the app and return. 
     * The order code goes away 5 minutes after the order number is typed into the cooler.
   * (C) There will also be a link to Instagram, X, or Facebook that says, "Share my drink"
-    * Once clicked, the app goes to the selected platform and a pre-populated post template that includes the hashtag #socialdrinker appears
+    * Once clicked, the app goes to the selected platform and a pre-populated post template that includes the hashtag #socialdrinker appears *(BACKEND NOT IMPLEMENTED- API for pre-population)*
     ---
 * Post-Payment
   * (M) Order Confirmation Screen
@@ -1203,18 +1204,18 @@ The CodePop interface is carefully designed to support both usability and access
     * Order total & itemized receipt
     * Pickup location & ETA
     * Store address & hours
-    * (C) Option to print/email receipt
+    * (C) Option to print/email receipt *(BACKEND NOT IMPLEMENTED)*
   * (M) Order code - what they type in a locked cooler to get their drink
-  * (C) Order Tracking
+  * (C) Order Tracking *(BACKEND NOT IMPLEMENTED)*
     * Status updates: "Preparing" → "Ready for Pickup"
     * Push notification when ready
     * Live location of order in queue
   * (C) Feedback/Rating Prompt
     * "Rate your drink" (5 stars)
     * "Leave a review" (text)
-    * "Share on social media"
+    * "Share on social media" 
       * Link to Instagram, X, or Facebook
-      * App transitions to the selected platform and a pre-populated post template that includes the hashtag #socialdrinker
+      * App transitions to the selected platform and a pre-populated post template that includes the hashtag #socialdrinker *(BACKEND NOT IMPLEMENTED)*
   
 **(M) Chat page**
 

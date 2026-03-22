@@ -3,46 +3,45 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 const DropDown = ({ title, options = [], onSelect, isOpen, setOpen, selectedValues = [] }) => {
-  // const [isOpen, setIsOpen] = useState(false);
-  const [selectedItems, setSelectedItems] = useState({});
-
   const toggleItemSelection = (item) => {
-    // setSelectedItems((prevSelectedItems) => ({
-    //   ...prevSelectedItems,
-    //   [item]: !prevSelectedItems[item],
-    // }));
     onSelect(item);
   };
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <TouchableOpacity onPress={setOpen} style={[
-        styles.collapsible,
-        isOpen && styles.collapsibleOpen,
+        styles.header,
+        isOpen && styles.headerOpen,
       ]}>
-        <Text style={styles.collapsibleText}>{title}</Text>
-        <Icon name={isOpen ? "caret-up-outline" : "caret-down-outline"} size={24} color="#000" />
+        <Text style={styles.headerText}>{title}</Text>
+        <Icon name={isOpen ? "caret-up-outline" : "caret-down-outline"} size={24} color="#08D9D6" />
       </TouchableOpacity>
+
+      {/* Content */}
       {isOpen && options.length > 0 && (
         <View style={styles.content}>
-          <View style={styles.buttonContainer}>
-            {options.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={ selectedValues.includes(option.value.toLowerCase()) 
-                  ? [
-                  styles.circularButton,
-                  styles.circularButtonSelected,
-                ]
-                  : [
-                  styles.circularButton,
-                  // selectedItems[option.value] && styles.circularButtonSelected,
-                ]}
-                onPress={() => toggleItemSelection(option.value)}
-              >
-                <Text style={styles.buttonText}>{option.value}</Text>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.chipContainer}>
+            {options.map((option) => {
+              const isSelected = selectedValues.includes(option.value.toLowerCase());
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.chip,
+                    isSelected && styles.chipSelected,
+                  ]}
+                  onPress={() => toggleItemSelection(option.value)}
+                >
+                  <Text style={[
+                    styles.chipText,
+                    isSelected && styles.chipTextSelected,
+                  ]}>
+                    {option.emoji} {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
       )}
@@ -54,66 +53,60 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
   },
-  collapsible: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderColor: '#6FD9BB',
-    backgroundColor: '#C8E6C9',
-    padding: 18,
-    width: '100%',
-    borderWidth: 2,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginVertical: 8,
   },
-  collapsibleText: {
-    color: '#444',
-    fontSize: 15,
-    textAlign: 'left',
+  headerOpen: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF2E63',
   },
-  collapsibleOpen: {
-    backgroundColor: '#C6C8EE',
+  headerText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#222831',
   },
   content: {
-    padding: 18,
-    backgroundColor: '#FF6685',
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 8,
   },
-  buttonContainer: {
+  chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
+    gap: 8,
   },
-  circularButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  chip: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#ddd',
-    alignItems: 'center',
+    borderColor: '#E5E7EB',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minHeight: 36,
     justifyContent: 'center',
-    margin: 5,
-    backgroundColor: '#FFA686',
-    shadowColor: '#000',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 3,
-    elevation: 5, // For Android
   },
-  circularButtonSelected: {
-    borderColor: '#8DF1D3',
-    backgroundColor: '#8DF1D3',
-    shadowColor: '#8DF1D3',
-    shadowOffset: { width: 1, height: 1 },
-    shadowOpacity: 0.6,
-    shadowRadius: 2,
+  chipSelected: {
+    backgroundColor: '#FF2E63',
+    borderColor: '#FF2E63',
   },
-  buttonText: {
-    color: '#444',
-    fontSize: 10,
-    fontWeight: 'bold',
+  chipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#222831',
   },
-  selectedOption: {
-    backgroundColor: '#8DF1D3',
-    color: '#fff', // Change text color for selected options
-  }
+  chipTextSelected: {
+    color: '#FFFFFF',
+  },
 });
 
 export default DropDown;

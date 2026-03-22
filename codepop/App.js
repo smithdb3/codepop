@@ -20,6 +20,7 @@ import PaymentPage from './src/pages/PaymentPage';
 import PostCheckout from './src/pages/PostCheckout';
 import PreferencesPage from './src/pages/PreferencesPage';
 import UpdateDrink from './src/pages/UpdateDrink';
+import CodePopLogo from './src/components/CodePopLogo';
 import { BASE_URL } from './ip_address';
 
 const Stack = createNativeStackNavigator();
@@ -88,11 +89,9 @@ const App = () => {
           name="CreateDrink"
           component={CreateDrinkPage}
           options={{
-            title: title,
-            headerTitleStyle: {
-              // fontFamily: 'CherryBombOne',
-          },}}
-
+            headerTitle: () => <CodePopLogo size={28} />,
+            headerTitleAlign: 'center',
+          }}
         />
         <Stack.Screen
           name="ComplaintsPage"
