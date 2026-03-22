@@ -1279,10 +1279,10 @@ The CodePop interface is carefully designed to support both usability and access
 * (M) Update preferences
   * Soda, syrups, ice quantity.
 * (M) Settings
-  * (M) Set location for geolocation.
+  * (M) Set location for geolocation. *(BACKEND NOT IMPLEMENTED)*
   * (S) account settings
-    * (S) change email/password.
-    * (C) dark mode/light mode. 
+    * (S) change email/password. *(BACKEND NOT IMPLEMENTED)*
+    * (C) dark mode/light mode. *(FRONTEND NOT YET IMPLEMENTED)*
   * (C) Manage Recurring Orders
     * View all active recurring orders
     * Skip next occurrence button
@@ -1293,8 +1293,8 @@ The CodePop interface is carefully designed to support both usability and access
 Profile Header
 * (M) User Profile Info
   * User avatar (initials or image placeholder)
-  * Username / Email display
-  * Member since date
+  * Email display
+  * Member since date 
   * Loyalty points balance (if using rewards program)
   * Edit Profile button (for avatar/name)
 * (C) Account Quick Actions

@@ -9,11 +9,9 @@ import {
   FlatList,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useStripe, StripeProvider } from '@stripe/stripe-react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/NavBar';
-import CheckoutForm from './CheckoutForm';
 import { BASE_URL } from '../../ip_address';
 
 const CartPage = () => {
@@ -27,19 +25,12 @@ const CartPage = () => {
   const [promoError, setPromoError] = useState('');
   const [savedDrinks, setSavedDrinks] = useState([]);
 
-  const { initializePaymentSheet, openPaymentSheet, loading } = CheckoutForm(totalPrice);
-
   useFocusEffect(
     React.useCallback(() => {
       fetchDrinks();
       loadSavedDrinks();
-      initializePaymentSheet();
     }, [])
   );
-
-  useEffect(() => {
-    initializePaymentSheet();
-  }, [totalPrice]);
 
   const loadSavedDrinks = async () => {
     try {
@@ -305,95 +296,92 @@ const CartPage = () => {
   };
 
   return (
-    <StripeProvider publishableKey="pk_test_51QEDP7HwEWxwIyaLoeRGprLwnn6Fj7jZljzxglWudPSTSe6sMyFPAjHZsnMOy1HuwZhUYT9JGZbOsxhXxkFTJp9700JSZTZKIz">
-      <View style={styles.wholePage}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <View style={styles.headerSection}>
-            <Text style={styles.pageTitle}>Your Cart</Text>
-          </View>
+    <View style={styles.wholePage}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerSection}>
+          <Text style={styles.pageTitle}>Your Cart</Text>
+        </View>
 
-          {groupedDrinks.length === 0 ? (
-            renderEmptyState()
-          ) : (
-            <>
-              <FlatList
-                scrollEnabled={false}
-                data={groupedDrinks}
-                keyExtractor={(item) => item.drink.DrinkID.toString()}
-                renderItem={renderDrinkCard}
-                contentContainerStyle={styles.drinksList}
-              />
+        {groupedDrinks.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          <>
+            <FlatList
+              scrollEnabled={false}
+              data={groupedDrinks}
+              keyExtractor={(item) => item.drink.DrinkID.toString()}
+              renderItem={renderDrinkCard}
+              contentContainerStyle={styles.drinksList}
+            />
 
-              {renderSavedDrinks()}
+            {renderSavedDrinks()}
 
-              {/* Order Summary */}
-              <View style={styles.summaryCard}>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Subtotal</Text>
-                  <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
-                </View>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>Tax (8.0%)</Text>
-                  <Text style={styles.summaryValue}>${(subtotal * 0.08).toFixed(2)}</Text>
-                </View>
-                {promoApplied && (
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>Discount</Text>
-                    <Text style={[styles.summaryValue, styles.savingsText]}>
-                      -${promoSavings.toFixed(2)}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.divider} />
-                <View style={styles.summaryRow}>
-                  <Text style={styles.totalLabel}>Total</Text>
-                  <Text style={styles.totalValue}>${totalPrice.toFixed(2)}</Text>
-                </View>
+            {/* Order Summary */}
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Subtotal</Text>
+                <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
               </View>
-
-              {/* Promo Code */}
-              <View style={styles.promoCard}>
-                <Text style={styles.promoLabel}>Promo Code</Text>
-                <View style={styles.promoRow}>
-                  <TextInput
-                    style={styles.promoInput}
-                    placeholder="Enter code"
-                    placeholderTextColor="#9CA3AF"
-                    value={promoCode}
-                    onChangeText={setPromoCode}
-                  />
-                  <TouchableOpacity
-                    onPress={handleApplyPromo}
-                    style={styles.secondaryButton}
-                  >
-                    <Text style={styles.secondaryButtonText}>Apply</Text>
-                  </TouchableOpacity>
-                </View>
-                {promoApplied && (
-                  <Text style={styles.successText}>Saved ${promoSavings.toFixed(2)}!</Text>
-                )}
-                {promoError ? (
-                  <Text style={styles.errorText}>{promoError}</Text>
-                ) : null}
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Tax (8.0%)</Text>
+                <Text style={styles.summaryValue}>${(subtotal * 0.08).toFixed(2)}</Text>
               </View>
+              {promoApplied && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Discount</Text>
+                  <Text style={[styles.summaryValue, styles.savingsText]}>
+                    -${promoSavings.toFixed(2)}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.divider} />
+              <View style={styles.summaryRow}>
+                <Text style={styles.totalLabel}>Total</Text>
+                <Text style={styles.totalValue}>${totalPrice.toFixed(2)}</Text>
+              </View>
+            </View>
 
-              {/* Checkout Button */}
-              <TouchableOpacity
-                onPress={openPaymentSheet}
-                disabled={loading}
-                style={styles.checkoutButton}
-              >
-                <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
-              </TouchableOpacity>
+            {/* Promo Code */}
+            <View style={styles.promoCard}>
+              <Text style={styles.promoLabel}>Promo Code</Text>
+              <View style={styles.promoRow}>
+                <TextInput
+                  style={styles.promoInput}
+                  placeholder="Enter code"
+                  placeholderTextColor="#9CA3AF"
+                  value={promoCode}
+                  onChangeText={setPromoCode}
+                />
+                <TouchableOpacity
+                  onPress={handleApplyPromo}
+                  style={styles.secondaryButton}
+                >
+                  <Text style={styles.secondaryButtonText}>Apply</Text>
+                </TouchableOpacity>
+              </View>
+              {promoApplied && (
+                <Text style={styles.successText}>Saved ${promoSavings.toFixed(2)}!</Text>
+              )}
+              {promoError ? (
+                <Text style={styles.errorText}>{promoError}</Text>
+              ) : null}
+            </View>
 
-              <View style={styles.navBarSpace} />
-            </>
-          )}
-        </ScrollView>
+            {/* Checkout Button */}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('payment')}
+              style={styles.checkoutButton}
+            >
+              <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+            </TouchableOpacity>
 
-        <NavBar />
-      </View>
-    </StripeProvider>
+            <View style={styles.navBarSpace} />
+          </>
+        )}
+      </ScrollView>
+
+      <NavBar />
+    </View>
   );
 };
 

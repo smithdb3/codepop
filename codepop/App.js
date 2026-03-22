@@ -118,7 +118,10 @@ const App = () => {
         <Stack.Screen
           name="payment"
           component={PaymentPage}
-          options={{ title: 'Payment' }}
+          options={{
+            headerTitle: () => <CodePopLogo size={28} />,
+            headerTitleAlign: 'center',
+          }}
         />
         <Stack.Screen
           name="UpdateDrink"
