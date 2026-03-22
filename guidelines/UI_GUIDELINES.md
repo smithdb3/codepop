@@ -304,10 +304,30 @@ export function CodePopLogo({ size = 64 }) {
 | Splash screen | `96` |
 
 ### Placement Rules
-- **Header/Navigation**: Display logo on top-left using `<CodePopLogo size={32} />`
-- **Every page with a header bar** (React Navigation or custom) must use the logo — never plain text "CodePop"
-- **Hero / signed-out screen**: Center logo using `<CodePopLogo size={64} />`
-- **Splash screen**: Center logo using `<CodePopLogo size={96} />`
+
+#### Pages with React Navigation headers (most pages)
+Set the logo via `headerTitle` in the screen's `options` inside `App.js`. **Do NOT build a custom header bar inside the page component** — that creates a double header.
+
+```jsx
+// In App.js — correct pattern (used on CreateDrink, Cart, etc.)
+<Stack.Screen
+  name="Cart"
+  component={CartPage}
+  options={{
+    headerTitle: () => <CodePopLogo size={28} />,
+    headerTitleAlign: 'center',
+  }}
+/>
+```
+
+- Size `28` is used inside the React Navigation header (slightly smaller than the `32` guide value due to header padding)
+- Never use `title: 'CodePop'` or any plain string — always use the component
+- Never render a second `<CodePopLogo>` inside the page body on these screens
+
+#### Pages without a React Navigation header (signed-out screens, splash)
+These screens set `headerShown: false` and must render the logo themselves in the body:
+- **Hero / signed-out screen**: `<CodePopLogo size={64} />` centered
+- **Splash screen**: `<CodePopLogo size={96} />` centered
 
 ### Logo Whitespace
 - Maintain minimum whitespace equal to 1/4 of logo height on all sides

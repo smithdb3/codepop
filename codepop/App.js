@@ -80,10 +80,9 @@ const App = () => {
           name="Cart"
           component={CartPage}
           options={{
-            title: title,
-            headerTitleStyle: {
-              // fontFamily: 'CherryBombOne',
-          },}}
+            headerTitle: () => <CodePopLogo size={28} />,
+            headerTitleAlign: 'center',
+          }}
         />
         <Stack.Screen
           name="CreateDrink"
