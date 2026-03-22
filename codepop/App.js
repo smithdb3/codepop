@@ -95,7 +95,10 @@ const App = () => {
         <Stack.Screen
           name="ComplaintsPage"
           component={ComplaintsPage}
-          options={{ title: 'ComplaintsPage' }}
+          options={{
+            headerTitle: () => <CodePopLogo size={28} />,
+            headerTitleAlign: 'center',
+          }}
         />
         <Stack.Screen
           name="Preferences"

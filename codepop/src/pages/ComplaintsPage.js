@@ -1,294 +1,564 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Animated,
+} from 'react-native';
 import NavBar from '../components/NavBar';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import { BASE_URL } from '../../ip_address';  // Ensure BASE_URL is your server's base URL
-import { registerRootComponent } from 'expo';
+import { BASE_URL } from '../../ip_address';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Colors from UI_GUIDELINES.md
+const colors = {
+  primary: '#FF2E63',
+  secondary: '#08D9D6',
+  background: '#FFFFFF',
+  surface: '#FFFFFF',
+  text: '#222831',
+  border: '#E5E7EB',
+  disabled: '#D1D5DB',
+  error: '#EF4444',
+  errorBg: '#FEE2E2',
+  botBubble: '#F3F4F6',
+  secondaryText: '#6B7280',
+};
+
+// Quick reply options
+const QUICK_REPLIES = [
+  'Report an issue with my order',
+  'Track my delivery',
+  'Request a refund',
+];
+
 const ComplaintsPage = () => {
-    const [searchText, setSearchText] = useState('');
-    const [messages, setMessages] = useState([{ text: "Hi! I'm Bob. How can I help you?", isBot: true }]);
-    const scrollViewRef = useRef();
-    const [refund_phase, setRefundPhase] = useState("none");
-    const [wrong_drink_phase, setWrongDrinkPhase] = useState("none");
-    const [order_num, setOrderNum] = useState("none");
-    const [drink_nums, setDrinkNums] = useState("none");
-    const [loading, setLoading] = useState(false);
-    const navigation = useNavigation();
+  const [searchText, setSearchText] = useState('');
+  const [messages, setMessages] = useState([
+    { text: "Hi! I'm tonic. How can I help you?", isBot: true },
+  ]);
+  const [refund_phase, setRefundPhase] = useState('none');
+  const [wrong_drink_phase, setWrongDrinkPhase] = useState('none');
+  const [order_num, setOrderNum] = useState('none');
+  const [drink_nums, setDrinkNums] = useState('none');
+  const [loading, setLoading] = useState(false);
+  const navigation = useNavigation();
+  const scrollViewRef = useRef();
+  const lastUserMessageRef = useRef('');
+  const controllerRef = useRef(null);
 
-    // Function to handle message submission
-    const complaintAI = async () => {
-        if (searchText.trim() === '') return;
+  // Animated values for typing indicator
+  const dot1Anim = useRef(new Animated.Value(0)).current;
+  const dot2Anim = useRef(new Animated.Value(0)).current;
+  const dot3Anim = useRef(new Animated.Value(0)).current;
 
-        const userRequest = searchText;
-    
-        // Add the user's message
-        setMessages((prevMessages) => [
-            ...prevMessages,
-            { text: searchText, isBot: false }
-        ]);
-    
-        // Clear the input field
-        setSearchText('');
+  // Typing indicator animation
+  useEffect(() => {
+    if (loading) {
+      const animateDot = (anim, delay) => {
+        return Animated.loop(
+          Animated.sequence([
+            Animated.delay(delay),
+            Animated.timing(anim, {
+              toValue: 1,
+              duration: 300,
+              useNativeDriver: false,
+            }),
+            Animated.timing(anim, {
+              toValue: 0,
+              duration: 300,
+              useNativeDriver: false,
+            }),
+          ])
+        );
+      };
 
-        // Add a temporary "loading" message
-        setMessages((prevMessages) => [
-            ...prevMessages,
-            { text: "Bob is typing...", isBot: true, isLoading: true, showSpinner: true }
-        ]);
-        setLoading(true);
+      const anim1 = animateDot(dot1Anim, 0);
+      const anim2 = animateDot(dot2Anim, 100);
+      const anim3 = animateDot(dot3Anim, 200);
 
-        try {
-            // Make a POST request to the chatbot endpoint
-            const response = await fetch(`${BASE_URL}/backend/chatbot/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    message: userRequest,
-                    refund_phase: refund_phase,
-                    wrong_drink_phase: wrong_drink_phase,
-                    order_num: order_num,
-                    drink_nums: drink_nums
-                })
-            });
-    
-            if (response.ok) {
-                const data = await response.json();
-                const botResponse = data.responses;
-                const response_refund_phase = data.refund_phase;
-                const response_wrong_drink_phase = data.wrong_drink_phase;
-                setOrderNum(data.order_num);
-                setDrinkNums(data.drink_nums);
+      anim1.start();
+      anim2.start();
+      anim3.start();
 
-                if(response_refund_phase === "none" && response_wrong_drink_phase === "none"){
-                    setRefundPhase(null);
-                    setWrongDrinkPhase(null);
-                    // Replace the "typing" message with the actual response
-                    setMessages((prevMessages) =>
-                        prevMessages.map((msg, index) =>
-                            msg.isLoading ? { text: botResponse, isBot: true } : msg
-                        )
-                    );
-                } else if (response_wrong_drink_phase === "4"){
-                    //I will need to go to the post order page with it processing the newly remade order
-                    // Update messages with bot's response
-                    // Replace the "typing" message with the actual response
-                    setMessages((prevMessages) =>
-                        prevMessages.map((msg, index) =>
-                            msg.isLoading ? { text: botResponse, isBot: true } : msg
-                        )
-                    );
-
-                    const orderResponse = await fetch(`${BASE_URL}/backend/orders/${order_num}/`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    });
-
-                    if(orderResponse.ok){
-                        const drinksForPost = [];
-                        const orderData = await orderResponse.json();
-                         // Use Promise.all to wait for all drink data to resolve
-                        const drinkPromises = orderData.Drinks.map(drink => getDrinkData(drink));
-                        const resolvedDrinks = await Promise.all(drinkPromises); // Wait for all Promises to resolve
-
-                        // Add resolved drink data to drinksForPost
-                        drinksForPost.push(...resolvedDrinks);
-
-                        console.log("Backend complaints:", JSON.stringify(drinksForPost));
-
-                        await AsyncStorage.setItem("purchasedDrinks", JSON.stringify(drinksForPost));
-                        await AsyncStorage.setItem("orderNum", order_num.toString());
-                    }else{
-                        console.log("problem getting order data")
-                    }
-                    setTimeout(() => {
-                        navigation.navigate("PostCheckout");
-                      }, 2000); // 2000 milliseconds = 2 seconds
-                    
-                } else {
-                    setRefundPhase(response_refund_phase);
-                    setWrongDrinkPhase(response_wrong_drink_phase);
-                    // Update messages with bot's response
-                    // Replace the "typing" message with the actual response
-                    setMessages((prevMessages) =>
-                        prevMessages.map((msg, index) =>
-                            msg.isLoading ? { text: botResponse, isBot: true } : msg
-                        )
-                    );
-                }
-            } else {
-                throw new Error("Failed to fetch response from chatbot");
-            }
-        } catch (error) {
-            console.error('Error in chatbot response:', error);
-            // Replace the "typing" message with an error message
-            setMessages((prevMessages) =>
-                prevMessages.map((msg, index) =>
-                    msg.isLoading ? { text: "I'm having trouble understanding right now. Please try again later.", isBot: true } : msg
-                )
-            );
-        }finally{
-            setLoading(false);
-        }
-    };
-
-    const getDrinkData = async (drinkID) => {
-        try {
-            const drinkData = await fetch(`${BASE_URL}/backend/drinks/${drinkID}/`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-    
-            if (!drinkData.ok) {
-                console.error(`Error fetching drink data: ${drinkData.status} ${drinkData.statusText}`);
-                return null;
-            }
-    
-            const jsonForm = await drinkData.json();
-            return jsonForm;
-        } catch (error) {
-            console.error("Error getting drink:", error);
-            return null;
-        }
+      return () => {
+        anim1.stop();
+        anim2.stop();
+        anim3.stop();
+        dot1Anim.setValue(0);
+        dot2Anim.setValue(0);
+        dot3Anim.setValue(0);
+      };
     }
-    
-    // Scroll to the bottom of the chat whenever messages update
-    useEffect(() => {
-        if (scrollViewRef.current) {
-            scrollViewRef.current.scrollToEnd({ animated: true });
+  }, [loading]);
+
+  const complaintAI = async (messageOverride = null) => {
+    const userRequest = messageOverride || searchText;
+    if (userRequest.trim() === '') return;
+
+    lastUserMessageRef.current = userRequest;
+
+    // Add user message
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { text: userRequest, isBot: false },
+    ]);
+
+    setSearchText('');
+    setLoading(true);
+
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 7000);
+
+    try {
+      const response = await fetch(`${BASE_URL}/backend/chatbot/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userRequest,
+          refund_phase: refund_phase,
+          wrong_drink_phase: wrong_drink_phase,
+          order_num: order_num,
+          drink_nums: drink_nums,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        const botResponse = data.responses;
+        const response_refund_phase = data.refund_phase;
+        const response_wrong_drink_phase = data.wrong_drink_phase;
+        setOrderNum(data.order_num);
+        setDrinkNums(data.drink_nums);
+
+        // Update state
+        if (
+          response_refund_phase === 'none' &&
+          response_wrong_drink_phase === 'none'
+        ) {
+          setRefundPhase(null);
+          setWrongDrinkPhase(null);
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            { text: botResponse, isBot: true },
+          ]);
+        } else if (response_wrong_drink_phase === '4') {
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            { text: botResponse, isBot: true },
+          ]);
+
+          const orderResponse = await fetch(
+            `${BASE_URL}/backend/orders/${order_num}/`,
+            {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+
+          if (orderResponse.ok) {
+            const drinksForPost = [];
+            const orderData = await orderResponse.json();
+            const drinkPromises = orderData.Drinks.map((drink) =>
+              getDrinkData(drink)
+            );
+            const resolvedDrinks = await Promise.all(drinkPromises);
+            drinksForPost.push(...resolvedDrinks);
+
+            console.log('Backend complaints:', JSON.stringify(drinksForPost));
+
+            await AsyncStorage.setItem(
+              'purchasedDrinks',
+              JSON.stringify(drinksForPost)
+            );
+            await AsyncStorage.setItem('orderNum', order_num.toString());
+          }
+
+          setTimeout(() => {
+            navigation.navigate('PostCheckout');
+          }, 2000);
+        } else {
+          setRefundPhase(response_refund_phase);
+          setWrongDrinkPhase(response_wrong_drink_phase);
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            { text: botResponse, isBot: true },
+          ]);
         }
-    }, [messages]);
+      } else {
+        throw new Error('Failed to fetch response from chatbot');
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
 
-    return (
-        <View style={styles.container}>
-            <ScrollView 
-                style={styles.chatContainer} 
-                ref={scrollViewRef}
+      if (error.name === 'AbortError') {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            text: "I'm having trouble connecting right now. Please try again or contact support.",
+            isBot: true,
+            isError: true,
+          },
+        ]);
+      } else {
+        console.error('Error in chatbot response:', error);
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            text: "I'm having trouble understanding right now. Please try again or contact support.",
+            isBot: true,
+            isError: true,
+          },
+        ]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getDrinkData = async (drinkID) => {
+    try {
+      const drinkData = await fetch(`${BASE_URL}/backend/drinks/${drinkID}/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!drinkData.ok) {
+        console.error(`Error fetching drink data: ${drinkData.status}`);
+        return null;
+      }
+
+      return await drinkData.json();
+    } catch (error) {
+      console.error('Error getting drink:', error);
+      return null;
+    }
+  };
+
+  const handleRetry = () => {
+    complaintAI(lastUserMessageRef.current);
+  };
+
+  // Scroll to bottom when messages update
+  useEffect(() => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
+  }, [messages, loading]);
+
+  // Render typing indicator
+  const TypingIndicator = () => (
+    <View style={styles.typingContainer}>
+      <Image
+        source={require('../../assets/tonic.png')}
+        style={styles.botAvatar}
+      />
+      <View style={styles.typingBubble}>
+        <Animated.Text
+          style={[
+            styles.typingDot,
+            { opacity: dot1Anim },
+          ]}
+        >
+          •
+        </Animated.Text>
+        <Animated.Text
+          style={[
+            styles.typingDot,
+            { opacity: dot2Anim, marginLeft: 4 },
+          ]}
+        >
+          •
+        </Animated.Text>
+        <Animated.Text
+          style={[
+            styles.typingDot,
+            { opacity: dot3Anim, marginLeft: 4 },
+          ]}
+        >
+          •
+        </Animated.Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.chatContainer}
+        ref={scrollViewRef}
+        contentContainerStyle={styles.chatContentContainer}
+      >
+        {/* Messages */}
+        {messages.map((message, index) => (
+          <View
+            key={index}
+            style={[
+              styles.messageBubbleRow,
+              message.isBot ? styles.botRow : styles.userRow,
+            ]}
+          >
+            {message.isBot && (
+              <Image
+                source={require('../../assets/tonic.png')}
+                style={styles.botAvatar}
+              />
+            )}
+            <View
+              style={[
+                styles.messageBubble,
+                message.isBot
+                  ? message.isError
+                    ? styles.errorBubble
+                    : styles.botBubble
+                  : styles.userBubble,
+              ]}
             >
-            <Text style={styles.title}>Complain to Bob</Text>
+              <Text
+                style={[
+                  styles.messageText,
+                  message.isBot && styles.botMessageText,
+                ]}
+              >
+                {message.text}
+              </Text>
 
-            <Image 
-                source={require('../../assets/bobcopy.png')}
-                style={styles.image}
-                resizeMode="contain"
-            />
-
-            
-                {messages.map((message, index) => (
-                    <View 
-                        key={index} 
-                        style={[
-                            styles.messageBubble, 
-                            message.isBot ? styles.botMessage : styles.userMessage
-                        ]}
-                    >
-                        <Text style={styles.messageText}>{message.text}</Text>
-                    </View>
-                ))}
-            </ScrollView>
-
-            <View style={styles.inputContainer}>
-                <TextInput
-                    placeholder="Type your complaint..."
-                    placeholderTextColor="#999"
-                    style={styles.searchInput}
-                    value={searchText}
-                    onChangeText={setSearchText}
-                    multiline
-                    onSubmitEditing={complaintAI}
-                    blurOnSubmit={false}
-                />
-                <TouchableOpacity onPress={complaintAI} style={styles.sendButton}>
-                    <Icon name="send" size={24} color="#fff" />
+              {/* Error message with retry button */}
+              {message.isError && (
+                <TouchableOpacity
+                  onPress={handleRetry}
+                  style={styles.retryButton}
+                >
+                  <Text style={styles.retryButtonText}>Retry</Text>
                 </TouchableOpacity>
+              )}
             </View>
+            {!message.isBot && <View style={styles.botAvatarPlaceholder} />}
+          </View>
+        ))}
 
-            <NavBar />
-        </View>
-    );
+        {/* Typing indicator */}
+        {loading && <TypingIndicator />}
 
-    
+        {/* Quick reply buttons - only show when messages.length === 1 */}
+        {messages.length === 1 && !loading && (
+          <View style={styles.quickRepliesContainer}>
+            <Text style={styles.quickRepliesLabel}>Quick replies:</Text>
+            {QUICK_REPLIES.map((reply, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => complaintAI(reply)}
+                style={styles.quickReplyButton}
+              >
+                <Text style={styles.quickReplyText}>{reply}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Input area */}
+      <View style={styles.inputContainer}>
+        <TextInput
+          placeholder="Describe your issue..."
+          placeholderTextColor={colors.secondaryText}
+          style={styles.searchInput}
+          value={searchText}
+          onChangeText={setSearchText}
+          multiline
+          editable={!loading}
+        />
+        <TouchableOpacity
+          onPress={() => complaintAI()}
+          style={[
+            styles.sendButton,
+            (searchText.trim() === '' || loading) &&
+              styles.sendButtonDisabled,
+          ]}
+          disabled={searchText.trim() === '' || loading}
+        >
+          <Icon
+            name="send"
+            size={20}
+            color={searchText.trim() === '' || loading ? '#999' : '#fff'}
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* NavBar spacing */}
+      <View style={styles.navBarSpace} />
+      <NavBar />
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#c8e6c9',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginTop: 20,
-        textAlign: 'center',
-        color: '#333',
-    },
-    image: {
-        width: 150,
-        height: 150,
-        alignSelf: 'center',
-        marginVertical: 10,
-    },
-    chatContainer: {
-        flex: 1,
-        marginVertical: 10,
-        paddingHorizontal: 10,
-        paddingBottom: 10,
-    },
-    messageBubble: {
-        padding: 10,
-        borderRadius: 10,
-        marginBottom: 10,
-        maxWidth: '80%',
-    },
-    botMessage: {
-        alignSelf: 'flex-start',
-        backgroundColor: '#FFA686',
-    },
-    userMessage: {
-        alignSelf: 'flex-end',
-        backgroundColor: '#F92758',
-    },
-    messageText: {
-        fontSize: 16,
-        color: '#333',
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingBottom: 90,
-        paddingTop: 20,
-        paddingHorizontal: 10,
-        backgroundColor: '#c8e6c9',
-        borderTopWidth: 3,
-        borderTopColor: '#FFA686',
-    },
-    searchInput: {
-        flex: 1,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 5,
-        paddingHorizontal: 10,
-        paddingVertical: 8,
-        fontSize: 16,
-        backgroundColor: '#fff',
-        color: '#333',
-    },
-    sendButton: {
-        marginLeft: 10,
-        backgroundColor: '#D30C7B',
-        borderRadius: 5,
-        padding: 10,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  chatContainer: {
+    flex: 1,
+  },
+  chatContentContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+  },
+  messageBubbleRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    alignItems: 'flex-end',
+  },
+  botRow: {
+    justifyContent: 'flex-start',
+  },
+  userRow: {
+    justifyContent: 'flex-end',
+  },
+  messageBubble: {
+    maxWidth: '75%',
+    padding: 12,
+    borderRadius: 12,
+  },
+  botBubble: {
+    backgroundColor: colors.botBubble,
+  },
+  userBubble: {
+    backgroundColor: colors.primary,
+  },
+  errorBubble: {
+    backgroundColor: colors.errorBg,
+  },
+  botAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 8,
+    backgroundColor: colors.border,
+  },
+  botAvatarPlaceholder: {
+    width: 40,
+    height: 40,
+    marginLeft: 8,
+  },
+  messageText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 21,
+  },
+  botMessageText: {
+    color: colors.text,
+  },
+  typingContainer: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  typingBubble: {
+    backgroundColor: colors.botBubble,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  typingDot: {
+    fontSize: 18,
+    color: colors.secondaryText,
+  },
+  retryButton: {
+    marginTop: 8,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  quickRepliesContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  quickRepliesLabel: {
+    fontSize: 12,
+    color: colors.secondaryText,
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  quickReplyButton: {
+    backgroundColor: colors.botBubble,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginBottom: 8,
+  },
+  quickReplyText: {
+    fontSize: 13,
+    color: colors.text,
+    fontWeight: '500',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  searchInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    backgroundColor: colors.surface,
+    color: colors.text,
+    maxHeight: 100,
+  },
+  sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButtonDisabled: {
+    backgroundColor: colors.disabled,
+  },
+  navBarSpace: {
+    height: 80,
+  },
 });
 
 export default ComplaintsPage;
-
-
