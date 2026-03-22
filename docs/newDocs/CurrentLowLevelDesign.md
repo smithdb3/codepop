@@ -1237,7 +1237,7 @@ The CodePop interface is carefully designed to support both usability and access
   * If AI response fails: "I'm having trouble right now. Please try again or contact support."
   * Retry button
   * Link to support if issue persists *(BACKEND NOT IMPLEMENTED)*
-* (C) Response Confidence Indicator 
+* (C) Response Confidence Indicator *(NOT IMPLEMENTED)*
   * If AI is unsure: Show disclaimer or "This might help, but..."
   * Allow user to rate response: "Was this helpful?" with Yes/No buttons
 * (C) Suggested Responses / Quick Replies *(BACKEND NOT IMPLEMENTED)*
