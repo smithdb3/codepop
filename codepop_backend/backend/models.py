@@ -388,6 +388,7 @@ class Machine(models.Model):
     status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='NORMAL')
     last_status_change = models.DateTimeField(auto_now=True)
     notes        = models.TextField(blank=True)
+    store_id     = models.IntegerField()  # which store this machine belongs to
 
     def __str__(self):
         return f"Machine {self.machine_id} ({self.name}) — {self.status}"
@@ -408,15 +409,16 @@ class Schedule(models.Model):
     def __str__(self):
         return f"Schedule for {self.machine} at {self.scheduled_at}"
 
+# should repair staff be over multiple stores?
 
 class RepairStaffProfile(models.Model):
     """
     Extends auth.User for repair staff members.
     One-to-one with User. Created when admin assigns role='repair_staff'.
     """
-    user             = models.OneToOneField('auth.User', on_delete=models.CASCADE,
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE,
                                             related_name='repair_profile')
-    region           = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True)
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True)
     assigned_store_id = models.IntegerField(null=True, blank=True)
 
     def __str__(self):

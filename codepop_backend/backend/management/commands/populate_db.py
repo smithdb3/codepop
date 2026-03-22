@@ -1,7 +1,12 @@
 from django.core.management.base import BaseCommand
-from backend.models import Inventory, Drink, Preference
+from backend.models import (
+    Inventory, Drink, Preference, Region, StoreRegistry,
+    Machine, Schedule, RepairStaffProfile, LogisticsManagerProfile
+)
 from django.contrib.auth.models import User
+from django.utils import timezone
 import random
+import datetime
 
 class Command(BaseCommand):
     help = 'Populates the database with initial data'
@@ -39,6 +44,22 @@ class Command(BaseCommand):
             password='password',
             first_name='Bob',
             last_name='Bobsford'
+        )
+
+        repair_user = User.objects.create_user(
+            username='repair1',
+            email='repair@codepop.com',
+            password='password',
+            first_name='Riley',
+            last_name='Wrench'
+        )
+
+        logistics_user = User.objects.create_user(
+            username='logistics1',
+            email='logistics@codepop.com',
+            password='password',
+            first_name='Logan',
+            last_name='Hub'
         )
 
          # Data to insert into the Inventory table
@@ -163,5 +184,127 @@ class Command(BaseCommand):
         ]
         for pref in preferences:
             Preference.objects.create(**pref)
+
+        # Seeding Regions
+        regions_data = [
+            {'name': 'logan',     'display_name': 'Logan, UT',      'hub_api_endpoint': 'http://hub-logan.codepop.local:8000'},
+            {'name': 'atlanta',   'display_name': 'Atlanta, GA',    'hub_api_endpoint': 'http://hub-atlanta.codepop.local:8000'},
+            {'name': 'chicago',   'display_name': 'Chicago, IL',    'hub_api_endpoint': 'http://hub-chicago.codepop.local:8000'},
+            {'name': 'newjersey', 'display_name': 'New Jersey, NY', 'hub_api_endpoint': 'http://hub-newjersey.codepop.local:8000'},
+            {'name': 'dallas',    'display_name': 'Dallas, TX',     'hub_api_endpoint': 'http://hub-dallas.codepop.local:8000'},
+            {'name': 'phoenix',   'display_name': 'Phoenix, AZ',    'hub_api_endpoint': 'http://hub-phoenix.codepop.local:8000'},
+            {'name': 'seattle',   'display_name': 'Seattle, WA',    'hub_api_endpoint': 'http://hub-seattle.codepop.local:8000'},
+        ]
+        regions_dict = {}
+        for r in regions_data:
+            region = Region.objects.create(**r)
+            regions_dict[r['name']] = region
+
+        # Seeding StoreRegistry (20 stores in Logan, 5 stores per neighboring region)
+        # Requirements: 20 stores in Region C (Logan, UT) and min 5 stores per neighboring region
+        store_coords = {
+            'logan': [
+                (41.7370, -111.8887), (41.7480, -111.8950), (41.7550, -111.9050),
+                (41.7300, -111.8750), (41.7450, -111.8850), (41.7600, -111.8900),
+                (41.7250, -111.9100), (41.7400, -111.9200), (41.7650, -111.9000),
+                (41.7320, -111.8600), (41.7500, -111.8700), (41.7680, -111.8800),
+                (41.7220, -111.9300), (41.7420, -111.9400), (41.7620, -111.9100),
+                (41.7380, -111.8500), (41.7520, -111.8550), (41.7700, -111.8650),
+                (41.7280, -111.9500), (41.7480, -111.9600),
+            ],
+            'atlanta': [
+                (33.7490, -84.3880), (33.7550, -84.3950), (33.7610, -84.4020),
+                (33.7430, -84.3810), (33.7370, -84.3740),
+            ],
+            'chicago': [
+                (41.8781, -87.6298), (41.8850, -87.6400), (41.8920, -87.6500),
+                (41.8720, -87.6200), (41.8650, -87.6100),
+            ],
+            'newjersey': [
+                (40.7128, -74.0060), (40.7200, -74.0150), (40.7270, -74.0240),
+                (40.7060, -73.9970), (40.6990, -73.9880),
+            ],
+            'dallas': [
+                (32.7767, -96.7970), (32.7850, -96.8050), (32.7920, -96.8130),
+                (32.7690, -96.7890), (32.7620, -96.7810),
+            ],
+            'phoenix': [
+                (33.4484, -112.0742), (33.4550, -112.0850), (33.4620, -112.0960),
+                (33.4420, -112.0630), (33.4350, -112.0520),
+            ],
+            'seattle': [
+                (47.6062, -122.3321), (47.6150, -122.3450), (47.6220, -122.3580),
+                (47.5990, -122.3190), (47.5920, -122.3060),
+            ],
+        }
+        store_id = 1
+        for region_name, coords in store_coords.items():
+            for idx, (lat, lon) in enumerate(coords):
+                StoreRegistry.objects.create(
+                    store_id=store_id,
+                    store_name=f"CodePop {region_name.title()} #{idx + 1}",
+                    region=region_name,
+                    api_endpoint=f"http://store{store_id}.codepop.local:8000",
+                    latitude=lat,
+                    longitude=lon,
+                    status='active' if idx == 0 else 'unreachable',
+                )
+                store_id += 1
+
+        # Seeding Machines (one per status)
+        machines_data = [
+            {'machine_id': '1', 'name': 'Dispenser Alpha', 'location': 'Bay 1', 'status': 'NORMAL', 'store_id': 1},
+            {'machine_id': '2', 'name': 'Dispenser Beta', 'location': 'Bay 2', 'status': 'WARNING', 'store_id': 1},
+            {'machine_id': '3', 'name': 'Dispenser Gamma', 'location': 'Bay 3', 'status': 'ERROR', 'store_id': 1},
+            {'machine_id': '4', 'name': 'Dispenser Delta', 'location': 'Bay 4', 'status': 'OUT_OF_ORDER', 'store_id': 1},
+            {'machine_id': '5', 'name': 'Dispenser Epsilon', 'location': 'Bay 5', 'status': 'SCHEDULE_SERVICE', 'store_id': 1},
+            {'machine_id': '6', 'name': 'Dispenser Zeta', 'location': 'Bay 6', 'status': 'REPAIR_START', 'store_id': 1},
+            {'machine_id': '7', 'name': 'Dispenser Eta', 'location': 'Bay 7', 'status': 'REPAIR_END', 'store_id': 1},
+        ]
+        machines_dict = {}
+        for m in machines_data:
+            machine = Machine.objects.create(**m)
+            machines_dict[m['machine_id']] = machine
+
+        # Seeding RepairStaffProfile
+        RepairStaffProfile.objects.create(
+            user=repair_user,
+            region=regions_dict['chicago'],
+            assigned_store_id=1
+        )
+
+        # Seeding LogisticsManagerProfile
+        LogisticsManagerProfile.objects.create(
+            user=logistics_user,
+            region=regions_dict['atlanta']
+        )
+
+        # Seeding Schedules
+        now = timezone.now()
+        schedules_data = [
+            {
+                'machine': machines_dict['M001'],
+                'assigned_to': repair_user,
+                'scheduled_at': now + datetime.timedelta(days=7),
+                'completed_at': None,
+                'description': 'Routine maintenance and fluid check'
+            },
+            {
+                'machine': machines_dict['M002'],
+                'assigned_to': repair_user,
+                'scheduled_at': now - datetime.timedelta(days=2),
+                'completed_at': now - datetime.timedelta(days=1),
+                'description': 'Warning light investigation and reset'
+            },
+            {
+                'machine': machines_dict['M003'],
+                'assigned_to': repair_user,
+                'scheduled_at': now - datetime.timedelta(days=5),
+                'completed_at': None,
+                'description': 'Urgent: Error code 42 investigation'
+            },
+        ]
+        for s in schedules_data:
+            Schedule.objects.create(**s)
 
         self.stdout.write(self.style.SUCCESS('Successfully populated the database.'))
