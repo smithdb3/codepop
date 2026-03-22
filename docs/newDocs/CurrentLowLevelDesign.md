@@ -1224,7 +1224,6 @@ The CodePop interface is carefully designed to support both usability and access
   * Full screen or modal overlay
   * Close/back button at top
   * "Chat with CodePop" header
-  * Keyboard-aware (adjust for mobile keyboard)
 * (M) Input Area
   * Text input with placeholder: "Describe your issue..."
   * Disable send if empty
@@ -1232,33 +1231,32 @@ The CodePop interface is carefully designed to support both usability and access
   * Show "CodePop Bot is typing..." while waiting for response
   * Animated dots
 * (M) Loading State
-  * Show spinner while waiting for AI response
   * Prevent user from sending multiple messages while processing
   * Timeout handling (if AI doesn't respond in 5-10 seconds)
 * (M) Error Handling
   * If AI response fails: "I'm having trouble right now. Please try again or contact support."
   * Retry button
-  * Link to support if issue persists
-* (C) Response Confidence Indicator
+  * Link to support if issue persists *(BACKEND NOT IMPLEMENTED)*
+* (C) Response Confidence Indicator 
   * If AI is unsure: Show disclaimer or "This might help, but..."
   * Allow user to rate response: "Was this helpful?" with Yes/No buttons
-* (C) Suggested Responses / Quick Replies
+* (C) Suggested Responses / Quick Replies *(BACKEND NOT IMPLEMENTED)*
   * Show 2-3 suggested follow-up questions based on topic
   * One-tap buttons to ask common follow-ups
   * Examples:
     * "Report an issue with my order"
     * "Track my delivery"
     * "Request a refund"
-* (M) Human Escalation Option
-  * "Talk to a human?" button or link
-  * Shows estimated wait time
-  * Transitions to live support (if available)
+* (C) Human Escalation Option *(NOT IMPLEMENTED)*
+  * "Talk to a human?" button or link 
+  * Shows estimated wait time 
+  * Transitions to live support (if available) 
   * Fall back to email: "support@codepop.com"
-* (C) Context Preservation
+* (C) Context Preservation *(NOT IMPLEMENTED)*
   * Include order number in chat (if user has active order)
   * Pass conversation to human agent if escalated
   * Show previous issues/complaints in agent view
-* (C) Complaint Categorization
+* (C) Complaint Categorization *(NOT IMPLEMENTED)*
   * Detect complaint type:
     - "Order not received"
     - "Drink quality issue"
@@ -1266,7 +1264,7 @@ The CodePop interface is carefully designed to support both usability and access
     - "App bug"
     - "Other"
   * Route to appropriate resolution path
-* (C) Auto-Suggest Solutions
+* (C) Auto-Suggest Solutions *(NOT IMPLEMENTED)*
   * Based on complaint type, suggest actions:
     - If "Not received": "Track your order" + link
     - If "Quality issue": "Request refund" button
@@ -1274,7 +1272,7 @@ The CodePop interface is carefully designed to support both usability and access
 * (C) Satisfaction Rating
   * After conversation ends: "Rate this support experience" (1-5 stars)
   * Optional text feedback
-  * Used to improve AI training
+  * Used to improve AI training *(BACKEND NOT IMPLEMENTED)*
   
 **(M) Profile page**
 

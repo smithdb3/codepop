@@ -10,6 +10,47 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AIAlert from '../components/AIAlert';
 import CodePopLogo from '../components/CodePopLogo';
 
+const flavorMap = {
+  // Sodas
+  'coke': ['Bold', 'Classic'], 'diet coke': ['Light', 'Classic'], 'coke zero': ['Bold', 'Light'],
+  'sprite': ['Crisp', 'Citrusy'], 'mtn. dew': ['Bold', 'Citrusy'],
+  'dr. pepper': ['Rich', 'Spiced'], 'lemonade': ['Tart', 'Citrusy'],
+  'rootbeer': ['Sweet', 'Spiced'], 'fanta': ['Fruity', 'Sweet'],
+  'pepsi': ['Bold', 'Sweet'],
+  // Syrups
+  'vanilla': ['Sweet', 'Creamy'], 'coconut': ['Tropical', 'Sweet'],
+  'mango': ['Tropical', 'Fruity'], 'strawberry': ['Fruity', 'Sweet'],
+  'raspberry': ['Fruity', 'Tart'], 'peach': ['Fruity', 'Sweet'],
+  'watermelon': ['Fruity', 'Sweet'], 'lavender': ['Floral', 'Sweet'],
+  'peppermint': ['Cool', 'Fresh'], 'salted caramel': ['Sweet', 'Rich'],
+  'hazelnut': ['Nutty', 'Sweet'], 'gingerbread': ['Spiced', 'Warm'],
+  'passion fruit': ['Tropical', 'Tart'], 'blue raspberry': ['Tart', 'Fruity'],
+  'lemon': ['Tart', 'Citrusy'], 'lime': ['Tart', 'Citrusy'],
+  'pineapple': ['Tropical', 'Tart'], 'cherry': ['Fruity', 'Sweet'],
+  'cotton candy': ['Sweet', 'Playful'], 'bubble gum': ['Sweet', 'Playful'],
+  // Add-ins
+  'cream': ['Creamy', 'Smooth'], 'coconot cream': ['Tropical', 'Creamy'],
+  'whip': ['Creamy', 'Sweet'], 'french vanilla creamer': ['Creamy', 'Sweet'],
+  'strawberry puree': ['Fruity', 'Sweet'], 'peach puree': ['Fruity', 'Sweet'],
+  'mango puree': ['Tropical', 'Fruity'], 'raspberry puree': ['Fruity', 'Tart'],
+};
+
+const getDrinkTags = (sodas, syrups, addins) => {
+  const all = [...sodas, ...syrups, ...addins];
+  const seen = new Set();
+  const tags = [];
+  for (const item of all) {
+    const descriptors = flavorMap[item.toLowerCase()] || [];
+    for (const d of descriptors) {
+      if (!seen.has(d) && tags.length < 4) {
+        seen.add(d);
+        tags.push(d);
+      }
+    }
+  }
+  return tags;
+};
+
 
 const CreateDrinkPage = () => {
   const route = useRoute();
@@ -231,92 +272,131 @@ const CreateDrinkPage = () => {
 
   return (
     <View style={styles.wholePage}>
+      {/* ── PINNED TOP SECTION ── */}
+      <View style={styles.pinnedTop}>
+        <View style={styles.reviewCard}>
+          {/* Small corner Gif */}
+          <View style={styles.gifCorner}>
+            <Gif layers={layers} width={60} height={90} />
+          </View>
+
+          {/* Review content */}
+          <View style={styles.reviewContent}>
+            <Text style={styles.reviewTitle}>Your Drink</Text>
+
+            {(selectedSize || selectedIce) ? (
+              <Text style={styles.reviewMeta}>
+                {[selectedSize, selectedIce ? `${selectedIce} Ice` : null].filter(Boolean).join(' · ')}
+              </Text>
+            ) : (
+              <Text style={styles.reviewPlaceholder}>Select size and ice below</Text>
+            )}
+
+            {SodaUsed.length > 0 && (
+              <Text style={styles.reviewRow}>
+                <Text style={styles.reviewLabel}>Soda  </Text>
+                <Text style={styles.reviewValue}>{SodaUsed.join(', ')}</Text>
+              </Text>
+            )}
+
+            {SyrupsUsed.length > 0 && (
+              <Text style={styles.reviewRow}>
+                <Text style={styles.reviewLabel}>Syrups  </Text>
+                <Text style={styles.reviewValue}>{SyrupsUsed.join(', ')}</Text>
+              </Text>
+            )}
+
+            {AddIns.length > 0 && (
+              <Text style={styles.reviewRow}>
+                <Text style={styles.reviewLabel}>Add-ins  </Text>
+                <Text style={styles.reviewValue}>{AddIns.join(', ')}</Text>
+              </Text>
+            )}
+
+            {SodaUsed.length === 0 && SyrupsUsed.length === 0 && AddIns.length === 0 && (
+              <Text style={styles.reviewPlaceholder}>Pick ingredients below to build your drink</Text>
+            )}
+
+            {getDrinkTags(SodaUsed, SyrupsUsed, AddIns).length > 0 && (
+              <View style={styles.flavorTagRow}>
+                {getDrinkTags(SodaUsed, SyrupsUsed, AddIns).map(tag => (
+                  <View key={tag} style={styles.flavorTag}>
+                    <Text style={styles.flavorTagText}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Action buttons — always visible in pinned area */}
+        <View style={styles.pinnedButtonRow}>
+          <TouchableOpacity onPress={GenerateAI} style={[styles.pinnedButton, styles.secondaryButton]}>
+            <Text style={styles.secondaryButtonText}>Ask Tonic</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={addToCart} style={[styles.pinnedButton, styles.primaryButton]}>
+            <Text style={styles.primaryButtonText}>Add to My Order</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* AIAlert modal */}
+        {drinkDict && (
+          <AIAlert
+            isModalVisible={isModalVisible}
+            toggleModal={() => setModalVisible(false)}
+            drinkDict={drinkDict}
+          />
+        )}
+      </View>
+
+      {/* ── SCROLLABLE INGREDIENT SECTION ── */}
       <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
         {/* Page Title */}
         <Text style={styles.pageTitle}>Design Your Drink</Text>
 
-        {/* Drink Graphic Card */}
-        <View style={styles.graphicCard}>
-          <Gif layers={layers} />
-
-          {/* AIAlert Modal */}
-          {drinkDict && (
-            <AIAlert
-              isModalVisible={isModalVisible}
-              toggleModal={() => (setModalVisible(false))}
-              drinkDict={drinkDict}
-            />
-          )}
-        </View>
-
         {/* Size and Ice Selector Row */}
-        <View style={styles.selectorRow}>
-          {/* Size Selector */}
-          <View style={styles.selectorCard}>
-            <Text style={styles.selectorLabel}>Size 📏</Text>
-            <View style={styles.pillButtonRow}>
-              {[
-                { size: '16oz', emoji: '🥤' },
-                { size: '24oz', emoji: '🧋' },
-                { size: '32oz', emoji: '🍹' }
-              ].map(({ size, emoji }) => (
-                <TouchableOpacity
-                  key={size}
-                  onPress={() => handleSizeSelection(size)}
-                  style={[
-                    styles.pillButton,
-                    selectedSize === size && styles.pillButtonSelected,
-                  ]}
-                >
-                  <Text style={[
-                    styles.pillButtonText,
-                    selectedSize === size && styles.pillButtonTextSelected
-                  ]}>
-                    {emoji} {size}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Ice Selector */}
-          <View style={styles.selectorCard}>
-            <Text style={styles.selectorLabel}>Ice 🧊</Text>
-            <View style={styles.pillButtonRow}>
-              {[
-                { ice: 'No Ice', emoji: '🚫' },
-                { ice: 'Light', emoji: '💧' },
-                { ice: 'Regular', emoji: '🧊' },
-                { ice: 'Extra', emoji: '❄️' }
-              ].map(({ ice, emoji }) => (
-                <TouchableOpacity
-                  key={ice}
-                  onPress={() => handleIceSelection(ice)}
-                  style={[
-                    styles.pillButton,
-                    selectedIce === ice && styles.pillButtonSelected,
-                  ]}
-                >
-                  <Text style={[
-                    styles.pillButtonText,
-                    selectedIce === ice && styles.pillButtonTextSelected
-                  ]}>
-                    {emoji} {ice}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+        {/* Size Selector */}
+        <View style={styles.selectorSection}>
+          <Text style={styles.selectorLabel}>Size</Text>
+          <View style={styles.tileRow}>
+            {[
+              { size: '16oz', emoji: '🥤' },
+              { size: '24oz', emoji: '🧋' },
+              { size: '32oz', emoji: '🍹' }
+            ].map(({ size, emoji }) => (
+              <TouchableOpacity
+                key={size}
+                onPress={() => handleSizeSelection(size)}
+                style={[styles.tileButton, selectedSize === size && styles.tileButtonSelected]}
+              >
+                <Text style={styles.tileEmoji}>{emoji}</Text>
+                <Text style={[styles.tileLabel, selectedSize === size && styles.tileLabelSelected]}>{size}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        {/* Primary Buttons */}
-        <TouchableOpacity onPress={GenerateAI} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Ask Tonic to Mix My Drink</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={addToCart} style={styles.primaryButton}>
-          <Text style={styles.primaryButtonText}>Add to My Order</Text>
-        </TouchableOpacity>
+        {/* Ice Selector */}
+        <View style={styles.selectorSection}>
+          <Text style={styles.selectorLabel}>Ice</Text>
+          <View style={styles.tileRow}>
+            {[
+              { ice: 'No Ice', emoji: '🚫' },
+              { ice: 'Light', emoji: '💧' },
+              { ice: 'Regular', emoji: '🧊' },
+              { ice: 'Extra', emoji: '❄️' }
+            ].map(({ ice, emoji }) => (
+              <TouchableOpacity
+                key={ice}
+                onPress={() => handleIceSelection(ice)}
+                style={[styles.tileButton, selectedIce === ice && styles.tileButtonSelected]}
+              >
+                <Text style={styles.tileEmoji}>{emoji}</Text>
+                <Text style={[styles.tileLabel, selectedIce === ice && styles.tileLabelSelected]}>{ice}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
         {/* Search Input */}
         <TextInput
@@ -367,6 +447,93 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  pinnedTop: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  reviewCard: {
+    position: 'relative',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 16,
+    paddingRight: 80,
+    marginBottom: 10,
+    minHeight: 125,
+  },
+  gifCorner: {
+    position: 'absolute',
+    top: 4,
+    right: 8,
+    overflow: 'hidden',
+  },
+  reviewContent: {},
+  reviewTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#222831',
+    marginBottom: 2,
+  },
+  reviewMeta: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 6,
+  },
+  reviewPlaceholder: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+  },
+  reviewRow: {
+    fontSize: 12,
+    color: '#222831',
+    marginBottom: 2,
+    lineHeight: 17,
+  },
+  reviewLabel: {
+    fontWeight: '600',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    fontSize: 10,
+    letterSpacing: 0.5,
+  },
+  reviewValue: {
+    color: '#222831',
+    fontSize: 12,
+  },
+  flavorTagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+    marginTop: 8,
+  },
+  flavorTag: {
+    backgroundColor: '#F0FDFC',
+    borderWidth: 1,
+    borderColor: '#08D9D6',
+    borderRadius: 20,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+  },
+  flavorTagText: {
+    color: '#08D9D6',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  pinnedButtonRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  pinnedButton: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   scrollContent: {
     flex: 1,
   },
@@ -380,79 +547,58 @@ const styles = StyleSheet.create({
     color: '#222831',
     marginBottom: 16,
   },
-  graphicCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-    alignItems: 'center',
-  },
-  selectorRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginVertical: 16,
-  },
-  selectorCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+  selectorSection: {
+    marginBottom: 16,
   },
   selectorLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222831',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
     marginBottom: 8,
   },
-  pillButtonRow: {
+  tileRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
   },
-  pillButton: {
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    minHeight: 44,
-    backgroundColor: '#F3F4F6',
+  tileButton: {
+    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 0,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    minHeight: 62,
   },
-  pillButtonSelected: {
+  tileButtonSelected: {
     backgroundColor: '#FF2E63',
+    borderColor: '#FF2E63',
   },
-  pillButtonText: {
-    fontSize: 13,
+  tileEmoji: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  tileLabel: {
+    fontSize: 11,
     fontWeight: '600',
-    color: '#222831',
+    color: '#6B7280',
   },
-  pillButtonTextSelected: {
+  tileLabelSelected: {
     color: '#FFFFFF',
   },
   primaryButton: {
     backgroundColor: '#FF2E63',
     borderRadius: 8,
-    minHeight: 44,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    marginVertical: 8,
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   primaryButtonText: {
     color: '#FFFFFF',
@@ -462,14 +608,8 @@ const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    minHeight: 44,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginVertical: 8,
     borderWidth: 2,
     borderColor: '#08D9D6',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   secondaryButtonText: {
     color: '#08D9D6',
