@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, Button, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, Button, TouchableOpacity, ScrollView, Alert, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import NavBar from '../components/NavBar';
 import RatingCarosel from '../components/RatingCarosel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,6 +17,8 @@ const PostCheckout = () => {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [isNearby, setIsNearby] = useState(false);
+  const [orderNum, setOrderNum] = useState('');
+  const [reviewText, setReviewText] = useState('');
 
   const storeLocation = {
       latitude: 41.7421007, //the emulator will likely user coordinates to google headquarters which is these coordinates. uncomment to test <500 yard option
@@ -160,6 +163,15 @@ const PostCheckout = () => {
   }, []);
 
   useEffect(() => {
+    // Fetch orderNum from AsyncStorage
+    const fetchOrderNum = async () => {
+      const num = await AsyncStorage.getItem('orderNum');
+      if (num) setOrderNum(num);
+    };
+    fetchOrderNum();
+  }, []);
+
+  useEffect(() => {
     // Generate locker combo only when the component mounts
     handleLockerCombo();
   }, []); // Empty dependency array ensures it runs only once
@@ -239,235 +251,668 @@ const PostCheckout = () => {
     setIsNearby(true);
   }
 
+  // Calculate price for a drink (same formula as PaymentPage)
+  const calculatePrice = (drink) => {
+    if (drink.Price == 2) {
+      const syrupsCount = Array.isArray(drink.SyrupsUsed) ? drink.SyrupsUsed.length : 0;
+      const addInsCount = Array.isArray(drink.AddIns) ? drink.AddIns.length : 0;
+      return 2 + (syrupsCount + addInsCount) * 0.3;
+    } else {
+      return drink.Price;
+    }
+  };
+
+  // Calculate totals for order summary
+  const calculateTotals = () => {
+    let subtotal = 0;
+    purchasedDrinks.forEach(drink => {
+      subtotal += calculatePrice(drink);
+    });
+    const tax = subtotal * 0.08;
+    const total = subtotal + tax;
+    return { subtotal, tax, total };
+  };
+
+  const { subtotal, tax, total } = calculateTotals();
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollViewContainer}>
 
-        {/*Distance from store*/}
-        <View style={[styles.section, styles.nearbySection]}>
-            <View style={styles.nearbyText}>
-                {isNearby ? (
-                        <Text style={styles.text}>Your drink is being made!</Text>
-                      ) : (
-                        <Text style={styles.text}>Once you are within 500 yards from the store Bob will start making your drink.</Text>
-                )}
-            </View>
+        {/* 1. Success Header Card */}
+        <View style={styles.card}>
+          <View style={styles.successHeader}>
+            <Icon name="checkmark-circle" size={48} color="#10B981" />
+            <Text style={styles.successTitle}>Order Confirmed!</Text>
+            <Text style={styles.orderNumber}>Order #{orderNum}</Text>
+          </View>
         </View>
 
-        {/* Map Image Box */}
-        <View style={[styles.section, styles.mapSection]}>
-                {location ? (
-                  <MapView
-                    style={styles.map}
-                    region={{
-                      latitude: location.coords.latitude,
-                      longitude: location.coords.longitude,
-                      latitudeDelta: 0.0922,
-                      longitudeDelta: 0.0421,
-                    }}
-                  >
-                    <Marker
-                      coordinate={{
-                        latitude: location.coords.latitude,
-                        longitude: location.coords.longitude,
-                      }}
-                      title="You are here"
-                      description="Current location"
-                    />
-                  </MapView>
-                ) : (
-                  <View style={styles.arrivalButtonContainer}>
-                    {errorMsg ? (
-                      <>
-                        <Text style={styles.errorMessage}>
-                          {errorMsg || "Location permission not granted."}
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.button}
-                          onPress={handleUserArrived}
-                        >
-                          <Text style={styles.buttonText}>I've Arrived</Text>
-                        </TouchableOpacity>
-                      </>
-                    ) : (
-                      <Text>Loading...</Text>
+        {/* 2. Status Banner */}
+        <View style={[styles.statusBanner, { backgroundColor: isNearby ? '#FF2E63' : '#08D9D6' }]}>
+          <Text style={styles.statusText}>
+            {isNearby
+              ? 'Your drink is being made!'
+              : 'Head to the store — Bob starts when you\'re within 500 yards'}
+          </Text>
+        </View>
+
+        {/* 3. Order Summary Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeading}>Order Summary</Text>
+
+          <View style={styles.drinksList}>
+            {purchasedDrinks.map((drink, idx) => (
+              <View key={idx} style={styles.drinkRow}>
+                <View style={styles.drinkRowLeft}>
+                  <Icon name="cafe" size={20} color="#FF2E63" />
+                  <View style={styles.drinkRowText}>
+                    <Text style={styles.drinkName}>{drink.Name || 'Custom Drink'}</Text>
+                    {drink.SodaUsed && drink.SodaUsed.length > 0 && (
+                      <Text style={styles.drinkMeta}>{drink.SodaUsed.join(', ')}</Text>
                     )}
                   </View>
+                </View>
+                <Text style={styles.drinkPrice}>${calculatePrice(drink).toFixed(2)}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.priceBreakdown}>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Subtotal</Text>
+              <Text style={styles.priceValue}>${subtotal.toFixed(2)}</Text>
+            </View>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Tax (8%)</Text>
+              <Text style={styles.priceValue}>${tax.toFixed(2)}</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.priceRow}>
+              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* 4. Pickup Info Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeading}>Pickup Details</Text>
+
+          <View style={styles.storeInfo}>
+            <Text style={styles.storeLabel}>CodePop — USU Location</Text>
+            <Text style={styles.storeAddress}>4200 Old Main Hill, Logan, UT 84322</Text>
+            <Text style={styles.storeHours}>Mon–Fri 8am–8pm, Sat–Sun 10am–6pm</Text>
+          </View>
+
+          <View style={styles.etaSection}>
+            <Text style={styles.etaLabel}>Ready in:</Text>
+            <Text style={styles.etaTimer}>{minutes}:{seconds}</Text>
+          </View>
+
+          {/* Map or Arrival Button */}
+          <View style={styles.mapContainer}>
+            {location ? (
+              <MapView
+                style={styles.map}
+                region={{
+                  latitude: location.coords.latitude,
+                  longitude: location.coords.longitude,
+                  latitudeDelta: 0.0922,
+                  longitudeDelta: 0.0421,
+                }}
+              >
+                <Marker
+                  coordinate={{
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude,
+                  }}
+                  title="You are here"
+                  description="Current location"
+                />
+              </MapView>
+            ) : (
+              <View style={styles.arrivalButtonContainer}>
+                {errorMsg ? (
+                  <>
+                    <Text style={styles.errorMessage}>{errorMsg}</Text>
+                    <TouchableOpacity
+                      style={styles.arrivalButton}
+                      onPress={handleUserArrived}
+                    >
+                      <Text style={styles.arrivalButtonText}>I've Arrived</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <Text style={styles.loadingText}>Loading location...</Text>
                 )}
               </View>
+            )}
+          </View>
+        </View>
 
-        {/* Rating Box */}
-        <View style={[styles.section, styles.ratingSection]}>
-          <Text style={styles.ratingLabel}>Liked any of your drinks?</Text>
+        {/* 5. Locker Code Card */}
+        <View style={[styles.card, styles.lockerCard]}>
+          <Text style={styles.cardHeading}>Your Pickup Code</Text>
+          <Text style={styles.lockerSubtitle}>Enter this code at the cooler to unlock your drink</Text>
+          <View style={styles.lockerDisplayContainer}>
+            <Text style={styles.lockerDisplay}>{lockerCombo}</Text>
+          </View>
+        </View>
+
+        {/* 6. Receipt Actions Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeading}>Receipt</Text>
+          <View style={styles.receiptButtonsRow}>
+            <TouchableOpacity
+              style={styles.ghostButton}
+              onPress={() => Alert.alert('Coming Soon', 'This feature is coming soon!')}
+            >
+              <Icon name="print-outline" size={20} color="#FF2E63" />
+              <Text style={styles.ghostButtonText}>Print Receipt</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.ghostButton}
+              onPress={() => Alert.alert('Coming Soon', 'This feature is coming soon!')}
+            >
+              <Icon name="mail-outline" size={20} color="#FF2E63" />
+              <Text style={styles.ghostButtonText}>Email Receipt</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* 7. Order Tracking Card */}
+        <View style={styles.card}>
+          <View style={styles.trackingHeader}>
+            <Text style={styles.cardHeading}>Order Tracking</Text>
+            <View style={styles.comingSoonBadge}>
+              <Text style={styles.comingSoonText}>Coming Soon</Text>
+            </View>
+          </View>
+
+          <View style={styles.timelineContainer}>
+            {['Order Placed', 'Preparing', 'Ready for Pickup'].map((step, idx) => (
+              <View key={idx} style={styles.timelineItem}>
+                <View style={[styles.timelineDot, idx === 0 && styles.timelineDotFilled]} />
+                <Text style={[styles.timelineText, idx === 0 && styles.timelineTextActive]}>{step}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Text style={styles.trackingNote}>Push notifications and live queue tracking are coming soon</Text>
+        </View>
+
+        {/* 8. Rate Your Drink Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeading}>Rate Your Drink</Text>
           <RatingCarosel purchasedDrinks={purchasedDrinks} />
         </View>
 
-        {/* Horizontal Container for Timer and Locker Combo */}
-        <View style={styles.timerAndLockerContainer}>
-          <View style={[styles.section, styles.timerSection]}>
-            <Text style={styles.heading}>Drink ready in:</Text>
-            <Text style={styles.timer}>
-              {minutes}:{seconds}
-            </Text>
-            {timeLeft === 0 && <Text style={styles.successMessage}>Your drink is ready!</Text>}
-          </View>
+        {/* 9. Leave a Review Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeading}>Leave a Review</Text>
+          <TextInput
+            style={styles.reviewInput}
+            placeholder="Share your thoughts about your drink..."
+            placeholderTextColor="#9CA3AF"
+            multiline
+            numberOfLines={4}
+            value={reviewText}
+            onChangeText={setReviewText}
+          />
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() => {
+              Alert.alert('Thanks!', 'Your review has been submitted.');
+              setReviewText('');
+            }}
+          >
+            <Text style={styles.primaryButtonText}>Submit Review</Text>
+          </TouchableOpacity>
+        </View>
 
-          <View style={[styles.section, styles.lockerComboSection]}>
-            <Text style={styles.lockerCombo}>Locker combo: {lockerCombo}</Text>
+        {/* 10. Share on Social Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardHeading}>Share Your Drink</Text>
+          <View style={styles.socialButtonsRow}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => Alert.alert('Coming Soon', 'Social sharing is coming soon! Use #socialdrinker')}
+            >
+              <Icon name="logo-instagram" size={24} color="#FF2E63" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => Alert.alert('Coming Soon', 'Social sharing is coming soon! Use #socialdrinker')}
+            >
+              <Icon name="logo-twitter" size={24} color="#FF2E63" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => Alert.alert('Coming Soon', 'Social sharing is coming soon! Use #socialdrinker')}
+            >
+              <Icon name="logo-facebook" size={24} color="#FF2E63" />
+            </TouchableOpacity>
           </View>
         </View>
-        {timeLeft === 0 ? (
-          <TouchableOpacity onPress={goHomePage} style={styles.mediumButton}>
-            <Text style={styles.buttonText}>Back To Home Page</Text>
-          </TouchableOpacity>
-        ) : isNearby ? (
-          <></>
-        ) : (
-          <TouchableOpacity onPress={makeDrink} style={styles.mediumButton}>
-            <Text style={styles.buttonText}>Location Not Working</Text>
-            <Text style= {styles.buttonText}>Press To Make Drink!</Text>
+
+        {/* Bottom Buttons */}
+        {!isNearby && timeLeft > 0 && (
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={makeDrink}
+          >
+            <Text style={styles.secondaryButtonText}>Location Not Working? Press to Start!</Text>
           </TouchableOpacity>
         )}
+
+        {timeLeft === 0 && (
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={goHomePage}
+          >
+            <Text style={styles.primaryButtonText}>Back to Home Page</Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={{ height: 80 }} />
       </ScrollView>
+
+      <NavBar />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  // Color constants
+  PRIMARY: '#FF2E63',
+  SECONDARY: '#08D9D6',
+  BG: '#FFFFFF',
+  SURFACE: '#FFFFFF',
+  INSET: '#F9FAFB',
+  BORDER: '#E5E7EB',
+  TEXT: '#222831',
+  MUTED: '#6B7280',
+  SUCCESS: '#10B981',
+
   container: {
     flex: 1,
-    backgroundColor: '#8DF1D3', 
+    backgroundColor: '#FFFFFF',
   },
   scrollViewContainer: {
     flexGrow: 1,
-    padding: 10,
+    padding: 16,
     paddingBottom: 30,
   },
-  section: {
-    width: '100%',
-    marginBottom: 15,
-    borderRadius: 8,
+
+  // Card styles
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  cardHeading: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#222831',
+    marginBottom: 16,
+  },
+
+  // 1. Success Header
+  successHeader: {
     alignItems: 'center',
   },
-  timerAndLockerContainer: {
-    paddingTop: 20,
+  successTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#FF2E63',
+    marginTop: 12,
+  },
+  orderNumber: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 8,
+  },
+
+  // 2. Status Banner
+  statusBanner: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+
+  // 3. Order Summary
+  drinksList: {
+    marginBottom: 16,
+  },
+  drinkRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  timerSection: {
-    backgroundColor: '#C6C8EE',
-    flex: 1,
-    marginRight: 10,
-  },
-  lockerComboSection: {
-    backgroundColor: '#F92758',
-    flex: 1,
-    marginLeft: 10,
-  },
-  mapSection: {
-    backgroundColor: '#D30C7B',
-    width: '100%',
-    height: 250,
-    justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    marginBottom: 12,
   },
-  ratingSection: {
-    backgroundColor: '#FFA686', 
-    paddingBottom: 20,
+  drinkRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
-  heading: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginVertical: 5,
+  drinkRowText: {
+    marginLeft: 12,
+    flex: 1,
   },
-  timer: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: '#FFA686',
-    marginVertical: 5,
-  },
-  successMessage: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#8DF1D3', 
-    marginVertical: 10,
-  },
-  ratingLabel: {
-    fontSize: 15,
+  drinkName: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#333',
-    margin: 10,
+    color: '#222831',
   },
-  lockerCombo: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#333',
-    marginTop: 20,
-    marginBottom: 20,
+  drinkMeta: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
   },
-  image: {
-    width: 200,
-    height: 200,
-    alignSelf: 'center',
-    marginVertical: 20,
+  drinkPrice: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#222831',
+    marginLeft: 12,
   },
-  button: {
-    backgroundColor: '#D30C7B',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+  priceBreakdown: {
+    backgroundColor: '#F9FAFB',
     borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    marginVertical: 5,
+    padding: 12,
   },
-  buttonText: {
-    //color: '#fff',
-    color: 'black',
-    fontSize: 16,
-    fontWeight: 'bold',
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  priceLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  priceValue: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#222831',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 8,
+  },
+  totalLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#222831',
+  },
+  totalValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FF2E63',
+  },
+
+  // 4. Pickup Info
+  storeInfo: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  storeLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#222831',
+  },
+  storeAddress: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  storeHours: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  etaSection: {
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  etaLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  etaTimer: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FF2E63',
+  },
+  mapContainer: {
+    height: 200,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#F9FAFB',
   },
   map: {
-    width: '90%',
-    height: 200,
-    borderRadius: 8,
-  },
-  nearbySection: {
-    backgroundColor: '#F92758',
-    justifyContent: 'center',
-    height: 40
-  },
-  nearbyText: {
-    fontWeight: '900',
-  },
-  arrivalButtonContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
     width: '100%',
     height: '100%',
   },
+  arrivalButtonContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  arrivalButton: {
+    backgroundColor: '#FF2E63',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 12,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  arrivalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   errorMessage: {
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontSize: 13,
+    color: '#222831',
+    textAlign: 'center',
+    marginHorizontal: 16,
+  },
+  loadingText: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+
+  // 5. Locker Code
+  lockerCard: {
+    borderWidth: 2,
+    borderColor: '#FF2E63',
+  },
+  lockerSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 16,
+    marginTop: -8,
+  },
+  lockerDisplayContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  lockerDisplay: {
+    fontSize: 44,
+    fontWeight: '700',
+    color: '#FF2E63',
+    letterSpacing: 8,
+    fontFamily: 'Courier New',
+  },
+
+  // 6. Receipt Actions
+  receiptButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  ghostButton: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#FF2E63',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  ghostButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FF2E63',
+    marginTop: 4,
+  },
+
+  // 7. Order Tracking
+  trackingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  comingSoonBadge: {
+    backgroundColor: '#08D9D6',
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  comingSoonText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  timelineContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  timelineItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#E5E7EB',
+    marginBottom: 8,
+  },
+  timelineDotFilled: {
+    backgroundColor: '#FF2E63',
+  },
+  timelineText: {
+    fontSize: 11,
+    color: '#6B7280',
     textAlign: 'center',
   },
-  mediumButton: {
-    margin: 10,
-    padding: 15,
-    backgroundColor: '#D30C7B',
-    borderRadius: 10,
+  timelineTextActive: {
+    color: '#222831',
+    fontWeight: '600',
+  },
+  trackingNote: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+
+  // 9. Review
+  reviewInput: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 13,
+    color: '#222831',
+    backgroundColor: '#FFFFFF',
+    textAlignVertical: 'top',
+    marginBottom: 12,
+    minHeight: 100,
+  },
+
+  // 10. Social Sharing
+  socialButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+  },
+  socialButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: '#FF2E63',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Bottom Buttons
+  primaryButton: {
+    backgroundColor: '#FF2E63',
+    borderRadius: 8,
+    paddingVertical: 12,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#FF2E63',
+    borderRadius: 8,
+    paddingVertical: 12,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  secondaryButtonText: {
+    color: '#FF2E63',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

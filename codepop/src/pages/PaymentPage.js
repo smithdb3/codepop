@@ -58,7 +58,6 @@ const PaymentPage = () => {
       fetchDrinks();
       setError('');
       setRetryCount(0);
-      initializePaymentSheet();
       // Set default recurring end date to 3 months from now
       const futureDate = new Date();
       futureDate.setMonth(futureDate.getMonth() + 3);

@@ -1320,7 +1320,7 @@ Update Preferences
 ---
 Settings
 * (M) Settings organized in sections (tabs or accordion):
-* TAB 1: LOCATION & DELIVERY
+* TAB 1: LOCATION & DELIVERY *(BACKEND NOT IMPLEMENTED)*
   * (M) Primary Store Location
     - Map picker or address search
     - Shows store name, hours, address
@@ -1334,22 +1334,22 @@ Settings
     - Requires current password verification
     - New password with strength indicator
     - Confirm new password
-  * (C) Two-Factor Authentication (2FA)
+  * (C) Two-Factor Authentication (2FA) *(NOT IMPLEMENTED)*
     - Enable/disable SMS or authenticator app
     - Phone number verification
-  * (C) Session Management
+  * (C) Session Management *(NOT IMPLEMENTED)*
     - View active sessions (devices, last login)
     - Sign out from other devices
     - View login history
 * TAB 3: PREFERENCES & PRIVACY
-  * (C) Dark Mode / Light Mode
+  * (C) Dark Mode / Light Mode *(UI NOT IMPLEMENTED)*
     - Radio buttons: System Default, Light, Dark
   * (C) Notifications
     - Order status notifications (toggle)
     - Promotional emails (toggle)
     - New menu items alerts (toggle)
     - Push notifications (toggle)
-  * (C) Privacy Settings
+  * (C) Privacy Settings *(NOT IMPLEMENTED)*
     - Share preferences with store (toggle)
     - Allow personalized recommendations (toggle)
     - Opt-out analytics (toggle)
@@ -1366,7 +1366,7 @@ Settings
     - "Edit" → modify items/time/frequency
     - "Pause" → temporarily pause (with pause duration selector)
     - "Cancel" → delete recurring order (with confirmation)
-  * (C) Recurrence Summary
+  * (C) Recurrence Summary *(NOT IMPLEMENTED)*
     - Total monthly cost of all recurring orders
     - Next charge date across all orders
 ---
@@ -1391,7 +1391,6 @@ Data Management & Privacy
 * (C) Data Management Section
   * Delete Account
     - Permanent deletion warning
-    - Option to keep order history or delete
     - Requires password confirmation
   * Data Privacy
     - Link to full privacy policy

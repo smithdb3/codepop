@@ -35,6 +35,7 @@ export default function CheckoutForm(totalPrice) {
       customerEphemeralKeySecret: ephemeralKey,
       paymentIntentClientSecret: paymentIntent,
       allowsDelayedPaymentMethods: true,
+      returnURL: 'codepop://stripe-callback',
     });
     if (!error) setLoading(true);
     else Alert.alert("Error", error.message);

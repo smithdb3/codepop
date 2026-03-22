@@ -660,9 +660,10 @@ class StripePaymentIntentView(View):
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body)
-            amount = int(data.get("amount") * 100)  # Stripe uses cents, so multiply dollars by 100
+            amount = data.get("amount")
             if amount is None:
                 return JsonResponse({'error': 'Amount is required.'}, status=400)
+            amount = int(amount * 100)  # Stripe uses cents, so multiply dollars by 100
 
             # Create a new customer
             customer = stripe.Customer.create()
