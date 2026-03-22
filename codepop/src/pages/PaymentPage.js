@@ -18,9 +18,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/NavBar';
 import CheckoutForm from './CheckoutForm';
 import { BASE_URL } from '../../ip_address';
+import { useTheme } from '../theme';
 
 const PaymentPage = () => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
 
   // Order data
   const [groupedDrinks, setGroupedDrinks] = useState([]);
@@ -171,6 +173,549 @@ const PaymentPage = () => {
   const tax = subtotal * 0.08;
   const total = totalPrice + tax;
 
+  const makeStyles = (colors) => StyleSheet.create({
+    wholePage: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    scrollView: {
+      flex: 1,
+      paddingHorizontal: 16,
+    },
+
+    // Card styles
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+      marginTop: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    cardHeading: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 16,
+    },
+
+    // A. Order Summary
+    drinksList: {
+      marginBottom: 16,
+    },
+    drinkRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    drinkRowLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    drinkRowText: {
+      marginLeft: 12,
+    },
+    drinkName: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    drinkMeta: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+    drinkPrice: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    storeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      backgroundColor: colors.background,
+      borderRadius: 8,
+    },
+    storeText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginLeft: 8,
+    },
+    mapPlaceholder: {
+      borderWidth: 2,
+      borderStyle: 'dashed',
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 24,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      marginBottom: 16,
+      backgroundColor: colors.background,
+    },
+    mapPlaceholderText: {
+      fontSize: 14,
+      color: colors.textMuted,
+    },
+    priceBreakdown: {
+      backgroundColor: colors.background,
+      borderRadius: 8,
+      padding: 12,
+    },
+    priceRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    priceLabel: {
+      fontSize: 13,
+      color: colors.textMuted,
+    },
+    priceValue: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.textPrimary,
+    },
+    savingsText: {
+      color: colors.success,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: 8,
+    },
+    totalLabel: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    totalValue: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+
+    // B. Pickup Timing
+    toggleRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 16,
+    },
+    toggleButton: {
+      flex: 1,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+    },
+    toggleButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    toggleButtonText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    toggleButtonTextActive: {
+      color: '#FFFFFF',
+    },
+    infoBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      backgroundColor: colors.background,
+      borderRadius: 8,
+    },
+    infoBoxText: {
+      fontSize: 13,
+      color: colors.textPrimary,
+      marginLeft: 8,
+      fontWeight: '500',
+    },
+    infoBoxSubtext: {
+      fontSize: 11,
+      color: colors.textMuted,
+      marginLeft: 8,
+    },
+
+    // C. Payment Method
+    paymentOption: {
+      marginBottom: 12,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    radioOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    radioCircle: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: colors.border,
+      marginRight: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    radioSelected: {
+      borderColor: colors.primary,
+      backgroundColor: '#FFEEF1',
+    },
+    radioDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.primary,
+    },
+    paymentLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginLeft: 12,
+    },
+    paymentSub: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+    stripeBox: {
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      backgroundColor: colors.background,
+      marginVertical: 12,
+    },
+    stripeBoxText: {
+      fontSize: 12,
+      color: colors.textMuted,
+      lineHeight: 18,
+    },
+    securityRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 12,
+    },
+    securityText: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginLeft: 8,
+    },
+
+    // D. Save Card
+    saveCardRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    saveCardLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    privacyLink: {
+      fontSize: 12,
+      color: colors.secondary,
+      fontWeight: '500',
+    },
+
+    // E. Recurring Order
+    recurringRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    recurringLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    recurringDetails: {
+      marginTop: 16,
+      paddingTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    recurringDetailRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    recurringDetailLabel: {
+      fontSize: 13,
+      color: colors.textMuted,
+    },
+    editLink: {
+      fontSize: 13,
+      color: colors.secondary,
+      fontWeight: '600',
+    },
+
+    // F. Error Display
+    errorCard: {
+      backgroundColor: '#FEE2E2',
+      borderWidth: 1,
+      borderColor: colors.error,
+      borderRadius: 8,
+      padding: 16,
+      marginTop: 16,
+    },
+    errorHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    errorText: {
+      fontSize: 13,
+      color: colors.error,
+      fontWeight: '600',
+      marginLeft: 8,
+    },
+    errorAttempt: {
+      fontSize: 12,
+      color: colors.error,
+      marginBottom: 8,
+    },
+    contactLink: {
+      fontSize: 12,
+      color: colors.secondary,
+      fontWeight: '600',
+    },
+
+    // G. Pay Button
+    payButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 24,
+      marginBottom: 16,
+    },
+    payButtonDisabled: {
+      opacity: 0.6,
+    },
+    payButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    supportLink: {
+      fontSize: 14,
+      color: colors.secondary,
+      fontWeight: '600',
+      textAlign: 'center',
+      paddingVertical: 12,
+    },
+
+    navBarSpace: {
+      height: 80,
+    },
+
+    // Modal styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    modal: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      padding: 24,
+      paddingBottom: 32,
+    },
+    modalHeading: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      textAlign: 'center',
+      letterSpacing: 0.5,
+    },
+    modalDivider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: 16,
+    },
+    modalSection: {
+      marginBottom: 20,
+    },
+    modalLabel: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 12,
+    },
+    repeatEveryRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    repeatInput: {
+      width: 50,
+      height: 40,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      fontSize: 14,
+      color: colors.textPrimary,
+      textAlign: 'center',
+    },
+    unitPicker: {
+      flexDirection: 'row',
+      gap: 8,
+      flex: 1,
+    },
+    unitOption: {
+      flex: 1,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+    },
+    unitOptionActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    unitOptionText: {
+      fontSize: 12,
+      color: colors.textPrimary,
+      fontWeight: '500',
+    },
+    unitOptionTextActive: {
+      color: '#FFFFFF',
+    },
+    daySelector: {
+      flexDirection: 'row',
+      gap: 6,
+      justifyContent: 'space-between',
+    },
+    dayButton: {
+      flex: 1,
+      aspectRatio: 1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+    },
+    dayButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    dayButtonText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    dayButtonTextActive: {
+      color: '#FFFFFF',
+    },
+    endOption: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginBottom: 16,
+    },
+    endOptionContent: {
+      flex: 1,
+      marginLeft: 12,
+    },
+    endOptionText: {
+      fontSize: 13,
+      color: colors.textPrimary,
+      fontWeight: '500',
+    },
+    endDateInput: {
+      marginTop: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      fontSize: 13,
+      color: colors.textPrimary,
+    },
+    occurrencesInput: {
+      width: 50,
+      marginTop: 8,
+      marginRight: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 8,
+      fontSize: 13,
+      color: colors.textPrimary,
+      textAlign: 'center',
+    },
+    occurrencesLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 8,
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    modalButtonPrimary: {
+      flex: 1,
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalButtonText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    modalButtonSecondary: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+      borderRadius: 8,
+      paddingVertical: 12,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    modalButtonSecondaryText: {
+      color: colors.textPrimary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+  });
+
+  const styles = makeStyles(colors);
+
   return (
     <StripeProvider publishableKey="pk_test_51QEDP7HwEWxwIyaLoeRGprLwnn6Fj7jZljzxglWudPSTSe6sMyFPAjHZsnMOy1HuwZhUYT9JGZbOsxhXxkFTJp9700JSZTZKIz">
       <View style={styles.wholePage}>
@@ -184,7 +729,7 @@ const PaymentPage = () => {
               {groupedDrinks.map(({ drink, quantity }) => (
                 <View key={drink.DrinkID} style={styles.drinkRow}>
                   <View style={styles.drinkRowLeft}>
-                    <Icon name="cafe" size={20} color="#FF2E63" />
+                    <Icon name="cafe" size={20} color={colors.primary} />
                     <View style={styles.drinkRowText}>
                       <Text style={styles.drinkName}>{drink.Name || 'Custom Drink'}</Text>
                       <Text style={styles.drinkMeta}>×{quantity}</Text>
@@ -197,7 +742,7 @@ const PaymentPage = () => {
 
             {/* Store info */}
             <View style={styles.storeRow}>
-              <Icon name="location" size={18} color="#222831" />
+              <Icon name="location" size={18} color={colors.textPrimary} />
               <Text style={styles.storeText}>CodePop — Utah State University</Text>
             </View>
 
@@ -273,7 +818,7 @@ const PaymentPage = () => {
             {/* Geolocation message */}
             {pickupMethod === 'geolocation' && (
               <View style={styles.infoBox}>
-                <Icon name="time" size={16} color="#222831" />
+                <Icon name="time" size={16} color={colors.textPrimary} />
                 <Text style={styles.infoBoxText}>Estimated pickup: ~8 minutes from now</Text>
               </View>
             )}
@@ -300,7 +845,7 @@ const PaymentPage = () => {
                 <View style={[styles.radioCircle, paymentMethod === 'card' && styles.radioSelected]}>
                   {paymentMethod === 'card' && <View style={styles.radioDot} />}
                 </View>
-                <Icon name="card" size={20} color="#222831" />
+                <Icon name="card" size={20} color={colors.textPrimary} />
                 <Text style={styles.paymentLabel}>Credit / Debit Card</Text>
               </View>
             </TouchableOpacity>
@@ -314,7 +859,7 @@ const PaymentPage = () => {
                 <View style={[styles.radioCircle, paymentMethod === 'applepay' && styles.radioSelected]}>
                   {paymentMethod === 'applepay' && <View style={styles.radioDot} />}
                 </View>
-                <Icon name="logo-apple" size={20} color="#222831" />
+                <Icon name="logo-apple" size={20} color={colors.textPrimary} />
                 <Text style={styles.paymentLabel}>Apple Pay / Google Pay</Text>
               </View>
             </TouchableOpacity>
@@ -328,7 +873,7 @@ const PaymentPage = () => {
                 <View style={[styles.radioCircle, paymentMethod === 'saved' && styles.radioSelected]}>
                   {paymentMethod === 'saved' && <View style={styles.radioDot} />}
                 </View>
-                <Icon name="save" size={20} color="#222831" />
+                <Icon name="save" size={20} color={colors.textPrimary} />
                 <View>
                   <Text style={styles.paymentLabel}>Saved Cards</Text>
                   <Text style={styles.paymentSub}>(Coming soon)</Text>
@@ -347,7 +892,7 @@ const PaymentPage = () => {
 
             {/* Security indicators */}
             <View style={styles.securityRow}>
-              <Icon name="lock-closed" size={16} color="#222831" />
+              <Icon name="lock-closed" size={16} color={colors.textPrimary} />
               <Text style={styles.securityText}>Secure payment powered by Stripe</Text>
             </View>
             <View style={styles.securityRow}>
@@ -363,8 +908,8 @@ const PaymentPage = () => {
                 <Switch
                   value={saveCard}
                   onValueChange={setSaveCard}
-                  trackColor={{ false: '#E5E7EB', true: '#08D9D6' }}
-                  thumbColor={saveCard ? '#FF2E63' : '#FFFFFF'}
+                  trackColor={{ false: colors.border, true: colors.secondary }}
+                  thumbColor={saveCard ? colors.primary : '#FFFFFF'}
                 />
               </View>
               <TouchableOpacity>
@@ -380,8 +925,8 @@ const PaymentPage = () => {
               <Switch
                 value={isRecurring}
                 onValueChange={handleRecurringToggle}
-                trackColor={{ false: '#E5E7EB', true: '#08D9D6' }}
-                thumbColor={isRecurring ? '#FF2E63' : '#FFFFFF'}
+                trackColor={{ false: colors.border, true: colors.secondary }}
+                thumbColor={isRecurring ? colors.primary : '#FFFFFF'}
               />
             </View>
 
@@ -401,7 +946,7 @@ const PaymentPage = () => {
           {error && (
             <View style={styles.errorCard}>
               <View style={styles.errorHeader}>
-                <Icon name="warning" size={20} color="#EF4444" />
+                <Icon name="warning" size={20} color={colors.error} />
                 <Text style={styles.errorText}>{error}</Text>
               </View>
               <Text style={styles.errorAttempt}>Attempt {retryCount} of 3</Text>
@@ -461,6 +1006,7 @@ const PaymentPage = () => {
                     onChangeText={setRecurringInterval}
                     keyboardType="number-pad"
                     maxLength={2}
+                    placeholderTextColor={colors.textPlaceholder}
                   />
                   <View style={styles.unitPicker}>
                     <TouchableOpacity
@@ -532,7 +1078,7 @@ const PaymentPage = () => {
                         value={recurringEndDate}
                         onChangeText={setRecurringEndDate}
                         placeholder="Feb 14, 2026"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={colors.textPlaceholder}
                       />
                     )}
                   </View>
@@ -556,7 +1102,7 @@ const PaymentPage = () => {
                         keyboardType="number-pad"
                         maxLength={3}
                         placeholder="13"
-                        placeholderTextColor="#9CA3AF"
+                        placeholderTextColor={colors.textPlaceholder}
                       />
                     )}
                     {recurringEndType === 'after' && (
@@ -584,546 +1130,5 @@ const PaymentPage = () => {
     </StripeProvider>
   );
 };
-
-const styles = StyleSheet.create({
-  wholePage: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-
-  // Card styles
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 16,
-    marginTop: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  cardHeading: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#222831',
-    marginBottom: 16,
-  },
-
-  // A. Order Summary
-  drinksList: {
-    marginBottom: 16,
-  },
-  drinkRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  drinkRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  drinkRowText: {
-    marginLeft: 12,
-  },
-  drinkName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222831',
-  },
-  drinkMeta: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  drinkPrice: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222831',
-  },
-  storeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-  },
-  storeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222831',
-    marginLeft: 8,
-  },
-  mapPlaceholder: {
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    marginBottom: 16,
-    backgroundColor: '#F9FAFB',
-  },
-  mapPlaceholderText: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  priceBreakdown: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    padding: 12,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  priceLabel: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
-  priceValue: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#222831',
-  },
-  savingsText: {
-    color: '#10B981',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 8,
-  },
-  totalLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#222831',
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FF2E63',
-  },
-
-  // B. Pickup Timing
-  toggleRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-  },
-  toggleButtonActive: {
-    backgroundColor: '#FF2E63',
-    borderColor: '#FF2E63',
-  },
-  toggleButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#222831',
-  },
-  toggleButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  infoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-  },
-  infoBoxText: {
-    fontSize: 13,
-    color: '#222831',
-    marginLeft: 8,
-    fontWeight: '500',
-  },
-  infoBoxSubtext: {
-    fontSize: 11,
-    color: '#6B7280',
-    marginLeft: 8,
-  },
-
-  // C. Payment Method
-  paymentOption: {
-    marginBottom: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  radioOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  radioSelected: {
-    borderColor: '#FF2E63',
-    backgroundColor: '#FFEEF1',
-  },
-  radioDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FF2E63',
-  },
-  paymentLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222831',
-    marginLeft: 12,
-  },
-  paymentSub: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  stripeBox: {
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: '#F9FAFB',
-    marginVertical: 12,
-  },
-  stripeBoxText: {
-    fontSize: 12,
-    color: '#6B7280',
-    lineHeight: 18,
-  },
-  securityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  securityText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginLeft: 8,
-  },
-
-  // D. Save Card
-  saveCardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  saveCardLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222831',
-  },
-  privacyLink: {
-    fontSize: 12,
-    color: '#08D9D6',
-    fontWeight: '500',
-  },
-
-  // E. Recurring Order
-  recurringRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  recurringLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222831',
-  },
-  recurringDetails: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  recurringDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  recurringDetailLabel: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
-  editLink: {
-    fontSize: 13,
-    color: '#08D9D6',
-    fontWeight: '600',
-  },
-
-  // F. Error Display
-  errorCard: {
-    backgroundColor: '#FEE2E2',
-    borderWidth: 1,
-    borderColor: '#EF4444',
-    borderRadius: 8,
-    padding: 16,
-    marginTop: 16,
-  },
-  errorHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  errorText: {
-    fontSize: 13,
-    color: '#EF4444',
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  errorAttempt: {
-    fontSize: 12,
-    color: '#EF4444',
-    marginBottom: 8,
-  },
-  contactLink: {
-    fontSize: 12,
-    color: '#08D9D6',
-    fontWeight: '600',
-  },
-
-  // G. Pay Button
-  payButton: {
-    backgroundColor: '#FF2E63',
-    borderRadius: 8,
-    paddingVertical: 12,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 16,
-  },
-  payButtonDisabled: {
-    opacity: 0.6,
-  },
-  payButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  supportLink: {
-    fontSize: 14,
-    color: '#08D9D6',
-    fontWeight: '600',
-    textAlign: 'center',
-    paddingVertical: 12,
-  },
-
-  navBarSpace: {
-    height: 80,
-  },
-
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modal: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 24,
-    paddingBottom: 32,
-  },
-  modalHeading: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#222831',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  modalDivider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 16,
-  },
-  modalSection: {
-    marginBottom: 20,
-  },
-  modalLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#222831',
-    marginBottom: 12,
-  },
-  repeatEveryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  repeatInput: {
-    width: 50,
-    height: 40,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    fontSize: 14,
-    color: '#222831',
-    textAlign: 'center',
-  },
-  unitPicker: {
-    flexDirection: 'row',
-    gap: 8,
-    flex: 1,
-  },
-  unitOption: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 6,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  unitOptionActive: {
-    backgroundColor: '#FF2E63',
-    borderColor: '#FF2E63',
-  },
-  unitOptionText: {
-    fontSize: 12,
-    color: '#222831',
-    fontWeight: '500',
-  },
-  unitOptionTextActive: {
-    color: '#FFFFFF',
-  },
-  daySelector: {
-    flexDirection: 'row',
-    gap: 6,
-    justifyContent: 'space-between',
-  },
-  dayButton: {
-    flex: 1,
-    aspectRatio: 1,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  dayButtonActive: {
-    backgroundColor: '#FF2E63',
-    borderColor: '#FF2E63',
-  },
-  dayButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#222831',
-  },
-  dayButtonTextActive: {
-    color: '#FFFFFF',
-  },
-  endOption: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  endOptionContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  endOptionText: {
-    fontSize: 13,
-    color: '#222831',
-    fontWeight: '500',
-  },
-  endDateInput: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 13,
-    color: '#222831',
-  },
-  occurrencesInput: {
-    width: 50,
-    marginTop: 8,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    fontSize: 13,
-    color: '#222831',
-    textAlign: 'center',
-  },
-  occurrencesLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 8,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modalButtonPrimary: {
-    flex: 1,
-    backgroundColor: '#FF2E63',
-    borderRadius: 8,
-    paddingVertical: 12,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  modalButtonSecondary: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-    paddingVertical: 12,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  modalButtonSecondaryText: {
-    color: '#222831',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});
 
 export default PaymentPage;

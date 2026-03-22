@@ -14,21 +14,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { BASE_URL } from '../../ip_address';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// Colors from UI_GUIDELINES.md
-const colors = {
-  primary: '#FF2E63',
-  secondary: '#08D9D6',
-  background: '#FFFFFF',
-  surface: '#FFFFFF',
-  text: '#222831',
-  border: '#E5E7EB',
-  disabled: '#D1D5DB',
-  error: '#EF4444',
-  errorBg: '#FEE2E2',
-  botBubble: '#F3F4F6',
-  secondaryText: '#6B7280',
-};
+import { useTheme } from '../theme';
 
 // Quick reply options
 const QUICK_REPLIES = [
@@ -38,6 +24,7 @@ const QUICK_REPLIES = [
 ];
 
 const ComplaintsPage = () => {
+  const { colors } = useTheme();
   const [searchText, setSearchText] = useState('');
   const [messages, setMessages] = useState([
     { text: "Hi! I'm tonic. How can I help you?", isBot: true },
@@ -255,6 +242,161 @@ const ComplaintsPage = () => {
     complaintAI(lastUserMessageRef.current);
   };
 
+  const makeStyles = (colors) => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    chatContainer: {
+      flex: 1,
+    },
+    chatContentContainer: {
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 16,
+    },
+    messageBubbleRow: {
+      flexDirection: 'row',
+      marginBottom: 12,
+      alignItems: 'flex-end',
+    },
+    botRow: {
+      justifyContent: 'flex-start',
+    },
+    userRow: {
+      justifyContent: 'flex-end',
+    },
+    messageBubble: {
+      maxWidth: '75%',
+      padding: 12,
+      borderRadius: 12,
+    },
+    botBubble: {
+      backgroundColor: colors.surface2,
+    },
+    userBubble: {
+      backgroundColor: colors.primary,
+    },
+    errorBubble: {
+      backgroundColor: '#FEE2E2',
+    },
+    botAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      marginRight: 8,
+      backgroundColor: colors.border,
+    },
+    botAvatarPlaceholder: {
+      width: 40,
+      height: 40,
+      marginLeft: 8,
+    },
+    messageText: {
+      fontSize: 14,
+      color: colors.textPrimary,
+      lineHeight: 21,
+    },
+    botMessageText: {
+      color: colors.textPrimary,
+    },
+    typingContainer: {
+      flexDirection: 'row',
+      marginBottom: 12,
+      alignItems: 'center',
+    },
+    typingBubble: {
+      backgroundColor: colors.surface2,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    typingDot: {
+      fontSize: 18,
+      color: colors.textMuted,
+    },
+    retryButton: {
+      marginTop: 8,
+      backgroundColor: colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 6,
+      alignSelf: 'flex-start',
+    },
+    retryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    quickRepliesContainer: {
+      marginTop: 16,
+      paddingTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    quickRepliesLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginBottom: 8,
+      fontWeight: '600',
+    },
+    quickReplyButton: {
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 20,
+      marginBottom: 8,
+    },
+    quickReplyText: {
+      fontSize: 13,
+      color: colors.textPrimary,
+      fontWeight: '500',
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      paddingHorizontal: 16,
+      paddingTop: 12,
+      paddingBottom: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.background,
+    },
+    searchInput: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 14,
+      backgroundColor: colors.surface,
+      color: colors.textPrimary,
+      maxHeight: 100,
+    },
+    sendButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+      marginLeft: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    sendButtonDisabled: {
+      backgroundColor: colors.emptyIcon,
+    },
+    navBarSpace: {
+      height: 80,
+    },
+  });
+
+  const styles = makeStyles(colors);
+
   // Scroll to bottom when messages update
   useEffect(() => {
     if (scrollViewRef.current) {
@@ -396,7 +538,7 @@ const ComplaintsPage = () => {
           <Icon
             name="send"
             size={20}
-            color={searchText.trim() === '' || loading ? '#999' : '#fff'}
+            color={searchText.trim() === '' || loading ? colors.textMuted : '#fff'}
           />
         </TouchableOpacity>
       </View>
@@ -407,158 +549,5 @@ const ComplaintsPage = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  chatContainer: {
-    flex: 1,
-  },
-  chatContentContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 16,
-  },
-  messageBubbleRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    alignItems: 'flex-end',
-  },
-  botRow: {
-    justifyContent: 'flex-start',
-  },
-  userRow: {
-    justifyContent: 'flex-end',
-  },
-  messageBubble: {
-    maxWidth: '75%',
-    padding: 12,
-    borderRadius: 12,
-  },
-  botBubble: {
-    backgroundColor: colors.botBubble,
-  },
-  userBubble: {
-    backgroundColor: colors.primary,
-  },
-  errorBubble: {
-    backgroundColor: colors.errorBg,
-  },
-  botAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 8,
-    backgroundColor: colors.border,
-  },
-  botAvatarPlaceholder: {
-    width: 40,
-    height: 40,
-    marginLeft: 8,
-  },
-  messageText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 21,
-  },
-  botMessageText: {
-    color: colors.text,
-  },
-  typingContainer: {
-    flexDirection: 'row',
-    marginBottom: 12,
-    alignItems: 'center',
-  },
-  typingBubble: {
-    backgroundColor: colors.botBubble,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  typingDot: {
-    fontSize: 18,
-    color: colors.secondaryText,
-  },
-  retryButton: {
-    marginTop: 8,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  quickRepliesContainer: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  quickRepliesLabel: {
-    fontSize: 12,
-    color: colors.secondaryText,
-    marginBottom: 8,
-    fontWeight: '600',
-  },
-  quickReplyButton: {
-    backgroundColor: colors.botBubble,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginBottom: 8,
-  },
-  quickReplyText: {
-    fontSize: 13,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  searchInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    maxHeight: 100,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-    marginLeft: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sendButtonDisabled: {
-    backgroundColor: colors.disabled,
-  },
-  navBarSpace: {
-    height: 80,
-  },
-});
 
 export default ComplaintsPage;

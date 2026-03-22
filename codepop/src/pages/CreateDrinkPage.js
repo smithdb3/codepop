@@ -9,6 +9,7 @@ import {BASE_URL} from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AIAlert from '../components/AIAlert';
 import CodePopLogo from '../components/CodePopLogo';
+import { useTheme } from '../theme';
 
 const flavorMap = {
   // Sodas
@@ -55,6 +56,7 @@ const getDrinkTags = (sodas, syrups, addins) => {
 const CreateDrinkPage = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const [drinkDict, setDrinkDict] = useState([]);
   const [isModalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -268,7 +270,198 @@ const CreateDrinkPage = () => {
   };  
   
   const layers = getLayers(SodaUsed, SyrupsUsed, AddIns);
-  
+
+  const makeStyles = (colors) => StyleSheet.create({
+    wholePage: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    pinnedTop: {
+      backgroundColor: colors.surface,
+      paddingHorizontal: 16,
+      paddingTop: 12,
+      paddingBottom: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    reviewCard: {
+      position: 'relative',
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      padding: 16,
+      paddingRight: 80,
+      marginBottom: 10,
+      minHeight: 125,
+    },
+    gifCorner: {
+      position: 'absolute',
+      top: 4,
+      right: 8,
+      overflow: 'hidden',
+    },
+    reviewContent: {},
+    reviewTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 2,
+    },
+    reviewMeta: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginBottom: 6,
+    },
+    reviewPlaceholder: {
+      fontSize: 12,
+      color: colors.textPlaceholder,
+      fontStyle: 'italic',
+    },
+    reviewRow: {
+      fontSize: 12,
+      color: colors.textPrimary,
+      marginBottom: 2,
+      lineHeight: 17,
+    },
+    reviewLabel: {
+      fontWeight: '600',
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+      fontSize: 10,
+      letterSpacing: 0.5,
+    },
+    reviewValue: {
+      color: colors.textPrimary,
+      fontSize: 12,
+    },
+    flavorTagRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 5,
+      marginTop: 8,
+    },
+    flavorTag: {
+      backgroundColor: '#F0FDFC',
+      borderWidth: 1,
+      borderColor: colors.secondary,
+      borderRadius: 20,
+      paddingVertical: 2,
+      paddingHorizontal: 8,
+    },
+    flavorTagText: {
+      color: colors.secondary,
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    pinnedButtonRow: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    pinnedButton: {
+      flex: 1,
+      minHeight: 44,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    scrollContent: {
+      flex: 1,
+    },
+    scrollContentContainer: {
+      paddingHorizontal: 16,
+      paddingTop: 16,
+    },
+    pageTitle: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 16,
+    },
+    selectorSection: {
+      marginBottom: 16,
+    },
+    selectorLabel: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginBottom: 8,
+    },
+    tileRow: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    tileButton: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 10,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      minHeight: 62,
+    },
+    tileButtonSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    tileEmoji: {
+      fontSize: 20,
+      marginBottom: 4,
+    },
+    tileLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.textMuted,
+    },
+    tileLabelSelected: {
+      color: '#FFFFFF',
+    },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowOffset: { width: 0, height: 2 },
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    primaryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    secondaryButton: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      borderWidth: 2,
+      borderColor: colors.secondary,
+    },
+    secondaryButtonText: {
+      color: colors.secondary,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    searchInput: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      fontSize: 14,
+      marginVertical: 16,
+      color: colors.textPrimary,
+    },
+    navBarSpace: {
+      marginBottom: 80,
+    },
+  });
+
+  const styles = makeStyles(colors);
 
   return (
     <View style={styles.wholePage}>
@@ -404,7 +597,7 @@ const CreateDrinkPage = () => {
           style={styles.searchInput}
           value={searchText}
           onChangeText={handleSearch}
-          placeholderTextColor="#999"
+          placeholderTextColor={colors.textPlaceholder}
         />
 
         {/* Dropdowns */}
@@ -441,195 +634,5 @@ const CreateDrinkPage = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  wholePage: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  pinnedTop: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  reviewCard: {
-    position: 'relative',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 16,
-    paddingRight: 80,
-    marginBottom: 10,
-    minHeight: 125,
-  },
-  gifCorner: {
-    position: 'absolute',
-    top: 4,
-    right: 8,
-    overflow: 'hidden',
-  },
-  reviewContent: {},
-  reviewTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#222831',
-    marginBottom: 2,
-  },
-  reviewMeta: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 6,
-  },
-  reviewPlaceholder: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    fontStyle: 'italic',
-  },
-  reviewRow: {
-    fontSize: 12,
-    color: '#222831',
-    marginBottom: 2,
-    lineHeight: 17,
-  },
-  reviewLabel: {
-    fontWeight: '600',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    fontSize: 10,
-    letterSpacing: 0.5,
-  },
-  reviewValue: {
-    color: '#222831',
-    fontSize: 12,
-  },
-  flavorTagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 5,
-    marginTop: 8,
-  },
-  flavorTag: {
-    backgroundColor: '#F0FDFC',
-    borderWidth: 1,
-    borderColor: '#08D9D6',
-    borderRadius: 20,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-  },
-  flavorTagText: {
-    color: '#08D9D6',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  pinnedButtonRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  pinnedButton: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scrollContent: {
-    flex: 1,
-  },
-  scrollContentContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#222831',
-    marginBottom: 16,
-  },
-  selectorSection: {
-    marginBottom: 16,
-  },
-  selectorLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 8,
-  },
-  tileRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  tileButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-    minHeight: 62,
-  },
-  tileButtonSelected: {
-    backgroundColor: '#FF2E63',
-    borderColor: '#FF2E63',
-  },
-  tileEmoji: {
-    fontSize: 20,
-    marginBottom: 4,
-  },
-  tileLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  tileLabelSelected: {
-    color: '#FFFFFF',
-  },
-  primaryButton: {
-    backgroundColor: '#FF2E63',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#08D9D6',
-  },
-  secondaryButtonText: {
-    color: '#08D9D6',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  searchInput: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    marginVertical: 16,
-    color: '#222831',
-  },
-  navBarSpace: {
-    marginBottom: 80,
-  },
-});
 
 export default CreateDrinkPage;

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { BASE_URL } from '../../ip_address';
+import { useTheme } from '../theme';
 
 
 const CreateAccountPage = ({ navigation, route }) => {
+  const { colors } = useTheme();
   const [first_name, setFirstname] = useState('');
   const [email, setEmail] = useState(route.params?.email ?? '');
   const [password, setPassword] = useState('');
@@ -50,8 +52,95 @@ const CreateAccountPage = ({ navigation, route }) => {
     }
   };
 
+  const makeStyles = (colors) => StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      padding: 16,
+      backgroundColor: colors.surface
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: '700',
+      marginBottom: 30,
+      textAlign: 'center',
+      color: colors.textPrimary,
+    },
+    primaryButton: {
+      marginTop: 20,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 44,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
+    primaryButtonDisabled: {
+      opacity: 0.6,
+    },
+    buttonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.surface,
+    },
+    input: {
+      fontSize: 14,
+      fontWeight: '400',
+      marginBottom: 16,
+      borderColor: colors.border,
+      borderWidth: 1,
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      backgroundColor: colors.surface,
+      color: colors.textPrimary,
+      minHeight: 44,
+    },
+    errorMessage: {
+      fontSize: 12,
+      color: colors.error,
+      marginTop: 12,
+      textAlign: 'center',
+    },
+    emailInfoBox: {
+      backgroundColor: colors.background,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    emailInfoLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginBottom: 4,
+    },
+    emailInfoText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    ghostButton: {
+      marginTop: 16,
+    },
+    ghostButtonText: {
+      color: colors.secondary,
+      fontSize: 14,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+  });
+
+  const styles = makeStyles(colors);
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -65,7 +154,7 @@ const CreateAccountPage = ({ navigation, route }) => {
         <TextInput placeholder="Password" onChangeText={setPassword} secureTextEntry style={styles.input} />
         <TouchableOpacity onPress={handleRegister} style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]} disabled={isLoading}>
           {isLoading ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={colors.surface} />
           ) : (
             <Text style={styles.buttonText}>Create Account</Text>
           )}
@@ -78,90 +167,5 @@ const CreateAccountPage = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 16,
-    backgroundColor: '#FFFFFF'
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 30,
-    textAlign: 'center',
-    color: '#222831',
-  },
-  primaryButton: {
-    marginTop: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#FF2E63',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  primaryButtonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  input: {
-    fontSize: 14,
-    fontWeight: '400',
-    marginBottom: 16,
-    borderColor: '#E5E7EB',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    backgroundColor: '#FFFFFF',
-    color: '#222831',
-    minHeight: 44,
-  },
-  errorMessage: {
-    fontSize: 12,
-    color: '#EF4444',
-    marginTop: 12,
-    textAlign: 'center',
-  },
-  emailInfoBox: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  emailInfoLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  emailInfoText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222831',
-  },
-  ghostButton: {
-    marginTop: 16,
-  },
-  ghostButtonText: {
-    color: '#08D9D6',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-});
 
 export default CreateAccountPage;

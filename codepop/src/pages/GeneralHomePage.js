@@ -6,6 +6,7 @@ import { BASE_URL } from '../../ip_address';
 import NavBar from '../components/NavBar';
 import SeasonalCarousel from '../components/SeasonalCarousel';
 import { CodePopLogo } from '../components/CodePopLogo';
+import { useTheme } from '../theme';
 
 const SAVED_DRINKS = [
   { id: 1, name: 'Cherry Fizz', description: 'Cherry syrup + lemon-lime soda', price: 4.99 },
@@ -14,6 +15,7 @@ const SAVED_DRINKS = [
 ];
 
 const GeneralHomePage = () => {
+  const { colors } = useTheme();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isManager, setIsManager] = useState(false);
@@ -21,6 +23,252 @@ const GeneralHomePage = () => {
   const [showSizeSelector, setShowSizeSelector] = useState({});
   const [selectedSize, setSelectedSize] = useState({});
   const navigation = useNavigation();
+
+  const makeStyles = (colors) => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    contentContainer: {
+      flexGrow: 1,
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 100,
+    },
+    notSignedInContainer: {
+      flexGrow: 1,
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      paddingHorizontal: 24,
+      paddingTop: 64,
+      paddingBottom: 100,
+    },
+    customHeader: {
+      height: 56,
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tagline: {
+      fontSize: 16,
+      color: colors.textMuted,
+      marginBottom: 8,
+      textAlign: 'center',
+      fontStyle: 'italic',
+    },
+    notSignedInLabel: {
+      fontSize: 14,
+      color: colors.textMuted,
+      marginBottom: 24,
+      textAlign: 'center',
+    },
+    greeting: {
+      fontSize: 32,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 24,
+    },
+    carousel: {
+      marginBottom: 24,
+    },
+    tonicSection: {
+      backgroundColor: colors.surface2,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+      marginBottom: 32,
+    },
+    tonicSectionHeader: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    tonicSectionSub: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginBottom: 16,
+    },
+    tonicButtonRow: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    logoBlock: {
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    signInButton: {
+      width: 280,
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    tonicGuestButton: {
+      width: 280,
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 12,
+      paddingVertical: 16,
+      paddingHorizontal: 20,
+      alignItems: 'center',
+      marginBottom: 32,
+    },
+    tonicGuestButtonLabel: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    tonicGuestButtonSub: {
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+    carouselSection: {
+      alignSelf: 'stretch',
+      marginTop: 8,
+    },
+    primaryButton: {
+      flex: 1,
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    primaryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    secondaryButton: {
+      flex: 1,
+      backgroundColor: colors.surface2,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    secondaryButtonText: {
+      color: colors.textPrimary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    drinkCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 12,
+      marginBottom: 16,
+    },
+    drinkName: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    drinkDescription: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginBottom: 8,
+    },
+    drinkPrice: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.primary,
+      marginBottom: 12,
+    },
+    drinkActions: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    deleteButton: {
+      flex: 0.3,
+      backgroundColor: colors.error,
+      paddingVertical: 8,
+      paddingHorizontal: 8,
+      borderRadius: 6,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    deleteButtonText: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    sizeSelector: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 12,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.borderLight,
+    },
+    sizeOption: {
+      flex: 1,
+      paddingVertical: 8,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+      alignItems: 'center',
+    },
+    sizeOptionSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    sizeOptionText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    sizeOptionSelectedText: {
+      color: '#FFFFFF',
+    },
+    savedDrinksSection: {
+      marginBottom: 24,
+    },
+    savedDrinksSectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 12,
+    },
+    footerButton: {
+      width: 280,
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      borderRadius: 8,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 24,
+      marginBottom: 100,
+    },
+    footerButtonText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+  });
+
+  const styles = makeStyles(colors);
 
   // Check login status when the screen gains focus
   useFocusEffect(
@@ -240,237 +488,5 @@ const GeneralHomePage = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  contentContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 100,
-  },
-  notSignedInContainer: {
-    flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 24,
-    paddingTop: 64,
-    paddingBottom: 100,
-  },
-  customHeader: {
-    height: 56,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tagline: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginBottom: 8,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  notSignedInLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  greeting: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#222831',
-    marginBottom: 24,
-  },
-  carousel: {
-    marginBottom: 24,
-  },
-  tonicSection: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 16,
-    marginBottom: 32,
-  },
-  tonicSectionHeader: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#222831',
-    marginBottom: 4,
-  },
-  tonicSectionSub: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 16,
-  },
-  tonicButtonRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  logoBlock: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  signInButton: {
-    width: 280,
-    backgroundColor: '#FF2E63',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  tonicGuestButton: {
-    width: 280,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  tonicGuestButtonLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#222831',
-    marginBottom: 4,
-  },
-  tonicGuestButtonSub: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  carouselSection: {
-    alignSelf: 'stretch',
-    marginTop: 8,
-  },
-  primaryButton: {
-    flex: 1,
-    backgroundColor: '#FF2E63',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  secondaryButton: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  secondaryButtonText: {
-    color: '#222831',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  savedDrinksSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#222831',
-    marginBottom: 16,
-  },
-  drinkCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  drinkName: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#222831',
-    marginBottom: 8,
-  },
-  drinkDescription: {
-    fontSize: 12,
-    color: '#222831',
-    marginBottom: 8,
-  },
-  drinkPrice: {
-    fontSize: 14,
-    color: '#222831',
-    marginBottom: 12,
-    fontWeight: '600',
-  },
-  drinkActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  deleteButton: {
-    flex: 1,
-    backgroundColor: '#EF4444',
-    paddingVertical: 10,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  deleteButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  sizeSelector: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  sizeOption: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sizeOptionSelected: {
-    backgroundColor: '#FF2E63',
-    borderColor: '#FF2E63',
-  },
-  sizeOptionText: {
-    fontSize: 12,
-    color: '#222831',
-    fontWeight: '600',
-  },
-  sizeOptionTextSelected: {
-    color: '#FFFFFF',
-  },
-  buttonContainer: {
-    gap: 12,
-    marginBottom: 24,
-  },
-});
 
 export default GeneralHomePage;

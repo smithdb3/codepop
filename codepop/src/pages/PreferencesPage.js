@@ -14,9 +14,11 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/NavBar';
 import { BASE_URL } from '../../ip_address';
+import { useTheme } from '../theme';
 
 const PreferencesPage = () => {
   const navigation = useNavigation();
+  const { colors, themeMode, setThemeMode } = useTheme();
 
   // Auth & User State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -37,7 +39,6 @@ const PreferencesPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   // Preferences & Privacy States
-  const [themeMode, setThemeMode] = useState('system');
   const [notifOrderStatus, setNotifOrderStatus] = useState(true);
   const [notifPromo, setNotifPromo] = useState(true);
   const [notifNewItems, setNotifNewItems] = useState(false);
@@ -166,11 +167,438 @@ const PreferencesPage = () => {
     }
   };
 
+  const makeStyles = (colors) => StyleSheet.create({
+    wholePage: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    notLoggedInContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      marginTop: 80,
+    },
+    notLoggedInTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginTop: 16,
+      marginBottom: 32,
+    },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      borderRadius: 8,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    primaryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    profileHeader: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginHorizontal: 16,
+      marginTop: 16,
+      padding: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    profileRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    avatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+    },
+    avatarText: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: '#FFFFFF',
+    },
+    profileInfo: {
+      flex: 1,
+    },
+    profileName: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    profileEmail: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    editButton: {
+      padding: 8,
+    },
+    loyaltyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    loyaltyBadge: {
+      backgroundColor: '#FFF9E6',
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+    },
+    loyaltyText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#B45309',
+    },
+    memberSince: {
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+    tabBarWrapper: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    tabBarContainer: {
+      paddingHorizontal: 16,
+      paddingVertical: 4,
+    },
+    tabButton: {
+      minWidth: 120,
+      minHeight: 44,
+      paddingHorizontal: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      marginRight: 4,
+    },
+    tabButtonActive: {
+      borderBottomWidth: 2,
+      borderBottomColor: colors.primary,
+    },
+    tabButtonText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.textMuted,
+    },
+    tabButtonTextActive: {
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginHorizontal: 16,
+      marginTop: 16,
+      padding: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    sectionLabel: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginBottom: 12,
+    },
+    subsectionLabel: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 12,
+    },
+    storeCard: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      backgroundColor: colors.surface2,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 12,
+    },
+    storeCardName: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    storeCardDetail: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    secondaryButton: {
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    secondaryButtonText: {
+      color: colors.textPrimary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    helperText: {
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+    settingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 10,
+    },
+    settingLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.textPrimary,
+    },
+    settingValue: {
+      fontSize: 14,
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+    changeButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    inlineForm: {
+      marginTop: 12,
+      gap: 10,
+    },
+    textInput: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 14,
+      color: colors.textPrimary,
+      backgroundColor: colors.surface2,
+    },
+    formButtonRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 4,
+    },
+    cancelButton: {
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    cancelButtonText: {
+      color: colors.textMuted,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    strengthBarContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginTop: 4,
+    },
+    strengthSegmentRow: {
+      flexDirection: 'row',
+      gap: 4,
+      flex: 1,
+    },
+    strengthSegment: {
+      flex: 1,
+      height: 4,
+      borderRadius: 2,
+    },
+    strengthLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginLeft: 8,
+    },
+    settingDivider: {
+      height: 1,
+      backgroundColor: colors.borderLight,
+      marginVertical: 12,
+    },
+    radioRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 12,
+    },
+    radioPill: {
+      flex: 1,
+      paddingVertical: 10,
+      paddingHorizontal: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      backgroundColor: colors.surface2,
+    },
+    radioPillActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    radioPillText: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.textMuted,
+      textAlign: 'center',
+    },
+    radioPillTextActive: {
+      color: '#FFFFFF',
+      fontWeight: '600',
+    },
+    notifRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 14,
+    },
+    notifRowDivider: {
+      height: 1,
+      backgroundColor: colors.borderLight,
+    },
+    notifLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: colors.textPrimary,
+    },
+    emptyStateCard: {
+      alignItems: 'center',
+      paddingVertical: 32,
+    },
+    emptyStateTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginTop: 12,
+    },
+    emptyStateSubtitle: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginTop: 4,
+      marginBottom: 12,
+    },
+    comingSoonBadge: {
+      backgroundColor: '#E0F2FE',
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: 6,
+    },
+    comingSoonText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: '#0369A1',
+    },
+    ghostCard: {
+      opacity: 0.45,
+    },
+    ghostCardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+    ghostCardLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.textPlaceholder,
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    ghostCardTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    ghostCardDetail: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginBottom: 2,
+    },
+    ghostButtonRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginTop: 12,
+    },
+    ghostActionButton: {
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+    },
+    ghostActionButtonText: {
+      fontSize: 12,
+      color: colors.textPlaceholder,
+      fontWeight: '500',
+    },
+    statusBadge: {
+      paddingVertical: 3,
+      paddingHorizontal: 8,
+      borderRadius: 6,
+      backgroundColor: colors.surface2,
+    },
+    statusBadgeText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.textMuted,
+    },
+    logoutButton: {
+      backgroundColor: colors.error,
+      marginHorizontal: 16,
+      marginTop: 24,
+      paddingVertical: 12,
+      borderRadius: 8,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    logoutButtonText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    navBarSpace: {
+      height: 80,
+    },
+  });
+
+  const styles = makeStyles(colors);
+
   const renderNotLoggedIn = () => (
     <View style={styles.wholePage}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.notLoggedInContainer}>
-          <Icon name="lock-closed-outline" size={64} color="#D1D5DB" />
+          <Icon name="lock-closed-outline" size={64} color={colors.emptyIcon} />
           <Text style={styles.notLoggedInTitle}>Sign in to view your profile</Text>
           <TouchableOpacity
             style={styles.primaryButton}
@@ -197,7 +625,7 @@ const PreferencesPage = () => {
     <View style={styles.card}>
       <Text style={styles.sectionLabel}>PRIMARY STORE LOCATION</Text>
       <View style={styles.storeCard}>
-        <Icon name="storefront-outline" size={20} color="#222831" style={{ marginRight: 12 }} />
+        <Icon name="storefront-outline" size={20} color={colors.textPrimary} style={{ marginRight: 12 }} />
         <View>
           <Text style={styles.storeCardName}>CodePop Station</Text>
           <Text style={styles.storeCardDetail}>Hours: 8am – 8pm</Text>
@@ -239,7 +667,7 @@ const PreferencesPage = () => {
           <TextInput
             style={styles.textInput}
             placeholder="New email address"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textPlaceholder}
             value={newEmail}
             onChangeText={setNewEmail}
             keyboardType="email-address"
@@ -283,7 +711,7 @@ const PreferencesPage = () => {
           <TextInput
             style={styles.textInput}
             placeholder="Current password"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textPlaceholder}
             value={currentPassword}
             onChangeText={setCurrentPassword}
             secureTextEntry
@@ -291,7 +719,7 @@ const PreferencesPage = () => {
           <TextInput
             style={styles.textInput}
             placeholder="New password"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textPlaceholder}
             value={newPassword}
             onChangeText={setNewPassword}
             secureTextEntry
@@ -349,7 +777,7 @@ const PreferencesPage = () => {
           <TextInput
             style={styles.textInput}
             placeholder="Confirm new password"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textPlaceholder}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
@@ -569,451 +997,5 @@ const PreferencesPage = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  wholePage: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-
-  // Not Logged In
-  notLoggedInContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginTop: 80,
-  },
-  notLoggedInTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#222831',
-    marginTop: 16,
-    marginBottom: 32,
-  },
-
-  // Profile Header
-  profileHeader: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#FF2E63',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#222831',
-  },
-  profileEmail: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  editButton: {
-    padding: 8,
-  },
-  loyaltyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  loyaltyBadge: {
-    backgroundColor: '#FFF9E6',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  loyaltyText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#B45309',
-  },
-  memberSince: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-
-  // Tab Bar
-  tabBarWrapper: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  tabBarContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-  },
-  tabButton: {
-    minWidth: 120,
-    minHeight: 44,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    marginRight: 4,
-  },
-  tabButtonActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#FF2E63',
-  },
-  tabButtonText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  tabButtonTextActive: {
-    color: '#FF2E63',
-    fontWeight: '600',
-  },
-
-  // Card
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 12,
-  },
-  subsectionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#222831',
-    marginBottom: 12,
-  },
-
-  // Location Tab
-  storeCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  storeCardName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#222831',
-  },
-  storeCardDetail: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  secondaryButton: {
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  secondaryButtonText: {
-    color: '#222831',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  helperText: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-
-  // Account Settings Tab
-  settingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-  },
-  settingLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#222831',
-  },
-  settingValue: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  changeButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FF2E63',
-  },
-  inlineForm: {
-    marginTop: 12,
-    gap: 10,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#222831',
-  },
-  formButtonRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
-  },
-  cancelButton: {
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#6B7280',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  strengthBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
-  },
-  strengthSegmentRow: {
-    flexDirection: 'row',
-    gap: 4,
-    flex: 1,
-  },
-  strengthSegment: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-  },
-  strengthLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginLeft: 8,
-  },
-  settingDivider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 12,
-  },
-
-  // Preferences Tab
-  radioRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  radioPill: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-  },
-  radioPillActive: {
-    backgroundColor: '#FF2E63',
-    borderColor: '#FF2E63',
-  },
-  radioPillText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  radioPillTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  notifRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-  },
-  notifRowDivider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  notifLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#222831',
-  },
-
-  // Recurring Tab
-  emptyStateCard: {
-    alignItems: 'center',
-    paddingVertical: 32,
-  },
-  emptyStateTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#222831',
-    marginTop: 12,
-  },
-  emptyStateSubtitle: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 4,
-    marginBottom: 12,
-  },
-  comingSoonBadge: {
-    backgroundColor: '#E0F2FE',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-  comingSoonText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#0369A1',
-  },
-  ghostCard: {
-    opacity: 0.45,
-  },
-  ghostCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  ghostCardLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#9CA3AF',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  ghostCardTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#222831',
-    marginBottom: 4,
-  },
-  ghostCardDetail: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 2,
-  },
-  ghostButtonRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 12,
-  },
-  ghostActionButton: {
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-  },
-  ghostActionButtonText: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    fontWeight: '500',
-  },
-  statusBadge: {
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    backgroundColor: '#E5E7EB',
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-
-  // Logout
-  logoutButton: {
-    backgroundColor: '#EF4444',
-    marginHorizontal: 16,
-    marginTop: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoutButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  // Primary Button
-  primaryButton: {
-    backgroundColor: '#FF2E63',
-    paddingVertical: 12,
-    borderRadius: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  // NavBar Space
-  navBarSpace: {
-    height: 80,
-  },
-});
 
 export default PreferencesPage;

@@ -22,13 +22,16 @@ import PreferencesPage from './src/pages/PreferencesPage';
 import UpdateDrink from './src/pages/UpdateDrink';
 import CodePopLogo from './src/components/CodePopLogo';
 import { BASE_URL } from './ip_address';
+import { ThemeProvider, useTheme } from './src/theme';
 
 const Stack = createNativeStackNavigator();
-const title = 'CodePop' 
+const title = 'CodePop'
 
 
-const App = () => {
-  // initialize cart list 
+const AppNavigator = () => {
+  const { colors } = useTheme();
+
+  // initialize cart list
   const initCart = async () => {
     try{
       const checkoutList = await AsyncStorage.getItem('checkoutList')
@@ -40,7 +43,7 @@ const App = () => {
       console.error("error with initializing cart list", error);
     }
   };
-  
+
   useEffect(() => {
     initCart()
   }, []);
@@ -56,7 +59,7 @@ const App = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="GeneralHome" screenOptions={{headerStyle: {backgroundColor: '#FFFFFF'}}}>
+      <Stack.Navigator initialRouteName="GeneralHome" screenOptions={{headerStyle: {backgroundColor: colors.surface}}}>
         <Stack.Screen
           name="EmailCheck"
           component={EmailCheckPage}
@@ -157,6 +160,14 @@ const App = () => {
         />
       </Stack.Navigator>
     </NavigationContainer>
+  );
+};
+
+const App = () => {
+  return (
+    <ThemeProvider>
+      <AppNavigator />
+    </ThemeProvider>
   );
 };
 

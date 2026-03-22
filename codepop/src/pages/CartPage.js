@@ -13,9 +13,11 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/NavBar';
 import { BASE_URL } from '../../ip_address';
+import { useTheme } from '../theme';
 
 const CartPage = () => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const [groupedDrinks, setGroupedDrinks] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [subtotal, setSubtotal] = useState(0);
@@ -202,7 +204,7 @@ const CartPage = () => {
       <View style={styles.drinkCard}>
         <View style={styles.drinkContent}>
           <View style={styles.drinkIconBadge}>
-            <Icon name="cafe" size={24} color="#FF2E63" />
+            <Icon name="cafe" size={24} color={colors.primary} />
           </View>
 
           <View style={styles.drinkInfo}>
@@ -219,7 +221,7 @@ const CartPage = () => {
             onPress={() => navigation.navigate('UpdateDrink', { drink })}
             style={styles.editButton}
           >
-            <Icon name="pencil" size={20} color="#222831" />
+            <Icon name="pencil" size={20} color={colors.textPrimary} />
           </TouchableOpacity>
 
           <View style={styles.quantityRow}>
@@ -242,7 +244,7 @@ const CartPage = () => {
             onPress={() => handleRemoveDrink(drink.DrinkID)}
             style={styles.removeButton}
           >
-            <Icon name="trash" size={20} color="#EF4444" />
+            <Icon name="trash" size={20} color={colors.error} />
           </TouchableOpacity>
         </View>
       </View>
@@ -251,7 +253,7 @@ const CartPage = () => {
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Icon name="cart-outline" size={64} color="#E5E7EB" />
+      <Icon name="cart-outline" size={64} color={colors.borderLight} />
       <Text style={styles.emptyTitle}>Your cart is empty</Text>
       <Text style={styles.emptySubtitle}>Add a drink to get started</Text>
       <TouchableOpacity
@@ -278,14 +280,14 @@ const CartPage = () => {
           renderItem={({ item }) => (
             <View style={styles.savedDrinkCard}>
               <View style={styles.savedDrinkBadge}>
-                <Icon name="cafe" size={20} color="#FFFFFF" />
+                <Icon name="cafe" size={20} color={colors.surface} />
               </View>
               <Text style={styles.savedDrinkName}>{item.Name || 'Custom'}</Text>
               <TouchableOpacity
                 onPress={() => handleAddSavedDrink(item)}
                 style={styles.addButton}
               >
-                <Icon name="add" size={20} color="#FFFFFF" />
+                <Icon name="add" size={20} color={colors.surface} />
               </TouchableOpacity>
             </View>
           )}
@@ -294,6 +296,306 @@ const CartPage = () => {
       </View>
     );
   };
+
+  const makeStyles = (colors) => StyleSheet.create({
+    wholePage: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    headerSection: {
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 8,
+    },
+    pageTitle: {
+      fontSize: 32,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    emptyState: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      marginTop: 60,
+    },
+    emptyTitle: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginTop: 16,
+    },
+    emptySubtitle: {
+      fontSize: 14,
+      color: colors.textMuted,
+      marginTop: 8,
+      marginBottom: 24,
+    },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    primaryButtonText: {
+      color: colors.surface,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    drinksList: {
+      paddingHorizontal: 16,
+      paddingBottom: 0,
+    },
+    drinkCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 12,
+      padding: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    drinkContent: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      marginBottom: 12,
+    },
+    drinkIconBadge: {
+      width: 44,
+      height: 44,
+      borderRadius: 8,
+      backgroundColor: '#FFEEF1',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 12,
+      flexShrink: 0,
+    },
+    drinkInfo: {
+      flex: 1,
+    },
+    drinkName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    drinkMeta: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+    drinkPrice: {
+      fontSize: 14,
+      color: colors.textPrimary,
+      marginTop: 4,
+    },
+    drinkActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    editButton: {
+      padding: 8,
+    },
+    quantityRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+    },
+    qtyButton: {
+      paddingVertical: 6,
+      paddingHorizontal: 8,
+    },
+    qtyButtonText: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    qtyText: {
+      fontSize: 14,
+      color: colors.textPrimary,
+      marginHorizontal: 8,
+    },
+    removeButton: {
+      padding: 8,
+    },
+    section: {
+      paddingHorizontal: 16,
+      marginTop: 24,
+      marginBottom: 16,
+    },
+    sectionLabel: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginBottom: 12,
+    },
+    savedDrinksContainer: {
+      paddingRight: 16,
+    },
+    savedDrinkCard: {
+      alignItems: 'center',
+      marginRight: 16,
+    },
+    savedDrinkBadge: {
+      width: 56,
+      height: 56,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    savedDrinkName: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.textPrimary,
+      marginBottom: 8,
+      maxWidth: 60,
+      textAlign: 'center',
+    },
+    addButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 50,
+      width: 28,
+      height: 28,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    summaryCard: {
+      backgroundColor: colors.background,
+      borderRadius: 12,
+      marginHorizontal: 16,
+      marginTop: 24,
+      marginBottom: 16,
+      padding: 16,
+    },
+    summaryRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    summaryLabel: {
+      fontSize: 14,
+      color: colors.textMuted,
+    },
+    summaryValue: {
+      fontSize: 14,
+      color: colors.textPrimary,
+      fontWeight: '500',
+    },
+    savingsText: {
+      color: '#10B981',
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: 12,
+    },
+    totalLabel: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    totalValue: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    promoCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginHorizontal: 16,
+      marginBottom: 16,
+      padding: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    promoLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 12,
+    },
+    promoRow: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    promoInput: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      fontSize: 14,
+      color: colors.textPrimary,
+    },
+    secondaryButton: {
+      backgroundColor: colors.surface2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    secondaryButtonText: {
+      color: colors.textPrimary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    successText: {
+      fontSize: 12,
+      color: '#10B981',
+      marginTop: 8,
+    },
+    errorText: {
+      fontSize: 12,
+      color: colors.error,
+      marginTop: 8,
+    },
+    checkoutButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      marginHorizontal: 16,
+      marginBottom: 16,
+      paddingVertical: 12,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    checkoutButtonText: {
+      color: colors.surface,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    navBarSpace: {
+      height: 80,
+    },
+  });
+
+  const styles = makeStyles(colors);
 
   return (
     <View style={styles.wholePage}>
@@ -348,7 +650,7 @@ const CartPage = () => {
                 <TextInput
                   style={styles.promoInput}
                   placeholder="Enter code"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.textPlaceholder}
                   value={promoCode}
                   onChangeText={setPromoCode}
                 />
@@ -384,303 +686,5 @@ const CartPage = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  wholePage: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  headerSection: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  pageTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#222831',
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginTop: 60,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#222831',
-    marginTop: 16,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  primaryButton: {
-    backgroundColor: '#FF2E63',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  drinksList: {
-    paddingHorizontal: 16,
-    paddingBottom: 0,
-  },
-  drinkCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginBottom: 12,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  drinkContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  drinkIconBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 8,
-    backgroundColor: '#FFEEF1',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    flexShrink: 0,
-  },
-  drinkInfo: {
-    flex: 1,
-  },
-  drinkName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#222831',
-  },
-  drinkMeta: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  drinkPrice: {
-    fontSize: 14,
-    color: '#222831',
-    marginTop: 4,
-  },
-  drinkActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  editButton: {
-    padding: 8,
-  },
-  quantityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-  },
-  qtyButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-  },
-  qtyButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#222831',
-  },
-  qtyText: {
-    fontSize: 14,
-    color: '#222831',
-    marginHorizontal: 8,
-  },
-  removeButton: {
-    padding: 8,
-  },
-  section: {
-    paddingHorizontal: 16,
-    marginTop: 24,
-    marginBottom: 16,
-  },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 12,
-  },
-  savedDrinksContainer: {
-    paddingRight: 16,
-  },
-  savedDrinkCard: {
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  savedDrinkBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 8,
-    backgroundColor: '#FF2E63',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  savedDrinkName: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#222831',
-    marginBottom: 8,
-    maxWidth: 60,
-    textAlign: 'center',
-  },
-  addButton: {
-    backgroundColor: '#FF2E63',
-    borderRadius: 50,
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  summaryCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginTop: 24,
-    marginBottom: 16,
-    padding: 16,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  summaryValue: {
-    fontSize: 14,
-    color: '#222831',
-    fontWeight: '500',
-  },
-  savingsText: {
-    color: '#10B981',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 12,
-  },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#222831',
-  },
-  totalValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FF2E63',
-  },
-  promoCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginHorizontal: 16,
-    marginBottom: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  promoLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222831',
-    marginBottom: 12,
-  },
-  promoRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  promoInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    fontSize: 14,
-    color: '#222831',
-  },
-  secondaryButton: {
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  secondaryButtonText: {
-    color: '#222831',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  successText: {
-    fontSize: 12,
-    color: '#10B981',
-    marginTop: 8,
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#EF4444',
-    marginTop: 8,
-  },
-  checkoutButton: {
-    backgroundColor: '#FF2E63',
-    borderRadius: 8,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    paddingVertical: 12,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkoutButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  navBarSpace: {
-    height: 80,
-  },
-});
 
 export default CartPage;

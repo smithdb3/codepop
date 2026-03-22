@@ -8,9 +8,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../../ip_address';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
+import { useTheme } from '../theme';
 
 const PostCheckout = () => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const [lockerCombo, setLockerCombo] = useState('');
   const [timeLeft, setTimeLeft] = useState(60);
   const [purchasedDrinks, setPurchasedDrinks] = useState([]);
@@ -275,6 +277,390 @@ const PostCheckout = () => {
 
   const { subtotal, tax, total } = calculateTotals();
 
+  const makeStyles = (colors) => StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    scrollViewContainer: {
+      flexGrow: 1,
+      padding: 16,
+      paddingBottom: 30,
+    },
+
+    // Card styles
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+      marginBottom: 16,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    cardHeading: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 16,
+    },
+
+    // 1. Success Header
+    successHeader: {
+      alignItems: 'center',
+    },
+    successTitle: {
+      fontSize: 32,
+      fontWeight: '700',
+      color: colors.primary,
+      marginTop: 12,
+    },
+    orderNumber: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors.textMuted,
+      marginTop: 8,
+    },
+
+    // 2. Status Banner
+    statusBanner: {
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      marginBottom: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    statusText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#FFFFFF',
+      textAlign: 'center',
+    },
+
+    // 3. Order Summary
+    drinksList: {
+      marginBottom: 16,
+    },
+    drinkRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    drinkRowLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+    },
+    drinkRowText: {
+      marginLeft: 12,
+      flex: 1,
+    },
+    drinkName: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    drinkMeta: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+    drinkPrice: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginLeft: 12,
+    },
+    priceBreakdown: {
+      backgroundColor: colors.background,
+      borderRadius: 8,
+      padding: 12,
+    },
+    priceRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    priceLabel: {
+      fontSize: 13,
+      color: colors.textMuted,
+    },
+    priceValue: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: colors.textPrimary,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: 8,
+    },
+    totalLabel: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    totalValue: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+
+    // 4. Pickup Info
+    storeInfo: {
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      backgroundColor: colors.background,
+      borderRadius: 8,
+      marginBottom: 16,
+    },
+    storeLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    storeAddress: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+    storeHours: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginTop: 4,
+    },
+    etaSection: {
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingVertical: 12,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    etaLabel: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginBottom: 4,
+    },
+    etaTimer: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    mapContainer: {
+      height: 200,
+      borderRadius: 8,
+      overflow: 'hidden',
+      backgroundColor: colors.background,
+    },
+    map: {
+      width: '100%',
+      height: '100%',
+    },
+    arrivalButtonContainer: {
+      width: '100%',
+      height: '100%',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    arrivalButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 12,
+      paddingHorizontal: 24,
+      borderRadius: 8,
+      marginTop: 12,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    arrivalButtonText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    errorMessage: {
+      fontSize: 13,
+      color: colors.textPrimary,
+      textAlign: 'center',
+      marginHorizontal: 16,
+    },
+    loadingText: {
+      fontSize: 13,
+      color: colors.textMuted,
+    },
+
+    // 5. Locker Code
+    lockerCard: {
+      borderWidth: 2,
+      borderColor: colors.primary,
+    },
+    lockerSubtitle: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginBottom: 16,
+      marginTop: -8,
+    },
+    lockerDisplayContainer: {
+      alignItems: 'center',
+      paddingVertical: 24,
+    },
+    lockerDisplay: {
+      fontSize: 44,
+      fontWeight: '700',
+      color: colors.primary,
+      letterSpacing: 8,
+      fontFamily: 'Courier New',
+    },
+
+    // 6. Receipt Actions
+    receiptButtonsRow: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    ghostButton: {
+      flex: 1,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 44,
+    },
+    ghostButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.primary,
+      marginTop: 4,
+    },
+
+    // 7. Order Tracking
+    trackingHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    comingSoonBadge: {
+      backgroundColor: colors.secondary,
+      borderRadius: 12,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+    },
+    comingSoonText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: '#FFFFFF',
+    },
+    timelineContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    timelineItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    timelineDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: colors.border,
+      marginBottom: 8,
+    },
+    timelineDotFilled: {
+      backgroundColor: colors.primary,
+    },
+    timelineText: {
+      fontSize: 11,
+      color: colors.textMuted,
+      textAlign: 'center',
+    },
+    timelineTextActive: {
+      color: colors.textPrimary,
+      fontWeight: '600',
+    },
+    trackingNote: {
+      fontSize: 12,
+      color: colors.textMuted,
+      textAlign: 'center',
+      fontStyle: 'italic',
+    },
+
+    // 9. Review
+    reviewInput: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      fontSize: 13,
+      color: colors.textPrimary,
+      backgroundColor: colors.surface,
+      textAlignVertical: 'top',
+      marginBottom: 12,
+      minHeight: 100,
+    },
+
+    // 10. Social Sharing
+    socialButtonsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      alignItems: 'center',
+    },
+    socialButton: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+
+    // Bottom Buttons
+    primaryButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 16,
+    },
+    primaryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    secondaryButton: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 16,
+    },
+    secondaryButtonText: {
+      color: colors.primary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+  });
+
+  const styles = makeStyles(colors);
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollViewContainer}>
@@ -282,14 +668,14 @@ const PostCheckout = () => {
         {/* 1. Success Header Card */}
         <View style={styles.card}>
           <View style={styles.successHeader}>
-            <Icon name="checkmark-circle" size={48} color="#10B981" />
+            <Icon name="checkmark-circle" size={48} color={colors.success} />
             <Text style={styles.successTitle}>Order Confirmed!</Text>
             <Text style={styles.orderNumber}>Order #{orderNum}</Text>
           </View>
         </View>
 
         {/* 2. Status Banner */}
-        <View style={[styles.statusBanner, { backgroundColor: isNearby ? '#FF2E63' : '#08D9D6' }]}>
+        <View style={[styles.statusBanner, { backgroundColor: isNearby ? colors.primary : colors.secondary }]}>
           <Text style={styles.statusText}>
             {isNearby
               ? 'Your drink is being made!'
@@ -305,7 +691,7 @@ const PostCheckout = () => {
             {purchasedDrinks.map((drink, idx) => (
               <View key={idx} style={styles.drinkRow}>
                 <View style={styles.drinkRowLeft}>
-                  <Icon name="cafe" size={20} color="#FF2E63" />
+                  <Icon name="cafe" size={20} color={colors.primary} />
                   <View style={styles.drinkRowText}>
                     <Text style={styles.drinkName}>{drink.Name || 'Custom Drink'}</Text>
                     {drink.SodaUsed && drink.SodaUsed.length > 0 && (
@@ -408,14 +794,14 @@ const PostCheckout = () => {
               style={styles.ghostButton}
               onPress={() => Alert.alert('Coming Soon', 'This feature is coming soon!')}
             >
-              <Icon name="print-outline" size={20} color="#FF2E63" />
+              <Icon name="print-outline" size={20} color={colors.primary} />
               <Text style={styles.ghostButtonText}>Print Receipt</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.ghostButton}
               onPress={() => Alert.alert('Coming Soon', 'This feature is coming soon!')}
             >
-              <Icon name="mail-outline" size={20} color="#FF2E63" />
+              <Icon name="mail-outline" size={20} color={colors.primary} />
               <Text style={styles.ghostButtonText}>Email Receipt</Text>
             </TouchableOpacity>
           </View>
@@ -454,7 +840,7 @@ const PostCheckout = () => {
           <TextInput
             style={styles.reviewInput}
             placeholder="Share your thoughts about your drink..."
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textPlaceholder}
             multiline
             numberOfLines={4}
             value={reviewText}
@@ -479,19 +865,19 @@ const PostCheckout = () => {
               style={styles.socialButton}
               onPress={() => Alert.alert('Coming Soon', 'Social sharing is coming soon! Use #socialdrinker')}
             >
-              <Icon name="logo-instagram" size={24} color="#FF2E63" />
+              <Icon name="logo-instagram" size={24} color={colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.socialButton}
               onPress={() => Alert.alert('Coming Soon', 'Social sharing is coming soon! Use #socialdrinker')}
             >
-              <Icon name="logo-twitter" size={24} color="#FF2E63" />
+              <Icon name="logo-twitter" size={24} color={colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.socialButton}
               onPress={() => Alert.alert('Coming Soon', 'Social sharing is coming soon! Use #socialdrinker')}
             >
-              <Icon name="logo-facebook" size={24} color="#FF2E63" />
+              <Icon name="logo-facebook" size={24} color={colors.primary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -522,399 +908,6 @@ const PostCheckout = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  // Color constants
-  PRIMARY: '#FF2E63',
-  SECONDARY: '#08D9D6',
-  BG: '#FFFFFF',
-  SURFACE: '#FFFFFF',
-  INSET: '#F9FAFB',
-  BORDER: '#E5E7EB',
-  TEXT: '#222831',
-  MUTED: '#6B7280',
-  SUCCESS: '#10B981',
-
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  scrollViewContainer: {
-    flexGrow: 1,
-    padding: 16,
-    paddingBottom: 30,
-  },
-
-  // Card styles
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  cardHeading: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#222831',
-    marginBottom: 16,
-  },
-
-  // 1. Success Header
-  successHeader: {
-    alignItems: 'center',
-  },
-  successTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#FF2E63',
-    marginTop: 12,
-  },
-  orderNumber: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginTop: 8,
-  },
-
-  // 2. Status Banner
-  statusBanner: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-
-  // 3. Order Summary
-  drinksList: {
-    marginBottom: 16,
-  },
-  drinkRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  drinkRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  drinkRowText: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  drinkName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222831',
-  },
-  drinkMeta: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  drinkPrice: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222831',
-    marginLeft: 12,
-  },
-  priceBreakdown: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    padding: 12,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  priceLabel: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
-  priceValue: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#222831',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 8,
-  },
-  totalLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#222831',
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FF2E63',
-  },
-
-  // 4. Pickup Info
-  storeInfo: {
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  storeLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222831',
-  },
-  storeAddress: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  storeHours: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-  etaSection: {
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  etaLabel: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  etaTimer: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FF2E63',
-  },
-  mapContainer: {
-    height: 200,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: '#F9FAFB',
-  },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-  arrivalButtonContainer: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  arrivalButton: {
-    backgroundColor: '#FF2E63',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginTop: 12,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  arrivalButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  errorMessage: {
-    fontSize: 13,
-    color: '#222831',
-    textAlign: 'center',
-    marginHorizontal: 16,
-  },
-  loadingText: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
-
-  // 5. Locker Code
-  lockerCard: {
-    borderWidth: 2,
-    borderColor: '#FF2E63',
-  },
-  lockerSubtitle: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 16,
-    marginTop: -8,
-  },
-  lockerDisplayContainer: {
-    alignItems: 'center',
-    paddingVertical: 24,
-  },
-  lockerDisplay: {
-    fontSize: 44,
-    fontWeight: '700',
-    color: '#FF2E63',
-    letterSpacing: 8,
-    fontFamily: 'Courier New',
-  },
-
-  // 6. Receipt Actions
-  receiptButtonsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  ghostButton: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#FF2E63',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-  },
-  ghostButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FF2E63',
-    marginTop: 4,
-  },
-
-  // 7. Order Tracking
-  trackingHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  comingSoonBadge: {
-    backgroundColor: '#08D9D6',
-    borderRadius: 12,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  comingSoonText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  timelineContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  timelineItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#E5E7EB',
-    marginBottom: 8,
-  },
-  timelineDotFilled: {
-    backgroundColor: '#FF2E63',
-  },
-  timelineText: {
-    fontSize: 11,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  timelineTextActive: {
-    color: '#222831',
-    fontWeight: '600',
-  },
-  trackingNote: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-
-  // 9. Review
-  reviewInput: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 13,
-    color: '#222831',
-    backgroundColor: '#FFFFFF',
-    textAlignVertical: 'top',
-    marginBottom: 12,
-    minHeight: 100,
-  },
-
-  // 10. Social Sharing
-  socialButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  socialButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: '#FF2E63',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  // Bottom Buttons
-  primaryButton: {
-    backgroundColor: '#FF2E63',
-    borderRadius: 8,
-    paddingVertical: 12,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#FF2E63',
-    borderRadius: 8,
-    paddingVertical: 12,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  secondaryButtonText: {
-    color: '#FF2E63',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});
 
 export default PostCheckout;
 
