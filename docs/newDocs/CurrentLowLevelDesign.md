@@ -1694,22 +1694,6 @@ Key Features Needed
   * Global search: Find store, user, hub by name
   * Filter by: Region, Status, Issue type
   * Save custom views/filters
-  
-**(M) Repair Staff Dashboard**
-
-* (M) Regional Overview Panel
-  * (M) Store selector
-  * (C) Summary cards to give immediate visibility into machine health
-* (M) Machine Status Table- A sortable, filterable data table showing all machines within the assigned region.
-* (M) Repair Schedule Manager- Calendar or timeline view showing:
-  * Upcoming repairs
-  * In-progress service jobs
-  * Overdue maintenance
-* (S) Machine Detail View
-  * When selecting a machine, show repair status, history, and any notes
-* (C) Schedule Optimization Tool
-  * A utility panel that suggests route grouping and recommends optimal scheduling
-  
 
 **(M) Repair Staff Dashboard**
 

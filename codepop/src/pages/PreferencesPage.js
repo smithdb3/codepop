@@ -1,371 +1,1019 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  Alert,
+  Switch,
+} from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Image } from 'react-native';
+import NavBar from '../components/NavBar';
 import { BASE_URL } from '../../ip_address';
-import DropDown from '../components/DropDown';
-import React from 'react';
 
 const PreferencesPage = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [name, setName] = useState(null);
-    const [openDropdown, setOpenDropdown] = useState({
-      sodas: false,
-      syrups: false,
-      addIns: false,
-    });
-    const [SodaUsed, setSoda] = useState([]);
-    const [SyrupsUsed, setSyrups] = useState([]);
-    const [AddIns, setAddIns] = useState([]);
-    const [inventoryData, setInventoryData] = useState([]);
-    const [userPreferences, setUserPreferences] = useState([]); // To store fetched preferences
-    const [isLoading, setIsLoading] = useState(true); // Add loading state
-    const navigation = useNavigation();
-  
-    // useEffect to check login status once on initial load
-    const checkLoginStatus = async () => {
-      try {
-        const storedName = await AsyncStorage.getItem('first_name');
-        const token = await AsyncStorage.getItem('userToken');
-        if (token && storedName) {
-          setIsLoggedIn(true); // User is logged in
-          setName(storedName); // Set username for display
-        } else {
-          setIsLoggedIn(false); // No user is logged in
-        }
-      } catch (error) {
-        console.error('Error checking login status:', error);
-      }
-    };
-  
-    const fetchInventory = async () => {
-      try {
-        const response = await fetch(`${BASE_URL}/backend/inventory/`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        const inventory = await response.json();
-        const items = inventory.map(item => ({
-          value: item.ItemName,
-          ItemType: item.ItemType,
-        }));
-        setInventoryData(items);
-      } catch (error) {
-        console.error('Error fetching inventory:', error);
-      }
-    };
-  
-    const fetchUserPreferences = async (token, userId) => {
-      try {
-        const response = await fetch(`${BASE_URL}/backend/preferences/`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`,
-          },
-        });
-        const preferences = await response.json();
-        setUserPreferences(preferences); // Store the preferences in state
-  
-        // Preselect preferences based on the user's saved preferences
-        const filteredSoda = preferences
-          .filter(item => filterInventory("Soda").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
-          .map(item => item.Preference);
-        setSoda(filteredSoda);
-  
-        const filteredSyrups = preferences
-          .filter(item => filterInventory("Syrup").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
-          .map(item => item.Preference);
-        setSyrups(filteredSyrups);
-  
-        const filteredAddIns = preferences
-          .filter(item => filterInventory("Add In").some(inventoryItem => inventoryItem.value.toLowerCase() === item.Preference.toLowerCase() && String(item.UserID) === String(userId)))
-          .map(item => item.Preference);
-        setAddIns(filteredAddIns);
-  
-        setIsLoading(false); // Set loading to false once preferences are fetched
-      } catch (error) {
-        console.error("Error fetching preferences:", error);
-      }
-    };
-  
-    useFocusEffect(
-      React.useCallback(() => {
-        let isMounted = true;
-        const loadData = async () => {
-          await checkLoginStatus(); // Check login status
-  
-          const token = await AsyncStorage.getItem('userToken');
-          const userId = await AsyncStorage.getItem('userId');
-  
-          if (isMounted && token && userId) {
-            fetchInventory(); // Fetch inventory once login is successful
-            fetchUserPreferences(isMounted && token, userId); // Fetch preferences for the user
-          }
-        };
-        loadData();
-        return () => {
-          isMounted = false;
-        };
-      }, []) // Empty dependency array ensures this only runs once when the screen is focused
-    );
-  
-    const filterInventory = (type) => {
-      const filteredItems = inventoryData.filter(item => item.ItemType === type);
-      return filteredItems.map(item => ({
-        label: item.value,
-        value: item.value,
-      }));
-    };
-  
-    const handleSelection = (item, type) => {
-      switch (type) {
-        case 'Soda':
-          setSoda((prevSodas) => {
-            let soda = item;
-            if (prevSodas.includes(soda.toLowerCase())) {
-              // If soda is already selected, remove it
-              removePreferences(soda);
-              return prevSodas.filter((item) => item !== soda.toLowerCase());
-            } else {
-              // Otherwise, add the soda to the list and save it
-              savePreferences(soda);
-              return [...prevSodas, soda.toLowerCase()];
-            }
-          });
-          break;
-        case 'Syrup':
-          setSyrups((prevSyrups) => {
-            let syrup = item;
-            if (prevSyrups.includes(syrup.toLowerCase())) {
-              // If syrup is already selected, remove it
-              removePreferences(syrup);
-              return prevSyrups.filter((item) => item !== syrup.toLowerCase());
-            } else {
-              // Otherwise, add the syrup to the list and save it
-              savePreferences(syrup);
-              return [...prevSyrups, syrup.toLowerCase()];
-            }
-          });
-          break;
-        case 'Add In':
-          let addIn = item;
-          setAddIns((prevAddIns) => {
-            if (prevAddIns.includes(addIn.toLowerCase())) {
-              // If add-in is already selected, remove it
-              removePreferences(addIn);
-              return prevAddIns.filter((item) => item !== addIn.toLowerCase());
-            } else {
-              // Otherwise, add the add-in to the list and save it
-              savePreferences(addIn);
-              return [...prevAddIns, addIn.toLowerCase()];
-            }
-          });
-          break;
-      }
-    };
-    
-    const savePreferencesToBackend = async () => {
+  const navigation = useNavigation();
+
+  // Auth & User State
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userId, setUserId] = useState('');
+  const [userToken, setUserToken] = useState('');
+
+  // Tab State
+  const [activeTab, setActiveTab] = useState('location');
+
+  // Account Settings Form States
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Preferences & Privacy States
+  const [themeMode, setThemeMode] = useState('system');
+  const [notifOrderStatus, setNotifOrderStatus] = useState(true);
+  const [notifPromo, setNotifPromo] = useState(true);
+  const [notifNewItems, setNotifNewItems] = useState(false);
+  const [notifPush, setNotifPush] = useState(true);
+
+  // Load data on focus
+  useFocusEffect(
+    React.useCallback(() => {
+      let isMounted = true;
+      const loadData = async () => {
+        await checkLoginStatus();
+      };
+      loadData();
+      return () => {
+        isMounted = false;
+      };
+    }, [])
+  );
+
+  const checkLoginStatus = async () => {
+    try {
       const token = await AsyncStorage.getItem('userToken');
-      const userId = await AsyncStorage.getItem('userId');
-      
-      // Save each preference to the backend
-      for (let soda of SodaUsed) {
-        await savePreferences(soda, 'Soda');
+      const firstName = await AsyncStorage.getItem('first_name');
+      const email = await AsyncStorage.getItem('userEmail');
+      const id = await AsyncStorage.getItem('userId');
+
+      if (token && firstName && id) {
+        setIsLoggedIn(true);
+        setFirstName(firstName);
+        setUserEmail(email || '');
+        setUserId(id);
+        setUserToken(token);
+      } else {
+        setIsLoggedIn(false);
       }
-    
-      for (let syrup of SyrupsUsed) {
-        await savePreferences(syrup, 'Syrup');
-      }
-    
-      for (let addIn of AddIns) {
-        await savePreferences(addIn, 'AddIn');
-      }
-    };
-  
-    const savePreferences = async (pref, type) => {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        const userId = await AsyncStorage.getItem('userId');
-        const response = await fetch(`${BASE_URL}/backend/preferences/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`,
-          },
-          body: JSON.stringify({
-            UserID: userId,
-            Preference: pref,
-          }),
-        });
-        if (!response.ok) {
-          throw new Error(`Failed to save ${type} preference`);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-  
-    const removePreferences = async (pref) => {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        const userId = await AsyncStorage.getItem('userId');
-        
-        const getResponse = await fetch(`${BASE_URL}/backend/preferences/`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Token ${token}`,
-          },
-        });
-    
-        const preferences = await getResponse.json();
-    
-        // Filter out preferences that belong to the current user and match the preference to be removed
-        const filteredPreferences = preferences.filter(
-          (item) => String(item.UserID) === String(userId) && item.Preference.toLowerCase() === pref.toLowerCase()
-        );
-    
-        for (let preference of filteredPreferences) {
-          const deleteResponse = await fetch(`${BASE_URL}/backend/preferences/${preference.PreferenceID}/`, {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Token ${token}`,
+    } catch (error) {
+      console.error('Error checking login status:', error);
+    }
+  };
+
+  // Helper function: password strength
+  const getPasswordStrength = (password) => {
+    if (password.length < 8) return 'weak';
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    if (hasUppercase && hasDigit && hasSpecial) return 'strong';
+    if (hasUppercase || hasDigit) return 'medium';
+    return 'weak';
+  };
+
+  // Account Settings Handlers
+  const handleSendVerification = () => {
+    if (!newEmail.includes('@')) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address');
+      return;
+    }
+    Alert.alert('Verification Email', 'Backend integration in progress');
+  };
+
+  const handleUpdatePassword = () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert('Required Fields', 'All password fields are required');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Password Mismatch', 'New passwords do not match');
+      return;
+    }
+    const strength = getPasswordStrength(newPassword);
+    if (strength === 'weak') {
+      Alert.alert('Weak Password', 'Password must be at least 8 characters');
+      return;
+    }
+    Alert.alert('Update Password', 'Backend integration in progress');
+  };
+
+  const handleCancelEmailForm = () => {
+    setNewEmail('');
+    setShowChangeEmail(false);
+  };
+
+  const handleCancelPasswordForm = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowChangePassword(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/backend/auth/logout/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${userToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 200) {
+        // Clear AsyncStorage
+        await AsyncStorage.removeItem('userToken');
+        await AsyncStorage.removeItem('userId');
+        await AsyncStorage.removeItem('first_name');
+        await AsyncStorage.removeItem('userRole');
+        await AsyncStorage.removeItem('userEmail');
+
+        Alert.alert(
+          'Logout successful!',
+          '',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('GeneralHome'),
             },
-          });
-    
-          if (!deleteResponse.ok) {
-            const errorData = await deleteResponse.json();
-            throw new Error(`Failed to delete preference: ${errorData}`);
-          }
-        }
-      } catch (error) {
-        console.error('Error removing preference:', error);
+          ],
+          { cancelable: false }
+        );
+      } else {
+        Alert.alert('Logout failed, please try again.');
       }
-    };
-    
-  
-    const goToLoginPage = () => {
-      navigation.navigate('Auth');
-    };
+    } catch (error) {
+      console.error('Error during logout:', error);
+      Alert.alert('Logout failed, please try again later.');
+    }
+  };
+
+  const renderNotLoggedIn = () => (
+    <View style={styles.wholePage}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.notLoggedInContainer}>
+          <Icon name="lock-closed-outline" size={64} color="#D1D5DB" />
+          <Text style={styles.notLoggedInTitle}>Sign in to view your profile</Text>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() => navigation.navigate('Auth')}
+          >
+            <Text style={styles.primaryButtonText}>Sign In</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+      <NavBar />
+    </View>
+  );
+
+  // Tab Bar Tabs
+  const TAB_LABELS = {
+    location: 'Location & Delivery',
+    account: 'Account Settings',
+    preferences: 'Preferences & Privacy',
+    recurring: 'Recurring Orders',
+  };
+
+  // Tab Render Functions
+  const renderLocationTab = () => (
+    <View style={styles.card}>
+      <Text style={styles.sectionLabel}>PRIMARY STORE LOCATION</Text>
+      <View style={styles.storeCard}>
+        <Icon name="storefront-outline" size={20} color="#222831" style={{ marginRight: 12 }} />
+        <View>
+          <Text style={styles.storeCardName}>CodePop Station</Text>
+          <Text style={styles.storeCardDetail}>Hours: 8am – 8pm</Text>
+          <Text style={styles.storeCardDetail}>123 Main St, Logan, UT</Text>
+        </View>
+      </View>
+      <TouchableOpacity
+        style={styles.secondaryButton}
+        onPress={() => Alert.alert('Coming Soon', 'Location selection coming soon')}
+      >
+        <Text style={styles.secondaryButtonText}>Change Location</Text>
+      </TouchableOpacity>
+      <Text style={styles.helperText}>Your location helps us find the nearest CodePop station.</Text>
+    </View>
+  );
+
+  const renderAccountTab = () => (
+    <View style={styles.card}>
+      {/* Email Subsection */}
+      <View style={styles.settingRow}>
+        <View>
+          <Text style={styles.settingLabel}>Email</Text>
+          <Text style={styles.settingValue}>{userEmail || 'Not available'}</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => {
+            handleCancelPasswordForm(); // close password form if open
+            setShowChangeEmail(!showChangeEmail);
+          }}
+        >
+          <Text style={styles.changeButtonText}>
+            {showChangeEmail ? 'Cancel' : 'Change Email'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {showChangeEmail && (
+        <View style={styles.inlineForm}>
+          <TextInput
+            style={styles.textInput}
+            placeholder="New email address"
+            placeholderTextColor="#9CA3AF"
+            value={newEmail}
+            onChangeText={setNewEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <View style={styles.formButtonRow}>
+            <TouchableOpacity
+              style={[styles.primaryButton, { flex: 1 }]}
+              onPress={handleSendVerification}
+            >
+              <Text style={styles.primaryButtonText}>Send Verification</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.cancelButton, { flex: 1 }]}
+              onPress={handleCancelEmailForm}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      <View style={styles.settingDivider} />
+
+      {/* Password Subsection */}
+      <TouchableOpacity
+        style={styles.settingRow}
+        onPress={() => {
+          handleCancelEmailForm(); // close email form if open
+          setShowChangePassword(!showChangePassword);
+        }}
+      >
+        <Text style={styles.settingLabel}>Change Password</Text>
+        <Text style={styles.changeButtonText}>
+          {showChangePassword ? 'Cancel' : 'Change'}
+        </Text>
+      </TouchableOpacity>
+
+      {showChangePassword && (
+        <View style={styles.inlineForm}>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Current password"
+            placeholderTextColor="#9CA3AF"
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            secureTextEntry
+          />
+          <TextInput
+            style={styles.textInput}
+            placeholder="New password"
+            placeholderTextColor="#9CA3AF"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry
+          />
+
+          {newPassword.length > 0 && (
+            <View style={styles.strengthBarContainer}>
+              <View style={styles.strengthSegmentRow}>
+                <View
+                  style={[
+                    styles.strengthSegment,
+                    {
+                      backgroundColor:
+                        getPasswordStrength(newPassword) === 'weak'
+                          ? '#EF4444'
+                          : getPasswordStrength(newPassword) === 'medium'
+                          ? '#F59E0B'
+                          : '#10B981',
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.strengthSegment,
+                    {
+                      backgroundColor:
+                        getPasswordStrength(newPassword) === 'medium' ||
+                        getPasswordStrength(newPassword) === 'strong'
+                          ? getPasswordStrength(newPassword) === 'medium'
+                            ? '#F59E0B'
+                            : '#10B981'
+                          : '#E5E7EB',
+                    },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.strengthSegment,
+                    {
+                      backgroundColor:
+                        getPasswordStrength(newPassword) === 'strong'
+                          ? '#10B981'
+                          : '#E5E7EB',
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.strengthLabel}>
+                {getPasswordStrength(newPassword).charAt(0).toUpperCase() +
+                  getPasswordStrength(newPassword).slice(1)}
+              </Text>
+            </View>
+          )}
+
+          <TextInput
+            style={styles.textInput}
+            placeholder="Confirm new password"
+            placeholderTextColor="#9CA3AF"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+          />
+          <View style={styles.formButtonRow}>
+            <TouchableOpacity
+              style={[styles.primaryButton, { flex: 1 }]}
+              onPress={handleUpdatePassword}
+            >
+              <Text style={styles.primaryButtonText}>Update Password</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.cancelButton, { flex: 1 }]}
+              onPress={handleCancelPasswordForm}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+
+  const renderPreferencesTab = () => (
+    <View style={styles.card}>
+      {/* Appearance Subsection */}
+      <Text style={styles.subsectionLabel}>Appearance</Text>
+      <View style={styles.radioRow}>
+        {['system', 'light', 'dark'].map((mode) => (
+          <TouchableOpacity
+            key={mode}
+            style={[
+              styles.radioPill,
+              activeTab === 'preferences' && themeMode === mode && styles.radioPillActive,
+            ]}
+            onPress={() => setThemeMode(mode)}
+          >
+            <Text
+              style={[
+                styles.radioPillText,
+                themeMode === mode && styles.radioPillTextActive,
+              ]}
+            >
+              {mode === 'system'
+                ? 'System Default'
+                : mode.charAt(0).toUpperCase() + mode.slice(1)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={styles.settingDivider} />
+
+      {/* Notifications Subsection */}
+      <Text style={[styles.subsectionLabel, { marginTop: 12 }]}>Notifications</Text>
+      <View style={styles.notifRow}>
+        <Text style={styles.notifLabel}>Order Status Updates</Text>
+        <Switch
+          value={notifOrderStatus}
+          onValueChange={setNotifOrderStatus}
+          trackColor={{ false: '#E5E7EB', true: '#08D9D6' }}
+          thumbColor={notifOrderStatus ? '#FF2E63' : '#FFFFFF'}
+        />
+      </View>
+      <View style={styles.notifRowDivider} />
+
+      <View style={styles.notifRow}>
+        <Text style={styles.notifLabel}>Promotional Emails</Text>
+        <Switch
+          value={notifPromo}
+          onValueChange={setNotifPromo}
+          trackColor={{ false: '#E5E7EB', true: '#08D9D6' }}
+          thumbColor={notifPromo ? '#FF2E63' : '#FFFFFF'}
+        />
+      </View>
+      <View style={styles.notifRowDivider} />
+
+      <View style={styles.notifRow}>
+        <Text style={styles.notifLabel}>New Menu Items</Text>
+        <Switch
+          value={notifNewItems}
+          onValueChange={setNotifNewItems}
+          trackColor={{ false: '#E5E7EB', true: '#08D9D6' }}
+          thumbColor={notifNewItems ? '#FF2E63' : '#FFFFFF'}
+        />
+      </View>
+      <View style={styles.notifRowDivider} />
+
+      <View style={styles.notifRow}>
+        <Text style={styles.notifLabel}>Push Notifications</Text>
+        <Switch
+          value={notifPush}
+          onValueChange={setNotifPush}
+          trackColor={{ false: '#E5E7EB', true: '#08D9D6' }}
+          thumbColor={notifPush ? '#FF2E63' : '#FFFFFF'}
+        />
+      </View>
+    </View>
+  );
+
+  const renderRecurringTab = () => (
+    <>
+      <View style={styles.card}>
+        <View style={styles.emptyStateCard}>
+          <Icon name="time-outline" size={40} color="#D1D5DB" />
+          <Text style={styles.emptyStateTitle}>No recurring orders yet</Text>
+          <Text style={styles.emptyStateSubtitle}>Set up a recurring order at checkout</Text>
+          <View style={styles.comingSoonBadge}>
+            <Text style={styles.comingSoonText}>Coming soon</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={[styles.card, styles.ghostCard]}>
+        <View style={styles.ghostCardHeader}>
+          <Text style={styles.ghostCardLabel}>[EXAMPLE]</Text>
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusBadgeText}>Active</Text>
+          </View>
+        </View>
+        <Text style={styles.ghostCardTitle}>Weekly Vanilla Latte</Text>
+        <Text style={styles.ghostCardDetail}>Next charge: --</Text>
+        <Text style={styles.ghostCardDetail}>Every Monday</Text>
+        <View style={styles.ghostButtonRow}>
+          {['View Details', 'Skip Next', 'Edit', 'Pause', 'Cancel'].map((action) => (
+            <TouchableOpacity
+              key={action}
+              style={styles.ghostActionButton}
+              onPress={() => Alert.alert('Coming Soon', 'Recurring orders are not yet available.')}
+            >
+              <Text style={styles.ghostActionButtonText}>{action}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </>
+  );
+
+  if (!isLoggedIn) {
+    return renderNotLoggedIn();
+  }
 
   return (
-    <View style={styles.container}>
-      <Image 
-                source={require('../../assets/PinkBubbles.png')}
-                style={styles.image}
-                resizeMode="cover"
-            />
-      <ScrollView contentContainerStyle={styles.contentContainer}>
-        {isLoading ? (  // Conditionally render the content based on loading state
-          <Text>Loading...</Text> // You can display a loading spinner or message here
-        ) : (
-          <>
-            {/* If logged in, display the username and Logout button, otherwise display Login button */}
-            {isLoggedIn ? (
-              <>
-                {/* Conditionally render the "Hello <username>" if username exists */}
-                {name ? <Text style={styles.greeting}>{name}'s Drinks</Text> : null}
-                <View style={styles.navBarSpace}>
-                  {/* <Text style={styles.subtitleText}>Saved Drinks (can be created on ratings page)</Text> */}
-                  <Text style={styles.subtitleText}>Preferences</Text>
-                  {/* <Text>{SodaUsed}</Text> */}
-                  <DropDown
-                    title='Sodas'
-                    options={filterInventory("Soda")}
-                    onSelect={(soda) => handleSelection(soda, 'Soda')} 
-                    isOpen={openDropdown.sodas}
-                    setOpen={() => setOpenDropdown(prev => ({ ...prev, sodas: !prev.sodas }))}
-                    selectedValues={SodaUsed} // Pass selected values for prepopulation
-                  />
-                  <DropDown 
-                    title='Syrups' 
-                    options={filterInventory("Syrup")} 
-                    onSelect={(syrup) => handleSelection(syrup, 'Syrup')} 
-                    isOpen={openDropdown.syrups}
-                    setOpen={() => setOpenDropdown(prev => ({ ...prev, syrups: !prev.syrups }))}
-                    selectedValues={SyrupsUsed} // Pass selected values for prepopulation
-                  />
-                  <DropDown 
-                    title='Add ins' 
-                    options={filterInventory("Add In")} 
-                    onSelect={(addIns) => handleSelection(addIns, 'Add In')} 
-                    isOpen={openDropdown.addIns}
-                    setOpen={() => setOpenDropdown(prev => ({ ...prev, addIns: !prev.addIns }))}
-                    selectedValues={AddIns} // Pass selected values for prepopulation
-                  />
-                </View>
-                
-              </>
-            ) : (
-              <>
-                <View style={styles.buttonContainer}>
-                  <TouchableOpacity onPress={goToLoginPage} style={styles.mediumButton}>
-                    <Text style={styles.buttonText}>Login</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </>
-        )}
+    <View style={styles.wholePage}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Profile Header Card */}
+        <View style={styles.profileHeader}>
+          <View style={styles.profileRow}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {firstName && firstName[0]?.toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{firstName}</Text>
+              <Text style={styles.profileEmail}>{userEmail || 'Not available'}</Text>
+            </View>
+            <TouchableOpacity style={styles.editButton}>
+              <Icon name="pencil-outline" size={20} color="#FF2E63" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Loyalty Points */}
+          <View style={styles.loyaltyRow}>
+            <View style={styles.loyaltyBadge}>
+              <Text style={styles.loyaltyText}>⭐ 0 points</Text>
+            </View>
+            <Text style={styles.memberSince}>Member since March 2026</Text>
+          </View>
+        </View>
+
+        {/* Tab Bar */}
+        <View style={styles.tabBarWrapper}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.tabBarContainer}
+          >
+            {Object.keys(TAB_LABELS).map((tabKey) => (
+              <TouchableOpacity
+                key={tabKey}
+                style={[
+                  styles.tabButton,
+                  activeTab === tabKey && styles.tabButtonActive,
+                ]}
+                onPress={() => setActiveTab(tabKey)}
+              >
+                <Text
+                  style={[
+                    styles.tabButtonText,
+                    activeTab === tabKey && styles.tabButtonTextActive,
+                  ]}
+                >
+                  {TAB_LABELS[tabKey]}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Tab Content */}
+        {activeTab === 'location' && renderLocationTab()}
+        {activeTab === 'account' && renderAccountTab()}
+        {activeTab === 'preferences' && renderPreferencesTab()}
+        {activeTab === 'recurring' && renderRecurringTab()}
+
+        {/* Logout Button */}
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>Log Out</Text>
+        </TouchableOpacity>
+
+        {/* NavBar Spacing */}
+        <View style={styles.navBarSpace} />
       </ScrollView>
+
+      <NavBar />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  image: {
-    width: '100%',
-    height: '150%',
-    ...StyleSheet.absoluteFillObject,
-  },
-  container: {
+  wholePage: {
     flex: 1,
-    padding: 0,
-    backgroundColor: '#C6C8EE',
+    backgroundColor: '#F9FAFB',
   },
-  contentContainer: {
-    flexGrow: 1,
+
+  // Not Logged In
+  notLoggedInContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginTop: 80,
+  },
+  notLoggedInTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#222831',
+    marginTop: 16,
+    marginBottom: 32,
+  },
+
+  // Profile Header
+  profileHeader: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FF2E63',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#222831',
+  },
+  profileEmail: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  editButton: {
+    padding: 8,
+  },
+  loyaltyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  loyaltyBadge: {
+    backgroundColor: '#FFF9E6',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  loyaltyText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#B45309',
+  },
+  memberSince: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+
+  // Tab Bar
+  tabBarWrapper: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  tabBarContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+  },
+  tabButton: {
+    minWidth: 120,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    marginRight: 4,
+  },
+  tabButtonActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#FF2E63',
+  },
+  tabButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  tabButtonTextActive: {
+    color: '#FF2E63',
+    fontWeight: '600',
+  },
+
+  // Card
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 12,
+  },
+  subsectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#222831',
+    marginBottom: 12,
+  },
+
+  // Location Tab
+  storeCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  storeCardName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#222831',
+  },
+  storeCardDetail: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  secondaryButton: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  secondaryButtonText: {
+    color: '#222831',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+
+  // Account Settings Tab
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  settingLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#222831',
+  },
+  settingValue: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  changeButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FF2E63',
+  },
+  inlineForm: {
+    marginTop: 12,
+    gap: 10,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#222831',
+  },
+  formButtonRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  cancelButton: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  mediumButton: {
-    margin: 10,
-    padding: 15,
-    backgroundColor: '#D30C7B',
-    borderRadius: 10,
+  cancelButtonText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  strengthBarContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    gap: 4,
+    marginTop: 4,
   },
-  buttonText: {
-    fontSize: 16,
-    color: 'white',
+  strengthSegmentRow: {
+    flexDirection: 'row',
+    gap: 4,
+    flex: 1,
   },
-  greeting: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 10,
+  strengthSegment: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
   },
-  carousel: {
-    margin: 0,
-    padding: 0,
+  strengthLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginLeft: 8,
   },
-  title: {
-    fontSize: 22,
+  settingDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 12,
   },
-  subtitleText: {
-    margin: 10,
-    fontSize: 20,
-    backgroundColor: '#F92758',
-    color: '#fff',
-    padding: 10,
+
+  // Preferences Tab
+  radioRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  radioPill: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+  },
+  radioPillActive: {
+    backgroundColor: '#FF2E63',
+    borderColor: '#FF2E63',
+  },
+  radioPillText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
     textAlign: 'center',
-  }
+  },
+  radioPillTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  notifRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+  },
+  notifRowDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+  },
+  notifLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#222831',
+  },
+
+  // Recurring Tab
+  emptyStateCard: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyStateTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#222831',
+    marginTop: 12,
+  },
+  emptyStateSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  comingSoonBadge: {
+    backgroundColor: '#E0F2FE',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  comingSoonText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#0369A1',
+  },
+  ghostCard: {
+    opacity: 0.45,
+  },
+  ghostCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  ghostCardLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  ghostCardTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#222831',
+    marginBottom: 4,
+  },
+  ghostCardDetail: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  ghostButtonRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 12,
+  },
+  ghostActionButton: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  ghostActionButtonText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  statusBadge: {
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: '#E5E7EB',
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+
+  // Logout
+  logoutButton: {
+    backgroundColor: '#EF4444',
+    marginHorizontal: 16,
+    marginTop: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // Primary Button
+  primaryButton: {
+    backgroundColor: '#FF2E63',
+    paddingVertical: 12,
+    borderRadius: 8,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // NavBar Space
+  navBarSpace: {
+    height: 80,
+  },
 });
 
 export default PreferencesPage;

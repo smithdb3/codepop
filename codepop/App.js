@@ -104,10 +104,9 @@ const App = () => {
           name="Preferences"
           component={PreferencesPage}
           options={{
-            title: title,
-            headerTitleStyle: {
-              // fontFamily: 'CherryBombOne',
-            },}}
+            headerTitle: () => <CodePopLogo size={28} />,
+            headerTitleAlign: 'center',
+          }}
         />
         <Stack.Screen
           name="GeneralHome"
