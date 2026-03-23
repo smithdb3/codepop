@@ -26,6 +26,7 @@ const GeneralHomePage = () => {
   const [selectedSize, setSelectedSize] = useState({});
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [selectedStoreName, setSelectedStoreName] = useState(null);
+  const [storePickerRequired, setStorePickerRequired] = useState(false);
   const navigation = useNavigation();
 
   const makeStyles = (colors) => StyleSheet.create({
@@ -277,6 +278,8 @@ const GeneralHomePage = () => {
   // Check login status and store selection when the screen gains focus
   useFocusEffect(
     React.useCallback(() => {
+      let cancelled = false;
+
       const checkLoginStatus = async () => {
         try {
           const storedName = await AsyncStorage.getItem('first_name');
@@ -285,10 +288,13 @@ const GeneralHomePage = () => {
           const selectedEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint');
           const storeName = await AsyncStorage.getItem('selectedStoreName');
 
-          // Show store selection modal if no store has been selected yet
+          if (cancelled) return;
+
           if (!selectedEndpoint) {
+            setStorePickerRequired(true);
             setShowStoreModal(true);
           } else {
+            setStorePickerRequired(false);
             setSelectedStoreName(storeName);
           }
 
@@ -312,6 +318,9 @@ const GeneralHomePage = () => {
       };
 
       checkLoginStatus();
+      return () => {
+        cancelled = true;
+      };
     }, [])
   );
 
@@ -423,16 +432,22 @@ const GeneralHomePage = () => {
     </View>
   );
 
-  const handleStoreModalClose = async () => {
+  const handleStoreModalClose = async (meta) => {
+    if (meta && meta.cancelled === false) {
+      setStorePickerRequired(false);
+    }
     setShowStoreModal(false);
-    // Re-read store name after selection
     const storeName = await AsyncStorage.getItem('selectedStoreName');
     setSelectedStoreName(storeName);
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StoreSelectionModal visible={showStoreModal} onClose={handleStoreModalClose} />
+      <StoreSelectionModal
+        visible={showStoreModal}
+        onClose={handleStoreModalClose}
+        requireSelection={storePickerRequired}
+      />
       {isLoggedIn ? (
         <>
           <View style={styles.customHeader}>
@@ -440,25 +455,38 @@ const GeneralHomePage = () => {
           </View>
           <ScrollView contentContainerStyle={styles.contentContainer}>
             {selectedStoreName && (
-              <View style={{
-                backgroundColor: colors.surface2,
-                borderWidth: 1,
-                borderColor: colors.border,
-                padding: 12,
-                borderRadius: 12,
-                marginBottom: 16,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.1,
-                shadowRadius: 2,
-                elevation: 1,
-              }}>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: colors.surface2,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  padding: 12,
+                  borderRadius: 12,
+                  marginBottom: 16,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.1,
+                  shadowRadius: 2,
+                  elevation: 1,
+                }}
+                onPress={() => {
+                  setStorePickerRequired(false);
+                  setShowStoreModal(true);
+                }}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`Shopping at ${selectedStoreName}`}
+                accessibilityHint="Opens store picker to change location"
+              >
                 <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 4 }}>Shopping at</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Icon name="location-outline" size={14} color={colors.primary} style={{ marginRight: 6 }} />
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>{selectedStoreName}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                    <Icon name="location-outline" size={14} color={colors.primary} style={{ marginRight: 6 }} />
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>{selectedStoreName}</Text>
+                  </View>
+                  <Icon name="chevron-forward" size={18} color={colors.textMuted} />
                 </View>
-              </View>
+              </TouchableOpacity>
             )}
             {name && <Text style={styles.greeting}>Hello {name}!</Text>}
 

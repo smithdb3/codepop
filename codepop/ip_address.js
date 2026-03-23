@@ -1,8 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-const PRIMARY_HUB_URL = 'http://34.136.12.86:8000';     // Logan hub
-const FALLBACK_HUB_URL = 'http://136.115.168.184:8000'; // Atlanta hub
+/**
+ * Default regional hubs used when no EXPO_PUBLIC_HUB_REGISTRY_URLS is set.
+ * Add or reorder entries here as you deploy more hubs.
+ * Duplicates are removed; merge uses first-seen store_id across hubs.
+ */
+const DEFAULT_HUB_REGISTRY_URLS = [
+  'http://34.136.12.86:8000', // Logan hub
+  'http://136.115.168.184:8000', // Atlanta hub
+];
 
 // Local development URL (default fallback before store selection)
 const LOCAL_DEV_URL = Platform.OS === 'android'
@@ -13,9 +20,44 @@ const LOCAL_DEV_URL = Platform.OS === 'android'
 // Defaults to local dev until user selects a store (stored in AsyncStorage)
 let _storeBaseURL = LOCAL_DEV_URL;
 
+function normalizeHubBaseUrl(url) {
+  const u = (url || '').trim();
+  if (!u) return '';
+  return u.replace(/\/+$/, '');
+}
+
+function dedupeHubUrls(urls) {
+  const seen = new Set();
+  const out = [];
+  for (const raw of urls) {
+    const n = normalizeHubBaseUrl(raw);
+    if (!n || seen.has(n)) continue;
+    seen.add(n);
+    out.push(n);
+  }
+  return out;
+}
+
+/**
+ * Hub base URLs used only for store registry aggregation (store picker).
+ * Set EXPO_PUBLIC_HUB_REGISTRY_URLS to a comma-separated list to override defaults
+ * (e.g. in .env: EXPO_PUBLIC_HUB_REGISTRY_URLS=http://a:8000,http://b:8000).
+ * Restart Expo after changing env vars.
+ */
+export function getHubRegistryUrls() {
+  const envRaw = process.env.EXPO_PUBLIC_HUB_REGISTRY_URLS;
+  if (typeof envRaw === 'string' && envRaw.trim()) {
+    const fromEnv = envRaw.split(',').map((s) => s.trim()).filter(Boolean);
+    if (fromEnv.length > 0) {
+      return dedupeHubUrls(fromEnv);
+    }
+  }
+  return dedupeHubUrls(DEFAULT_HUB_REGISTRY_URLS);
+}
+
 /**
  * Get the current base URL for API calls.
- * Returns the selected store's endpoint or defaults to Logan hub.
+ * Returns the selected store's endpoint or defaults to local dev.
  */
 export function getBaseURL() {
   return _storeBaseURL;
@@ -48,16 +90,4 @@ export async function setBaseURL(url) {
     console.error('Failed to save base URL to AsyncStorage:', error);
     // Still update the cache even if storage fails
   }
-}
-
-/**
- * Get the hub URL for fetching store registry.
- * Used only during store selection flow.
- */
-export function getPrimaryHubURL() {
-  return PRIMARY_HUB_URL;
-}
-
-export function getFallbackHubURL() {
-  return FALLBACK_HUB_URL;
 }

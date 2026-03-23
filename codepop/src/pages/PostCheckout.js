@@ -22,80 +22,83 @@ const PostCheckout = () => {
   const [orderNum, setOrderNum] = useState('');
   const [reviewText, setReviewText] = useState('');
 
-  const storeLocation = {
-      latitude: 41.7421007, //the emulator will likely user coordinates to google headquarters which is these coordinates. uncomment to test <500 yard option
-      longitude: -111.8070335
+  const DEFAULT_STORE = {
+    latitude: 41.7421007,
+    longitude: -111.8070335,
+  };
+  const [storeLocation, setStoreLocation] = useState(DEFAULT_STORE);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const latStr = await AsyncStorage.getItem('selectedStoreLatitude');
+        const lonStr = await AsyncStorage.getItem('selectedStoreLongitude');
+        const la = latStr != null ? parseFloat(latStr) : NaN;
+        const lo = lonStr != null ? parseFloat(lonStr) : NaN;
+        if (!Number.isNaN(la) && !Number.isNaN(lo)) {
+          setStoreLocation({ latitude: la, longitude: lo });
+        }
+      } catch (e) {
+        console.warn('PostCheckout: could not load store coordinates', e);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const appPref = await AsyncStorage.getItem('locationPermission');
+      if (appPref !== 'granted') {
+        setErrorMsg(
+          'Location is off in your profile. Enable “Use My Location” or allow location when picking a store to use arrival detection.'
+        );
+        return;
+      }
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg(
+          'Permission to access location was denied.\n Please click the button when you have arrived so we can have your drink prepared.'
+        );
+        return;
+      }
+      try {
+        const currentLocation = await Location.getCurrentPositionAsync({});
+        setLocation(currentLocation);
+      } catch (error) {
+        console.error('Error fetching location:', error);
+      }
+    })();
+  }, []);
+
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3;
+    const toRadians = (deg) => (deg * Math.PI) / 180;
+    const φ1 = toRadians(lat1);
+    const φ2 = toRadians(lat2);
+    const Δφ = toRadians(lat2 - lat1);
+    const Δλ = toRadians(lon2 - lon1);
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const checkDistance = (userCoords) => {
+    const distance = calculateDistance(
+      userCoords.latitude,
+      userCoords.longitude,
+      storeLocation.latitude,
+      storeLocation.longitude
+    );
+    setIsNearby(distance <= 457.2);
   };
 
   useEffect(() => {
-      (async () => {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setErrorMsg('Permission to access location was denied.\n Please click the button when you have arrived so we can have your drink prepared.');
-          return;
-        }
-
-          try {
-                // Fetch the user's current location
-                let currentLocation = await Location.getCurrentPositionAsync({});
-                setLocation(currentLocation);
-              } catch (error) {
-                console.error("Error fetching location:", error);
-              }
-
-        return () => clearInterval(locationInterval);
-      })();
-    }, []);
-
-
-    // Function to calculate the distance between two coordinates using the Haversine formula
-    const calculateDistance = (lat1, lon1, lat2, lon2) => {
-      const R = 6371e3; // Earth's radius in meters
-      const toRadians = (deg) => (deg * Math.PI) / 180;
-
-      const φ1 = toRadians(lat1);
-      const φ2 = toRadians(lat2);
-      const Δφ = toRadians(lat2 - lat1);
-      const Δλ = toRadians(lon2 - lon1);
-
-      const a =
-        Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-      return R * c; // Distance in meters
-    };
-
-
-    // Function to check if user is within 500 yards (457.2 meters)
-      const checkDistance = (userCoords) => {
-        const userLatitude = userCoords.latitude;
-        const userLongitude = userCoords.longitude;
-
-        // Calculate the distance between the user's coordinates and the store's coordinates
-        const distance = calculateDistance(
-          userLatitude,
-          userLongitude,
-          storeLocation.latitude,
-          storeLocation.longitude
-        );
-
-        // 500 yards is approximately 457.2 meters
-        if (distance <= 457.2) {
-          setIsNearby(true);
-        } else {
-          setIsNearby(false);
-        }
-      };
-
-      // Trigger checkDistance whenever the location changes
-      useEffect(() => {
-        if (location) {
-          const { coords } = location;
-          checkDistance(coords);
-        }
-      }, [location]);
+    if (location) {
+      const { coords } = location;
+      checkDistance(coords);
+    }
+  }, [location, storeLocation]);
 
 
 

@@ -14,31 +14,35 @@ const SeasonalCarousel = ({ readOnly = false }) => {
 
     useEffect(() => {
         const fetchData = async () => {
-             try {
+            try {
                 const response = await fetch(`${getBaseURL()}/backend/drinks/`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                    }
+                    },
                 });
-            const drinks = await response.json();
-
-            const parsedDrinks = drinks.map(drink => ({
-                drinkID: drink.DrinkID,
-                name: drink.Name,
-                price: drink.Price,
-                sodaUsed: drink.SodaUsed,  // Default value if SodaUsed is null
-                syrupsUsed: drink.SyrupsUsed,
-                addIns: drink.AddIns,
-                user_Created: drink.user_Created,    // Assuming the user is creating the drink
-                // size: drink.selectedSize,
-                // ice: drink.selectedIce,
-            }));
-            console.log('parsed')
-            console.log(parsedDrinks);
-            setData(parsedDrinks);
-            } catch (error) {
-                console.error(error);
+                if (!response.ok) {
+                    setData([]);
+                    return;
+                }
+                const drinks = await response.json();
+                if (!Array.isArray(drinks)) {
+                    setData([]);
+                    return;
+                }
+                const parsedDrinks = drinks.map((drink) => ({
+                    drinkID: drink.DrinkID,
+                    name: drink.Name,
+                    price: drink.Price,
+                    sodaUsed: drink.SodaUsed,
+                    syrupsUsed: drink.SyrupsUsed,
+                    addIns: drink.AddIns,
+                    user_Created: drink.user_Created,
+                }));
+                setData(parsedDrinks);
+            } catch {
+                // Offline or no API: avoid console.error — it triggers RN LogBox "Network request failed"
+                setData([]);
             } finally {
                 setIsLoading(false);
             }

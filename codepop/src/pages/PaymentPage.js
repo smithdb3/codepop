@@ -11,6 +11,8 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -52,6 +54,12 @@ const PaymentPage = () => {
   const [error, setError] = useState('');
   const [retryCount, setRetryCount] = useState(0);
 
+  // Checkout map / selected store
+  const [checkoutStoreName, setCheckoutStoreName] = useState('CodePop');
+  const [storeMapLat, setStoreMapLat] = useState(null);
+  const [storeMapLon, setStoreMapLon] = useState(null);
+  const [checkoutLocationPref, setCheckoutLocationPref] = useState(null);
+
   // Stripe
   const { initializePaymentSheet, openPaymentSheet } = CheckoutForm(totalPrice);
 
@@ -64,6 +72,29 @@ const PaymentPage = () => {
       const futureDate = new Date();
       futureDate.setMonth(futureDate.getMonth() + 3);
       setRecurringEndDate(futureDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+
+      (async () => {
+        try {
+          const name = await AsyncStorage.getItem('selectedStoreName');
+          const latStr = await AsyncStorage.getItem('selectedStoreLatitude');
+          const lonStr = await AsyncStorage.getItem('selectedStoreLongitude');
+          const perm = await AsyncStorage.getItem('locationPermission');
+          if (name) setCheckoutStoreName(name);
+          const la = latStr != null ? parseFloat(latStr) : NaN;
+          const lo = lonStr != null ? parseFloat(lonStr) : NaN;
+          setStoreMapLat(!Number.isNaN(la) ? la : null);
+          setStoreMapLon(!Number.isNaN(lo) ? lo : null);
+          setCheckoutLocationPref(perm);
+          if (perm === 'granted') {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+              setCheckoutLocationPref('denied');
+            }
+          }
+        } catch (e) {
+          console.warn('Checkout map: failed to load store/location prefs', e);
+        }
+      })();
     }, [])
   );
 
@@ -266,6 +297,14 @@ const PaymentPage = () => {
     mapPlaceholderText: {
       fontSize: 14,
       color: colors.textMuted,
+      textAlign: 'center',
+    },
+    checkoutMapBox: {
+      height: 180,
+      borderRadius: 8,
+      overflow: 'hidden',
+      marginBottom: 16,
+      backgroundColor: colors.background,
     },
     priceBreakdown: {
       backgroundColor: colors.background,
@@ -743,13 +782,34 @@ const PaymentPage = () => {
             {/* Store info */}
             <View style={styles.storeRow}>
               <Icon name="location" size={18} color={colors.textPrimary} />
-              <Text style={styles.storeText}>CodePop — Utah State University</Text>
+              <Text style={styles.storeText}>{checkoutStoreName}</Text>
             </View>
 
-            {/* Map placeholder */}
-            <View style={styles.mapPlaceholder}>
-              <Text style={styles.mapPlaceholderText}>📍 Map preview coming soon</Text>
-            </View>
+            {storeMapLat != null && storeMapLon != null ? (
+              <View style={styles.checkoutMapBox}>
+                <MapView
+                  style={StyleSheet.absoluteFillObject}
+                  initialRegion={{
+                    latitude: storeMapLat,
+                    longitude: storeMapLon,
+                    latitudeDelta: 0.06,
+                    longitudeDelta: 0.06,
+                  }}
+                  showsUserLocation={checkoutLocationPref === 'granted'}
+                >
+                  <Marker
+                    coordinate={{ latitude: storeMapLat, longitude: storeMapLon }}
+                    title={checkoutStoreName}
+                  />
+                </MapView>
+              </View>
+            ) : (
+              <View style={styles.mapPlaceholder}>
+                <Text style={styles.mapPlaceholderText}>
+                  Store location unavailable. Choose a store from the home or profile screen to see it on the map.
+                </Text>
+              </View>
+            )}
 
             {/* Price breakdown */}
             <View style={styles.priceBreakdown}>

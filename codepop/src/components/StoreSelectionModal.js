@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,24 +7,21 @@ import {
   ActivityIndicator,
   FlatList,
   Alert,
-  Dimensions,
+  TextInput,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import MapView, { Marker } from 'react-native-maps';
 import Icon from 'react-native-vector-icons/Ionicons';
 import * as Location from 'expo-location';
-import { setBaseURL, getPrimaryHubURL, getFallbackHubURL } from '../../ip_address';
+import { setBaseURL, getHubRegistryUrls } from '../../ip_address';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CodePopLogo } from './CodePopLogo';
 import { useTheme } from '../theme';
-
-const { width } = Dimensions.get('window');
 
 /**
  * Haversine formula: calculate distance between two coordinates in miles
  */
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 3959; // Earth's radius in miles
+  const R = 3959;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -37,129 +34,231 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-/**
- * Fetch store registry from all hubs and merge results
- */
+function filterStoresByQuery(stores, query) {
+  const t = query.trim().toLowerCase();
+  if (!t) return stores;
+  return stores.filter((s) => {
+    const name = (s.store_name || '').toLowerCase();
+    const region = (s.region || '').toLowerCase();
+    const idStr = String(s.store_id);
+    return name.includes(t) || region.includes(t) || idStr.includes(t);
+  });
+}
+
+function sortStoresForDisplay(stores, userLocation) {
+  const list = [...stores];
+  if (userLocation) {
+    list.sort((a, b) => {
+      const latA = a.latitude != null ? parseFloat(a.latitude) : NaN;
+      const lonA = a.longitude != null ? parseFloat(a.longitude) : NaN;
+      const latB = b.latitude != null ? parseFloat(b.latitude) : NaN;
+      const lonB = b.longitude != null ? parseFloat(b.longitude) : NaN;
+      const validA = !Number.isNaN(latA) && !Number.isNaN(lonA);
+      const validB = !Number.isNaN(latB) && !Number.isNaN(lonB);
+      if (validA && validB) {
+        const distA = calculateDistance(
+          userLocation.latitude,
+          userLocation.longitude,
+          latA,
+          lonA
+        );
+        const distB = calculateDistance(
+          userLocation.latitude,
+          userLocation.longitude,
+          latB,
+          lonB
+        );
+        return distA - distB;
+      }
+      if (validA) return -1;
+      if (validB) return 1;
+      return (a.store_id || 0) - (b.store_id || 0);
+    });
+    return list;
+  }
+  list.sort((a, b) => {
+    const regA = (a.region || '').localeCompare(b.region || '');
+    if (regA !== 0) return regA;
+    return (a.store_id || 0) - (b.store_id || 0);
+  });
+  return list;
+}
+
 async function fetchStoreRegistry() {
-  const primaryURL = getPrimaryHubURL();
-  const fallbackURL = getFallbackHubURL();
+  const hubUrls = getHubRegistryUrls();
+  if (hubUrls.length === 0) {
+    return [];
+  }
+
+  const results = await Promise.allSettled(
+    hubUrls.map(async (base) => {
+      const url = `${base}/backend/api/hub/store-registry/`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return response.json();
+    })
+  );
+
+  const seenIds = new Set();
   const allStores = [];
 
-  // Fetch from primary hub
-  try {
-    const response = await fetch(`${primaryURL}/backend/api/hub/store-registry/`);
-    if (response.ok) {
-      const data = await response.json();
-      if (data.stores && Array.isArray(data.stores)) {
-        allStores.push(...data.stores);
-        console.log(`Fetched ${data.stores.length} stores from primary hub`);
-      }
+  for (let i = 0; i < results.length; i++) {
+    const settled = results[i];
+    if (settled.status !== 'fulfilled') {
+      continue;
     }
-  } catch (err) {
-    console.warn('Failed to fetch from primary hub:', err);
+    const data = settled.value;
+    if (!data || !Array.isArray(data.stores)) {
+      continue;
+    }
+    for (const store of data.stores) {
+      if (store == null || store.store_id == null) continue;
+      if (seenIds.has(store.store_id)) continue;
+      seenIds.add(store.store_id);
+      allStores.push(store);
+    }
   }
 
-  // Also fetch from fallback hub to get stores from all regions
-  try {
-    const response = await fetch(`${fallbackURL}/backend/api/hub/store-registry/`);
-    if (response.ok) {
-      const data = await response.json();
-      if (data.stores && Array.isArray(data.stores)) {
-        // Merge stores, avoiding duplicates by store_id
-        const existingIds = new Set(allStores.map(s => s.store_id));
-        const newStores = data.stores.filter(s => !existingIds.has(s.store_id));
-        allStores.push(...newStores);
-        console.log(`Fetched ${newStores.length} additional stores from fallback hub`);
-      }
-    }
-  } catch (err) {
-    console.warn('Failed to fetch from fallback hub:', err);
-  }
-
-  console.log(`Total stores available: ${allStores.length}`, allStores);
   return allStores;
 }
 
-export default function StoreSelectionModal({ visible, onClose }) {
+export default function StoreSelectionModal({
+  visible,
+  onClose,
+  requireSelection = false,
+}) {
   const { colors } = useTheme();
-  const [phase, setPhase] = useState('permission'); // 'permission' or 'selection'
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [selectedStore, setSelectedStore] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [locationPermission, setLocationPermission] = useState(null);
-  const [mapRef, setMapRef] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const mapRef = useRef(null);
 
-  // Fetch stores on mount
+  const displayStores = useMemo(
+    () => sortStoresForDisplay(filterStoresByQuery(stores, searchQuery), userLocation),
+    [stores, searchQuery, userLocation]
+  );
+
+  const mapMarkers = useMemo(() => {
+    return stores.filter((s) => {
+      if (s.latitude == null || s.longitude == null) return false;
+      const lat = parseFloat(s.latitude);
+      const lon = parseFloat(s.longitude);
+      return !Number.isNaN(lat) && !Number.isNaN(lon);
+    });
+  }, [stores]);
+
   useEffect(() => {
-    if (visible && phase === 'permission') {
-      loadStores();
+    if (!visible) return;
+    setSelectedStore(null);
+    setUserLocation(null);
+    setLocationPermission(null);
+    setSearchQuery('');
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const storeList = await fetchStoreRegistry();
+      if (!cancelled) {
+        setStores(storeList);
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [visible]);
+
+  useEffect(() => {
+    if (!selectedStore) return;
+    const ids = new Set(displayStores.map((s) => s.store_id));
+    if (!ids.has(selectedStore.store_id)) {
+      setSelectedStore(null);
     }
-  }, [visible, phase]);
+  }, [displayStores, selectedStore]);
 
-  const loadStores = async () => {
-    setLoading(true);
-    const storeList = await fetchStoreRegistry();
-    console.log('Stores loaded:', storeList);
-    setStores(storeList);
-    setLoading(false);
-  };
+  useEffect(() => {
+    if (loading || !mapRef.current) return;
+    const coords = [];
+    if (userLocation && locationPermission === 'granted') {
+      coords.push({
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+      });
+    }
+    mapMarkers.forEach((s) => {
+      const lat = parseFloat(s.latitude);
+      const lon = parseFloat(s.longitude);
+      coords.push({ latitude: lat, longitude: lon });
+    });
+    if (coords.length === 0) return;
+    const t = setTimeout(() => {
+      mapRef.current?.fitToCoordinates(coords, {
+        edgePadding: { top: 52, right: 52, bottom: 52, left: 52 },
+        animated: true,
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [loading, userLocation, locationPermission, mapMarkers]);
 
-  const handleAllowLocation = async () => {
-    setLoading(true);
+  const handleUseMyLocation = async () => {
+    if (locationPermission === 'granted' && userLocation) {
+      setUserLocation(null);
+      setLocationPermission('manual');
+      return;
+    }
+    setLocating(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        setLocationPermission('granted');
-        const location = await Location.getCurrentPositionAsync({});
-        const { latitude, longitude } = location.coords;
-        setUserLocation({ latitude, longitude });
-
-        // Auto-select nearest store
-        let nearestStore = stores[0];
-        let minDistance = Infinity;
-
-        stores.forEach((store) => {
-          if (store.latitude && store.longitude) {
-            const distance = calculateDistance(
-              latitude,
-              longitude,
-              store.latitude,
-              store.longitude
-            );
-            if (distance < minDistance) {
-              minDistance = distance;
-              nearestStore = store;
-            }
-          }
-        });
-
-        await selectAndSave(nearestStore);
-        onClose();
+      if (status !== 'granted') {
+        setLocationPermission('denied');
+        Alert.alert(
+          'Location off',
+          'Enable location in Settings to sort stores by distance and see yourself on the map.'
+        );
         return;
       }
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+      setUserLocation({ latitude, longitude });
+      setLocationPermission('granted');
     } catch (error) {
-      console.error('Error getting location:', error);
+      console.warn('Location error:', error);
+      setLocationPermission('denied');
+      Alert.alert('Location', 'Could not read your position. Try again.');
+    } finally {
+      setLocating(false);
     }
-
-    setLoading(false);
-    // If permission denied, move to selection phase
-    setLocationPermission('denied');
-    setPhase('selection');
   };
 
-  const handleChooseManually = () => {
-    setPhase('selection');
-  };
-
-  const selectAndSave = async (store) => {
+  const selectAndSave = async (store, permissionStr) => {
     try {
-      await AsyncStorage.multiSet([
-        ['locationPermission', locationPermission || 'manual'],
+      const lat =
+        store.latitude != null && !Number.isNaN(parseFloat(store.latitude))
+          ? String(store.latitude)
+          : null;
+      const lon =
+        store.longitude != null && !Number.isNaN(parseFloat(store.longitude))
+          ? String(store.longitude)
+          : null;
+
+      const pairs = [
+        ['locationPermission', permissionStr],
         ['selectedStoreEndpoint', store.api_endpoint],
         ['selectedStoreId', String(store.store_id)],
         ['selectedStoreName', store.store_name],
-      ]);
+      ];
+      if (lat != null && lon != null) {
+        pairs.push(['selectedStoreLatitude', lat], ['selectedStoreLongitude', lon]);
+      }
+      await AsyncStorage.multiSet(pairs);
+      if (lat == null || lon == null) {
+        await AsyncStorage.multiRemove(['selectedStoreLatitude', 'selectedStoreLongitude']);
+      }
       await setBaseURL(store.api_endpoint);
       setSelectedStore(store);
     } catch (error) {
@@ -173,60 +272,83 @@ export default function StoreSelectionModal({ visible, onClose }) {
       Alert.alert('Please select a store');
       return;
     }
-    await selectAndSave(selectedStore);
-    onClose();
+    const perm =
+      locationPermission === 'granted'
+        ? 'granted'
+        : locationPermission === 'denied'
+          ? 'denied'
+          : 'manual';
+    await selectAndSave(selectedStore, perm);
+    onClose?.({ cancelled: false });
+  };
+
+  const dismissWithoutConfirm = () => {
+    onClose?.({ cancelled: true });
+  };
+
+  const handleBackdropPress = () => {
+    if (requireSelection) {
+      Alert.alert('Select a store', 'Choose your CodePop location and tap Confirm to continue.');
+      return;
+    }
+    dismissWithoutConfirm();
+  };
+
+  const handleHardwareBackPress = () => {
+    if (requireSelection) {
+      return;
+    }
+    dismissWithoutConfirm();
   };
 
   const handleMarkerPress = (store) => {
     setSelectedStore(store);
-    if (mapRef) {
-      mapRef.animateToRegion(
-        {
-          latitude: store.latitude,
-          longitude: store.longitude,
-          latitudeDelta: 0.1,
-          longitudeDelta: 0.1,
-        },
-        500
-      );
+    if (store.latitude != null && store.longitude != null) {
+      const lat = parseFloat(store.latitude);
+      const lon = parseFloat(store.longitude);
+      if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
+        mapRef.current?.animateToRegion(
+          {
+            latitude: lat,
+            longitude: lon,
+            latitudeDelta: 0.08,
+            longitudeDelta: 0.08,
+          },
+          400
+        );
+      }
     }
   };
 
-  const sortedStores = [...stores].sort((a, b) => {
-    // Sort by region first, then by distance if user location available
-    if (a.region !== b.region) {
-      return a.region.localeCompare(b.region);
-    }
-    if (userLocation && a.latitude && a.longitude && b.latitude && b.longitude) {
-      const distA = calculateDistance(
-        userLocation.latitude,
-        userLocation.longitude,
-        a.latitude,
-        a.longitude
-      );
-      const distB = calculateDistance(
-        userLocation.latitude,
-        userLocation.longitude,
-        b.latitude,
-        b.longitude
-      );
-      return distA - distB;
-    }
-    return a.store_id - b.store_id;
-  });
+  const initialMapRegion = {
+    latitude: 39.8283,
+    longitude: -98.5795,
+    latitudeDelta: 15,
+    longitudeDelta: 15,
+  };
+
+  const showUserOnMap = locationPermission === 'granted' && userLocation != null;
+  const locationActive = showUserOnMap;
 
   const renderStoreCard = ({ item }) => {
     const isSelected = selectedStore?.store_id === item.store_id;
     let distance = '';
-    if (userLocation && item.latitude && item.longitude) {
-      const dist = calculateDistance(
-        userLocation.latitude,
-        userLocation.longitude,
-        item.latitude,
-        item.longitude
-      );
-      distance = ` • ${dist.toFixed(1)}mi`;
+    if (userLocation && item.latitude != null && item.longitude != null) {
+      const lat = parseFloat(item.latitude);
+      const lon = parseFloat(item.longitude);
+      if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
+        const dist = calculateDistance(
+          userLocation.latitude,
+          userLocation.longitude,
+          lat,
+          lon
+        );
+        distance = ` • ${dist.toFixed(1)} mi`;
+      }
     }
+    const regionLabel = item.region
+      ? item.region.charAt(0).toUpperCase() + item.region.slice(1)
+      : 'Store';
 
     return (
       <TouchableOpacity
@@ -241,7 +363,8 @@ export default function StoreSelectionModal({ visible, onClose }) {
           <View style={{ flex: 1 }}>
             <Text style={dynamicStyles.storeName}>{item.store_name}</Text>
             <Text style={dynamicStyles.storeRegion}>
-              {item.region.charAt(0).toUpperCase() + item.region.slice(1)}{distance}
+              {regionLabel}
+              {distance}
             </Text>
           </View>
         </View>
@@ -249,188 +372,217 @@ export default function StoreSelectionModal({ visible, onClose }) {
     );
   };
 
-  const initialMapRegion = userLocation
-    ? {
-        latitude: userLocation.latitude,
-        longitude: userLocation.longitude,
-        latitudeDelta: 5,
-        longitudeDelta: 5,
-      }
-    : {
-        latitude: 39.8283,
-        longitude: -98.5795, // Center of USA
-        latitudeDelta: 15,
-        longitudeDelta: 15,
-      };
-
   const dynamicStyles = makeStyles(colors);
 
   return (
-    <Modal isVisible={visible} animationIn="slideInUp" animationOut="slideOutDown">
-      {phase === 'permission' ? (
-        // Phase 1: Location Permission
-        <View style={dynamicStyles.container}>
-          <View style={dynamicStyles.content}>
-            <CodePopLogo size={64} />
-            <Text style={dynamicStyles.heading}>Find Your Nearest CodePop</Text>
-            <Text style={dynamicStyles.description}>
-              Allow location access to find the closest CodePop station to you.
-              You can also choose manually.
-            </Text>
-
-            {loading ? (
-              <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 20 }} />
-            ) : (
-              <>
-                <TouchableOpacity
-                  style={dynamicStyles.primaryButton}
-                  onPress={handleAllowLocation}
-                >
-                  <Text style={dynamicStyles.primaryButtonText}>Allow Location</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={dynamicStyles.secondaryButton}
-                  onPress={handleChooseManually}
-                >
-                  <Text style={dynamicStyles.secondaryButtonText}>
-                    Choose Manually
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
+    <Modal
+      isVisible={visible}
+      animationIn="slideInUp"
+      animationOut="slideOutDown"
+      style={dynamicStyles.modalRoot}
+      propagateSwipe
+      onBackdropPress={handleBackdropPress}
+      onBackButtonPress={handleHardwareBackPress}
+      swipeDirection={requireSelection ? undefined : 'down'}
+      onSwipeComplete={requireSelection ? undefined : dismissWithoutConfirm}
+    >
+      <View style={dynamicStyles.container}>
+        <View style={dynamicStyles.sheetHeader}>
+          <View
+            style={dynamicStyles.sheetGrabber}
+            accessibilityLabel={
+              requireSelection ? 'Store selection required' : 'Swipe down to close'
+            }
+          />
+          <Text style={dynamicStyles.sheetTitle}>Choose your store</Text>
+          <Text style={dynamicStyles.sheetSubtitle}>
+            Tap a pin or pick from the list
+          </Text>
         </View>
-      ) : (
-        // Phase 2: Store Selection with Map
-        <View style={dynamicStyles.container}>
-          <View style={dynamicStyles.mapContainer}>
-            <MapView
-              ref={setMapRef}
-              style={dynamicStyles.map}
-              initialRegion={initialMapRegion}
-            >
-              {stores.map((store) =>
-                store.latitude && store.longitude ? (
-                  <Marker
-                    key={store.store_id}
-                    coordinate={{
-                      latitude: parseFloat(store.latitude),
-                      longitude: parseFloat(store.longitude),
-                    }}
-                    title={store.store_name}
-                    onPress={() => handleMarkerPress(store)}
-                  />
-                ) : null
-              )}
-            </MapView>
-          </View>
 
-          <View style={dynamicStyles.listContainer}>
-            <Text style={dynamicStyles.listHeading}>Select a Store</Text>
-            <FlatList
-              data={sortedStores}
-              renderItem={renderStoreCard}
-              keyExtractor={(item) => String(item.store_id)}
-              scrollEnabled={true}
-              style={dynamicStyles.list}
-            />
+        <View style={dynamicStyles.mapContainer}>
+          <MapView
+            ref={mapRef}
+            style={dynamicStyles.map}
+            initialRegion={initialMapRegion}
+            showsUserLocation={showUserOnMap}
+          >
+            {mapMarkers.map((store) => {
+              const lat = parseFloat(store.latitude);
+              const lon = parseFloat(store.longitude);
+              return (
+                <Marker
+                  key={store.store_id}
+                  coordinate={{ latitude: lat, longitude: lon }}
+                  title={store.store_name}
+                  onPress={() => handleMarkerPress(store)}
+                />
+              );
+            })}
+          </MapView>
+          {loading && (
+            <View style={[dynamicStyles.mapLoadingOverlay, { backgroundColor: colors.surface2 }]}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={dynamicStyles.mapLoadingText}>Loading stores…</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={dynamicStyles.listContainer}>
+          <Text style={dynamicStyles.listHeading}>Stores</Text>
+          <View style={dynamicStyles.searchAndLocateRow}>
+            <View style={dynamicStyles.searchRow}>
+              <Icon name="search-outline" size={20} color={colors.textMuted} style={dynamicStyles.searchIcon} />
+              <TextInput
+                style={dynamicStyles.searchInput}
+                placeholder="Search name, region, or ID"
+                placeholderTextColor={colors.textPlaceholder}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setSearchQuery('')}
+                  style={dynamicStyles.clearSearch}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Icon name="close-circle" size={22} color={colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
             <TouchableOpacity
-              style={[dynamicStyles.primaryButton, { width: '100%' }]}
-              onPress={handleConfirmSelection}
-              disabled={!selectedStore}
+              style={[
+                dynamicStyles.locateButton,
+                locationActive && dynamicStyles.locateButtonActive,
+              ]}
+              onPress={handleUseMyLocation}
+              disabled={locating}
+              accessibilityRole="button"
+              accessibilityLabel={
+                locationActive ? 'Turn off location sorting' : 'Use my location to sort by distance'
+              }
             >
-              <Text style={dynamicStyles.primaryButtonText}>Confirm Selection</Text>
+              {locating ? (
+                <ActivityIndicator size="small" color={locationActive ? '#FFFFFF' : colors.primary} />
+              ) : (
+                <Icon
+                  name={locationActive ? 'navigate' : 'navigate-outline'}
+                  size={22}
+                  color={locationActive ? '#FFFFFF' : colors.primary}
+                />
+              )}
             </TouchableOpacity>
           </View>
+
+          <FlatList
+            data={displayStores}
+            renderItem={renderStoreCard}
+            keyExtractor={(item) => String(item.store_id)}
+            scrollEnabled
+            style={dynamicStyles.list}
+            ListEmptyComponent={
+              <Text style={dynamicStyles.emptySearch}>
+                {stores.length === 0 && !loading
+                  ? "Couldn't load stores. Check your connection and try again."
+                  : stores.length === 0 && loading
+                    ? ''
+                    : 'No stores match your search'}
+              </Text>
+            }
+          />
+          <TouchableOpacity
+            style={[
+              dynamicStyles.primaryButton,
+              { width: '100%' },
+              !selectedStore && dynamicStyles.primaryButtonDisabled,
+            ]}
+            onPress={handleConfirmSelection}
+            disabled={!selectedStore}
+          >
+            <Text style={dynamicStyles.primaryButtonText}>Confirm Selection</Text>
+          </TouchableOpacity>
         </View>
-      )}
+      </View>
     </Modal>
   );
 }
 
+const SHEET_RADIUS = 20;
+
 const makeStyles = (colors) =>
   StyleSheet.create({
+    modalRoot: {
+      justifyContent: 'flex-end',
+      margin: 0,
+    },
     container: {
       flex: 1,
       flexDirection: 'column',
       backgroundColor: colors.surface,
-      borderTopLeftRadius: 16,
-      borderTopRightRadius: 16,
+      borderTopLeftRadius: SHEET_RADIUS,
+      borderTopRightRadius: SHEET_RADIUS,
+      borderBottomLeftRadius: SHEET_RADIUS,
+      borderBottomRightRadius: SHEET_RADIUS,
+      overflow: 'hidden',
       width: '100%',
+      paddingBottom: 12,
+      maxHeight: '92%',
+    },
+    sheetHeader: {
+      paddingHorizontal: 16,
+      paddingTop: 10,
       paddingBottom: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderLight,
     },
-    content: {
-      padding: 32,
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: 400,
-    },
-    heading: {
-      fontSize: 24,
-      fontWeight: '700',
+    sheetGrabber: {
+      alignSelf: 'center',
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.border,
       marginBottom: 12,
-      textAlign: 'center',
-      color: colors.textPrimary,
     },
-    description: {
-      fontSize: 14,
+    sheetTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    sheetSubtitle: {
+      fontSize: 13,
       color: colors.textMuted,
-      textAlign: 'center',
-      marginBottom: 32,
-      lineHeight: 22,
-    },
-    primaryButton: {
-      backgroundColor: colors.primary,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderRadius: 8,
-      minHeight: 44,
-      marginVertical: 8,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-    primaryButtonText: {
-      color: '#FFFFFF',
-      fontSize: 14,
-      fontWeight: '600',
-    },
-    secondaryButton: {
-      backgroundColor: colors.surface2,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderRadius: 8,
-      minHeight: 44,
-      marginVertical: 8,
-      width: '100%',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    secondaryButtonText: {
-      color: colors.textPrimary,
-      fontSize: 14,
-      fontWeight: '600',
+      lineHeight: 18,
     },
     mapContainer: {
-      height: 180,
+      height: 220,
       marginHorizontal: 12,
-      marginVertical: 12,
-      borderRadius: 12,
+      marginTop: 12,
+      borderRadius: 14,
       overflow: 'hidden',
+      backgroundColor: colors.surface2,
     },
     map: {
       flex: 1,
     },
+    mapLoadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    mapLoadingText: {
+      marginTop: 10,
+      fontSize: 14,
+      color: colors.textMuted,
+      fontWeight: '500',
+    },
     listContainer: {
       flex: 1,
       paddingHorizontal: 12,
-      paddingTop: 0,
+      paddingTop: 10,
       paddingBottom: 12,
     },
     listHeading: {
@@ -439,11 +591,82 @@ const makeStyles = (colors) =>
       color: colors.textMuted,
       textTransform: 'uppercase',
       letterSpacing: 0.6,
+      marginBottom: 8,
+    },
+    searchAndLocateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
       marginBottom: 12,
+    },
+    searchRow: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      backgroundColor: colors.surface2,
+      paddingHorizontal: 10,
+      minHeight: 48,
+    },
+    locateButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    locateButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    searchIcon: {
+      marginRight: 6,
+    },
+    searchInput: {
+      flex: 1,
+      paddingVertical: 12,
+      fontSize: 14,
+      color: colors.textPrimary,
+    },
+    clearSearch: {
+      padding: 4,
+    },
+    emptySearch: {
+      fontSize: 14,
+      color: colors.textMuted,
+      textAlign: 'center',
+      paddingVertical: 24,
     },
     list: {
       flex: 1,
       marginBottom: 12,
+    },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: 10,
+      minHeight: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.12,
+      shadowRadius: 3,
+      elevation: 2,
+    },
+    primaryButtonDisabled: {
+      opacity: 0.5,
+    },
+    primaryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 15,
+      fontWeight: '600',
     },
     storeCard: {
       backgroundColor: colors.surface2,
@@ -454,9 +677,9 @@ const makeStyles = (colors) =>
       borderColor: colors.border,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 2,
+      shadowOpacity: 0.08,
+      shadowRadius: 2,
+      elevation: 1,
     },
     storeCardSelected: {
       borderLeftWidth: 3,

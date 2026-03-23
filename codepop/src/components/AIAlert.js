@@ -3,8 +3,8 @@ import { View, Text, Button, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getBaseURL } from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Gif from '../components/Gif';
-import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
+import Gif from './Gif';
+import { sodaOptions, syrupOptions, AddInOptions } from './Ingredients';
 import Modal from 'react-native-modal';
 
 const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {

@@ -6,7 +6,7 @@ import Carousel from 'react-native-reanimated-carousel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getBaseURL } from '../../ip_address';
 import Gif from './Gif';
-import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
+import { sodaOptions, syrupOptions, AddInOptions } from './Ingredients';
 
 // to do in phase 2: fix duplicate drink in carosel bug
 

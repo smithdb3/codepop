@@ -32,7 +32,6 @@ const PreferencesPage = () => {
   const [activeTab, setActiveTab] = useState('location');
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [selectedStoreName, setSelectedStoreName] = useState('');
-  const [useLocation, setUseLocation] = useState(false);
 
   // Account Settings Form States
   const [showChangeEmail, setShowChangeEmail] = useState(false);
@@ -69,7 +68,6 @@ const PreferencesPage = () => {
       const email = await AsyncStorage.getItem('userEmail');
       const id = await AsyncStorage.getItem('userId');
       const storeName = await AsyncStorage.getItem('selectedStoreName');
-      const locationPerm = await AsyncStorage.getItem('locationPermission');
 
       if (token && firstName && id) {
         setIsLoggedIn(true);
@@ -78,7 +76,6 @@ const PreferencesPage = () => {
         setUserId(id);
         setUserToken(token);
         setSelectedStoreName(storeName || 'Unknown Store');
-        setUseLocation(locationPerm === 'granted');
       } else {
         setIsLoggedIn(false);
       }
@@ -629,14 +626,6 @@ const PreferencesPage = () => {
   };
 
   // Tab Render Functions
-  const handleLocationToggle = (value) => {
-    setUseLocation(value);
-    if (value) {
-      // Re-run GPS auto-select flow
-      setShowStoreModal(true);
-    }
-  };
-
   const renderLocationTab = () => (
     <View style={styles.card}>
       <Text style={styles.sectionLabel}>PRIMARY STORE LOCATION</Text>
@@ -648,23 +637,12 @@ const PreferencesPage = () => {
         </View>
       </View>
 
-      <View style={styles.settingRow}>
-        <Text style={styles.notifLabel}>Use My Location</Text>
-        <Switch
-          value={useLocation}
-          onValueChange={handleLocationToggle}
-          trackColor={{ false: '#E5E7EB', true: '#08D9D6' }}
-          thumbColor={useLocation ? '#FF2E63' : '#FFFFFF'}
-        />
-      </View>
-
       <TouchableOpacity
         style={styles.secondaryButton}
         onPress={() => setShowStoreModal(true)}
       >
         <Text style={styles.secondaryButtonText}>Change Store</Text>
       </TouchableOpacity>
-      <Text style={styles.helperText}>Your location helps us find the nearest CodePop station.</Text>
     </View>
   );
 
@@ -944,11 +922,8 @@ const PreferencesPage = () => {
 
   const handleStoreModalClose = async () => {
     setShowStoreModal(false);
-    // Re-read store name after selection
     const storeName = await AsyncStorage.getItem('selectedStoreName');
-    const locationPerm = await AsyncStorage.getItem('locationPermission');
     setSelectedStoreName(storeName || 'Unknown Store');
-    setUseLocation(locationPerm === 'granted');
   };
 
   if (!isLoggedIn) {
