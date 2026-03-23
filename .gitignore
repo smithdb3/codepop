@@ -19,3 +19,6 @@ ios/
 
 # macOS system files
 .DS_Store
+
+# Build cache directory for vite
+.vite/
