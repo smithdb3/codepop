@@ -69,7 +69,8 @@ jobs:
             # Update distributed system env vars (remove old values, append fresh ones)
             grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^HUB_LOGAN_URL=\|^HUB_ATLANTA_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
             echo "IS_HUB=True" >> .env
-            echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+            # Public IP (same as SSH host) — not hostname -I, which is VPC-internal on GCP
+            echo "MY_API_ENDPOINT=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
             echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
             echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
@@ -97,7 +98,7 @@ jobs:
 
             grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^HUB_LOGAN_URL=\|^HUB_ATLANTA_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
             echo "IS_HUB=True" >> .env
-            echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+            echo "MY_API_ENDPOINT=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
             echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
             echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
@@ -126,7 +127,7 @@ jobs:
 
             grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
             echo "IS_HUB=False" >> .env
-            echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+            echo "MY_API_ENDPOINT=http://${{ secrets.LOGAN_STORE1_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
 
             git fetch origin master
@@ -152,7 +153,7 @@ jobs:
 
             grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
             echo "IS_HUB=False" >> .env
-            echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+            echo "MY_API_ENDPOINT=http://${{ secrets.LOGAN_STORE2_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
 
             git fetch origin master
@@ -178,7 +179,7 @@ jobs:
 
             grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
             echo "IS_HUB=False" >> .env
-            echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+            echo "MY_API_ENDPOINT=http://${{ secrets.ATLANTA_STORE1_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
 
             git fetch origin master
@@ -204,7 +205,7 @@ jobs:
 
             grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
             echo "IS_HUB=False" >> .env
-            echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+            echo "MY_API_ENDPOINT=http://${{ secrets.ATLANTA_STORE2_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
 
             git fetch origin master
@@ -230,7 +231,7 @@ jobs:
   #           cd ~/codepop/codepop_backend
   #           grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^HUB_LOGAN_URL=\|^HUB_ATLANTA_URL=\|^HUB_CHICAGO_URL=\|^IS_HUB=" .env > .env.tmp && mv .env.tmp .env || true
   #           echo "IS_HUB=True" >> .env
-  #           echo "MY_API_ENDPOINT=http://$(hostname -I | awk '{print $1}'):8000" >> .env
+  #           echo "MY_API_ENDPOINT=http://${{ secrets.CHICAGO_HUB_IP }}:8000" >> .env
   #           echo "HUB_URL=http://${{ secrets.CHICAGO_HUB_IP }}:8000" >> .env
   #           echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
   #           echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env

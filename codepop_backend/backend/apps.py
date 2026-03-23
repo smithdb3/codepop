@@ -40,6 +40,8 @@ class BackendConfig(AppConfig):
             'store_name':   f'CodePop {settings.REGION.title()} #{settings.STORE_ID}',
             'region':       settings.REGION,
             'api_endpoint': os.getenv('MY_API_ENDPOINT', ''),
+            'latitude':     float(os.getenv('LATITUDE', 0)) if os.getenv('LATITUDE') else None,
+            'longitude':    float(os.getenv('LONGITUDE', 0)) if os.getenv('LONGITUDE') else None,
         }
 
         for attempt, delay in enumerate([1, 2, 4, 8]):
