@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 import { useTheme } from '../theme';
 
 
@@ -15,7 +15,7 @@ const CreateAccountPage = ({ navigation, route }) => {
   const handleRegister = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/backend/auth/register/`, {
+      const response = await fetch(`${getBaseURL()}/backend/auth/register/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

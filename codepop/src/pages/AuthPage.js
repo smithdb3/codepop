@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 import { CodePopLogo } from '../components/CodePopLogo';
 import { useTheme } from '../theme';
 
@@ -22,7 +22,7 @@ const AuthPage = ({ navigation, route }) => {
   const handleLoginWithEmail = async (emailValue) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/backend/auth/login/`, {
+      const response = await fetch(`${getBaseURL()}/backend/auth/login/`, {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ const AuthPage = ({ navigation, route }) => {
   const handleLogin = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/backend/auth/login/`, {
+      const response = await fetch(`${getBaseURL()}/backend/auth/login/`, {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',

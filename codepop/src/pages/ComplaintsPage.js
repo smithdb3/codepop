@@ -12,7 +12,7 @@ import {
 import NavBar from '../components/NavBar';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../theme';
 
@@ -105,7 +105,7 @@ const ComplaintsPage = () => {
     const timeoutId = setTimeout(() => controller.abort(), 7000);
 
     try {
-      const response = await fetch(`${BASE_URL}/backend/chatbot/`, {
+      const response = await fetch(`${getBaseURL()}/backend/chatbot/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +148,7 @@ const ComplaintsPage = () => {
           ]);
 
           const orderResponse = await fetch(
-            `${BASE_URL}/backend/orders/${order_num}/`,
+            `${getBaseURL()}/backend/orders/${order_num}/`,
             {
               method: 'GET',
               headers: {
@@ -219,7 +219,7 @@ const ComplaintsPage = () => {
 
   const getDrinkData = async (drinkID) => {
     try {
-      const drinkData = await fetch(`${BASE_URL}/backend/drinks/${drinkID}/`, {
+      const drinkData = await fetch(`${getBaseURL()}/backend/drinks/${drinkID}/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

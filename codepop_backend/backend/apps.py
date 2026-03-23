@@ -35,9 +35,12 @@ class BackendConfig(AppConfig):
             logger.warning('Cannot register: HUB_URL not configured for region %s', settings.REGION)
             return
 
+        # Store name: use custom STORE_NAME env var if provided, else auto-generate
+        store_name = os.getenv('STORE_NAME') or f'CodePop {settings.REGION.title()} #{settings.STORE_ID}'
+
         payload = {
             'store_id':     settings.STORE_ID,
-            'store_name':   f'CodePop {settings.REGION.title()} #{settings.STORE_ID}',
+            'store_name':   store_name,
             'region':       settings.REGION,
             'api_endpoint': os.getenv('MY_API_ENDPOINT', ''),
             'latitude':     float(os.getenv('LATITUDE', 0)) if os.getenv('LATITUDE') else None,

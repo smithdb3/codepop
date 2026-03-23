@@ -4,7 +4,7 @@ import {
   TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 import { CodePopLogo } from '../components/CodePopLogo';
 import { useTheme } from '../theme';
 
@@ -31,7 +31,7 @@ const EmailCheckPage = () => {
     setError('');
     setIsLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/backend/auth/check-email/`, {
+      const response = await fetch(`${getBaseURL()}/backend/auth/check-email/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: trimmed }),

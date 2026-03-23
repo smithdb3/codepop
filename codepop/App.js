@@ -21,7 +21,7 @@ import PostCheckout from './src/pages/PostCheckout';
 import PreferencesPage from './src/pages/PreferencesPage';
 import UpdateDrink from './src/pages/UpdateDrink';
 import CodePopLogo from './src/components/CodePopLogo';
-import { BASE_URL } from './ip_address';
+import { getBaseURL, initBaseURL } from './ip_address';
 import { ThemeProvider, useTheme } from './src/theme';
 
 const Stack = createNativeStackNavigator();
@@ -44,8 +44,18 @@ const AppNavigator = () => {
     }
   };
 
+  // Initialize base URL from AsyncStorage on app startup
+  const initBaseURLOnStartup = async () => {
+    try {
+      await initBaseURL();
+    } catch (error) {
+      console.error('Failed to initialize base URL:', error);
+    }
+  };
+
   useEffect(() => {
-    initCart()
+    initCart();
+    initBaseURLOnStartup();
   }, []);
   useEffect(() => {
     const loadFonts = async () => {
@@ -215,7 +225,7 @@ const handleLogout = async (navigation) => {
   try {
     // Send logout request to the backend
     const token = await AsyncStorage.getItem('userToken');
-    const response = await fetch(`${BASE_URL}/backend/auth/logout/`, {
+    const response = await fetch(`${getBaseURL()}/backend/auth/logout/`, {
       method: 'POST',
       headers: {
         'Authorization': `Token ${token}`,

@@ -5,7 +5,7 @@ import DropDown from '../components/DropDown';
 import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import Gif from '../components/Gif';
 import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
-import {BASE_URL} from '../../ip_address'
+import { getBaseURL } from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AIAlert from '../components/AIAlert';
 import CodePopLogo from '../components/CodePopLogo';
@@ -101,7 +101,7 @@ const CreateDrinkPage = () => {
       }else{
         const token = await AsyncStorage.getItem('userToken');
     
-        const response = await fetch(`${BASE_URL}/backend/drinks/`, {
+        const response = await fetch(`${getBaseURL()}/backend/drinks/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -211,10 +211,10 @@ const CreateDrinkPage = () => {
   const GenerateAI = async () => {
     try {
       const user_id = await AsyncStorage.getItem('userId');
-      let url = `${BASE_URL}/backend/generate/`;
+      let url = `${getBaseURL()}/backend/generate/`;
 
       if (user_id) {
-        url = `${BASE_URL}/backend/generate/${user_id}/`;
+        url = `${getBaseURL()}/backend/generate/${user_id}/`;
       }
 
       const response = await fetch(url, {

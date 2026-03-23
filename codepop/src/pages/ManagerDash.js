@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput, ActivityIndicator, Image } from 'react-native';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 
 const ManagerDash = () => {
   const [revenue, setRevenue] = useState([]);
@@ -19,7 +19,7 @@ const ManagerDash = () => {
     const fetchMetrics = async () => {
       try {
         // Fetch revenue data
-        const revenueResponse = await fetch(`${BASE_URL}/backend/revenues/`, {
+        const revenueResponse = await fetch(`${getBaseURL()}/backend/revenues/`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });
@@ -27,7 +27,7 @@ const ManagerDash = () => {
         setRevenue(revenueData);
 
         // Fetch inventory data (from /report endpoint)
-        const inventoryResponse = await fetch(`${BASE_URL}/backend/inventory/report/`, {
+        const inventoryResponse = await fetch(`${getBaseURL()}/backend/inventory/report/`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });
@@ -38,7 +38,7 @@ const ManagerDash = () => {
         setInventory(sortedInventory);
 
         // Fetch orders count
-        const ordersResponse = await fetch(`${BASE_URL}/backend/orders/`, {
+        const ordersResponse = await fetch(`${getBaseURL()}/backend/orders/`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });
@@ -66,7 +66,7 @@ const ManagerDash = () => {
     try {
       // Send a PATCH request to the backend to reset the quantity to the threshold level
       const data = { reset: true }; // Indicating that the inventory should be reset
-      const response = await fetch(`${BASE_URL}/backend/inventory/${itemId}/`, {
+      const response = await fetch(`${getBaseURL()}/backend/inventory/${itemId}/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
