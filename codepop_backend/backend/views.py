@@ -11,8 +11,8 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order, Revenue
-from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule
+from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import stripe
 from django.conf import settings
@@ -970,3 +970,24 @@ class UserOperations(viewsets.ModelViewSet):
         except Exception as e:
             return JsonResponse({'Error': str(e)}, status=400)
         
+class MachineOperations(viewsets.ModelViewSet):
+    queryset = Machine.objects.all()
+    serializer_class = MachineSerializer
+    permission_classes = [IsAuthenticated]
+
+    def update_status(self, request, pk=None):
+        machine = self.get_object()
+        new_status = request.data.get('status')
+
+        if new_status not in dict(Machine.STATUS_CHOICES):
+            return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+
+        machine.status = new_status
+        machine.save()
+        return Response({'status': machine.status}, status=status.HTTP_200_OK)
+    
+class ScheduleOperations(viewsets.ModelViewSet):
+    queryset = Machine.objects.all()
+    serializer_class = MachineSerializer
+    permission_classes = [IsAuthenticated]
+

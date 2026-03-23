@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import Preference, Drink, Inventory, Order, Notification, Revenue
+from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Machine, Schedule
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -143,4 +143,14 @@ class RevenueSerializer(serializers.ModelSerializer):
             revenue_instance.calculate_total_amount()
         revenue_instance.save()
         return revenue_instance
+    
+class MachineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Machine
+        fields = ['machine_id', 'name', 'location', 'status', 'notes']
+
+class ScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Schedule
+        fields = ['machine', 'assigned_to', 'scheduled_at', 'completed_at', 'description']
 
