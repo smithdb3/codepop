@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from django.db.models import F
+from django.db.models import F, Q
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -273,8 +273,9 @@ class CreateUserAPIView(CreateAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        # We create a token than will be used for future auth
-        token = Token.objects.create(user=serializer.instance)
+        # DRF authtoken may already create a Token via post_save on User; use get_or_create
+        # to avoid IntegrityError (unique user_id on authtoken_token).
+        token, _ = Token.objects.get_or_create(user=serializer.instance)
         token_data = {"token": token.key}
         return Response(
             {**serializer.data, **token_data},
@@ -297,7 +298,9 @@ class CheckEmailView(APIView):
         email = request.data.get('email', '').strip().lower()
         if not email:
             return Response({'error': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
-        exists = User.objects.filter(email__iexact=email).exists()
+        exists = User.objects.filter(
+            Q(email__iexact=email) | Q(username__iexact=email)
+        ).exists()
         return Response({'exists': exists}, status=status.HTTP_200_OK)
     
 class PreferencesOperations(viewsets.ModelViewSet):

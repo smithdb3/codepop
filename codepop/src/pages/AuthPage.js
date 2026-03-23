@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getBaseURL } from '../../ip_address';
 import { CodePopLogo } from '../components/CodePopLogo';
@@ -8,56 +8,28 @@ import { useTheme } from '../theme';
 
 const AuthPage = ({ navigation, route }) => {
   const { colors } = useTheme();
-  const prefillEmail = route.params?.email ?? '';
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(route.params?.email ?? '');
   const [password, setPassword] = useState('');
-  const [token, setToken] = useState(null);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = async () => {
-    navigation.navigate('CreateAccount');
-  };
-
-  const handleLoginWithEmail = async (emailValue) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${getBaseURL()}/backend/auth/login/`, {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ username: emailValue, password }),
-      });
-
-      if (response.status === 200) {
-          const data = await response.json();
-
-          await AsyncStorage.setItem('userToken', data.token);
-          await AsyncStorage.setItem('userId', data.user_id.toString());
-          await AsyncStorage.setItem('first_name', data.first_name);
-          if(data.userRole === 'admin'){
-            await AsyncStorage.setItem('userRole', 'admin');
-            navigation.navigate('AdminDash');
-          }else if(data.userRole === 'manager'){
-            await AsyncStorage.setItem('userRole', 'manager');
-            navigation.navigate('ManagerDash');
-          } else{
-            await AsyncStorage.setItem('userRole', 'user');
-            navigation.navigate('GeneralHome');
-          }
-      } else {
-          Alert.alert('Invalid credentials, please try again.');
-          setIsLoading(false);
-      }
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Login failed. Please try again later.');
-      setIsLoading(false);
+  useEffect(() => {
+    const p = route.params?.email;
+    if (typeof p === 'string') {
+      setEmail(p);
     }
+  }, [route.params?.email]);
+
+  const handleRegister = () => {
+    navigation.navigate('CreateAccount', { email: email.trim().toLowerCase() });
   };
 
-  const handleLogin = async () => {
+  const handleSignIn = async () => {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      Alert.alert('Please enter your email.');
+      return;
+    }
     setIsLoading(true);
     try {
       const response = await fetch(`${getBaseURL()}/backend/auth/login/`, {
@@ -65,7 +37,7 @@ const AuthPage = ({ navigation, route }) => {
           headers: {
               'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ username: email, password }),
+          body: JSON.stringify({ username: trimmed, password }),
       });
 
       if (response.status === 200) {
@@ -109,18 +81,6 @@ const AuthPage = ({ navigation, route }) => {
       paddingBottom: 30,
       color: colors.textPrimary,
     },
-    emailPill: {
-      backgroundColor: colors.surface2,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
-      marginBottom: 24,
-    },
-    emailPillText: {
-      fontSize: 14,
-      color: colors.textPrimary,
-      fontWeight: '600',
-    },
     input: {
       marginBottom: 16,
       borderWidth: 1,
@@ -135,7 +95,7 @@ const AuthPage = ({ navigation, route }) => {
     buttonContainer: {
       flexDirection: 'row',
       gap: 12,
-      marginTop: 24,
+      marginTop: 8,
     },
     primaryButton: {
       flex: 1,
@@ -174,6 +134,10 @@ const AuthPage = ({ navigation, route }) => {
       fontWeight: '600',
       textAlign: 'center',
     },
+    ghostRow: {
+      marginTop: 20,
+      gap: 12,
+    },
   });
 
   const styles = makeStyles(colors);
@@ -185,23 +149,36 @@ const AuthPage = ({ navigation, route }) => {
         <CodePopLogo size={64} />
       </View>
       <Text style={styles.title}>Sign In</Text>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.emailPill}>
-        <Text style={styles.emailPillText}>{prefillEmail} ✎</Text>
-      </TouchableOpacity>
+      <TextInput
+        placeholder="Email"
+        placeholderTextColor={colors.textPlaceholder}
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        style={styles.input}
+      />
       <TextInput
         placeholder="Password"
+        placeholderTextColor={colors.textPlaceholder}
         value={password}
         secureTextEntry
         onChangeText={setPassword}
         style={styles.input}
       />
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]} onPress={() => handleLoginWithEmail(prefillEmail)} disabled={isLoading}>
+        <TouchableOpacity style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]} onPress={handleSignIn} disabled={isLoading}>
           {isLoading ? (
             <ActivityIndicator color={colors.surface} />
           ) : (
             <Text style={styles.buttonText}>Sign In</Text>
           )}
+        </TouchableOpacity>
+      </View>
+      <View style={styles.ghostRow}>
+        <TouchableOpacity onPress={handleRegister} style={styles.ghostButton}>
+          <Text style={styles.ghostButtonText}>Create an account</Text>
         </TouchableOpacity>
       </View>
       {message && <Text style={styles.errorMessage}>{message}</Text>}

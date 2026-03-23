@@ -359,7 +359,7 @@ const GeneralHomePage = () => {
 
   // Login button press
   const goToLoginPage = () => {
-    navigation.navigate('EmailCheck');  // Navigate to email check
+    navigation.navigate('Auth');
   };
 
   const goToAdminDash = () => {
