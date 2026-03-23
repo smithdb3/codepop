@@ -13,8 +13,9 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/NavBar';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 import { useTheme } from '../theme';
+import StoreSelectionModal from '../components/StoreSelectionModal';
 
 const PreferencesPage = () => {
   const navigation = useNavigation();
@@ -29,6 +30,9 @@ const PreferencesPage = () => {
 
   // Tab State
   const [activeTab, setActiveTab] = useState('location');
+  const [showStoreModal, setShowStoreModal] = useState(false);
+  const [selectedStoreName, setSelectedStoreName] = useState('');
+  const [useLocation, setUseLocation] = useState(false);
 
   // Account Settings Form States
   const [showChangeEmail, setShowChangeEmail] = useState(false);
@@ -64,6 +68,8 @@ const PreferencesPage = () => {
       const firstName = await AsyncStorage.getItem('first_name');
       const email = await AsyncStorage.getItem('userEmail');
       const id = await AsyncStorage.getItem('userId');
+      const storeName = await AsyncStorage.getItem('selectedStoreName');
+      const locationPerm = await AsyncStorage.getItem('locationPermission');
 
       if (token && firstName && id) {
         setIsLoggedIn(true);
@@ -71,6 +77,8 @@ const PreferencesPage = () => {
         setUserEmail(email || '');
         setUserId(id);
         setUserToken(token);
+        setSelectedStoreName(storeName || 'Unknown Store');
+        setUseLocation(locationPerm === 'granted');
       } else {
         setIsLoggedIn(false);
       }
@@ -131,7 +139,7 @@ const PreferencesPage = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/backend/auth/logout/`, {
+      const response = await fetch(`${getBaseURL()}/backend/auth/logout/`, {
         method: 'POST',
         headers: {
           'Authorization': `Token ${userToken}`,
@@ -621,22 +629,40 @@ const PreferencesPage = () => {
   };
 
   // Tab Render Functions
+  const handleLocationToggle = (value) => {
+    setUseLocation(value);
+    if (value) {
+      // Re-run GPS auto-select flow
+      setShowStoreModal(true);
+    }
+  };
+
   const renderLocationTab = () => (
     <View style={styles.card}>
       <Text style={styles.sectionLabel}>PRIMARY STORE LOCATION</Text>
       <View style={styles.storeCard}>
         <Icon name="storefront-outline" size={20} color={colors.textPrimary} style={{ marginRight: 12 }} />
-        <View>
-          <Text style={styles.storeCardName}>CodePop Station</Text>
-          <Text style={styles.storeCardDetail}>Hours: 8am – 8pm</Text>
-          <Text style={styles.storeCardDetail}>123 Main St, Logan, UT</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.storeCardName}>{selectedStoreName}</Text>
+          <Text style={styles.storeCardDetail}>Currently selected</Text>
         </View>
       </View>
+
+      <View style={styles.settingRow}>
+        <Text style={styles.notifLabel}>Use My Location</Text>
+        <Switch
+          value={useLocation}
+          onValueChange={handleLocationToggle}
+          trackColor={{ false: '#E5E7EB', true: '#08D9D6' }}
+          thumbColor={useLocation ? '#FF2E63' : '#FFFFFF'}
+        />
+      </View>
+
       <TouchableOpacity
         style={styles.secondaryButton}
-        onPress={() => Alert.alert('Coming Soon', 'Location selection coming soon')}
+        onPress={() => setShowStoreModal(true)}
       >
-        <Text style={styles.secondaryButtonText}>Change Location</Text>
+        <Text style={styles.secondaryButtonText}>Change Store</Text>
       </TouchableOpacity>
       <Text style={styles.helperText}>Your location helps us find the nearest CodePop station.</Text>
     </View>
@@ -916,12 +942,22 @@ const PreferencesPage = () => {
     </>
   );
 
+  const handleStoreModalClose = async () => {
+    setShowStoreModal(false);
+    // Re-read store name after selection
+    const storeName = await AsyncStorage.getItem('selectedStoreName');
+    const locationPerm = await AsyncStorage.getItem('locationPermission');
+    setSelectedStoreName(storeName || 'Unknown Store');
+    setUseLocation(locationPerm === 'granted');
+  };
+
   if (!isLoggedIn) {
     return renderNotLoggedIn();
   }
 
   return (
     <View style={styles.wholePage}>
+      <StoreSelectionModal visible={showStoreModal} onClose={handleStoreModalClose} />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header Card */}
         <View style={styles.profileHeader}>

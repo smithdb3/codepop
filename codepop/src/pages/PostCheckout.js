@@ -5,7 +5,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import NavBar from '../components/NavBar';
 import RatingCarosel from '../components/RatingCarosel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import { useTheme } from '../theme';
@@ -130,7 +130,7 @@ const PostCheckout = () => {
     });
 
     // Fetch revenue data
-    const inventoryResponse = await fetch(`${BASE_URL}/backend/inventory/report/`, {
+    const inventoryResponse = await fetch(`${getBaseURL()}/backend/inventory/report/`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -143,7 +143,7 @@ const PostCheckout = () => {
     {
       try{
         const data = {'used_quantity': 1};
-        const response = await fetch(`${BASE_URL}/backend/inventory/${id}/`, {
+        const response = await fetch(`${getBaseURL()}/backend/inventory/${id}/`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
@@ -201,7 +201,7 @@ const PostCheckout = () => {
 
   const completeOrder = async () => {
     const orderNum = await AsyncStorage.getItem("orderNum");
-    await fetch(`${BASE_URL}/backend/orders/${orderNum}/`, {
+    await fetch(`${getBaseURL()}/backend/orders/${orderNum}/`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -225,7 +225,7 @@ const PostCheckout = () => {
 
   const updateLockerCombo = async () => {
     const orderNum = await AsyncStorage.getItem("orderNum");
-    await fetch(`${BASE_URL}/backend/orders/${orderNum}/`, {
+    await fetch(`${getBaseURL()}/backend/orders/${orderNum}/`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

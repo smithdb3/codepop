@@ -4,7 +4,7 @@ import { View, StyleSheet, TouchableOpacity, FlatList, Text, Dimensions, Alert }
 import StarRating from './StarRating';
 import Carousel from 'react-native-reanimated-carousel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 import Gif from './Gif';
 import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
 
@@ -52,7 +52,7 @@ const RatingCarosel = ({ purchasedDrinks }) => {
     const handleRatingSelected = async (newRating, drink) => {
         try {
             const token = await AsyncStorage.getItem('userToken');
-            const response = await fetch(`${BASE_URL}/backend/drinks/${drink.DrinkID}/`, {
+            const response = await fetch(`${getBaseURL()}/backend/drinks/${drink.DrinkID}/`, {
                 method: 'PUT',
                 headers: {
                 'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ const RatingCarosel = ({ purchasedDrinks }) => {
         try {
             const userID = await AsyncStorage.getItem('userId');
             const token = await AsyncStorage.getItem('userToken');
-            const response = await fetch(`${BASE_URL}/backend/drinks/${drink.DrinkID}/`, {
+            const response = await fetch(`${getBaseURL()}/backend/drinks/${drink.DrinkID}/`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

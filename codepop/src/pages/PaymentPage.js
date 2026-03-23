@@ -17,7 +17,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/NavBar';
 import CheckoutForm from './CheckoutForm';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 import { useTheme } from '../theme';
 
 const PaymentPage = () => {
@@ -90,7 +90,7 @@ const PaymentPage = () => {
 
       const fetchedDrinks = [];
       for (let i = 0; i < currentList.length; i++) {
-        const response = await fetch(`${BASE_URL}/backend/drinks/${currentList[i]}/`, {
+        const response = await fetch(`${getBaseURL()}/backend/drinks/${currentList[i]}/`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

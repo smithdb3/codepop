@@ -2,10 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 import NavBar from '../components/NavBar';
 import SeasonalCarousel from '../components/SeasonalCarousel';
 import { CodePopLogo } from '../components/CodePopLogo';
+import StoreSelectionModal from '../components/StoreSelectionModal';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../theme';
 
 const SAVED_DRINKS = [
@@ -22,6 +24,8 @@ const GeneralHomePage = () => {
   const [name, setName] = useState(null);
   const [showSizeSelector, setShowSizeSelector] = useState({});
   const [selectedSize, setSelectedSize] = useState({});
+  const [showStoreModal, setShowStoreModal] = useState(false);
+  const [selectedStoreName, setSelectedStoreName] = useState(null);
   const navigation = useNavigation();
 
   const makeStyles = (colors) => StyleSheet.create({
@@ -270,7 +274,7 @@ const GeneralHomePage = () => {
 
   const styles = makeStyles(colors);
 
-  // Check login status when the screen gains focus
+  // Check login status and store selection when the screen gains focus
   useFocusEffect(
     React.useCallback(() => {
       const checkLoginStatus = async () => {
@@ -278,6 +282,16 @@ const GeneralHomePage = () => {
           const storedName = await AsyncStorage.getItem('first_name');
           const token = await AsyncStorage.getItem('userToken');
           const userRole = await AsyncStorage.getItem('userRole');
+          const selectedEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint');
+          const storeName = await AsyncStorage.getItem('selectedStoreName');
+
+          // Show store selection modal if no store has been selected yet
+          if (!selectedEndpoint) {
+            setShowStoreModal(true);
+          } else {
+            setSelectedStoreName(storeName);
+          }
+
           if (token && storedName) {
             setIsLoggedIn(true);
             setName(storedName);
@@ -306,7 +320,7 @@ const GeneralHomePage = () => {
     try {
       // Send logout request to the backend
       const token = await AsyncStorage.getItem('userToken');
-      const response = await fetch(`${BASE_URL}/backend/auth/logout/`, {
+      const response = await fetch(`${getBaseURL()}/backend/auth/logout/`, {
         method: 'POST',
         headers: {
           'Authorization': `Token ${token}`,
@@ -398,7 +412,7 @@ const GeneralHomePage = () => {
             >
               <Text style={[
                 styles.sizeOptionText,
-                selectedSize[drink.id] === size && styles.sizeOptionTextSelected
+                selectedSize[drink.id] === size && styles.sizeOptionSelectedText
               ]}>
                 {size}
               </Text>
@@ -409,14 +423,43 @@ const GeneralHomePage = () => {
     </View>
   );
 
+  const handleStoreModalClose = async () => {
+    setShowStoreModal(false);
+    // Re-read store name after selection
+    const storeName = await AsyncStorage.getItem('selectedStoreName');
+    setSelectedStoreName(storeName);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      <StoreSelectionModal visible={showStoreModal} onClose={handleStoreModalClose} />
       {isLoggedIn ? (
         <>
           <View style={styles.customHeader}>
             <CodePopLogo size={32} />
           </View>
           <ScrollView contentContainerStyle={styles.contentContainer}>
+            {selectedStoreName && (
+              <View style={{
+                backgroundColor: colors.surface2,
+                borderWidth: 1,
+                borderColor: colors.border,
+                padding: 12,
+                borderRadius: 12,
+                marginBottom: 16,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+                elevation: 1,
+              }}>
+                <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 4 }}>Shopping at</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Icon name="location-outline" size={14} color={colors.primary} style={{ marginRight: 6 }} />
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textPrimary }}>{selectedStoreName}</Text>
+                </View>
+              </View>
+            )}
             {name && <Text style={styles.greeting}>Hello {name}!</Text>}
 
             <SeasonalCarousel style={styles.carousel} />
