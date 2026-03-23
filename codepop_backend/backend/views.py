@@ -119,11 +119,24 @@ class CustomAuthToken(ObtainAuthToken):
             user = authenticate(request, username=username_or_email, password=password)
         if user:
             token, _ = Token.objects.get_or_create(user=user)
+
+            # Determine role based on user flags and profiles
+            if user.is_superuser:
+                role = 'super_admin'
+            elif hasattr(user, 'repair_profile'):
+                role = 'repair_staff'
+            elif hasattr(user, 'logistics_profile'):
+                role = 'logistics_manager'
+            elif user.is_staff:
+                role = 'admin'
+            else:
+                role = 'user'
+
             return Response({
                 'token':      token.key,
                 'user_id':    user.pk,
                 'first_name': user.first_name,
-                'userRole':   'admin' if user.is_superuser else ('manager' if user.is_staff else 'user'),
+                'userRole':   role,
             })
 
         # ── Path 2: Visiting user in local cache ─────────────────────────────
@@ -288,7 +301,12 @@ class LogoutUserAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         # Delete the token to log out the user
-        request.user.auth_token.delete()
+        try:
+            request.user.auth_token.delete()
+        except Exception as e:
+            # Token might already be deleted or not exist, but logout is still successful
+            import sys
+            print(f"Logout token deletion error: {e}", file=sys.stderr)
         return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
 
 class CheckEmailView(APIView):

@@ -1282,7 +1282,7 @@ The CodePop interface is carefully designed to support both usability and access
   * (M) Set location for geolocation. *(BACKEND NOT IMPLEMENTED)*
   * (S) account settings
     * (S) change email/password. *(BACKEND NOT IMPLEMENTED)*
-    * (C) dark mode/light mode. *(FRONTEND NOT YET IMPLEMENTED)*
+    * (C) dark mode/light mode.
   * (C) Manage Recurring Orders
     * View all active recurring orders
     * Skip next occurrence button
@@ -1342,7 +1342,7 @@ Settings
     - Sign out from other devices
     - View login history
 * TAB 3: PREFERENCES & PRIVACY
-  * (C) Dark Mode / Light Mode *(UI NOT IMPLEMENTED)*
+  * (C) Dark Mode / Light Mode
     - Radio buttons: System Default, Light, Dark
   * (C) Notifications
     - Order status notifications (toggle)

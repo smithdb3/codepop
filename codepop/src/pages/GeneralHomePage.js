@@ -329,6 +329,9 @@ const GeneralHomePage = () => {
     try {
       // Send logout request to the backend
       const token = await AsyncStorage.getItem('userToken');
+      console.log('Token for logout:', token ? token.substring(0, 10) + '...' : 'null');
+      console.log('Base URL:', getBaseURL());
+
       const response = await fetch(`${getBaseURL()}/backend/auth/logout/`, {
         method: 'POST',
         headers: {
@@ -337,17 +340,28 @@ const GeneralHomePage = () => {
         },
       });
 
-      if (response.status === 200) {
-        // Clear AsyncStorage
+      console.log('Logout response status:', response.status);
+      const responseData = await response.json().catch(() => null);
+      console.log('Logout response:', responseData);
+
+      // Clear AsyncStorage on success (200) or if token is already invalid (401)
+      if (response.status === 200 || response.status === 401) {
         await AsyncStorage.removeItem('userToken');
         await AsyncStorage.removeItem('userId');
         await AsyncStorage.removeItem('first_name');
         await AsyncStorage.removeItem('userRole');
-        
+
         setIsLoggedIn(false);
         setName(null);
-        
-        Alert.alert('Logout successful!');
+        setIsAdmin(false);
+        setIsManager(false);
+
+        Alert.alert(
+          'Logout successful!',
+          '',
+          [{ text: 'OK', onPress: () => navigation.navigate('GeneralHome') }],
+          { cancelable: false }
+        );
       } else {
         Alert.alert('Logout failed, please try again.');
       }

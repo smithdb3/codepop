@@ -144,8 +144,8 @@ const PreferencesPage = () => {
         },
       });
 
-      if (response.status === 200) {
-        // Clear AsyncStorage
+      // Clear AsyncStorage on success (200) or if token is already invalid (401)
+      if (response.status === 200 || response.status === 401) {
         await AsyncStorage.removeItem('userToken');
         await AsyncStorage.removeItem('userId');
         await AsyncStorage.removeItem('first_name');
