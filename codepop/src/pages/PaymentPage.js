@@ -717,8 +717,10 @@ const PaymentPage = () => {
   const styles = makeStyles(colors);
 
   return (
-    <StripeProvider publishableKey="pk_test_51QEDP7HwEWxwIyaLoeRGprLwnn6Fj7jZljzxglWudPSTSe6sMyFPAjHZsnMOy1HuwZhUYT9JGZbOsxhXxkFTJp9700JSZTZKIz">
+//    <StripeProvider publishableKey="pk_test_51QEDP7HwEWxwIyaLoeRGprLwnn6Fj7jZljzxglWudPSTSe6sMyFPAjHZsnMOy1HuwZhUYT9JGZbOsxhXxkFTJp9700JSZTZKIz">
+    <StripeProvider publishableKey="pk_test_51TBSA2LNi1I4SwBPEBvNlh31QCL1FbDpbfTVqS3pLM2tKcLgL8Txkp9Z7c7B1Rwx7pNBz7aiGnbn8pC6oJakKwvy00l4GxOtT3">
       <View style={styles.wholePage}>
+
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* A. Order Review Summary Card */}
           <View style={styles.card}>
