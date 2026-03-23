@@ -142,7 +142,6 @@ const GeneralHomePage = () => {
             <Text style={styles.title}>Welcome to the CodePop App!</Text>
             <SeasonalCarousel style={styles.carousel}/>
             <View style={styles.buttonContainer}>
-              <Scheduler />
               <TouchableOpacity onPress={generateDrinks} style={styles.mediumButton}>
                 <Text style={styles.buttonText}>Generate Drinks</Text>
               </TouchableOpacity>
@@ -177,6 +176,7 @@ const GeneralHomePage = () => {
               <TouchableOpacity onPress={goToLoginPage} style={styles.mediumButton}>
                 <Text style={styles.buttonText}>Login</Text>
               </TouchableOpacity>
+              <Scheduler />
             </View>
           </>
         )}
