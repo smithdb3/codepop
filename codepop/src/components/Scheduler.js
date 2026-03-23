@@ -1,15 +1,22 @@
 import {useState} from "react";
 import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import * as DocumentPicker from 'expo-document-picker';
 
 const Scheduler = () => {
-    const handleUpload = () => {
-        console.log('Upload button pressed');
+    const handleUpload = async () => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({});
+            console.log('Selected file:', result);
+        } catch (error) {
+            console.error('File picker error:', error);
+        }
     };
 
     return(
         <TouchableOpacity onPress={handleUpload} style={styles.uploadButton}>
             <Text style={styles.uploadText}>UPLOAD</Text>
         </TouchableOpacity>
+        
     )
 }
 
