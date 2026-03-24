@@ -48,15 +48,6 @@ const CreateAccountPage = ({ navigation, route }) => {
       const text = await response.text();
       const parsed = tryParseJsonResponse(text);
       if (!parsed.ok) {
-        console.warn(
-          'Registration: server returned non-JSON (often HTML error page).',
-          'status=',
-          response.status,
-          'url=',
-          `${getBaseURL()}/backend/auth/register/`,
-          'body start=',
-          text.slice(0, 120)
-        );
         setMessage(
           'Could not talk to the registration API (server returned a web page instead of JSON). Check that the app’s store URL is correct and the Django backend is running.'
         );
@@ -66,7 +57,6 @@ const CreateAccountPage = ({ navigation, route }) => {
 
       if (!response.ok) {
         const errorData = parsed.data;
-        console.log('Server error:', errorData);
 
         let errorMessage = 'Error registering user.';
         if (typeof errorData === 'object' && errorData !== null) {
@@ -81,10 +71,8 @@ const CreateAccountPage = ({ navigation, route }) => {
         return;
       }
 
-      console.log('Registration successful:', parsed.data);
       navigation.navigate('Auth', { email: trimmedEmail });
-    } catch (error) {
-      console.log('Network error:', error);
+    } catch {
       setMessage('Error registering user. Please check your connection.');
       setIsLoading(false);
     }
