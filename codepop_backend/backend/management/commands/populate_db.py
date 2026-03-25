@@ -238,39 +238,41 @@ class Command(BaseCommand):
             ],
         }
         store_id = 1
+        stores_dict = {}
         for region_name, coords in store_coords.items():
             for idx, (lat, lon) in enumerate(coords):
-                StoreRegistry.objects.create(
+                store = StoreRegistry.objects.create(
                     store_id=store_id,
                     store_name=f"CodePop {region_name.title()} #{idx + 1}",
-                    region=region_name,
+                    region=regions_dict[region_name],
                     api_endpoint=f"http://store{store_id}.codepop.local:8000",
                     latitude=lat,
                     longitude=lon,
                     status='active' if idx == 0 else 'unreachable',
                 )
+                stores_dict[store_id] = store
                 store_id += 1
 
         # Seeding Machines (one per status)
         machines_data = [
-            {'machine_id': '1', 'name': 'Dispenser Alpha', 'location': 'Bay 1', 'status': 'NORMAL', 'store_id': 1},
-            {'machine_id': '2', 'name': 'Dispenser Beta', 'location': 'Bay 2', 'status': 'WARNING', 'store_id': 1},
-            {'machine_id': '3', 'name': 'Dispenser Gamma', 'location': 'Bay 3', 'status': 'ERROR', 'store_id': 1},
-            {'machine_id': '4', 'name': 'Dispenser Delta', 'location': 'Bay 4', 'status': 'OUT_OF_ORDER', 'store_id': 1},
-            {'machine_id': '5', 'name': 'Dispenser Epsilon', 'location': 'Bay 5', 'status': 'SCHEDULE_SERVICE', 'store_id': 1},
-            {'machine_id': '6', 'name': 'Dispenser Zeta', 'location': 'Bay 6', 'status': 'REPAIR_START', 'store_id': 1},
-            {'machine_id': '7', 'name': 'Dispenser Eta', 'location': 'Bay 7', 'status': 'REPAIR_END', 'store_id': 1},
+            {'machine_id': 1, 'name': 'Dispenser 1', 'location': 'Bay 1', 'status': 'NORMAL', 'store': stores_dict[1]},
+            {'machine_id': 2, 'name': 'Dispenser 2', 'location': 'Bay 2', 'status': 'WARNING', 'store': stores_dict[1]},
+            {'machine_id': 3, 'name': 'Dispenser 3', 'location': 'Bay 3', 'status': 'ERROR', 'store': stores_dict[1]},
+            {'machine_id': 4, 'name': 'Dispenser 4', 'location': 'Bay 4', 'status': 'OUT_OF_ORDER', 'store': stores_dict[1]},
+            {'machine_id': 5, 'name': 'Dispenser 5', 'location': 'Bay 5', 'status': 'SCHEDULE_SERVICE', 'store': stores_dict[1]},
+            {'machine_id': 6, 'name': 'Dispenser 6', 'location': 'Bay 6', 'status': 'REPAIR_START', 'store': stores_dict[1]},
+            {'machine_id': 7, 'name': 'Dispenser 7', 'location': 'Bay 7', 'status': 'REPAIR_END', 'store': stores_dict[1]},
         ]
         machines_dict = {}
         for m in machines_data:
             machine = Machine.objects.create(**m)
-            machines_dict[m['machine_id']] = machine
+            machines_dict[str(m['machine_id'])] = machine
 
         # Seeding RepairStaffProfile
         RepairStaffProfile.objects.create(
             user=repair_user,
             region=regions_dict['chicago'],
-            assigned_store_id=1
+            assigned_store=stores_dict[1]
         )
 
         # Seeding LogisticsManagerProfile
@@ -283,21 +285,21 @@ class Command(BaseCommand):
         now = timezone.now()
         schedules_data = [
             {
-                'machine': machines_dict['M001'],
+                'machine': machines_dict['1'],
                 'assigned_to': repair_user,
                 'scheduled_at': now + datetime.timedelta(days=7),
                 'completed_at': None,
                 'description': 'Routine maintenance and fluid check'
             },
             {
-                'machine': machines_dict['M002'],
+                'machine': machines_dict['2'],
                 'assigned_to': repair_user,
                 'scheduled_at': now - datetime.timedelta(days=2),
                 'completed_at': now - datetime.timedelta(days=1),
                 'description': 'Warning light investigation and reset'
             },
             {
-                'machine': machines_dict['M003'],
+                'machine': machines_dict['3'],
                 'assigned_to': repair_user,
                 'scheduled_at': now - datetime.timedelta(days=5),
                 'completed_at': None,
