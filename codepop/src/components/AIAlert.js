@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Button, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import {BASE_URL} from '../../ip_address'
+import { getBaseURL } from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Gif from '../components/Gif';
-import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
+import Gif from './Gif';
+import { sodaOptions, syrupOptions, AddInOptions } from './Ingredients';
 import Modal from 'react-native-modal';
 
 const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
@@ -22,7 +22,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
         console.warn('SodaUsed is empty, setting to default soda.');
       }
   
-      const response = await fetch(`${BASE_URL}/backend/drinks/`, {
+      const response = await fetch(`${getBaseURL()}/backend/drinks/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

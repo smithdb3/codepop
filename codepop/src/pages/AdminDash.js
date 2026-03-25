@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Modal, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import {BASE_URL} from '../../ip_address'
+import { getBaseURL } from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TextInput } from 'react-native-gesture-handler';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -75,7 +75,7 @@ const AdminDash = () => {
     const token = await AsyncStorage.getItem("userToken");
 
     try {
-      const response = await fetch(`${BASE_URL}/backend/users/`, {
+      const response = await fetch(`${getBaseURL()}/backend/users/`, {
         method: 'GET',
         headers: {
           'Authorization': `Token ${token}`,
@@ -111,7 +111,7 @@ const AdminDash = () => {
       }
       else {
         console.log("Deleting user...");
-        const response = await fetch(`${BASE_URL}/backend/users/delete/${user.id}/`, {
+        const response = await fetch(`${getBaseURL()}/backend/users/delete/${user.id}/`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Token ${token}`,
@@ -175,7 +175,7 @@ const AdminDash = () => {
       }
       
       console.log("Updating user...");
-      const response = await fetch(`${BASE_URL}/backend/users/edit/${user.id}/`, {
+      const response = await fetch(`${getBaseURL()}/backend/users/edit/${user.id}/`, {
         method: 'POST',
         headers: {
           'Authorization': `Token ${token}`,

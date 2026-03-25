@@ -8,7 +8,6 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import AdminDash from './src/pages/AdminDash';
 import AuthPage from './src/pages/AuthPage';
 import CartPage from './src/pages/CartPage';
-import EmailCheckPage from './src/pages/EmailCheckPage';
 import CheckoutForm from './src/pages/CheckoutForm';
 import ComplaintsPage from './src/pages/ComplaintsPage';
 import CompletePage from './src/pages/CompletePage';
@@ -21,7 +20,7 @@ import PostCheckout from './src/pages/PostCheckout';
 import PreferencesPage from './src/pages/PreferencesPage';
 import UpdateDrink from './src/pages/UpdateDrink';
 import CodePopLogo from './src/components/CodePopLogo';
-import { BASE_URL } from './ip_address';
+import { getBaseURL, initBaseURL } from './ip_address';
 import { ThemeProvider, useTheme } from './src/theme';
 
 const Stack = createNativeStackNavigator();
@@ -44,8 +43,18 @@ const AppNavigator = () => {
     }
   };
 
+  // Initialize base URL from AsyncStorage on app startup
+  const initBaseURLOnStartup = async () => {
+    try {
+      await initBaseURL();
+    } catch (error) {
+      console.error('Failed to initialize base URL:', error);
+    }
+  };
+
   useEffect(() => {
-    initCart()
+    initCart();
+    initBaseURLOnStartup();
   }, []);
   useEffect(() => {
     const loadFonts = async () => {
@@ -60,11 +69,6 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="GeneralHome" screenOptions={{headerStyle: {backgroundColor: colors.surface}}}>
-        <Stack.Screen
-          name="EmailCheck"
-          component={EmailCheckPage}
-          options={{ headerShown: false }}
-        />
         <Stack.Screen
           name="Auth"
           component={AuthPage}
@@ -215,7 +219,7 @@ const handleLogout = async (navigation) => {
   try {
     // Send logout request to the backend
     const token = await AsyncStorage.getItem('userToken');
-    const response = await fetch(`${BASE_URL}/backend/auth/logout/`, {
+    const response = await fetch(`${getBaseURL()}/backend/auth/logout/`, {
       method: 'POST',
       headers: {
         'Authorization': `Token ${token}`,

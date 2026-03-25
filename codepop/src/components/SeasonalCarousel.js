@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: windowWidth } = Dimensions.get('window');
@@ -14,31 +14,35 @@ const SeasonalCarousel = ({ readOnly = false }) => {
 
     useEffect(() => {
         const fetchData = async () => {
-             try {
-                const response = await fetch(`${BASE_URL}/backend/drinks/`, {
+            try {
+                const response = await fetch(`${getBaseURL()}/backend/drinks/`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                    }
+                    },
                 });
-            const drinks = await response.json();
-
-            const parsedDrinks = drinks.map(drink => ({
-                drinkID: drink.DrinkID,
-                name: drink.Name,
-                price: drink.Price,
-                sodaUsed: drink.SodaUsed,  // Default value if SodaUsed is null
-                syrupsUsed: drink.SyrupsUsed,
-                addIns: drink.AddIns,
-                user_Created: drink.user_Created,    // Assuming the user is creating the drink
-                // size: drink.selectedSize,
-                // ice: drink.selectedIce,
-            }));
-            console.log('parsed')
-            console.log(parsedDrinks);
-            setData(parsedDrinks);
-            } catch (error) {
-                console.error(error);
+                if (!response.ok) {
+                    setData([]);
+                    return;
+                }
+                const drinks = await response.json();
+                if (!Array.isArray(drinks)) {
+                    setData([]);
+                    return;
+                }
+                const parsedDrinks = drinks.map((drink) => ({
+                    drinkID: drink.DrinkID,
+                    name: drink.Name,
+                    price: drink.Price,
+                    sodaUsed: drink.SodaUsed,
+                    syrupsUsed: drink.SyrupsUsed,
+                    addIns: drink.AddIns,
+                    user_Created: drink.user_Created,
+                }));
+                setData(parsedDrinks);
+            } catch {
+                // Offline or no API: avoid console.error — it triggers RN LogBox "Network request failed"
+                setData([]);
             } finally {
                 setIsLoading(false);
             }
@@ -57,7 +61,7 @@ const SeasonalCarousel = ({ readOnly = false }) => {
             // Log the item to ensure it has the correct structure
             console.log(item);
 
-            const response = await fetch(`${BASE_URL}/backend/drinks/`, {
+            const response = await fetch(`${getBaseURL()}/backend/drinks/`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',

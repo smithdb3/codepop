@@ -5,7 +5,7 @@ import DropDown from '../components/DropDown';
 import { useNavigation } from '@react-navigation/native';
 import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
 import Gif from '../components/Gif';
-import {BASE_URL} from '../../ip_address'
+import { getBaseURL } from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // todo:
@@ -125,7 +125,7 @@ const UpdateDrink = ({route, navigation}) => {
       }else{
         const token = await AsyncStorage.getItem('userToken');
     
-        const response = await fetch(`${BASE_URL}/backend/drinks/${drink.DrinkID}/`, {
+        const response = await fetch(`${getBaseURL()}/backend/drinks/${drink.DrinkID}/`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

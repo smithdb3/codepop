@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from django.db.models import F
+from django.db.models import F, Q
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -119,11 +119,24 @@ class CustomAuthToken(ObtainAuthToken):
             user = authenticate(request, username=username_or_email, password=password)
         if user:
             token, _ = Token.objects.get_or_create(user=user)
+
+            # Determine role based on user flags and profiles
+            if user.is_superuser:
+                role = 'super_admin'
+            elif hasattr(user, 'repair_profile'):
+                role = 'repair_staff'
+            elif hasattr(user, 'logistics_profile'):
+                role = 'logistics_manager'
+            elif user.is_staff:
+                role = 'admin'
+            else:
+                role = 'user'
+
             return Response({
                 'token':      token.key,
                 'user_id':    user.pk,
                 'first_name': user.first_name,
-                'userRole':   'admin' if user.is_superuser else ('manager' if user.is_staff else 'user'),
+                'userRole':   role,
             })
 
         # ── Path 2: Visiting user in local cache ─────────────────────────────
@@ -273,8 +286,9 @@ class CreateUserAPIView(CreateAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        # We create a token than will be used for future auth
-        token = Token.objects.create(user=serializer.instance)
+        # DRF authtoken may already create a Token via post_save on User; use get_or_create
+        # to avoid IntegrityError (unique user_id on authtoken_token).
+        token, _ = Token.objects.get_or_create(user=serializer.instance)
         token_data = {"token": token.key}
         return Response(
             {**serializer.data, **token_data},
@@ -287,7 +301,12 @@ class LogoutUserAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         # Delete the token to log out the user
-        request.user.auth_token.delete()
+        try:
+            request.user.auth_token.delete()
+        except Exception as e:
+            # Token might already be deleted or not exist, but logout is still successful
+            import sys
+            print(f"Logout token deletion error: {e}", file=sys.stderr)
         return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
 
 class CheckEmailView(APIView):
@@ -297,7 +316,9 @@ class CheckEmailView(APIView):
         email = request.data.get('email', '').strip().lower()
         if not email:
             return Response({'error': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
-        exists = User.objects.filter(email__iexact=email).exists()
+        exists = User.objects.filter(
+            Q(email__iexact=email) | Q(username__iexact=email)
+        ).exists()
         return Response({'exists': exists}, status=status.HTTP_200_OK)
     
 class PreferencesOperations(viewsets.ModelViewSet):

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import { useStripe } from '@stripe/stripe-react-native';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 
@@ -17,7 +17,7 @@ export default function CheckoutForm(totalPrice) {
   const [loading, setLoading] = useState(false);
 
   const fetchPaymentSheetParams = async () => {
-    const response = await fetch(`${BASE_URL}/backend/create-payment-intent/`, {
+    const response = await fetch(`${getBaseURL()}/backend/create-payment-intent/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount: totalPrice }), // amount in cents
@@ -52,7 +52,7 @@ export default function CheckoutForm(totalPrice) {
       
       console.log(currentList);
 
-      const response = await fetch(`${BASE_URL}/backend/orders/`, {
+      const response = await fetch(`${getBaseURL()}/backend/orders/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +95,7 @@ export default function CheckoutForm(totalPrice) {
     try {
       const orderNum = await AsyncStorage.getItem("orderNum");
     
-      const response = await fetch(`${BASE_URL}/backend/revenues/`, {
+      const response = await fetch(`${getBaseURL()}/backend/revenues/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ export default function CheckoutForm(totalPrice) {
           onPress: async () => {
             await removeAllDrinks();
             await addRevenue();
-            const response = await fetch(`${BASE_URL}/backend/email/${orderNum}/`, {
+            const response = await fetch(`${getBaseURL()}/backend/email/${orderNum}/`, {
               method: 'GET',
               headers: {
                 'Content-Type': 'application/json',

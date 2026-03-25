@@ -1,8 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { BASE_URL } from '../../ip_address';
+import { getBaseURL } from '../../ip_address';
 import { useTheme } from '../theme';
 
+/** @returns {{ ok: true, data: unknown } | { ok: false }} */
+function tryParseJsonResponse(text) {
+  const trimmed = (text || '').trim();
+  if (!trimmed) return { ok: true, data: null };
+  try {
+    return { ok: true, data: JSON.parse(trimmed) };
+  } catch {
+    return { ok: false };
+  }
+}
 
 const CreateAccountPage = ({ navigation, route }) => {
   const { colors } = useTheme();
@@ -12,25 +22,44 @@ const CreateAccountPage = ({ navigation, route }) => {
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    const p = route.params?.email;
+    if (typeof p === 'string') {
+      setEmail(p);
+    }
+  }, [route.params?.email]);
+
   const handleRegister = async () => {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail) {
+      setMessage('Please enter your email.');
+      return;
+    }
     setIsLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/backend/auth/register/`, {
+      const response = await fetch(`${getBaseURL()}/backend/auth/register/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ first_name, last_name: '', username: email, password, email })
+        body: JSON.stringify({ first_name, last_name: '', username: trimmedEmail, password, email: trimmedEmail })
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.log('Server error:', errorData);
+      const text = await response.text();
+      const parsed = tryParseJsonResponse(text);
+      if (!parsed.ok) {
+        setMessage(
+          'Could not talk to the registration API (server returned a web page instead of JSON). Check that the app’s store URL is correct and the Django backend is running.'
+        );
+        setIsLoading(false);
+        return;
+      }
 
-        // Format error message from server
+      if (!response.ok) {
+        const errorData = parsed.data;
+
         let errorMessage = 'Error registering user.';
-        if (typeof errorData === 'object') {
-          // Extract first error message if it's field-based
+        if (typeof errorData === 'object' && errorData !== null) {
           const firstErrorKey = Object.keys(errorData)[0];
           if (firstErrorKey) {
             const errorValue = errorData[firstErrorKey];
@@ -42,11 +71,8 @@ const CreateAccountPage = ({ navigation, route }) => {
         return;
       }
 
-      const data = await response.json();
-      console.log('Registration successful:', data);
-      navigation.navigate('Auth', { email });
-    } catch (error) {
-      console.log('Network error:', error);
+      navigation.navigate('Auth', { email: trimmedEmail });
+    } catch {
       setMessage('Error registering user. Please check your connection.');
       setIsLoading(false);
     }
@@ -108,24 +134,6 @@ const CreateAccountPage = ({ navigation, route }) => {
       marginTop: 12,
       textAlign: 'center',
     },
-    emailInfoBox: {
-      backgroundColor: colors.background,
-      borderRadius: 8,
-      padding: 12,
-      marginBottom: 16,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    emailInfoLabel: {
-      fontSize: 12,
-      color: colors.textMuted,
-      marginBottom: 4,
-    },
-    emailInfoText: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.textPrimary,
-    },
     ghostButton: {
       marginTop: 16,
     },
@@ -146,12 +154,18 @@ const CreateAccountPage = ({ navigation, route }) => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <Text style={styles.title}>Create Account</Text>
-        <View style={styles.emailInfoBox}>
-          <Text style={styles.emailInfoLabel}>Registering as</Text>
-          <Text style={styles.emailInfoText}>{email}</Text>
-        </View>
-        <TextInput placeholder="First Name" onChangeText={setFirstname} style={styles.input} />
-        <TextInput placeholder="Password" onChangeText={setPassword} secureTextEntry style={styles.input} />
+        <TextInput
+          placeholder="Email"
+          placeholderTextColor={colors.textPlaceholder}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={styles.input}
+        />
+        <TextInput placeholder="First Name" placeholderTextColor={colors.textPlaceholder} onChangeText={setFirstname} style={styles.input} />
+        <TextInput placeholder="Password" placeholderTextColor={colors.textPlaceholder} onChangeText={setPassword} secureTextEntry style={styles.input} />
         <TouchableOpacity onPress={handleRegister} style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]} disabled={isLoading}>
           {isLoading ? (
             <ActivityIndicator color={colors.surface} />
@@ -159,7 +173,7 @@ const CreateAccountPage = ({ navigation, route }) => {
             <Text style={styles.buttonText}>Create Account</Text>
           )}
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('EmailCheck')} style={styles.ghostButton}>
+        <TouchableOpacity onPress={() => navigation.navigate('Auth', { email: email.trim() })} style={styles.ghostButton}>
           <Text style={styles.ghostButtonText}>Already have an account? Sign in.</Text>
         </TouchableOpacity>
         {message ? <Text style={styles.errorMessage}>{message}</Text> : null}

@@ -1,10 +1,16 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Machine, Schedule
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
-    username = serializers.CharField()
+    username = serializers.CharField(
+        validators=[UniqueValidator(
+            queryset=get_user_model().objects.all(),
+            message='An account with this email already exists.'
+        )]
+    )
     password = serializers.CharField(write_only=True,
                                      style={'input_type': 'password'})
 
