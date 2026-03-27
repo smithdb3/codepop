@@ -168,6 +168,7 @@ class Region(models.Model):
         ('phoenix',   'Phoenix, AZ'),
         ('seattle',   'Seattle, WA'),
     ]
+    id           = models.AutoField(primary_key=True)
     name         = models.CharField(max_length=50, choices=REGION_CHOICES, unique=True)
     display_name = models.CharField(max_length=100)
     hub_api_endpoint = models.URLField(blank=True)  # e.g. http://10.0.0.1:8000
@@ -187,9 +188,10 @@ class StoreRegistry(models.Model):
         ('unreachable',  'Unreachable'),  # missed 3 heartbeats
         ('deregistered', 'Deregistered'),
     ]
+    id           = models.AutoField(primary_key=True)
     store_id     = models.IntegerField(unique=True)
     store_name   = models.CharField(max_length=255)
-    region       = models.CharField(max_length=50)
+    region       = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True)
     api_endpoint = models.URLField()           # e.g. http://10.0.0.2:8000
     latitude     = models.FloatField(null=True, blank=True)
     longitude    = models.FloatField(null=True, blank=True)
@@ -215,6 +217,7 @@ class VisitingUserCache(models.Model):
     TTL: 24 hours from cached_at. Celery cleanup task deletes expired rows.
     On next login after expiry, store re-fetches from home store.
     """
+    id            = models.AutoField(primary_key=True)
     user_id       = models.IntegerField()          # ID from home store
     username      = models.CharField(max_length=150)
     email         = models.EmailField()
@@ -322,6 +325,7 @@ class SyncAuditLog(models.Model):
         ('store_register',    'Store Registration'),
         ('heartbeat',         'Heartbeat'),
     ]
+    id                = models.AutoField(primary_key=True)
     timestamp         = models.DateTimeField(auto_now_add=True)
     event_type        = models.CharField(max_length=30, choices=EVENT_CHOICES)
     requesting_node   = models.CharField(max_length=255)  # IP or node ID of requester
@@ -353,8 +357,9 @@ class SupplyRequest(models.Model):
         ('denied',    'Denied'),
         ('fulfilled', 'Fulfilled'),
     ]
-    store_id     = models.IntegerField()
-    region       = models.CharField(max_length=50)
+    id           = models.AutoField(primary_key=True)
+    store        = models.ForeignKey(StoreRegistry, on_delete=models.CASCADE, default=0)
+    region       = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True)
     item_name    = models.CharField(max_length=100)
     quantity     = models.PositiveIntegerField()
     status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
@@ -382,12 +387,14 @@ class Machine(models.Model):
         ('REPAIR_START',     'Repair In Progress'),
         ('REPAIR_END',       'Repair Complete — Testing'),
     ]
-    machine_id   = models.CharField(max_length=50, unique=True)
+    id           = models.AutoField(primary_key=True)
+    machine_id   = models.IntegerField()  # local machine number per store
     name         = models.CharField(max_length=100)
     location     = models.CharField(max_length=100, blank=True)  # e.g. "Bay 3"
     status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='NORMAL')
     last_status_change = models.DateTimeField(auto_now=True)
     notes        = models.TextField(blank=True)
+    store        = models.ForeignKey(StoreRegistry, on_delete=models.CASCADE, default=0)
 
     def __str__(self):
         return f"Machine {self.machine_id} ({self.name}) — {self.status}"
@@ -398,6 +405,7 @@ class Schedule(models.Model):
     Repair staff schedule. Supports CSV upload by logistics managers.
     Tied to Machine and auth.User (repair staff member).
     """
+    id           = models.AutoField(primary_key=True)
     machine      = models.ForeignKey(Machine, on_delete=models.CASCADE, related_name='schedules')
     assigned_to  = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True) 
     scheduled_at = models.DateTimeField()
@@ -408,16 +416,18 @@ class Schedule(models.Model):
     def __str__(self):
         return f"Schedule for {self.machine} at {self.scheduled_at}"
 
+# should repair staff be over multiple stores?
 
 class RepairStaffProfile(models.Model):
     """
     Extends auth.User for repair staff members.
     One-to-one with User. Created when admin assigns role='repair_staff'.
     """
-    user             = models.OneToOneField('auth.User', on_delete=models.CASCADE,
+    id   = models.AutoField(primary_key=True)
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE,
                                             related_name='repair_profile')
-    region           = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True)
-    assigned_store_id = models.IntegerField(null=True, blank=True)
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True)
+    assigned_store = models.ForeignKey(StoreRegistry, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"RepairStaff: {self.user.username} (region: {self.region})"
@@ -430,7 +440,8 @@ class LogisticsManagerProfile(models.Model):
     Logistics managers can view regional revenue, approve supply requests,
     and manage repair schedules for their region.
     """
-    user   = models.OneToOneField('auth.User', on_delete=models.CASCADE,
+    id   = models.AutoField(primary_key=True)
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE,
                                   related_name='logistics_profile')
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True)
 
