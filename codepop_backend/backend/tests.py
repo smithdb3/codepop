@@ -1250,7 +1250,9 @@ class StoreRegistryTests(APITestCase):
         from django.conf import settings
         settings.INTER_NODE_SECRET = 'test-secret'
         self.client.credentials(HTTP_AUTHORIZATION='NodeToken test-secret')
-        self.region = Region.objects.get(name='logan')
+        self.region = Region.objects.create(
+            name='logan', display_name='Logan, UT', hub_api_endpoint='http://hub:8000'
+        )
 
     def test_store_can_register(self):
         resp = self.client.post('/backend/api/hub/register/', {
