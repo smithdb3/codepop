@@ -368,7 +368,7 @@ class SupplyRequest(models.Model):
     notes        = models.TextField(blank=True)
 
     def __str__(self):
-        return f"SupplyRequest store {self.store.store_id}: {self.quantity}x {self.item_name} ({self.status})"
+        return f"SupplyRequest store {self.store_id}: {self.quantity}x {self.item_name} ({self.status})"
 
 
 class Machine(models.Model):
