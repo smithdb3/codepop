@@ -2,7 +2,7 @@ name: Deploy to GCP VMs
 
 on:
   push:
-    branches: [ master ]
+    branches: [ bradensDevBranch ]
 
 jobs:
   # ── CI: Tests must pass before any VM is touched ─────────────────────────────
@@ -75,9 +75,9 @@ jobs:
             echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
             echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
 
-            git fetch origin master
-            git reset --hard origin/master
-            docker compose down
+            git fetch origin bradensDevBranch
+            git reset --hard origin/bradensDevBranch
+            docker compose down -v
             docker compose up -d --build
             echo "✓ logan-hub deployed successfully"
 
@@ -103,9 +103,9 @@ jobs:
             echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
             echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
 
-            git fetch origin master
-            git reset --hard origin/master
-            docker compose down
+            git fetch origin bradensDevBranch
+            git reset --hard origin/bradensDevBranch
+            docker compose down -v
             docker compose up -d --build
             echo "✓ atlanta-hub deployed successfully"
 
@@ -130,9 +130,9 @@ jobs:
             echo "MY_API_ENDPOINT=http://${{ secrets.LOGAN_STORE1_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
 
-            git fetch origin master
-            git reset --hard origin/master
-            docker compose down
+            git fetch origin bradensDevBranch
+            git reset --hard origin/bradensDevBranch
+            docker compose down -v
             docker compose up -d --build
             echo "✓ logan-store-1 deployed successfully"
 
@@ -156,9 +156,9 @@ jobs:
             echo "MY_API_ENDPOINT=http://${{ secrets.LOGAN_STORE2_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
 
-            git fetch origin master
-            git reset --hard origin/master
-            docker compose down
+            git fetch origin bradensDevBranch
+            git reset --hard origin/bradensDevBranch
+            docker compose down -v
             docker compose up -d --build
             echo "✓ logan-store-2 deployed successfully"
 
@@ -182,9 +182,9 @@ jobs:
             echo "MY_API_ENDPOINT=http://${{ secrets.ATLANTA_STORE1_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
 
-            git fetch origin master
-            git reset --hard origin/master
-            docker compose down
+            git fetch origin bradensDevBranch
+            git reset --hard origin/bradensDevBranch
+            docker compose down -v
             docker compose up -d --build
             echo "✓ atlanta-store-1 deployed successfully"
 
@@ -208,9 +208,9 @@ jobs:
             echo "MY_API_ENDPOINT=http://${{ secrets.ATLANTA_STORE2_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
 
-            git fetch origin master
-            git reset --hard origin/master
-            docker compose down
+            git fetch origin bradensDevBranch
+            git reset --hard origin/bradensDevBranch
+            docker compose down -v
             docker compose up -d --build
             echo "✓ atlanta-store-2 deployed successfully"
 
