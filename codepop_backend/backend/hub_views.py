@@ -1,5 +1,6 @@
 import requests
 from django.conf import settings
+from django.db.models import F
 from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -276,9 +277,11 @@ class HubStoreRegistryView(APIView):
     permission_classes = []  # open endpoint
 
     def get(self, request):
-        stores = StoreRegistry.objects.filter(status='active').values(
-            'store_id', 'store_name', 'region__name', 'api_endpoint',
-            'latitude', 'longitude', 'last_heartbeat'
+        stores = (
+            StoreRegistry.objects.filter(status='active')
+            .annotate(region=F('region__name'))
+            .values('store_id', 'store_name', 'region', 'api_endpoint',
+                    'latitude', 'longitude', 'last_heartbeat')
         )
         return Response({'stores': list(stores)})
 
