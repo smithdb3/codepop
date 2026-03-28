@@ -68,11 +68,82 @@ All items below represent UI-complete features with mock data. No backend endpoi
 
 ---
 
+---
+
+## Logistics Manager Dashboard — Overview Page
+
+- [ ] GET /api/logistics/manager/me — Return manager profile with `firstName`, `hub`, `region`
+- [ ] GET /api/logistics/kpis — Return real-time KPIs: `{ storesAtCritical, deliveriesInTransit, pendingRequests, topTrendingIngredient, topTrendingPct, forecastAccuracyPct }`
+- [ ] GET /api/logistics/alerts — Return list of unread alerts with `{ id, severity, message, timestamp, dismissed }` for dismissal support
+- [ ] POST /api/logistics/alerts/{id}/dismiss — Mark specific alert as dismissed
+- [ ] GET /api/logistics/hub/status — Return hub inventory status: `{ name, inventoryPct, alertCount, activeDeliveries, storesNeedingRestock, ordersPending }`
+- [ ] GET /api/logistics/stores/critical — Return top 5 stores needing immediate restock (daysRemaining ≤ 3) with summary info
+
+---
+
+## Logistics Manager Dashboard — Stores Page
+
+- [ ] GET /api/logistics/stores — Return all stores with optional filters (`?region=&health=critical|low|good&search=`) and pagination
+- [ ] GET /api/logistics/stores/{id} — Return complete store detail including ingredient levels, forecast data, requests, history
+- [ ] GET /api/logistics/stores/{id}/inventory — Return ingredient stock levels and forecast for store
+- [ ] GET /api/logistics/stores/{id}/requests — Return supply requests history (pending, approved, in-transit, delivered) for store
+- [ ] GET /api/logistics/stores/{id}/forecast — Return supply level forecast data (next 30 days) for chart rendering
+- [ ] PATCH /api/logistics/stores/{id}/supply-health — Update manually if supply levels change (for stores with manual data entry)
+
+---
+
+## Logistics Manager Dashboard — Inventory Page
+
+- [ ] GET /api/logistics/inventory — Return all inventory items with current levels, usage, trends, and status with optional filters (`?category=&level=low|medium|high&sort=`)
+- [ ] GET /api/logistics/inventory/trends — Return usage trend data (`?timeRange=week|month|30days`) with `{ ingredient, thisPeriod, prevPeriod }`
+- [ ] GET /api/logistics/inventory/regional-variation — Return regional consumption patterns (`?timeRange=`) with breakdown by region and ingredient
+- [ ] GET /api/logistics/inventory/seasonal-patterns — Return historical seasonal data for chart with `{ month, ingredient, quantity }`
+- [ ] GET /api/logistics/inventory/ai-insights — Return AI-generated insights about trends, anomalies, recommendations
+
+---
+
+## Logistics Manager Dashboard — Deliveries Page
+
+- [ ] GET /api/logistics/deliveries — Return all deliveries with optional filters (`?status=in_transit|out_for_delivery|scheduled&from=DATE&to=DATE`)
+- [ ] GET /api/logistics/deliveries/{id} — Return complete delivery detail with route, driver, ETA, status
+- [ ] PATCH /api/logistics/deliveries/{id}/status — Update delivery status during transit
+- [ ] POST /api/logistics/routes/optimize — Accept `{ storeIds[], constraints }`, return optimized delivery sequence with time estimates
+- [ ] POST /api/logistics/routes/{routeId}/schedule — Schedule optimized route with `{ date, driverId, notes }`
+- [ ] GET /api/logistics/schedules/recurring — Return all active recurring delivery schedules
+- [ ] POST /api/logistics/schedules/recurring — Create new recurring schedule with `{ pattern, dayOfWeek, timeWindow, hub, storeIds[], notes }`
+- [ ] PATCH /api/logistics/schedules/recurring/{id} — Update existing recurring schedule
+- [ ] DELETE /api/logistics/schedules/recurring/{id} — Delete recurring schedule
+- [ ] GET /api/logistics/drivers — Return list of available drivers with ID and name for assignment
+
+---
+
+## Logistics Manager Dashboard — Supply Requests Page
+
+- [ ] GET /api/logistics/requests — Return all supply requests with optional filters (`?status=pending|approved|in_transit|delivered&store=&deliveryType=`) and pagination
+- [ ] GET /api/logistics/requests/{id} — Return complete request detail including ingredients, approval timeline, notes
+- [ ] POST /api/logistics/requests — Create new supply request with `{ toStoreId, ingredients[], deliveryType, sourceStore, notes }`
+- [ ] PATCH /api/logistics/requests/{id}/approve — Approve pending request (transitions to approved, queues for delivery)
+- [ ] PATCH /api/logistics/requests/{id}/cancel — Cancel request (only valid for pending status)
+- [ ] GET /api/logistics/requests/{id}/approval-timeline — Return approval workflow events with status and timestamps
+- [ ] GET /api/logistics/inventory/ai-suggested-qty — Return AI-suggested quantities for ingredients based on store usage patterns
+
+---
+
+## Authentication & Authorization
+
+- [ ] Ensure `/api/logistics/*` endpoints validate `logistics_manager` role in JWT/session
+- [ ] Ensure logistics managers can only access stores, deliveries, and requests in their assigned hub/region
+- [ ] Ensure logistics managers cannot modify other managers' scheduled deliveries or recurring schedules
+- [ ] Enforce approval workflows (only hub managers can approve requests, not store-level staff)
+
+---
+
 ## Notes for Backend Implementation
 
-1. **Filters & Pagination**: All list endpoints (machines, schedule, parts) should support pagination (`?page=1&limit=25`) and sorting (`?sort=status,-priority`)
-2. **Real-time Data**: Consider WebSocket or Server-Sent Events for real-time alert updates if technicians are in the field
-3. **Region Scoping**: All queries should be filtered by `assignedRegion` from technician's profile to prevent cross-region data access
+1. **Filters & Pagination**: All list endpoints (stores, inventory, deliveries, requests) should support pagination (`?page=1&limit=25`) and sorting (`?sort=daysRemaining,-status`)
+2. **Real-time Data**: Consider WebSocket or Server-Sent Events for real-time delivery status updates and alerts
+3. **Hub/Region Scoping**: All queries should be filtered by `assignedHub` from manager's profile to prevent cross-hub data access
 4. **Error Handling**: Return 400 for invalid filters, 403 for unauthorized access, 404 for missing resources, 500 for server errors
-5. **Performance**: Consider caching region summaries and KPIs for 5–10 minutes to reduce DB load
-6. **Data Consistency**: Machine status updates should trigger alerts if critical thresholds are crossed (e.g., downtime > 2 hours)
+5. **Performance**: Consider caching store inventory status and KPIs for 5–10 minutes to reduce DB load
+6. **Data Consistency**: Supply request submissions should trigger alerts if multiple critical requests from same store, or if ingredient shortages detected across region
+7. **Forecast Integration**: AI forecast endpoints should integrate with ML models for supply level predictions (can be stubbed with mock data initially)
