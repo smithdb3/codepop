@@ -1,7 +1,7 @@
 # ---vvv IMPORTANT NOTES FOR CREATING THIS PAGE: vvv---
 * All UI guidelines (color schema, etc) can be found in guidelines/UI_GUIDELINES.md under "Dashboard UI Standards".
 * Do not worry about implementing any of the backend (but I do want users with the proper permissions to be able to at least login and click around the page)
-* At the end, make a list of everything that was made a part of the UI that is not yet in the backend. Place in doc "docs/DashboardBackendImplementation/backend_todo.md". Doc should be organized by dashboard and split into simple tasks.
+* At the end, make a list of everything that was made a part of the UI that is not yet in the backend. Place in doc "docs/newDocs/DashboardBackendImplementation/backend_todo.md". Doc should be organized by dashboard and split into simple tasks.
 # ---^^^ IMPORTANT NOTES FOR CREATING THIS PAGE: ^^^---
 
 # Logistics Manager Dashboard (Web)

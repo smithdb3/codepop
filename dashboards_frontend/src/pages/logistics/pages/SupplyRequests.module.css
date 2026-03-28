@@ -1,0 +1,989 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+  padding: var(--spacing-l);
+  background-color: var(--color-surface);
+  min-height: 100%;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Page Header */
+/* ─────────────────────────────────────────────────────────── */
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-l);
+  margin-bottom: var(--spacing-m);
+}
+
+.pageTitle {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.newRequestButton {
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+  border: none;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+  min-height: 44px;
+  transition: all var(--transition-fast);
+}
+
+.newRequestButton:hover {
+  background-color: #e61d52;
+  box-shadow: var(--shadow-md);
+}
+
+.newRequestButton:active {
+  background-color: #d11940;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Filter Toolbar */
+/* ─────────────────────────────────────────────────────────── */
+
+.filterToolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-m);
+  flex-wrap: wrap;
+  background-color: var(--color-background);
+  padding: var(--spacing-m);
+  border-radius: var(--radius-sm);
+}
+
+.searchInput {
+  padding: 12px var(--spacing-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body);
+  font-family: var(--font-family-system);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  transition: all var(--transition-fast);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(8, 217, 214, 0.1);
+}
+
+.filterSelect {
+  padding: 12px var(--spacing-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body);
+  font-family: var(--font-family-system);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(8, 217, 214, 0.1);
+}
+
+.clearFiltersButton {
+  background: none;
+  border: none;
+  color: var(--color-secondary);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.clearFiltersButton:hover {
+  background-color: rgba(8, 217, 214, 0.1);
+  color: var(--color-primary);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Sections */
+/* ─────────────────────────────────────────────────────────── */
+
+.pendingSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.completedSection {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Collapsible Header */
+/* ─────────────────────────────────────────────────────────── */
+
+.collapsibleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-m);
+  padding: var(--spacing-m) var(--spacing-l);
+  background-color: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--transition-fast);
+}
+
+.collapsibleHeader:hover {
+  background-color: #f3f4f6;
+}
+
+.completedTitle {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.toggleButton {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+}
+
+.toggleButton:hover {
+  color: var(--color-text);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Table Section */
+/* ─────────────────────────────────────────────────────────── */
+
+.tableSection {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.requestsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-body);
+}
+
+.requestsTable thead {
+  background-color: var(--table-header-bg);
+  border-bottom: 1px solid var(--table-border);
+}
+
+.requestsTable th {
+  padding: 12px var(--spacing-m);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  color: var(--table-header-text);
+  white-space: nowrap;
+}
+
+.requestsTable td {
+  padding: 12px var(--spacing-m);
+  border-bottom: 1px solid var(--table-border);
+  color: var(--color-text);
+}
+
+.requestsTable tbody tr {
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.requestsTable tbody tr:hover {
+  background-color: var(--table-row-hover);
+}
+
+.requestsTable tbody tr.expandedRowTrigger {
+  background-color: #f0f9ff;
+}
+
+.emptyRow {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: var(--spacing-l) !important;
+  font-style: italic;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Table Cell Styles */
+/* ─────────────────────────────────────────────────────────── */
+
+.requestIdCell {
+  font-weight: var(--font-weight-semibold);
+}
+
+.requestIdLink {
+  background: none;
+  border: none;
+  color: var(--color-secondary);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  padding: 0;
+  transition: color var(--transition-fast);
+}
+
+.requestIdLink:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.requestIdText {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.dateCell {
+  color: var(--color-text-secondary);
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
+}
+
+.actionsCell {
+  display: flex;
+  gap: var(--spacing-s);
+  align-items: center;
+}
+
+.viewButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color var(--transition-fast);
+}
+
+.viewButton:hover {
+  background-color: rgba(8, 217, 214, 0.1);
+}
+
+.cancelButton {
+  background: none;
+  border: none;
+  color: var(--color-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.cancelButton:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+}
+
+.cancelButtonDisabled {
+  color: var(--color-disabled);
+  cursor: not-allowed;
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
+  padding: 4px 8px;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Expanded Row */
+/* ─────────────────────────────────────────────────────────── */
+
+.expandedRow {
+  background-color: #f0f9ff !important;
+  cursor: default;
+}
+
+.expandedRow:hover {
+  background-color: #f0f9ff !important;
+}
+
+.expandedContent {
+  padding: var(--spacing-l);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+}
+
+.expandedSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.expandedSectionTitle {
+  font-size: var(--font-size-body-large);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.ingredientBreakdownTable {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.ingredientBreakdownTable thead {
+  background-color: var(--color-background);
+}
+
+.ingredientBreakdownTable th {
+  padding: 8px var(--spacing-m);
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-small);
+}
+
+.ingredientBreakdownTable td {
+  padding: 8px var(--spacing-m);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.storeInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+  padding: var(--spacing-m);
+  background-color: var(--color-background);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.storeInfo > div {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+}
+
+.notes {
+  padding: var(--spacing-m);
+  background-color: var(--color-background);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  margin: 0;
+  color: var(--color-text);
+  line-height: var(--line-height-body);
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.timelineEvent {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-m);
+  padding: var(--spacing-m);
+  background-color: var(--color-background);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--color-secondary);
+}
+
+.timelineEventBadge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
+  flex-shrink: 0;
+  min-width: 70px;
+  text-align: center;
+}
+
+.timelineDate {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+  flex-shrink: 0;
+  min-width: 60px;
+}
+
+.timelineComment {
+  color: var(--color-text);
+  font-size: var(--font-size-body);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Drawer Overlay and Container */
+/* ─────────────────────────────────────────────────────────── */
+
+.drawerOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 299;
+  animation: fadeIn 150ms ease-out;
+}
+
+.requestDrawer {
+  position: fixed;
+  right: 0;
+  top: 64px;
+  bottom: 0;
+  width: 480px;
+  background-color: var(--color-surface);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  animation: slideIn 300ms ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Drawer Header */
+/* ─────────────────────────────────────────────────────────── */
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-m);
+  padding: var(--spacing-l);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.drawerTitle {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+
+.closeButton:hover {
+  background-color: var(--color-background);
+  color: var(--color-text);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Drawer Body and Form */
+/* ─────────────────────────────────────────────────────────── */
+
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-l);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.formLabel {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.required {
+  color: var(--color-error);
+}
+
+.inputDisabled {
+  padding: 12px var(--spacing-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-background);
+  color: var(--color-text-muted);
+  font-family: var(--font-family-system);
+  font-size: var(--font-size-body);
+  cursor: not-allowed;
+}
+
+.formSelect {
+  padding: 12px var(--spacing-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family-system);
+  font-size: var(--font-size-body);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.formSelect:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(8, 217, 214, 0.1);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Ingredients Table in Form */
+/* ─────────────────────────────────────────────────────────── */
+
+.ingredientTable {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.ingredientTableHeader {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr 40px;
+  gap: var(--spacing-s);
+  padding: var(--spacing-m);
+  background-color: var(--color-background);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.ingredientCol {
+  white-space: nowrap;
+}
+
+.ingredientRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.5fr 40px;
+  gap: var(--spacing-s);
+  padding: var(--spacing-m);
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ingredientRow:last-child {
+  border-bottom: none;
+}
+
+.ingredientSelect {
+  padding: 8px var(--spacing-s);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family-system);
+  font-size: var(--font-size-body-small);
+  cursor: pointer;
+}
+
+.ingredientQtyInput {
+  padding: 8px var(--spacing-s);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family-system);
+  font-size: var(--font-size-body-small);
+}
+
+.ingredientQtyInput:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 2px rgba(8, 217, 214, 0.1);
+}
+
+.ingredientUnitSelect {
+  padding: 8px var(--spacing-s);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family-system);
+  font-size: var(--font-size-body-small);
+  cursor: pointer;
+}
+
+.aiSuggested {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-body-small);
+}
+
+.aiSuggestedText {
+  color: var(--color-text-secondary);
+}
+
+.fillAiButton {
+  background: none;
+  border: none;
+  color: var(--color-secondary);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: all var(--transition-fast);
+}
+
+.fillAiButton:hover {
+  color: var(--color-primary);
+  background-color: rgba(8, 217, 214, 0.1);
+}
+
+.deleteIngredientButton {
+  background: none;
+  border: none;
+  color: var(--color-error);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.deleteIngredientButton:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.deleteIngredientButton:disabled {
+  color: var(--color-disabled);
+  cursor: not-allowed;
+}
+
+.addIngredientButton {
+  background: none;
+  border: none;
+  color: var(--color-secondary);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-body-small);
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: var(--spacing-s);
+  transition: all var(--transition-fast);
+}
+
+.addIngredientButton:hover {
+  background-color: rgba(8, 217, 214, 0.1);
+  color: var(--color-primary);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Radio Group */
+/* ─────────────────────────────────────────────────────────── */
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-m);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  user-select: none;
+}
+
+.radioLabel input[type='radio'] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Textarea */
+/* ─────────────────────────────────────────────────────────── */
+
+.formTextarea {
+  padding: 12px var(--spacing-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-family-system);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  resize: vertical;
+  transition: all var(--transition-fast);
+}
+
+.formTextarea:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(8, 217, 214, 0.1);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Form Buttons */
+/* ─────────────────────────────────────────────────────────── */
+
+.formButtons {
+  display: flex;
+  gap: var(--spacing-m);
+  justify-content: flex-end;
+  margin-top: var(--spacing-l);
+  padding-top: var(--spacing-l);
+  border-top: 1px solid var(--color-border);
+  position: sticky;
+  bottom: 0;
+  background-color: var(--color-surface);
+  z-index: 1;
+}
+
+.submitButton {
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+  border: none;
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+  min-height: 44px;
+  transition: all var(--transition-fast);
+}
+
+.submitButton:hover {
+  background-color: #e61d52;
+  box-shadow: var(--shadow-md);
+}
+
+.submitButton:active {
+  background-color: #d11940;
+}
+
+.submitButton:disabled {
+  background-color: var(--color-disabled);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.cancelFormButton {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+  min-height: 44px;
+  transition: all var(--transition-fast);
+}
+
+.cancelFormButton:hover {
+  background-color: var(--color-background);
+  border-color: var(--color-secondary);
+  color: var(--color-secondary);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Toast Notification */
+/* ─────────────────────────────────────────────────────────── */
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: var(--color-success);
+  color: var(--color-surface);
+  padding: 16px 24px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  z-index: 400;
+  box-shadow: var(--shadow-lg);
+  animation: slideUpIn 300ms ease-out;
+}
+
+@keyframes slideUpIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* Responsive Design */
+/* ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .page {
+    padding: var(--spacing-m);
+    gap: var(--spacing-m);
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filterToolbar {
+    flex-direction: column;
+  }
+
+  .searchInput {
+    width: 100%;
+  }
+
+  .filterSelect {
+    width: 100%;
+  }
+
+  .requestDrawer {
+    width: 100%;
+    top: 56px;
+  }
+}
+
+@media (max-width: 640px) {
+  .pageTitle {
+    font-size: var(--font-size-h2);
+  }
+
+  .filterToolbar {
+    gap: var(--spacing-s);
+  }
+
+  .requestsTable {
+    font-size: var(--font-size-body-small);
+  }
+
+  .requestsTable th,
+  .requestsTable td {
+    padding: 8px var(--spacing-s);
+  }
+
+  .ingredientTableHeader {
+    grid-template-columns: 1.5fr 0.8fr 0.8fr;
+    gap: var(--spacing-xs);
+  }
+
+  .ingredientTableHeader > div:nth-child(n + 4) {
+    display: none;
+  }
+
+  .ingredientRow {
+    grid-template-columns: 1.5fr 0.8fr 0.8fr;
+    gap: var(--spacing-xs);
+  }
+
+  .ingredientRow > div:nth-child(n + 4),
+  .ingredientRow > button:nth-child(n + 4) {
+    display: none;
+  }
+
+  .requestDrawer {
+    width: 100%;
+    top: 0;
+  }
+
+  .drawerHeader {
+    padding: var(--spacing-m);
+  }
+
+  .drawerBody {
+    padding: var(--spacing-m);
+    gap: var(--spacing-m);
+  }
+
+  .formButtons {
+    flex-direction: column;
+  }
+
+  .submitButton,
+  .cancelFormButton {
+    width: 100%;
+  }
+}

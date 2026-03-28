@@ -1,0 +1,289 @@
+/* Page Container */
+.page {
+  min-height: 100vh;
+  background-color: #ffffff;
+  padding: 32px;
+}
+
+/* Page Header */
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  gap: 24px;
+}
+
+.pageTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: #222831;
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* Time Range Button Group */
+.timeRangeGroup {
+  display: flex;
+  gap: 0;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background-color: #F9FAFB;
+  padding: 4px;
+}
+
+.timeBtn {
+  padding: 8px 16px;
+  background-color: transparent;
+  border: none;
+  color: #6B7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.timeBtn:hover {
+  color: #222831;
+}
+
+.timeBtn.active {
+  background-color: #ffffff;
+  color: #FF2E63;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Tab Bar */
+.tabBar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #E5E7EB;
+  margin-bottom: 32px;
+  background-color: #F9FAFB;
+}
+
+.tab {
+  padding: 16px 24px;
+  background-color: transparent;
+  border: none;
+  color: #6B7280;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  border-bottom: 2px solid transparent;
+}
+
+.tab:hover {
+  color: #222831;
+}
+
+.tab.active {
+  color: #222831;
+  font-weight: 700;
+  border-bottom-color: #FF2E63;
+}
+
+/* Filter Toolbar */
+.filterToolbar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filterInput {
+  flex: 1;
+  min-width: 200px;
+  padding: 12px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #222831;
+  background-color: #ffffff;
+}
+
+.filterInput:focus {
+  outline: none;
+  border-color: #08D9D6;
+  box-shadow: 0 0 0 3px rgba(8, 217, 214, 0.1);
+}
+
+.filterInput::placeholder {
+  color: #9CA3AF;
+}
+
+.filterSelect {
+  padding: 12px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #222831;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #08D9D6;
+  box-shadow: 0 0 0 3px rgba(8, 217, 214, 0.1);
+}
+
+.clearFiltersBtn {
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  color: #FF2E63;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: underline;
+}
+
+.clearFiltersBtn:hover {
+  opacity: 0.8;
+}
+
+/* Status Pill Badge */
+.statusPill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Cell Progress Bar */
+.cellProgress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cellProgressBar {
+  width: 60px;
+  height: 8px;
+  background-color: #E5E7EB;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cellProgressBarInner {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Empty State */
+.emptyState {
+  padding: 48px 32px;
+  text-align: center;
+  color: #9CA3AF;
+  font-size: 15px;
+  font-style: italic;
+  background-color: #F9FAFB;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+}
+
+/* Two Column Charts */
+.twoColCharts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 1200px) {
+  .twoColCharts {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Chart Card */
+.chartCard {
+  background-color: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.chartTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222831;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+/* AI Badge */
+.aiBadgeWrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+
+.aiBadge {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #FEF3C7;
+  color: #92400E;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 12px;
+}
+
+/* AI Insights Card */
+.insightsCard {
+  background-color: #FFFBF0;
+  border: 1px solid #FEE2C3;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 32px;
+}
+
+.insightsHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.insightsTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222831;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.insightsList {
+  list-style: disc;
+  padding-left: 24px;
+  margin: 0 0 16px 0;
+}
+
+.insightsList li {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.insightsList li:last-child {
+  margin-bottom: 0;
+}
+
+.insightsFooter {
+  font-size: 11px;
+  color: #9CA3AF;
+  font-style: italic;
+  padding-top: 12px;
+  border-top: 1px solid #FEE2C3;
+}
