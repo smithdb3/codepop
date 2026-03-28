@@ -182,8 +182,8 @@ jobs:
             echo "MY_API_ENDPOINT=http://${{ secrets.ATLANTA_STORE1_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
 
-            git fetch origin bradensDevBranch
-            git reset --hard origin/bradensDevBranch
+            git fetch origin master
+            git reset --hard origin/master
             docker compose down -v
             docker compose up -d --build
             echo "✓ atlanta-store-1 deployed successfully"
