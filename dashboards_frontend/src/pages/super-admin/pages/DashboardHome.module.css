@@ -1,0 +1,124 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+}
+
+.header {
+  margin-bottom: var(--spacing-m);
+}
+
+.breadcrumb {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-s);
+}
+
+.title {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.kpiRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--spacing-m);
+}
+
+.gridSection {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-l);
+
+  @media (max-width: 1023px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.regionsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.alertsContainer {
+  height: 400px;
+}
+
+.sectionTitle {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.statusBoard {
+  display: flex;
+  gap: var(--spacing-m);
+}
+
+.statusCard {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-m);
+  padding: var(--spacing-m);
+  background: #F0FDF4;
+  border: 1px solid #D1FAE5;
+  border-left: 4px solid #10B981;
+  border-radius: var(--radius-md);
+}
+
+.statusIndicator {
+  font-size: 28px;
+  color: #10B981;
+  flex-shrink: 0;
+}
+
+.statusContent {
+  flex: 1;
+}
+
+.statusLabel {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.statusValue {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-bold);
+  color: #10B981;
+  margin-bottom: var(--spacing-s);
+}
+
+.statusDetail {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+}
+
+.chartsSection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-l);
+
+  @media (max-width: 1023px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chartContainer {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-m);
+}
+
+.chartTitle {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-m) 0;
+}

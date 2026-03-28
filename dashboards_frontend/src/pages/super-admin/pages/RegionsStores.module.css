@@ -1,0 +1,152 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+}
+
+.header {
+  margin-bottom: var(--spacing-m);
+}
+
+.breadcrumb {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-s);
+}
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.createBtn {
+  padding: var(--spacing-s) var(--spacing-m);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+  transition: opacity var(--transition-fast);
+}
+
+.createBtn:hover {
+  opacity: 0.9;
+}
+
+.regionSelector {
+  display: flex;
+  gap: var(--spacing-s);
+  flex-wrap: wrap;
+  padding: var(--spacing-m);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.regionBtn {
+  padding: var(--spacing-s) var(--spacing-m);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  transition: all var(--transition-fast);
+}
+
+.regionBtn:hover {
+  border-color: var(--color-primary);
+}
+
+.regionBtn.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.inventoryBar {
+  display: inline-block;
+  min-width: 50px;
+  text-align: center;
+  padding: 2px 8px;
+  background: var(--color-background);
+  border-radius: var(--radius-sm);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.formGroup label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.formGroup input,
+.formGroup select {
+  padding: var(--spacing-s) var(--spacing-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body);
+  font-family: var(--font-family-system);
+}
+
+.formGroup input:focus,
+.formGroup select:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(8, 217, 214, 0.1);
+}
+
+.formActions {
+  display: flex;
+  gap: var(--spacing-m);
+  margin-top: var(--spacing-m);
+}
+
+.cancelBtn,
+.submitBtn {
+  flex: 1;
+  padding: var(--spacing-m);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.cancelBtn {
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.cancelBtn:hover {
+  opacity: 0.8;
+}
+
+.submitBtn {
+  background: var(--color-primary);
+  color: white;
+}
+
+.submitBtn:hover {
+  opacity: 0.9;
+}
