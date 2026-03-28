@@ -50,3 +50,25 @@ npm run ios      # iOS Simulator
 npm run android  # Android Emulator
 npm run web      # Web browser
 ```
+
+## 6. Optional: Run the Dashboards
+
+**Important:** Make sure the backend is running (step 3) before starting the dashboards, as they require the API to be accessible for login and data.
+
+```bash
+cd dashboards_frontend
+npm install
+npm run dev
+```
+
+The dashboard runs at `http://localhost:5173` (Vite default).
+
+### Demo Credentials
+
+| Role | Email | Password |
+|---|---|---|
+| Super Admin | superadimin1@example.com | password |
+| Admin | admin1@example.com | password |
+| Manager | manager1@example.com | password |
+| Logistics Manager | logistics1@example.com | password |
+| Repair Staff | repair1@example.com | password |
