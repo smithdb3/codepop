@@ -1217,7 +1217,7 @@ class AITests(TestCase):
 # ─────────────────────────────────────────────
 
 from unittest.mock import MagicMock
-from .models import VisitingUserCache, PendingProfileUpdate, StoreRegistry, SyncAuditLog, Region
+from .models import VisitingUserCache, PendingProfileUpdate, StoreRegistry, SyncAuditLog
 
 
 class InterNodeAuthTests(APITestCase):
@@ -1250,9 +1250,6 @@ class StoreRegistryTests(APITestCase):
         from django.conf import settings
         settings.INTER_NODE_SECRET = 'test-secret'
         self.client.credentials(HTTP_AUTHORIZATION='NodeToken test-secret')
-        self.region = Region.objects.create(
-            name='logan', display_name='Logan, UT', hub_api_endpoint='http://hub:8000'
-        )
 
     def test_store_can_register(self):
         resp = self.client.post('/backend/api/hub/register/', {
@@ -1267,7 +1264,7 @@ class StoreRegistryTests(APITestCase):
 
     def test_heartbeat_updates_timestamp(self):
         StoreRegistry.objects.create(
-            store_id=42, store_name='Test', region=self.region,
+            store_id=42, store_name='Test', region='logan',
             api_endpoint='http://10.0.0.2:8000', status='active',
         )
         resp = self.client.post('/backend/api/hub/heartbeat/', {'store_id': 42}, format='json')
