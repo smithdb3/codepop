@@ -163,7 +163,7 @@ class HubUserLookupView(APIView):
                 pass
             return None
 
-        with ThreadPoolExecutor(max_workers=min(7, len(active_stores))) as executor:
+        with ThreadPoolExecutor(max_workers=max(1, min(7, len(active_stores)))) as executor:
             futures = {executor.submit(check_store, store): store for store in active_stores}
             for future in as_completed(futures):
                 result = future.result()
@@ -200,7 +200,7 @@ class HubUserLookupView(APIView):
                 if hub_url and region_name != settings.REGION}
 
         if hubs:
-            with ThreadPoolExecutor(max_workers=min(6, len(hubs))) as executor:
+            with ThreadPoolExecutor(max_workers=max(1, min(6, len(hubs)))) as executor:
                 futures = {executor.submit(check_hub, region_name, hub_url): region_name
                           for region_name, hub_url in hubs.items()}
                 for future in as_completed(futures):
@@ -250,7 +250,7 @@ class HubUserBroadcastView(APIView):
                 pass
             return None
 
-        with ThreadPoolExecutor(max_workers=min(7, len(active_stores))) as executor:
+        with ThreadPoolExecutor(max_workers=max(1, min(7, len(active_stores)))) as executor:
             futures = {executor.submit(check_store, store): store for store in active_stores}
             for future in as_completed(futures):
                 result = future.result()
@@ -318,7 +318,7 @@ class HubRevenueView(APIView):
         total = 0.0
         queried = 0
 
-        with ThreadPoolExecutor(max_workers=min(7, len(active_stores))) as executor:
+        with ThreadPoolExecutor(max_workers=max(1, min(7, len(active_stores)))) as executor:
             futures = {executor.submit(fetch_store_revenue, store): store for store in active_stores}
             for future in as_completed(futures):
                 revenue, success = future.result()
