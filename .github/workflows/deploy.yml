@@ -2,7 +2,7 @@ name: Deploy to GCP VMs
 
 on:
   push:
-    branches: [ bradensDevBranch ]
+    branches: [ master ]
 
 jobs:
   # ── CI: Tests must pass before any VM is touched ─────────────────────────────
