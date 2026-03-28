@@ -1,0 +1,102 @@
+.container {
+  width: 100%;
+}
+
+.title {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-xl) 0;
+}
+
+.toolbar {
+  display: flex;
+  gap: var(--spacing-m);
+  padding: var(--spacing-m);
+  border-bottom: 1px solid #E5E7EB;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dateRange {
+  display: flex;
+  gap: var(--spacing-s);
+  align-items: center;
+}
+
+.dateRange label {
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.dateInput {
+  padding: var(--spacing-s) var(--spacing-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body);
+  cursor: pointer;
+}
+
+.filterSelect {
+  height: 36px;
+  padding: var(--spacing-s) var(--spacing-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body);
+  background: var(--color-background);
+  cursor: pointer;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.secondaryBtn {
+  padding: var(--spacing-s) var(--spacing-m);
+  background: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-body);
+  transition: all var(--transition-fast);
+}
+
+.secondaryBtn:hover {
+  background: #F3F4F6;
+}
+
+.tableWrapper {
+  margin-top: var(--spacing-m);
+}
+
+.actorCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.actorName {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  font-size: var(--font-size-body);
+}
+
+.actorRole {
+  font-size: var(--font-size-body-small);
+  color: white;
+  background: var(--color-secondary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.statusBadge {
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
+  display: inline-block;
+}
