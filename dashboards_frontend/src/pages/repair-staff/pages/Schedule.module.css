@@ -1,0 +1,443 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+}
+
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.pageTitle {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-m);
+}
+
+.dateNav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-m);
+}
+
+.dateNavBtn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  background: white;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dateNavBtn:hover {
+  background: var(--color-background);
+}
+
+.monthLabel {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  min-width: 150px;
+  text-align: center;
+}
+
+.viewToggle {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  gap: 0;
+}
+
+.viewBtn {
+  flex: 1;
+  padding: 6px 16px;
+  background: white;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.viewBtn:hover {
+  background: var(--color-background);
+}
+
+.viewBtn.active {
+  background: var(--color-primary);
+  color: white;
+}
+
+.ganttContainer {
+  display: flex;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
+  overflow: hidden;
+}
+
+.ganttLabelCol {
+  width: 160px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.ganttRow {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-m);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 12px;
+  font-weight: 600;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.machineLabel {
+  font-size: 12px;
+  color: var(--color-text);
+  white-space: normal;
+  word-break: break-word;
+}
+
+.ganttBody {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.ganttTimeline {
+  position: relative;
+  min-width: 800px;
+  display: flex;
+  flex-direction: column;
+}
+
+.timeHeaders {
+  display: flex;
+  border-bottom: 2px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  background: var(--color-background);
+  z-index: 10;
+}
+
+.timeHeader {
+  padding: 8px;
+  border-right: 1px solid var(--color-border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.ganttBar {
+  position: absolute;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  color: white;
+  font-weight: 600;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  transition: box-shadow var(--transition-fast);
+}
+
+.ganttBar:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.ganttBarScheduled {
+  background: rgba(8, 217, 214, 0.2);
+  color: #0891B2;
+  border: 1px solid rgba(8, 217, 214, 0.5);
+}
+
+.ganttBarInProgress {
+  background: rgba(255, 46, 99, 0.2);
+  color: #BE185D;
+  border: 1px solid rgba(255, 46, 99, 0.5);
+}
+
+.ganttBarOverdue {
+  background: rgba(239, 68, 68, 0.25);
+  color: #B91C1C;
+  border: 2px solid #EF4444;
+}
+
+.ganttBarCompleted {
+  background: rgba(16, 185, 129, 0.2);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+.weekGrid {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.weekHeader {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.weekDayHeader {
+  padding: var(--spacing-m);
+  text-align: center;
+  background: var(--color-background);
+  font-weight: 600;
+}
+
+.dayName {
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.weekBody {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  min-height: 300px;
+}
+
+.weekDay {
+  padding: var(--spacing-m);
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &:nth-child(7n) {
+    border-right: none;
+  }
+}
+
+.weekJob {
+  background: rgba(255, 46, 99, 0.1);
+  color: #BE185D;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.monthGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.monthDayHeader {
+  padding: var(--spacing-m);
+  background: var(--color-background);
+  font-weight: 600;
+  text-align: center;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 2px solid var(--color-border);
+
+  &:nth-child(7n) {
+    border-right: none;
+  }
+}
+
+.monthCell {
+  padding: var(--spacing-m);
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  min-height: 100px;
+
+  &:nth-child(7n + 7) {
+    border-right: none;
+  }
+}
+
+.monthCellDate {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-s);
+}
+
+.monthCellJobs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.monthJob {
+  background: rgba(255, 46, 99, 0.1);
+  color: #BE185D;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sectionsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.accordionCard {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.accordionHeader {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: var(--spacing-m);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border);
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: var(--color-background);
+  }
+}
+
+.accordionTitle {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.accordionBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: var(--spacing-s);
+}
+
+.accordionChevron {
+  transition: transform 150ms ease-out;
+  transform: rotate(0deg);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.accordionChevron.open {
+  transform: rotate(90deg);
+}
+
+.accordionBody {
+  padding: var(--spacing-m);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.scheduleItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-m);
+  padding: var(--spacing-m);
+  background: var(--color-background);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+
+.scheduleTime {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  min-width: 80px;
+}
+
+.scheduleInfo {
+  flex: 1;
+  color: var(--color-text);
+  min-width: 150px;
+}
+
+.scheduleStatus {
+  background: white;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.scheduleEta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  min-width: 100px;
+}
+
+.scheduleBtn {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.scheduleBtn:hover {
+  background: #E91E50;
+}
+
+.emptySection {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  padding: var(--spacing-m);
+  text-align: center;
+  font-style: italic;
+}
