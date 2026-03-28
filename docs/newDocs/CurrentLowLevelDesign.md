@@ -1469,13 +1469,13 @@ Global Navigation Panel
   * "Super Admin Dashboard" title
   * (S) Current user: "Admin Name" with logout
   * (S) System status indicator: "All Systems Operational" (green/red)
-  * (C) Time last updated: "Updated 2 min ago"
+  * (C) Time last updated: "Updated 2 min ago" *(BACKEND NOT IMPLEMENTED)*
 * (M) Region Selector (Dropdown/Tabs) - this is for "Regions & Stores" and "Supply Hubs" pages
   * 7 regional options: Chicago, New Jersey, Logan, Dallas, Phoenix, Atlanta, Seattle
-  * (C) Visual: Map with region highlights
-  * Shows stores/hubs in selected region 
+  * (C) Visual: Map with region highlights *(BACKEND NOT IMPLEMENTED)*
+  * Shows stores/hubs in selected region *(BACKEND NOT IMPLEMENTED)*
 * (M) Navigation Sidebar/Menu
-  * Dashboard (home)
+  * Dashboard (home) 
   * Regions & Stores
   * Supply Hubs
   * User Management
@@ -1485,9 +1485,9 @@ Global Navigation Panel
   * System Settings
   * Help & Documentation
 * (M) Store/Hub Data Views
-  * Searchable store list (search by name, location)
+  * Searchable store list (search by name, location) 
   * Filterable by: Region, Status (Online/Offline), Issue Level
-  * Quick stats per store:
+  * Quick stats per store: *(BACKEND NOT IMPLEMENTED)*
     - Store name & location
     - Current status (green/red/yellow)
     - Active orders count
@@ -1495,12 +1495,11 @@ Global Navigation Panel
     - Machine status summary
     - Revenue this month
     - Last health check timestamp
-  * Click store to drill down to details
-* (C) Role & Permissions Access
+  * Click store to drill down to details 
+* (C) Role & Permissions Access *(BACKEND NOT IMPLEMENTED)*
   * Quick link: "Manage Roles"
   * Shows current roles: Super Admin, Admin, Logistics Manager, Repair Staff
   * Hover/tap to view permissions
-  * "Create New Role" button
 ---
 System Overview Panel
 * (M) Real-Time Status Board
@@ -1512,7 +1511,7 @@ System Overview Panel
     │ Last Incident: 3 days ago    │
     └──────────────────────────────┘
 ```
-* (M) Key Metrics Cards (4-6 metrics)
+* (M) Key Metrics Cards (4-6 metrics) *(BACKEND NOT IMPLEMENTED)*
   * Active Orders: 127 (↑ 15% from yesterday)
   * Revenue Today: $4,250 (target: $5,000)
   * Inventory Health: 85% (adequate stock)
@@ -1520,7 +1519,7 @@ System Overview Panel
   * API Response Time: 120ms (target <200ms)
   * Network Latency: 45ms (avg)
   * Each metric clickable for drill-down=
-* (M) Regional Status Grid
+* (M) Regional Status Grid *(BACKEND NOT IMPLEMENTED)*
   * 7 boxes, one per region
   * Each shows:
     - Region name
@@ -1529,7 +1528,7 @@ System Overview Panel
     - Revenue this month
     - Status: 🟢 Healthy / 🟡 Degraded / 🔴 Critical
   * Tap to drill into region details
-* (M) Active Alerts / Issues Panel
+* (M) Active Alerts / Issues Panel *(BACKEND NOT IMPLEMENTED)*
   * List of current issues sorted by severity
   * Color-coded: 🔴 Critical, 🟡 Warning, 🟢 Info
   * Examples:
@@ -1542,19 +1541,19 @@ System Overview Panel
     - Affected region/store
     - Action button: "View Details" or "Acknowledge"
   * Auto-dismiss or manual clear
-* (C) Timeline / Alert History
+* (C) Timeline / Alert History *(BACKEND NOT IMPLEMENTED)*
   * Last 24 hours in timeline view
   * Shows when each issue occurred
   * Severity timeline (red/yellow/green bar)
   * Hover to see details
   * Export alert history
-* (C) Emergency Override Indicators
+* (C) Emergency Override Indicators *(NOT IMPLEMENTED)*
   * Show if any overrides are active:
     - ⚠️  "System in Maintenance Mode" (red banner)
     - ⚠️  "Store #5 Manual Override Active"
   * Show who initiated override and when
   * "Clear Override" button (with confirmation)
-* (C) Performance Graphs
+* (C) Performance Graphs *(NOT IMPLEMENTED)*
   * Network latency over 24h (line graph)
   * Order volume over time
   * API response times
@@ -1562,7 +1561,7 @@ System Overview Panel
   * Auto-refresh every 30 seconds
 ---
 Configuration & Control Section
-* (S) Global AI Parameter Controls
+* (S) Global AI Parameter Controls *(BACKEND NOT IMPLEMENTED)*
   * Section: "AI Configuration"
   * Controls for:
     - Recommendation Engine
@@ -1577,10 +1576,10 @@ Configuration & Control Section
       * Update frequency: [Every hour] [Every 6 hours] [Daily]
       * Prediction accuracy threshold: [slider]
       * Enable auto-restock: [toggle]
-  * (C) Each setting has "Learn More" tooltip
+  * (C) Each setting has "Learn More" tooltip *(NOT IMPLEMENTED)*
   * "Save Changes" button (disabled until changes made)
   * "Reset to Defaults" button
-* (M) System Override Toggles
+* (M) System Override Toggles *(BACKEND NOT IMPLEMENTED)*
   * Emergency controls (red background)
   * Toggles with confirmation dialogs:
     - 🔴 Maintenance Mode (disables all orders)
@@ -1590,12 +1589,12 @@ Configuration & Control Section
       * Show: "Paused 145 recurring orders"
       * "Resume All" button
     - 🔴 Disable Geolocation Tracking
-      * (C) Show: "All stores using manual time-based ordering"
+      * (C) Show: "All stores using manual time-based ordering" *(NOT IMPLEMENTED)*
     - 🟡 Rate Limiter Override
       * Show: "Current limit: XXX requests/minute"
       * Temporarily increase for testing
   * (S) All overrides log who activated and when
-* (C) Role Creation & Permission Editor
+* (C) Role Creation & Permission Editor *(NOT IMPLEMENTED)*
   * "Manage Roles" section
   * List current roles:
     - Super Admin (read-only)
@@ -1619,7 +1618,7 @@ Configuration & Control Section
 ```
   * "Save Changes" button
   * "Delete Role" button (if unused)
-* (C) User Management
+* (C) User Management *(BACKEND NOT IMPLEMENTED)*
   * "Manage Users" section
   * Admins, logistics managers, repair staff list
   * Per user:
@@ -1632,25 +1631,25 @@ Configuration & Control Section
   * Bulk actions: Disable all, Reset passwords
 ---
 Additional Sections
-* (S) Store Management
-  * Create new store
+* (S) Store Management *(BACKEND NOT IMPLEMENTED)*
+  * Create new store *(NOT IMPLEMENTED)*
   * Edit store details (address, hours, machines)
   * Assign stores to regions
   * View store status
   * Force offline/maintenance mode per store
-* (S) Hub Viewing
+* (S) Hub Viewing *(BACKEND NOT IMPLEMENTED)*
   * View hub status
   * Hub-level metrics
-* (C) Hub Management
+* (C) Hub Management *(NOT IMPLEMENTED)*
   * Create supply hubs
   * Assign stores to hubs
-* (M) Reports & Analytics
+* (M) Reports & Analytics *(BACKEND NOT IMPLEMENTED)*
   * Revenue reports (nationwide, by region, by store)
   * Order trends
   * Inventory trends
   * Machine uptime reports
   * (C) Export to CSV/PDF
-* (C) Audit Logs / Activity History
+* (C) Audit Logs / Activity History *(BACKEND NOT IMPLEMENTED)*
   * Who: User performing action
   * What: Action taken (e.g., "Created user", "Changed AI threshold")
   * When: Timestamp
@@ -1658,25 +1657,25 @@ Additional Sections
   * Result: Success/Failure
   * Filterable by: User, Action type, Date range, Status
   * Export audit logs
-* (C) Maintenance Mode
+* (C) Maintenance Mode *(BACKEND NOT IMPLEMENTED)*
   * Global maintenance toggle
-  * Broadcast message to all users
+  * Broadcast message to all users *(NOT IMPLEMENTED)*
   * Schedule maintenance window (date/time)
   * Auto-resolve after maintenance period
-* (C) Notification/Alert Settings
+* (C) Notification/Alert Settings *(NOT IMPLEMENTED)*
   * Configure alert thresholds:
     - Critical latency: [slider] ms
     - Low inventory: [slider] %
     - Machine downtime: [slider] hours
   * Choose notification channels: Email, In-app, SMS
   * Alert routing: Who gets notified for what
-* (C) Backup & Recovery
+* (C) Backup & Recovery *(NOT IMPLEMENTED)*
   * Last backup timestamp: "Yesterday 2:00 AM"
   * Backup frequency: [Daily] [Weekly]
   * "Backup Now" button
   * Restore from backup option
   * Retention policy: [30 days] [90 days] [1 year]
-* (C) System Health Dashboard
+* (C) System Health Dashboard *(BACKEND NOT IMPLEMENTED)*
   * Database health (connection pools, query performance)
   * Cache health (Redis/Memcache)
   * Queue health (Celery tasks)

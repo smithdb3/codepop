@@ -447,3 +447,18 @@ class LogisticsManagerProfile(models.Model):
 
     def __str__(self):
         return f"LogisticsManager: {self.user.username} (region: {self.region})"
+
+
+class ManagerProfile(models.Model):
+    """
+    Extends auth.User for managers.
+    One-to-one with User. Created when admin assigns role='manager'.
+    """
+    id   = models.AutoField(primary_key=True)
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE,
+                                related_name='manager_profile')
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
+    assigned_store = models.ForeignKey(StoreRegistry, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"Manager: {self.user.username}"

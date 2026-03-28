@@ -1,0 +1,123 @@
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-m);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  padding: 2px 8px;
+  background: var(--color-background);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-body-small);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.alertList {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.alertRow {
+  display: flex;
+  gap: var(--spacing-s);
+  padding: var(--spacing-m);
+  border-bottom: 1px solid var(--color-border);
+  transition: background var(--transition-fast);
+}
+
+.alertRow:hover {
+  background: var(--color-background);
+}
+
+.alertRow.critical {
+  border-left: 4px solid #EF4444;
+}
+
+.alertRow.warning {
+  border-left: 4px solid #F59E0B;
+}
+
+.alertRow.info {
+  border-left: 4px solid #3B82F6;
+}
+
+.icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.content {
+  flex: 1;
+}
+
+.message {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.details {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-s);
+}
+
+.meta {
+  display: flex;
+  gap: var(--spacing-m);
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+}
+
+.dismissBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 0;
+  font-size: 16px;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.alertRow:hover .dismissBtn {
+  opacity: 1;
+}
+
+.dismissBtn:hover {
+  color: var(--color-error);
+}
+
+.emptyState {
+  padding: var(--spacing-2xl) var(--spacing-m);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-small);
+  font-style: italic;
+}

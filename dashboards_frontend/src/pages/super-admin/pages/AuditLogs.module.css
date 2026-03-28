@@ -1,0 +1,89 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+}
+
+.header {
+  margin-bottom: var(--spacing-m);
+}
+
+.breadcrumb {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-s);
+}
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.exportBtn {
+  padding: var(--spacing-s) var(--spacing-m);
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+  transition: opacity var(--transition-fast);
+}
+
+.exportBtn:hover {
+  opacity: 0.9;
+}
+
+.filterSection {
+  display: flex;
+  gap: var(--spacing-m);
+  padding: var(--spacing-m);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-s);
+}
+
+.filterGroup label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  font-size: var(--font-size-body-small);
+}
+
+.dateInputs {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+}
+
+.dateInputs input {
+  padding: var(--spacing-s) var(--spacing-m);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body-small);
+  font-family: var(--font-family-system);
+}
+
+.dateInputs input:focus {
+  outline: none;
+  border-color: var(--color-secondary);
+  box-shadow: 0 0 0 3px rgba(8, 217, 214, 0.1);
+}
+
+.dateInputs span {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-small);
+}

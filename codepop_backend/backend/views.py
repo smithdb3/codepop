@@ -127,6 +127,8 @@ class CustomAuthToken(ObtainAuthToken):
                 role = 'repair_staff'
             elif hasattr(user, 'logistics_profile'):
                 role = 'logistics_manager'
+            elif hasattr(user, 'manager_profile'):
+                role = 'manager'
             elif user.is_staff:
                 role = 'admin'
             else:
