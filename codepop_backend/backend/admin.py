@@ -42,7 +42,7 @@ class SyncAuditLogAdmin(admin.ModelAdmin):
 
 @admin.register(SupplyRequest)
 class SupplyRequestAdmin(admin.ModelAdmin):
-    list_display = ('store', 'item_name', 'quantity', 'status', 'created_at')
+    list_display = ('store_id', 'item_name', 'quantity', 'status', 'created_at')
     list_filter  = ('status', 'region')
 
 @admin.register(Machine)
