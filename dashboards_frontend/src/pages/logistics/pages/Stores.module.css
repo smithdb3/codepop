@@ -1,0 +1,774 @@
+/* Page Container */
+.page {
+  min-height: 100vh;
+  background-color: #ffffff;
+  padding: 32px;
+}
+
+/* Page Header */
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  gap: 24px;
+}
+
+.pageTitle {
+  font-size: 32px;
+  font-weight: 700;
+  color: #222831;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.headerControls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+/* View Toggle Group */
+.viewToggleGroup {
+  display: flex;
+  gap: 0;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background-color: #F9FAFB;
+  padding: 4px;
+}
+
+.viewToggleBtn {
+  padding: 8px 16px;
+  background-color: transparent;
+  border: none;
+  color: #6B7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+
+.viewToggleBtn:hover {
+  color: #222831;
+}
+
+.viewToggleBtn.active {
+  background-color: #ffffff;
+  color: #FF2E63;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Primary Button */
+.primaryBtn {
+  padding: 12px 16px;
+  background-color: #FF2E63;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+}
+
+.primaryBtn:hover:not(:disabled) {
+  background-color: #E6234A;
+  box-shadow: 0 4px 12px rgba(255, 46, 99, 0.3);
+}
+
+.primaryBtn:disabled {
+  background-color: #D1D5DB;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Filter Toolbar */
+.toolbar {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 32px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  width: 280px;
+  padding: 12px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #222831;
+  transition: all 0.2s ease;
+}
+
+.searchInput::placeholder {
+  color: #9CA3AF;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #08D9D6;
+  box-shadow: 0 0 0 3px rgba(8, 217, 214, 0.1);
+}
+
+.filterSelect {
+  padding: 12px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #ffffff;
+  color: #222831;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #08D9D6;
+  box-shadow: 0 0 0 3px rgba(8, 217, 214, 0.1);
+}
+
+.clearFiltersBtn {
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  color: #08D9D6;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  text-decoration: none;
+}
+
+.clearFiltersBtn:hover {
+  color: #0AADAA;
+  text-decoration: underline;
+}
+
+/* Grid View */
+.storeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.storeCard {
+  background-color: #ffffff;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.storeCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #D1D5DB;
+}
+
+.cardCheckbox {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+}
+
+.cardCheckbox input {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #FF2E63;
+}
+
+.cardContent {
+  padding-top: 24px;
+}
+
+.storeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.storeName {
+  font-size: 16px;
+  font-weight: 700;
+  color: #222831;
+  margin: 0;
+  flex: 1;
+}
+
+.healthBadge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.storeAddress {
+  font-size: 12px;
+  color: #6B7280;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.daysSection {
+  text-align: center;
+  margin: 24px 0;
+  padding: 16px 0;
+  border-top: 1px solid #F3F4F6;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.daysNumber {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.daysLabel {
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.restockDate {
+  font-size: 12px;
+  color: #6B7280;
+  margin: 16px 0;
+}
+
+.cardActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.detailsBtn,
+.requestBtn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.detailsBtn {
+  background-color: #F3F4F6;
+  color: #222831;
+  border: 1px solid #E5E7EB;
+}
+
+.detailsBtn:hover {
+  background-color: #E5E7EB;
+  border-color: #D1D5DB;
+}
+
+.requestBtn {
+  background-color: #08D9D6;
+  color: #ffffff;
+}
+
+.requestBtn:hover {
+  background-color: #0AADAA;
+}
+
+/* Table View */
+.tableActionBtn {
+  padding: 6px 12px;
+  background-color: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  color: #222831;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tableActionBtn:hover {
+  background-color: #E5E7EB;
+  border-color: #D1D5DB;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 64px 32px;
+  color: #6B7280;
+  font-size: 16px;
+}
+
+/* Drawer Styles */
+.drawerBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 299;
+  cursor: pointer;
+}
+
+.drawer {
+  position: fixed;
+  right: 0;
+  top: 64px;
+  bottom: 0;
+  width: 480px;
+  background-color: #ffffff;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.drawerHeader {
+  padding: 24px;
+  border-bottom: 1px solid #E5E7EB;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background-color: #ffffff;
+  z-index: 301;
+}
+
+.drawerTitleSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.drawerTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #222831;
+  margin: 0;
+}
+
+.drawerHealthBadge {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.closeDrawerBtn {
+  background-color: transparent;
+  border: none;
+  font-size: 24px;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeDrawerBtn:hover {
+  color: #222831;
+}
+
+/* Drawer Tabs */
+.drawerTabs {
+  display: flex;
+  gap: 24px;
+  padding: 0 24px;
+  border-bottom: 1px solid #E5E7EB;
+  background-color: #ffffff;
+  flex-shrink: 0;
+  position: sticky;
+  top: auto;
+  z-index: 301;
+}
+
+.drawerTab {
+  padding: 12px 0;
+  background-color: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #6B7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.drawerTab:hover:not(.active) {
+  color: #222831;
+}
+
+.drawerTab.active {
+  color: #FF2E63;
+  border-bottom-color: #FF2E63;
+  font-weight: 600;
+}
+
+/* Drawer Body */
+.drawerBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.drawerTabContent {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Summary Tab */
+.summarySection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.summaryLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summaryValue {
+  font-size: 14px;
+  color: #222831;
+  text-align: right;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #222831;
+  margin: 0 0 16px 0;
+}
+
+.ingredientProgressSection {
+  padding: 16px;
+  background-color: #F9FAFB;
+  border-radius: 8px;
+}
+
+.progressItem {
+  margin-bottom: 16px;
+}
+
+.progressItem:last-child {
+  margin-bottom: 0;
+}
+
+.progressLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.progressBarOuter {
+  width: 100%;
+  height: 8px;
+  background-color: #E5E7EB;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressBarInner {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.forecastSection {
+  padding: 16px;
+  background-color: #F9FAFB;
+  border-radius: 8px;
+}
+
+/* Ingredients Tab */
+.ingredientsTable {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ingredientsHeader,
+.ingredientsRow {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr;
+  gap: 12px;
+  padding: 12px;
+  font-size: 12px;
+}
+
+.ingredientsHeader {
+  background-color: #F9FAFB;
+  font-weight: 600;
+  color: #6B7280;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.ingredientsRow {
+  background-color: #ffffff;
+  border-bottom: 1px solid #E5E7EB;
+  transition: background-color 0.2s ease;
+}
+
+.ingredientsRow:last-child {
+  border-bottom: none;
+}
+
+.ingredientsRow:hover {
+  background-color: #F9FAFB;
+}
+
+.ingredientsCol1,
+.ingredientsCol2,
+.ingredientsCol3,
+.ingredientsCol4,
+.ingredientsCol5 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Requests Tab */
+.requestsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.requestItem {
+  padding: 16px;
+  background-color: #F9FAFB;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+}
+
+.requestHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.requestStatus {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.requestSummary {
+  font-size: 13px;
+  color: #222831;
+  margin: 8px 0;
+}
+
+.requestMeta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #6B7280;
+}
+
+.requestDate,
+.requestEta {
+  display: inline;
+}
+
+.newRequestBtn {
+  width: 100%;
+  padding: 12px 16px;
+  margin-top: 16px;
+  background-color: #08D9D6;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.newRequestBtn:hover {
+  background-color: #0AADAA;
+}
+
+/* History Tab */
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.historyItem {
+  padding: 16px;
+  background-color: #F9FAFB;
+  border-radius: 8px;
+  border: 1px solid #E5E7EB;
+}
+
+.historyDate {
+  font-size: 13px;
+  font-weight: 600;
+  color: #222831;
+  margin-bottom: 8px;
+}
+
+.historyIngredients,
+.historyDetail,
+.historyNotes {
+  font-size: 12px;
+  color: #6B7280;
+  margin: 4px 0;
+  line-height: 1.5;
+}
+
+.loadMoreBtn {
+  width: 100%;
+  padding: 10px 16px;
+  margin-top: 16px;
+  background-color: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  color: #222831;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.loadMoreBtn:hover {
+  background-color: #E5E7EB;
+  border-color: #D1D5DB;
+}
+
+.emptyMessage {
+  font-size: 14px;
+  color: #6B7280;
+  text-align: center;
+  padding: 32px 16px;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .page {
+    padding: 24px;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .headerControls {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .primaryBtn {
+    width: 100%;
+  }
+
+  .storeGrid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .drawer {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 16px;
+  }
+
+  .pageTitle {
+    font-size: 24px;
+  }
+
+  .toolbar {
+    flex-direction: column;
+  }
+
+  .searchInput,
+  .filterSelect {
+    width: 100%;
+  }
+
+  .storeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .drawer {
+    top: 0;
+    width: 100%;
+  }
+
+  .drawerTabs {
+    gap: 16px;
+  }
+
+  .ingredientsHeader,
+  .ingredientsRow {
+    grid-template-columns: 1.5fr 1fr 1fr;
+  }
+
+  .ingredientsCol4,
+  .ingredientsCol5 {
+    display: none;
+  }
+}

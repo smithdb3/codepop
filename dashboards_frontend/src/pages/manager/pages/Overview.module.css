@@ -1,0 +1,165 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-l);
+}
+
+.header {
+  margin-bottom: var(--spacing-m);
+}
+
+.title {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-s) 0;
+}
+
+.subtitle {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.quickAccessGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-m);
+}
+
+.quickCard {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-m);
+  padding: var(--spacing-m);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+  min-height: 100px;
+}
+
+.quickCard:hover {
+  border-color: var(--color-primary);
+  background: var(--color-background);
+  box-shadow: 0 4px 12px rgba(255, 46, 99, 0.15);
+}
+
+.cardIcon {
+  font-size: 40px;
+  flex-shrink: 0;
+}
+
+.cardContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-xs);
+}
+
+.cardDescription {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+}
+
+.cardArrow {
+  font-size: 20px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.quickCard:hover .cardArrow {
+  opacity: 1;
+}
+
+.alertsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-m);
+}
+
+.alertItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-m);
+  padding: var(--spacing-m);
+  background: var(--color-surface);
+  border-left: 4px solid;
+  border-radius: var(--radius-md);
+}
+
+.alertBadge {
+  min-width: 32px;
+  min-height: 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.alertBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.alertMessage {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.alertTime {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+}
+
+.dismissBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--color-text-secondary);
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.dismissBtn:hover {
+  background: var(--color-background);
+  color: var(--color-text);
+}

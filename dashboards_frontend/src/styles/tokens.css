@@ -64,6 +64,61 @@
   --transition-fast: 150ms ease-out;
   --transition-standard: 300ms ease-out;
   --transition-slow: 500ms ease-out;
+
+  /* ─── Dashboard Shell Tokens ─────────────────────────────────── */
+  --sidebar-bg: #222831;
+  --sidebar-border: #1A1F26;
+  --sidebar-text: #A8B3C0;
+  --sidebar-width-full: 256px;
+  --sidebar-width-collapsed: 64px;
+
+  /* ─── Chart Colors ──────────────────────────────────────────── */
+  --chart-1: #FF2E63;
+  --chart-2: #08D9D6;
+  --chart-3: #F59E0B;
+  --chart-4: #6366F1;
+  --chart-5: #10B981;
+  --chart-6: #F97316;
+  --chart-grid: #E5E7EB;
+  --chart-axis: #D1D5DB;
+  --chart-label: #6B7280;
+  --chart-tooltip-bg: #222831;
+
+  /* ─── Table Tokens ──────────────────────────────────────────── */
+  --table-header-bg: #F9FAFB;
+  --table-header-text: #6B7280;
+  --table-row-hover: #F3F4F6;
+  --table-border: #E5E7EB;
+
+  /* ─── KPI Card Tokens ───────────────────────────────────────── */
+  --kpi-icon-size: 40px;
+  --kpi-value-size: 28px;
+
+  /* ─── Status Badge Tints ────────────────────────────────────── */
+  --badge-success-bg: rgba(16, 185, 129, 0.12);
+  --badge-success-text: #059669;
+  --badge-warning-bg: rgba(245, 158, 11, 0.12);
+  --badge-warning-text: #D97706;
+  --badge-error-bg: rgba(239, 68, 68, 0.12);
+  --badge-error-text: #DC2626;
+  --badge-neutral-bg: rgba(107, 114, 128, 0.12);
+  --badge-neutral-text: #4B5563;
+  --badge-info-bg: rgba(59, 130, 246, 0.12);
+  --badge-info-text: #1D4ED8;
+
+  /* ─── Alert/Banner Tokens ───────────────────────────────────── */
+  --alert-critical-bg: #FEF2F2;
+  --alert-critical-border: #EF4444;
+  --alert-warning-bg: #FFFBEB;
+  --alert-warning-border: #F59E0B;
+  --alert-info-bg: #EFF6FF;
+  --alert-info-border: #3B82F6;
+  --alert-success-bg: #F0FDF4;
+  --alert-success-border: #10B981;
+
+  /* ─── Skeleton Loader ───────────────────────────────────────── */
+  --skeleton-base: #E5E7EB;
+  --skeleton-highlight: #F3F4F6;
 }
 
 /* Base Styles */
