@@ -138,6 +138,97 @@ All items below represent UI-complete features with mock data. No backend endpoi
 
 ---
 
+## Manager Dashboard — Overview Page
+
+- [ ] GET /api/manager/me — Return manager profile with `firstName`, `storeName`, `storeLocation`
+- [ ] GET /api/manager/alerts — Return list of unread alerts with `{ id, severity, message, timestamp, dismissed }` for dismissal support
+- [ ] POST /api/manager/alerts/{id}/dismiss — Mark specific alert as dismissed
+
+---
+
+## Manager Dashboard — Revenue Page
+
+- [ ] GET /api/manager/revenue/kpi — Return KPIs: `{ totalRevenue, delta, inventoryCosts, deltaPositive, totalUsers, activeOrders }`
+  - Include comparison vs last month for delta calculation
+- [ ] GET /api/manager/revenue/daily-trend — Return 30-day revenue trend for LineChart with `{ date, revenue, costs }`
+- [ ] GET /api/manager/revenue/by-category — Return paginated revenue breakdown by category with `{ date, category, items, revenue, vs_last_period }`
+  - Support pagination: `?limit=25&offset=0`
+  - Support sorting by date, category, revenue
+
+---
+
+## Manager Dashboard — Inventory Page
+
+- [ ] GET /api/manager/inventory — Return all inventory items filtered by category (`?category=syrups|sodas|add_ins`)
+  - Return: `{ id, name, level, capacity, pct, daysRemaining, trend, unit }`
+  - Support sorting: `?sort=name|stock|urgency`
+  - Support filtering: `?filter=all|low|critical`
+- [ ] GET /api/manager/inventory/ai-recommendations — Return AI-suggested items to order with `{ item, suggested, unit, supplier, reason }`
+- [ ] POST /api/manager/inventory/accept-recommendations — Accept AI recommendations and create supply request
+  - Input: array of recommended items with quantities
+- [ ] GET /api/manager/coolers — Return cooler status data (feature coming soon)
+- [ ] GET /api/manager/stores/nearby — Return nearby store inventory for comparison (feature coming soon)
+- [ ] GET /api/manager/supply-hub/inventory — Return supply hub inventory levels (feature coming soon)
+
+---
+
+## Manager Dashboard — Order Stats Page
+
+- [ ] GET /api/manager/orders/kpi — Return order metrics with optional date range (`?days=30|90`)
+  - Return: `{ orderVolumeWeek, orderVolumeMonth, fulfillmentTime, satisfactionScore }`
+  - Include delta for each metric
+- [ ] GET /api/manager/orders/popular-items — Return top 8 items by order volume with optional date range
+  - Return: `{ name, orders }`, sorted descending
+  - Support: `?days=30|90&limit=8`
+- [ ] GET /api/manager/orders/peak-hours — Return hourly order distribution (0-23) with optional date range
+  - Return: `{ hour, count }`
+  - Support: `?days=30|90`
+- [ ] GET /api/manager/orders/peak-days — Return daily order distribution (Mon-Sun) with optional date range
+  - Return: `{ day, count }`
+  - Support: `?days=30|90`
+
+---
+
+## Manager Dashboard — Supply Requests Page
+
+- [ ] GET /api/manager/store/location — Return read-only store location (used to pre-fill form)
+- [ ] GET /api/manager/inventory/ai-suggestions — Return AI-suggested items with default quantities for request form
+  - Return: `{ item, suggestedQty, unit }`
+- [ ] POST /api/manager/supply-requests — Create new supply request
+  - Input: `{ items: [{ itemId, qty, unit }], source: 'hub' | 'nearby_store' }`
+  - Return: created request with ID
+- [ ] GET /api/manager/supply-requests — Return paginated supply requests with status filtering
+  - Support filters: `?status=pending|approved|in_transit|delivered`
+  - Support pagination: `?limit=25&offset=0`
+  - Return: `{ id, items, qty, submitted, eta, status }`
+- [ ] GET /api/manager/supply-requests/history — Return supply movement history with sorting/filtering
+  - Support sorting: `?sort=date&order=asc|desc`
+  - Support filtering: `?status=all|delivered|in_transit|pending`
+  - Support pagination: `?limit=25&offset=0`
+  - Return: `{ date, items, qty, source, status }`
+
+---
+
+## Authentication & Authorization
+
+- [ ] Ensure `/api/manager/*` endpoints validate `manager` role in JWT/session
+- [ ] Ensure managers can only access their own store's data (not other stores or region-wide data)
+- [ ] Enforce store-level scope on all queries via `store_id` from `ManagerProfile.store_registry`
+
+---
+
+## Notes for Backend Implementation
+
+1. **Filters & Pagination**: All list endpoints (revenue, inventory, supply requests) should support pagination (`?limit=25&offset=0`) and sorting
+2. **Date Range Support**: Order Stats endpoints should accept optional `?days=30|90` parameter to filter by time range
+3. **Store Scoping**: All queries must filter by store_id from authenticated manager's profile (unlike Logistics Manager which is region-scoped)
+4. **Real-time Updates**: Consider WebSocket or polling for supply request status changes and alert notifications
+5. **Performance**: Cache KPI calculations for 5–10 minutes to reduce DB load
+6. **Data Consistency**: Ensure AI recommendations are freshly computed based on current inventory and usage patterns
+7. **Error Handling**: Return 400 for invalid filters, 403 for unauthorized access (cross-store), 404 for missing resources
+
+---
+
 ## Notes for Backend Implementation
 
 1. **Filters & Pagination**: All list endpoints (stores, inventory, deliveries, requests) should support pagination (`?page=1&limit=25`) and sorting (`?sort=daysRemaining,-status`)
