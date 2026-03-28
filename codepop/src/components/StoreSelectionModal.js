@@ -222,9 +222,7 @@ export default function StoreSelectionModal({
         );
         return;
       }
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
+      const location = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = location.coords;
       setUserLocation({ latitude, longitude });
       setLocationPermission('granted');

@@ -61,9 +61,7 @@ const PostCheckout = () => {
         return;
       }
       try {
-        const currentLocation = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
+        const currentLocation = await Location.getCurrentPositionAsync({});
         setLocation(currentLocation);
       } catch (error) {
         console.error('Error fetching location:', error);
