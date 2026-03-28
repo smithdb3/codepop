@@ -1,0 +1,134 @@
+.topBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-m);
+  z-index: 100;
+  gap: var(--spacing-m);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-m);
+  flex: 1;
+  min-width: 0;
+}
+
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  padding: 0;
+  color: var(--color-text);
+
+  @media (max-width: 767px) {
+    display: block;
+  }
+}
+
+.logoSection {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+  min-width: 0;
+}
+
+.logoIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-body);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: 0;
+  white-space: nowrap;
+
+  @media (max-width: 767px) {
+    display: none;
+  }
+}
+
+.lastUpdated {
+  font-size: var(--font-size-body-small);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+
+  @media (max-width: 1023px) {
+    display: none;
+  }
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-m);
+}
+
+.statusBadge {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-s);
+  padding: var(--spacing-s) var(--spacing-m);
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body-small);
+  color: #10B981;
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+
+  @media (max-width: 1023px) {
+    display: none;
+  }
+}
+
+.statusDot {
+  font-size: 12px;
+}
+
+.userName {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  white-space: nowrap;
+
+  @media (max-width: 767px) {
+    display: none;
+  }
+}
+
+.logoutBtn {
+  padding: var(--spacing-s) var(--spacing-m);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-body-small);
+  color: var(--color-text);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.logoutBtn:hover {
+  background: var(--color-background);
+  border-color: var(--color-text-secondary);
+}
