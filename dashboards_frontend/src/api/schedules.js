@@ -7,8 +7,30 @@ export async function getSchedules() {
 }
 
 export async function createSchedule(scheduleData) {
-  console.warn('Create schedule endpoint not yet implemented');
-  return null;
+    try {
+      const token = localStorage.getItem('cp_token');
+      const url = `${BASE_URL}/backend/schedules/`;
+
+
+      const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+              'Authorization': `Token ${token}`,
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(scheduleData),
+      });
+
+      if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      throw error;
+    }
 }
 
 export async function updateSchedule(scheduleId, updates) {

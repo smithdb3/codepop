@@ -1,9 +1,37 @@
 import { apiFetch } from './client.js';
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
 // Stub: Phase 5 - endpoint not yet implemented in backend
 export async function getMachines() {
   console.warn('Machines endpoint not yet implemented');
   return [];
+}
+
+export async function createMachine(machineData) {
+  try {
+      const token = localStorage.getItem('cp_token');
+      const url = `${BASE_URL}/backend/machines/`;
+
+      const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+              'Authorization': `Token ${token}`,
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(machineData),
+      });
+
+      if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      throw error;
+        }
 }
 
 export async function getMachineDetail(machineId) {
