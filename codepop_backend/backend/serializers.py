@@ -149,6 +149,16 @@ class RevenueSerializer(serializers.ModelSerializer):
             revenue_instance.calculate_total_amount()
         revenue_instance.save()
         return revenue_instance
+    
+class MachineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Machine
+        fields = ['machine_id', 'name', 'location', 'status', 'notes']
+
+class ScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Schedule
+        fields = ['machine','assigned_to', 'scheduled_at', 'completed_at', 'description']
 
 
 # ─────────────────────────────────────────────

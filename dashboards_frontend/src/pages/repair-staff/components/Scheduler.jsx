@@ -19,27 +19,28 @@ export function Scheduler() {
             const reader = new FileReader();
 
             reader.onload = (f) =>{ //Breaks up CSV by line
-                setFileContents(f.target.result.split("\n"));
-                };
+                const contents = f.target.result.trim().split("\n");
+
+                //For each line in the csv it makes a javascript schedule object to be sent to the data base.
+                for(const line of contents){
+                    const components = line.trim().split(",");
+                    const Schedule = {
+                        machine: components[0], //Machine ID
+                        assigned_to: localStorage.getItem("cp_user_id"),
+                        scheduled_at: new Date().toISOString(),
+                        completed_at: null,
+                        description: components[1],
+                    };
+                    createSchedule(Schedule);
+                }
+            };
 
             reader.onerror = (f) => {
                     setError("Failed to upload file. Please try again.");
                 };
 
-            reader.readAsText(file); 
-            
-            //For each line in the csv it makes a schedule for a machine
-            for(line of fileContents){ 
-                const components = line.split(",").trim();
-                const Schedule = {
-                machine: components[0],     
-                assigned_to: localStorage.getItem("cp_user_id"), 
-                description: components[1], 
-                created_at: Date.now(),  
-            };
+            reader.readAsText(file);
 
-            createSchedule(Schedule)
-            }
             
         } catch (error) {
             console.error('File upload error:', error);

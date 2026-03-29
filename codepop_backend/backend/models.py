@@ -474,7 +474,7 @@ class Schedule(models.Model):
     Tied to Machine and auth.User (repair staff member).
     """
     machine      = models.ForeignKey(Machine, on_delete=models.CASCADE, related_name='schedules')
-    assigned_to  = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True) 
+    assigned_to  = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)
     scheduled_at = models.DateTimeField()
     completed_at = models.DateTimeField(null=True, blank=True)
     description  = models.TextField(blank=True)

@@ -1,5 +1,6 @@
 import { apiFetch } from './client.js';
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 // Stub: Phase 5 - endpoint not yet implemented in backend
 export async function getSchedules() {
   console.warn('Schedules endpoint not yet implemented');
