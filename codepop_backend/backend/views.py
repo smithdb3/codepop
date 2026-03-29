@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from .models import Preference, Drink, Inventory, Notification, Order, Revenue
 from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.exceptions import PermissionDenied
 import stripe
 from django.conf import settings
 from django.http import JsonResponse
@@ -992,4 +993,336 @@ class UserOperations(viewsets.ModelViewSet):
             return JsonResponse({"message":"User edited successfully"}, status=status.HTTP_200_OK)
         except Exception as e:
             return JsonResponse({'Error': str(e)}, status=400)
-        
+
+
+# ─────────────────────────────────────────────
+# ADMIN DASHBOARD VIEWS
+# ─────────────────────────────────────────────
+
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.pagination import PageNumberPagination
+from .serializers import (PermissionSerializer, RoleSerializer, UserListSerializer,
+                          UserCreateUpdateSerializer, AuditLogSerializer)
+from .models import Permission, Role, UserProfile, AuditLog
+from .permissions import IsAdminUser
+
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+class PermissionListView(ListCreateAPIView):
+    """List all permissions, grouped by category."""
+    queryset = Permission.objects.all()
+    serializer_class = PermissionSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        return Permission.objects.all().order_by('category', 'label')
+
+
+class RoleListCreateView(ListCreateAPIView):
+    """List all roles or create a new custom role."""
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+    permission_classes = [IsAdminUser]
+    pagination_class = StandardResultsSetPagination
+
+    def perform_create(self, serializer):
+        role = serializer.save(is_builtin=False)
+        # Log the action
+        AuditLog.objects.create(
+            actor=self.request.user,
+            action='Role Created',
+            target_type='role',
+            target_id=role.id,
+            target_repr=role.name,
+            ip_address=self.get_client_ip(),
+            result='success'
+        )
+
+    def get_client_ip(self):
+        """Extract client IP from request."""
+        x_forwarded_for = self.request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = self.request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class RoleDetailView(RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a specific role."""
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+    permission_classes = [IsAdminUser]
+
+    def perform_update(self, serializer):
+        role = serializer.instance
+        if role.is_builtin:
+            raise PermissionDenied("Cannot edit built-in roles.")
+        serializer.save()
+        AuditLog.objects.create(
+            actor=self.request.user,
+            action='Role Updated',
+            target_type='role',
+            target_id=role.id,
+            target_repr=role.name,
+            ip_address=self.get_client_ip(),
+            result='success'
+        )
+
+    def perform_destroy(self, instance):
+        if instance.is_builtin:
+            raise PermissionDenied("Cannot delete built-in roles.")
+        if instance.users.exists():
+            raise PermissionDenied("Cannot delete role with assigned users.")
+        instance.delete()
+        AuditLog.objects.create(
+            actor=self.request.user,
+            action='Role Deleted',
+            target_type='role',
+            target_id=instance.id,
+            target_repr=instance.name,
+            ip_address=self.get_client_ip(),
+            result='success'
+        )
+
+    def get_client_ip(self):
+        """Extract client IP from request."""
+        x_forwarded_for = self.request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = self.request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class UserListView(ListCreateAPIView):
+    """List all users with filtering and search."""
+    queryset = UserProfile.objects.select_related('user', 'role', 'region')
+    serializer_class = UserListSerializer
+    permission_classes = [IsAdminUser]
+    pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        qs = UserProfile.objects.select_related('user', 'role', 'region')
+
+        # Filter by status
+        status = self.request.query_params.get('status')
+        if status == 'active':
+            qs = qs.filter(user__is_active=True, is_deleted=False)
+        elif status == 'disabled':
+            qs = qs.filter(user__is_active=False, is_deleted=False)
+        elif status == 'deleted':
+            qs = qs.filter(is_deleted=True)
+
+        # Search by name or email
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                models.Q(user__first_name__icontains=search) |
+                models.Q(user__last_name__icontains=search) |
+                models.Q(user__email__icontains=search)
+            )
+
+        return qs.order_by('-user__date_joined')
+
+
+class UserCreateView(ListCreateAPIView):
+    """Create a new user."""
+    queryset = UserProfile.objects.all()
+    serializer_class = UserCreateUpdateSerializer
+    permission_classes = [IsAdminUser]
+
+    def perform_create(self, serializer):
+        profile = serializer.save()
+        AuditLog.objects.create(
+            actor=self.request.user,
+            action='User Created',
+            target_type='user',
+            target_id=profile.user.id,
+            target_repr=profile.user.email,
+            ip_address=self.get_client_ip(),
+            result='success'
+        )
+
+    def get_client_ip(self):
+        """Extract client IP from request."""
+        x_forwarded_for = self.request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = self.request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class UserDetailView(RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a specific user."""
+    queryset = UserProfile.objects.select_related('user', 'role', 'region')
+    serializer_class = UserCreateUpdateSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return UserListSerializer
+        return UserCreateUpdateSerializer
+
+    def perform_update(self, serializer):
+        profile = serializer.save()
+        AuditLog.objects.create(
+            actor=self.request.user,
+            action='User Updated',
+            target_type='user',
+            target_id=profile.user.id,
+            target_repr=profile.user.email,
+            ip_address=self.get_client_ip(),
+            result='success'
+        )
+
+    def perform_destroy(self, instance):
+        """Soft delete: mark as deleted and deactivate."""
+        instance.is_deleted = True
+        instance.user.is_active = False
+        instance.save()
+        instance.user.save()
+        AuditLog.objects.create(
+            actor=self.request.user,
+            action='User Deleted',
+            target_type='user',
+            target_id=instance.user.id,
+            target_repr=instance.user.email,
+            ip_address=self.get_client_ip(),
+            result='success'
+        )
+
+    def get_client_ip(self):
+        """Extract client IP from request."""
+        x_forwarded_for = self.request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = self.request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class UserDisableView(APIView):
+    """Disable a user account."""
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, pk):
+        try:
+            profile = UserProfile.objects.get(pk=pk)
+            profile.user.is_active = False
+            profile.user.save()
+            AuditLog.objects.create(
+                actor=request.user,
+                action='User Disabled',
+                target_type='user',
+                target_id=profile.user.id,
+                target_repr=profile.user.email,
+                ip_address=self.get_client_ip(request),
+                result='success'
+            )
+            return Response({'message': 'User disabled'}, status=status.HTTP_200_OK)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def get_client_ip(self, request):
+        """Extract client IP from request."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class UserEnableView(APIView):
+    """Enable a user account."""
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, pk):
+        try:
+            profile = UserProfile.objects.get(pk=pk)
+            profile.user.is_active = True
+            profile.user.save()
+            AuditLog.objects.create(
+                actor=request.user,
+                action='User Enabled',
+                target_type='user',
+                target_id=profile.user.id,
+                target_repr=profile.user.email,
+                ip_address=self.get_client_ip(request),
+                result='success'
+            )
+            return Response({'message': 'User enabled'}, status=status.HTTP_200_OK)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def get_client_ip(self, request):
+        """Extract client IP from request."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+
+class AuditLogListView(ListCreateAPIView):
+    """List audit logs with filtering by date, action, and actor."""
+    queryset = AuditLog.objects.select_related('actor').order_by('-timestamp')
+    serializer_class = AuditLogSerializer
+    permission_classes = [IsAdminUser]
+    pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        qs = AuditLog.objects.select_related('actor').order_by('-timestamp')
+
+        # Filter by date range
+        start_date = self.request.query_params.get('start')
+        end_date = self.request.query_params.get('end')
+        if start_date:
+            from datetime import datetime
+            qs = qs.filter(timestamp__gte=datetime.fromisoformat(start_date))
+        if end_date:
+            from datetime import datetime
+            qs = qs.filter(timestamp__lte=datetime.fromisoformat(end_date))
+
+        # Filter by action
+        action = self.request.query_params.get('action')
+        if action:
+            qs = qs.filter(action__icontains=action)
+
+        # Filter by actor
+        actor = self.request.query_params.get('actor')
+        if actor:
+            qs = qs.filter(actor__username__icontains=actor)
+
+        return qs
+
+
+class AdminKPIView(APIView):
+    """Return KPI metrics for the admin dashboard."""
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        disabled_users = User.objects.filter(is_active=False).count()
+        deleted_users = UserProfile.objects.filter(is_deleted=True).count()
+        manager_count = UserProfile.objects.filter(role__name='Manager').count()
+        admin_count = User.objects.filter(is_staff=True).count()
+
+        return Response({
+            'total_users': total_users,
+            'active_users': active_users,
+            'disabled_users': disabled_users,
+            'deleted_users': deleted_users,
+            'manager_count': manager_count,
+            'admin_count': admin_count,
+        })
+

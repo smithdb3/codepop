@@ -37,3 +37,14 @@ class IsSuperUser(BasePermission):
 
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated and request.user.is_superuser)
+
+
+class IsAdminUser(BasePermission):
+    """
+    Allows access only to authenticated users who are staff or superusers.
+    Used by admin dashboard API endpoints.
+    """
+    message = 'Admin access required.'
+
+    def has_permission(self, request, view):
+        return bool(request.user and request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser))

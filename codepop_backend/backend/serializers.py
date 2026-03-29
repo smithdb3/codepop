@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from .models import Preference, Drink, Inventory, Order, Notification, Revenue
+from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Permission, Role, UserProfile, AuditLog
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -149,4 +149,130 @@ class RevenueSerializer(serializers.ModelSerializer):
             revenue_instance.calculate_total_amount()
         revenue_instance.save()
         return revenue_instance
+
+
+# ─────────────────────────────────────────────
+# ADMIN DASHBOARD SERIALIZERS
+# ─────────────────────────────────────────────
+
+class PermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permission
+        fields = ['id', 'codename', 'label', 'category']
+
+
+class RoleSerializer(serializers.ModelSerializer):
+    permissions = PermissionSerializer(many=True, read_only=True)
+    permission_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Permission.objects.all(),
+        source='permissions',
+        many=True,
+        write_only=True
+    )
+    user_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Role
+        fields = ['id', 'name', 'is_builtin', 'description', 'permissions', 'permission_ids', 'user_count']
+
+    def get_user_count(self, obj):
+        return obj.users.count()
+
+
+class UserListSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    email = serializers.CharField(source='user.email')
+    role = serializers.SerializerMethodField()
+    location = serializers.SerializerMethodField()
+    last_login = serializers.DateTimeField(source='user.last_login')
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserProfile
+        fields = ['id', 'name', 'email', 'role', 'location', 'last_login', 'status']
+
+    def get_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}".strip()
+
+    def get_role(self, obj):
+        return obj.role.name if obj.role else 'Unassigned'
+
+    def get_location(self, obj):
+        return obj.region.display_name if obj.region else 'N/A'
+
+    def get_status(self, obj):
+        if obj.is_deleted:
+            return 'deleted'
+        elif obj.user.is_active:
+            return 'active'
+        else:
+            return 'disabled'
+
+
+class UserCreateUpdateSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, required=False)
+    role_id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), source='role')
+    region_id = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.none(), source='region', required=False)
+
+    class Meta:
+        model = UserProfile
+        fields = ['first_name', 'last_name', 'email', 'password', 'role_id', 'region_id']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Fix the queryset for region (cannot import Region at module level due to circular imports)
+        from .models import Region
+        self.fields['region_id'].queryset = Region.objects.all()
+
+    def create(self, validated_data):
+        user_data = {
+            'first_name': validated_data.get('first_name'),
+            'last_name': validated_data.get('last_name'),
+            'email': validated_data.get('email'),
+            'username': validated_data.get('email'),  # use email as username
+        }
+        if 'password' in validated_data:
+            user_data['password'] = validated_data['password']
+
+        user = get_user_model().objects.create_user(**user_data)
+
+        profile_data = {
+            'user': user,
+            'role': validated_data.get('role'),
+            'region': validated_data.get('region'),
+        }
+        profile = UserProfile.objects.create(**profile_data)
+        return profile
+
+    def update(self, instance, validated_data):
+        user = instance.user
+        user.first_name = validated_data.get('first_name', user.first_name)
+        user.last_name = validated_data.get('last_name', user.last_name)
+        user.email = validated_data.get('email', user.email)
+        user.username = validated_data.get('email', user.username)
+        if 'password' in validated_data:
+            user.set_password(validated_data['password'])
+        user.save()
+
+        instance.role = validated_data.get('role', instance.role)
+        instance.region = validated_data.get('region', instance.region)
+        instance.save()
+        return instance
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    actor = serializers.CharField(source='actor.username', read_only=True)
+    actor_role = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AuditLog
+        fields = ['id', 'timestamp', 'actor', 'actor_role', 'action', 'target_type', 'target_repr', 'ip_address', 'result']
+
+    def get_actor_role(self, obj):
+        if obj.actor and hasattr(obj.actor, 'admin_profile') and obj.actor.admin_profile.role:
+            return obj.actor.admin_profile.role.name
+        return 'Unknown'
 
