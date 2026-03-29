@@ -1,19 +1,44 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DataTable } from '../../super-admin/components/DataTable';
 import { Modal } from '../../super-admin/components/Modal';
-import { StatusBadge } from '../../super-admin/components/StatusBadge';
-import { ADMIN_USERS } from '../mockData';
+import { getAdminUsers, createAdminUser, updateAdminUser, deleteAdminUser, disableAdminUser, enableAdminUser } from '../../../api/users';
+import { getRoles } from '../../../api/roles';
 import styles from './UserManagement.module.css';
 
 export function UserManagement() {
+  const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', role: '', location: '', password: '' });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [formData, setFormData] = useState({ first_name: '', last_name: '', email: '', role_id: '', region_id: '', password: '' });
+
+  // Fetch users and roles on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setError(null);
+        const [usersData, rolesData] = await Promise.all([
+          getAdminUsers(),
+          getRoles(),
+        ]);
+        setUsers(usersData.results || usersData);
+        setRoles(rolesData.results || rolesData);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+        setError('Failed to load data. Check that you are logged in as an admin.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const filteredData = useMemo(() => {
-    let result = ADMIN_USERS;
+    let result = users;
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -28,7 +53,7 @@ export function UserManagement() {
     }
 
     return result;
-  }, [searchTerm, filterStatus]);
+  }, [users, searchTerm, filterStatus]);
 
   const statusColors = {
     active: { dot: '🟢', label: 'Active', bg: 'rgba(16,185,129,0.12)' },
@@ -41,7 +66,7 @@ export function UserManagement() {
     { key: 'email', label: 'Email', sortable: true },
     { key: 'location', label: 'Location/Region', sortable: true },
     { key: 'role', label: 'Role', sortable: true },
-    { key: 'lastLogin', label: 'Last Login', sortable: true },
+    { key: 'last_login', label: 'Last Login', sortable: true },
     {
       key: 'status',
       label: 'Status',
@@ -64,17 +89,16 @@ export function UserManagement() {
         <div className={styles.actionButtons}>
           {row.status === 'active' && (
             <>
-              <button className={styles.iconBtn} title="Edit">✏️</button>
-              <button className={styles.iconBtn} title="Disable">🚫</button>
-              <button className={styles.iconBtn} title="Make Manager">👔</button>
-              <button className={styles.iconBtn} title="Delete">🗑️</button>
+              <button className={styles.iconBtn} title="Edit" onClick={() => handleEdit(row)}>✏️</button>
+              <button className={styles.iconBtn} title="Disable" onClick={() => handleDisable(row.id)}>🚫</button>
+              <button className={styles.iconBtn} title="Delete" onClick={() => handleDelete(row.id)}>🗑️</button>
             </>
           )}
           {row.status === 'disabled' && (
             <>
-              <button className={styles.iconBtn} title="Edit">✏️</button>
-              <button className={styles.iconBtn} title="Enable">✅</button>
-              <button className={styles.iconBtn} title="Delete">🗑️</button>
+              <button className={styles.iconBtn} title="Edit" onClick={() => handleEdit(row)}>✏️</button>
+              <button className={styles.iconBtn} title="Enable" onClick={() => handleEnable(row.id)}>✅</button>
+              <button className={styles.iconBtn} title="Delete" onClick={() => handleDelete(row.id)}>🗑️</button>
             </>
           )}
           {row.status === 'deleted' && <span>View only</span>}
@@ -83,14 +107,83 @@ export function UserManagement() {
     },
   ];
 
-  const handleAddUser = () => {
-    setShowAddModal(false);
-    setFormData({ name: '', email: '', role: '', location: '', password: '' });
+  const handleEdit = (user) => {
+    setFormData({
+      id: user.id,
+      first_name: user.name.split(' ')[0],
+      last_name: user.name.split(' ').slice(1).join(' '),
+      email: user.email,
+      role_id: user.role,
+      region_id: user.location,
+    });
+    setShowAddModal(true);
   };
+
+  const handleDisable = async (userId) => {
+    try {
+      setError(null);
+      await disableAdminUser(userId);
+      const updated = await getAdminUsers();
+      setUsers(updated.results || updated);
+    } catch (error) {
+      console.error('Failed to disable user:', error);
+      setError('Failed to disable user. Please try again.');
+    }
+  };
+
+  const handleEnable = async (userId) => {
+    try {
+      setError(null);
+      await enableAdminUser(userId);
+      const updated = await getAdminUsers();
+      setUsers(updated.results || updated);
+    } catch (error) {
+      console.error('Failed to enable user:', error);
+      setError('Failed to enable user. Please try again.');
+    }
+  };
+
+  const handleDelete = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        setError(null);
+        await deleteAdminUser(userId);
+        const updated = await getAdminUsers();
+        setUsers(updated.results || updated);
+      } catch (error) {
+        console.error('Failed to delete user:', error);
+        setError('Failed to delete user. Please try again.');
+      }
+    }
+  };
+
+  const handleAddUser = async () => {
+    try {
+      setError(null);
+      if (formData.id) {
+        await updateAdminUser(formData.id, formData);
+      } else {
+        await createAdminUser(formData);
+      }
+      const updated = await getAdminUsers();
+      setUsers(updated.results || updated);
+      setShowAddModal(false);
+      setFormData({ first_name: '', last_name: '', email: '', role_id: '', region_id: '', password: '' });
+    } catch (error) {
+      console.error('Failed to save user:', error);
+      setError('Failed to save user. Please try again.');
+    }
+  };
+
+  if (loading) {
+    return <div className={styles.container}><p>Loading...</p></div>;
+  }
 
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>User Management</h1>
+
+      {error && <p style={{ color: 'red', marginBottom: '16px' }}>{error}</p>}
 
       <div className={styles.toolbar}>
         <input
@@ -137,16 +230,25 @@ export function UserManagement() {
 
       {showAddModal && (
         <Modal
-          title="Add User"
+          title={formData.id ? 'Edit User' : 'Add User'}
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddUser}
         >
           <div className={styles.formGroup}>
-            <label>Name</label>
+            <label>First Name</label>
             <input
               type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              value={formData.first_name}
+              onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+              className={styles.formInput}
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label>Last Name</label>
+            <input
+              type="text"
+              value={formData.last_name}
+              onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
               className={styles.formInput}
             />
           </div>
@@ -162,33 +264,16 @@ export function UserManagement() {
           <div className={styles.formGroup}>
             <label>Role</label>
             <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              value={formData.role_id}
+              onChange={(e) => setFormData({ ...formData, role_id: e.target.value })}
               className={styles.formInput}
             >
-              <option>Select a role</option>
-              <option>Super Admin</option>
-              <option>Admin</option>
-              <option>Manager</option>
-              <option>Staff</option>
-              <option>Repair Staff</option>
-            </select>
-          </div>
-          <div className={styles.formGroup}>
-            <label>Location/Region</label>
-            <select
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className={styles.formInput}
-            >
-              <option>Select a region</option>
-              <option>Chicago</option>
-              <option>Dallas</option>
-              <option>New Jersey</option>
-              <option>Atlanta</option>
-              <option>Phoenix</option>
-              <option>Seattle</option>
-              <option>Logan</option>
+              <option value="">Select a role</option>
+              {roles.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
             </select>
           </div>
           <div className={styles.formGroup}>
@@ -198,12 +283,12 @@ export function UserManagement() {
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               className={styles.formInput}
-              placeholder="Generate or enter password"
+              placeholder="Leave blank to keep current password"
             />
           </div>
           <div className={styles.modalButtons}>
             <button className={styles.primaryBtn} onClick={handleAddUser}>
-              Create
+              {formData.id ? 'Update' : 'Create'}
             </button>
             <button className={styles.secondaryBtn} onClick={() => setShowAddModal(false)}>
               Cancel

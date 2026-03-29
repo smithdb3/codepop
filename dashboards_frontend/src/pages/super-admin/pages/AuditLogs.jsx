@@ -1,11 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DataTable } from '../components/DataTable';
 import { StatusBadge } from '../components/StatusBadge';
-import { AUDIT_LOGS } from '../mockData';
+import { getAuditLogs } from '../../../api/auditlogs';
 import styles from './AuditLogs.module.css';
 
+function getPastDate(days) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date.toISOString().split('T')[0];
+}
+
+function getTodayDate() {
+  return new Date().toISOString().split('T')[0];
+}
+
 export function AuditLogs() {
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState({ start: getPastDate(30), end: getTodayDate() });
+
+  // Fetch audit logs
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const params = {};
+        if (dateRange.start) params.start = dateRange.start;
+        if (dateRange.end) params.end = dateRange.end;
+
+        const data = await getAuditLogs(params);
+        const logsData = data.results || data;
+
+        // Map API response to table format
+        const mappedLogs = logsData.map(log => ({
+          id: log.id,
+          who: log.actor,
+          what: log.action,
+          when: new Date(log.timestamp).toLocaleString(),
+          where: log.target_repr,
+          result: log.result,
+        }));
+
+        setLogs(mappedLogs);
+      } catch (error) {
+        console.error('Failed to fetch audit logs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLogs();
+  }, [dateRange]);
 
   const logColumns = [
     { key: 'who', label: 'Who', sortable: true },
@@ -19,6 +62,10 @@ export function AuditLogs() {
       render: (val) => <StatusBadge status={val} text={val === 'success' ? 'Success' : 'Failed'} />,
     },
   ];
+
+  if (loading) {
+    return <div className={styles.page}><p>Loading...</p></div>;
+  }
 
   return (
     <div className={styles.page}>
@@ -49,7 +96,7 @@ export function AuditLogs() {
         </div>
       </div>
 
-      <DataTable columns={logColumns} data={AUDIT_LOGS} searchable={true} rowsPerPage={25} />
+      <DataTable columns={logColumns} data={logs} searchable={true} rowsPerPage={25} />
     </div>
   );
 }

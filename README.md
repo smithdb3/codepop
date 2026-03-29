@@ -63,12 +63,18 @@ npm run dev
 
 The dashboard runs at `http://localhost:5173` (Vite default).
 
-### Demo Credentials
+### Test Users
 
-| Role | Email | Password |
-|---|---|---|
-| Super Admin | superadimin1@example.com | password |
-| Admin | admin1@example.com | password |
-| Manager | manager1@example.com | password |
-| Logistics Manager | logistics1@example.com | password |
-| Repair Staff | repair1@example.com | password |
+When you start the backend with `docker compose up`, migrations automatically run and populate the database with test user accounts for each dashboard. **No manual setup needed.**
+
+Use these credentials to log in:
+
+| Role | Username | Email | Password |
+|---|---|---|---|
+| Super Admin | **superadmin** | superadmin@codepop.local | superadmin123 |
+| Admin | **admin** | admin@codepop.local | admin123 |
+| Manager | **manager** | manager@codepop.local | manager123 |
+| Logistics Manager | **logistics** | logistics@codepop.local | logistics123 |
+| Repair Staff | **repairstaff** | repair@codepop.local | repair123 |
+
+Each account has the correct permissions and role assignments for its dashboard. Shared across the team — everyone gets the same test accounts when they pull and start Docker.

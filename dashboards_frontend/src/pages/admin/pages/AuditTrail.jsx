@@ -1,33 +1,62 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { DataTable } from '../../super-admin/components/DataTable';
-import { ADMIN_AUDIT } from '../mockData';
+import { getAuditLogs } from '../../../api/auditlogs';
 import styles from './AuditTrail.module.css';
 
 export function AuditTrail() {
-  const [dateFrom, setDateFrom] = useState('2026-03-01');
-  const [dateTo, setDateTo] = useState('2026-03-28');
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dateFrom, setDateFrom] = useState(getPastDate(30));
+  const [dateTo, setDateTo] = useState(getTodayDate());
   const [actionFilter, setActionFilter] = useState('all');
   const [actorFilter, setActorFilter] = useState('all');
 
+  function getPastDate(days) {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    return date.toISOString().split('T')[0];
+  }
+
+  function getTodayDate() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  // Fetch audit logs
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const params = {
+          start: dateFrom,
+          end: dateTo,
+        };
+        if (actionFilter !== 'all') params.action = actionFilter;
+        if (actorFilter !== 'all') params.actor = actorFilter;
+
+        const data = await getAuditLogs(params);
+        setLogs(data.results || data);
+      } catch (error) {
+        console.error('Failed to fetch audit logs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLogs();
+  }, [dateFrom, dateTo, actionFilter, actorFilter]);
+
   const filteredData = useMemo(() => {
-    let result = ADMIN_AUDIT;
+    return logs;
+  }, [logs]);
 
-    if (actionFilter !== 'all') {
-      result = result.filter((log) => log.action === actionFilter);
-    }
-
-    if (actorFilter !== 'all') {
-      result = result.filter((log) => log.actor === actorFilter);
-    }
-
-    return result;
-  }, [actionFilter, actorFilter]);
-
-  const actions = Array.from(new Set(ADMIN_AUDIT.map((log) => log.action)));
-  const actors = Array.from(new Set(ADMIN_AUDIT.map((log) => log.actor)));
+  const actions = Array.from(new Set(logs.map((log) => log.action)));
+  const actors = Array.from(new Set(logs.map((log) => log.actor)));
 
   const columns = [
-    { key: 'timestamp', label: 'Timestamp', sortable: true },
+    {
+      key: 'timestamp',
+      label: 'Timestamp',
+      sortable: true,
+      render: (timestamp) => new Date(timestamp).toLocaleString()
+    },
     {
       key: 'actor',
       label: 'Actor',
@@ -35,32 +64,36 @@ export function AuditTrail() {
       render: (actor, row) => (
         <div className={styles.actorCell}>
           <span className={styles.actorName}>{actor}</span>
-          <span className={styles.actorRole}>{row.actorRole}</span>
+          <span className={styles.actorRole}>{row.actor_role}</span>
         </div>
       ),
     },
     { key: 'action', label: 'Action', sortable: true },
-    { key: 'target', label: 'Target', sortable: true },
+    { key: 'target_repr', label: 'Target', sortable: true },
     {
-      key: 'status',
+      key: 'result',
       label: 'Status',
       sortable: true,
-      render: (status) => (
+      render: (result) => (
         <span
           className={styles.statusBadge}
           style={{
-            color: status === 'success' ? '#10B981' : '#EF4444',
+            color: result === 'success' ? '#10B981' : '#EF4444',
             backgroundColor:
-              status === 'success'
+              result === 'success'
                 ? 'rgba(16,185,129,0.12)'
                 : 'rgba(239,68,68,0.12)',
           }}
         >
-          {status === 'success' ? '✓' : '✗'} {status.charAt(0).toUpperCase() + status.slice(1)}
+          {result === 'success' ? '✓' : '✗'} {result.charAt(0).toUpperCase() + result.slice(1)}
         </span>
       ),
     },
   ];
+
+  if (loading) {
+    return <div className={styles.container}><p>Loading...</p></div>;
+  }
 
   return (
     <div className={styles.container}>

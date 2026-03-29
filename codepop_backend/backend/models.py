@@ -147,6 +147,80 @@ class Revenue(models.Model):
 
 
 # ─────────────────────────────────────────────
+# ADMIN DASHBOARD MODELS
+# ─────────────────────────────────────────────
+
+class Permission(models.Model):
+    """
+    Represents a permission that can be assigned to roles.
+    Permissions control what actions users can perform in the admin dashboards.
+    """
+    CATEGORY_CHOICES = [
+        ('user_management', 'User Management'),
+        ('roles_permissions', 'Roles & Permissions'),
+        ('system_audit', 'System & Audit'),
+    ]
+    codename = models.CharField(max_length=100, unique=True)
+    label = models.CharField(max_length=100)
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+
+    def __str__(self):
+        return f"{self.label} ({self.codename})"
+
+
+class Role(models.Model):
+    """
+    Represents a role that bundles a set of permissions.
+    Built-in roles (is_builtin=True) cannot be deleted or edited.
+    """
+    name = models.CharField(max_length=100, unique=True)
+    is_builtin = models.BooleanField(default=False)
+    description = models.CharField(max_length=255, blank=True)
+    permissions = models.ManyToManyField(Permission, blank=True, related_name='roles')
+
+    def __str__(self):
+        return f"{self.name}"
+
+
+class UserProfile(models.Model):
+    """
+    Extends Django's auth.User for admin dashboard purposes.
+    Adds role, region, and soft-delete tracking.
+
+    Note: This is separate from the distributed system profile models
+    (RepairStaffProfile, LogisticsManagerProfile, ManagerProfile).
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_profile')
+    role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
+    region = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)  # soft delete
+
+    def __str__(self):
+        return f"AdminProfile for {self.user.username}"
+
+
+class AuditLog(models.Model):
+    """
+    Immutable log of actions performed by users in the admin dashboards.
+    Used for compliance, debugging, and security forensics.
+    """
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='audit_actions')
+    action = models.CharField(max_length=100)  # e.g. 'User Created', 'Role Deleted'
+    target_type = models.CharField(max_length=50)  # e.g. 'user', 'role', 'permission'
+    target_id = models.IntegerField(null=True, blank=True)
+    target_repr = models.CharField(max_length=255, blank=True)  # human-readable e.g. "alice@email.com"
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    result = models.CharField(max_length=20, default='success')  # 'success' | 'failed'
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"[{self.result}] {self.action} on {self.target_type} by {self.actor}"
+
+
+# ─────────────────────────────────────────────
 # DISTRIBUTED SYSTEM MODELS
 # ─────────────────────────────────────────────
 

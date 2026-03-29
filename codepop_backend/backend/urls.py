@@ -20,6 +20,11 @@ from .views import GenerateAIDrink
 from .views import RevenueViewSet, NationalRevenueView
 from .views import UserOperations
 from .views import emailAPI
+from .views import (
+    PermissionListView, RoleListCreateView, RoleDetailView,
+    UserListView, UserCreateView, UserDetailView,
+    UserDisableView, UserEnableView, AuditLogListView, AdminKPIView
+)
 from .views import MachineOperations
 from .views import ScheduleOperations
 
@@ -264,6 +269,27 @@ urlpatterns = [
     path('users/edit/<int:user_id>/', user_operations, name='edit_user'),
 
     path('email/<int:orderId>/', emailAPI.as_view(), name='Create Email'),
+
+    # Admin Dashboard endpoints
+    # Permissions
+    path('api/admin/permissions/', PermissionListView.as_view(), name='admin_permissions_list'),
+
+    # Roles
+    path('api/admin/roles/', RoleListCreateView.as_view(), name='admin_roles_list_create'),
+    path('api/admin/roles/<int:pk>/', RoleDetailView.as_view(), name='admin_role_detail'),
+
+    # Users (admin dashboard)
+    path('api/admin/users/', UserListView.as_view(), name='admin_users_list'),
+    path('api/admin/users/create/', UserCreateView.as_view(), name='admin_user_create'),
+    path('api/admin/users/<int:pk>/', UserDetailView.as_view(), name='admin_user_detail'),
+    path('api/admin/users/<int:pk>/disable/', UserDisableView.as_view(), name='admin_user_disable'),
+    path('api/admin/users/<int:pk>/enable/', UserEnableView.as_view(), name='admin_user_enable'),
+
+    # Audit Logs
+    path('api/admin/audit-logs/', AuditLogListView.as_view(), name='admin_audit_logs'),
+
+    # KPIs
+    path('api/admin/kpi/', AdminKPIView.as_view(), name='admin_kpi'),
 
     # Hub endpoints (only meaningful when IS_HUB=True, but available on all nodes)
     path('api/hub/register/',       HubRegisterView.as_view(),       name='hub_register'),
