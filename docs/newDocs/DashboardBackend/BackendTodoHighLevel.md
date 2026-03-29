@@ -129,7 +129,7 @@ Tasks ordered by priority. P1 = minimum functioning dashboard. P4 = optional/nic
 33. Hook up Edit and Delete on recurring schedules.
 34. Hook up AI-suggested quantities on the Supply Request form.
 
----
+--- 
 
 # Manager Dashboard
 
