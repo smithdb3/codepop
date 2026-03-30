@@ -263,7 +263,7 @@ class StoreRegistry(models.Model):
     ]
     store_id     = models.IntegerField(unique=True)
     store_name   = models.CharField(max_length=255)
-    region       = models.CharField(max_length=50)
+    region       = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True, blank=True, related_name='stores')
     api_endpoint = models.URLField()           # e.g. http://10.0.0.2:8000
     latitude     = models.FloatField(null=True, blank=True)
     longitude    = models.FloatField(null=True, blank=True)
@@ -428,7 +428,7 @@ class SupplyRequest(models.Model):
         ('fulfilled', 'Fulfilled'),
     ]
     store_id     = models.IntegerField()
-    region       = models.CharField(max_length=50)
+    region       = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True, blank=True, related_name='supply_requests')
     item_name    = models.CharField(max_length=100)
     quantity     = models.PositiveIntegerField()
     status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')

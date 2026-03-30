@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from .models import StoreRegistry, SyncAuditLog, VisitingUserCache
+from .models import StoreRegistry, SyncAuditLog, VisitingUserCache, Region
 from .permissions import IsNodeAuthenticated, IsSuperUser
 
 
@@ -68,7 +68,7 @@ class HubRegisterView(APIView):
             store_id=data['store_id'],
             defaults={
                 'store_name':        data['store_name'],
-                'region':            data['region'],
+                'region':            Region.objects.filter(name=data['region']).first(),
                 'api_endpoint':      data['api_endpoint'],
                 'latitude':          data.get('latitude'),
                 'longitude':         data.get('longitude'),
@@ -279,7 +279,7 @@ class HubStoreRegistryView(APIView):
 
     def get(self, request):
         stores = StoreRegistry.objects.filter(status='active').values(
-            'store_id', 'store_name', 'region', 'api_endpoint',
+            'store_id', 'store_name', 'region__name', 'api_endpoint',
             'latitude', 'longitude', 'last_heartbeat'
         )
         return Response({'stores': list(stores)})
