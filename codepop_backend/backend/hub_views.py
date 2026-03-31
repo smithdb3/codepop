@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from .models import StoreRegistry, SyncAuditLog, VisitingUserCache
+from .models import StoreRegistry, SyncAuditLog, VisitingUserCache, Region
 from .permissions import IsNodeAuthenticated, IsSuperUser
 
 
@@ -68,7 +68,7 @@ class HubRegisterView(APIView):
             store_id=data['store_id'],
             defaults={
                 'store_name':        data['store_name'],
-                'region':            data['region'],
+                'region':            Region.objects.filter(name=data['region']).first(),
                 'api_endpoint':      data['api_endpoint'],
                 'latitude':          data.get('latitude'),
                 'longitude':         data.get('longitude'),
@@ -161,20 +161,21 @@ class HubUserLookupView(APIView):
                 pass
             return None
 
-        with ThreadPoolExecutor(max_workers=min(7, len(active_stores))) as executor:
-            futures = {executor.submit(check_store, store): store for store in active_stores}
-            for future in as_completed(futures):
-                result = future.result()
-                if result:
-                    store, _ = result
-                    _log('user_lookup', f'store-{requesting_store_id}',
-                         store.api_endpoint, True, user_email=email,
-                         data_types='home_store_endpoint')
-                    return Response({
-                        'status': 'found',
-                        'home_store_id': store.store_id,
-                        'home_store_endpoint': store.api_endpoint,
-                    })
+        if active_stores:
+            with ThreadPoolExecutor(max_workers=min(7, len(active_stores))) as executor:
+                futures = {executor.submit(check_store, store): store for store in active_stores}
+                for future in as_completed(futures):
+                    result = future.result()
+                    if result:
+                        store, _ = result
+                        _log('user_lookup', f'store-{requesting_store_id}',
+                             store.api_endpoint, True, user_email=email,
+                             data_types='home_store_endpoint')
+                        return Response({
+                            'status': 'found',
+                            'home_store_id': store.store_id,
+                            'home_store_endpoint': store.api_endpoint,
+                        })
 
         # Step 2: Broadcast to all other hubs (parallel fan-out)
         def check_hub(region_name, hub_url):
@@ -232,6 +233,8 @@ class HubUserBroadcastView(APIView):
             return Response({'error': 'email required'}, status=status.HTTP_400_BAD_REQUEST)
 
         active_stores = list(StoreRegistry.objects.filter(status='active'))
+        if not active_stores:
+            return Response({'status': 'not_found'}, status=status.HTTP_404_NOT_FOUND)
 
         def check_store(store):
             """Query one store for user existence. Returns (store, True) if found, None otherwise."""
@@ -276,7 +279,7 @@ class HubStoreRegistryView(APIView):
 
     def get(self, request):
         stores = StoreRegistry.objects.filter(status='active').values(
-            'store_id', 'store_name', 'region', 'api_endpoint',
+            'store_id', 'store_name', 'region__name', 'api_endpoint',
             'latitude', 'longitude', 'last_heartbeat'
         )
         return Response({'stores': list(stores)})
@@ -294,6 +297,12 @@ class HubRevenueView(APIView):
 
     def get(self, request):
         active_stores = list(StoreRegistry.objects.filter(status='active'))
+        if not active_stores:
+            return Response({
+                'hub_region': settings.REGION,
+                'total_revenue': 0.0,
+                'store_count': 0,
+            })
 
         def fetch_store_revenue(store):
             """Query one store for revenue. Returns (revenue_total, success) tuple."""

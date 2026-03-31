@@ -1,0 +1,24 @@
+input[type="file"]{
+    display: none;
+}
+
+.uploadButton {
+width: 100%;
+  padding: 12px var(--spacing-m);
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  min-height: 44px;
+}
+
+.upload-button:hover {
+  background-color: #e01a52;
+}
+
+.upload-button:active {
+  background-color: #cc1547;
+}

@@ -243,7 +243,7 @@ class Command(BaseCommand):
                 StoreRegistry.objects.create(
                     store_id=store_id,
                     store_name=f"CodePop {region_name.title()} #{idx + 1}",
-                    region=region_name,
+                    region=regions_dict[region_name],
                     api_endpoint=f"http://store{store_id}.codepop.local:8000",
                     latitude=lat,
                     longitude=lon,

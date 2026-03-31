@@ -25,6 +25,8 @@ from .views import (
     UserListView, UserCreateView, UserDetailView,
     UserDisableView, UserEnableView, AuditLogListView, AdminKPIView
 )
+from .views import MachineOperations
+from .views import ScheduleOperations
 
 #this ensures that the url calls the right function from the views for each type of request
 preferences_list = PreferencesOperations.as_view({
@@ -76,6 +78,16 @@ order_detail = OrderOperations.as_view({
 revenue_list = RevenueViewSet.as_view({'get': 'list', 'post': 'create'})
 
 revenue_details = RevenueViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
+
+machine_list = MachineOperations.as_view({'get': 'list', 'post': 'create'})
+
+machine_detail = MachineOperations.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
+
+machine_update_status = MachineOperations.as_view({'patch': 'update_status'})
+
+schedule_list = ScheduleOperations.as_view({'get': 'list', 'post': 'create'})
+
+schedule_detail = ScheduleOperations.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
 
 user_operations = UserOperations.as_view({
     'get': 'get',
@@ -220,6 +232,33 @@ urlpatterns = [
     # - PUT: Update the specific revenue.
     # - DELETE: Remove the specific revenue from the database.
     path('revenues/<int:pk>/', revenue_details, name='revenue_detail'),
+
+    # Machine related URLs
+    # Endpoint to list all machines or create a new machine
+    # - GET: Retrieve a list of all machines
+    # - POST: Create a new machine. Requires authentication and machine details in the request body.
+    path('machines/', machine_list, name='machine_list_create'),
+
+    # Endpoint to retrieve, update, or delete a specific machine by its primary key (ID).
+    # - GET: Retrieve details of a specific machine.
+    # - PUT: Update the specific machine.
+    # - DELETE: Remove the specific machine from the database.
+    path('machines/<int:pk>/', machine_detail, name='machine_detail'),
+
+    # Updates a machines status
+    path('machines/<int:pk>/update-status/', machine_update_status, name='machine_update_status'),
+
+    # Schedule related URLs
+    # Endpoint to list all schedules or create a new schedule
+    # - GET: Retrieve a list of all schedules
+    # - POST: Create a new schedule. Requires authentication and machine details in the request body.
+    path('schedules/', schedule_list, name='schedule_list_create'),
+
+    # Endpoint to retrieve, update, or delete a specific schedule by its primary key (ID).
+    # - GET: Retrieve details of a specific schedule.
+    # - PUT: Update the specific schedule.
+    # - DELETE: Remove the specific schedule from the database.
+    path('schedules/<int:pk>/', machine_detail, name='machine_detail'),
 
     # Endpoint to do operations on user accounts for the Admin Dashboard
     # - GET: Retrieve a list of all users
