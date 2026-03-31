@@ -1,8 +1,17 @@
-import React, { useState, useMemo } from 'react';
-import { SUPPLY_REQUESTS, STORES, INVENTORY_ITEMS } from '../mockData';
+import React, { useState, useMemo, useEffect } from 'react';
+import { SUPPLY_REQUESTS } from '../mockData';
+import { getLogisticsStores } from '../../../api/stores';
+import { getLogisticsHubStatus } from '../../../api/hubs';
 import styles from './SupplyRequests.module.css';
 
+// Stub inventory items (Part 4 will populate this)
+const INVENTORY_ITEMS = [];
+
 export function SupplyRequests({ onNavigate }) {
+  // API state
+  const [stores, setStores] = useState([]);
+  const [hubs, setHubs] = useState([]);
+  const [loadingStores, setLoadingStores] = useState(false);
   // View state
   const [showNewRequestDrawer, setShowNewRequestDrawer] = useState(false);
   const [expandedRequestId, setExpandedRequestId] = useState(null);
@@ -28,6 +37,33 @@ export function SupplyRequests({ onNavigate }) {
   // Toast state
   const [toast, setToast] = useState({ visible: false, message: '' });
 
+  // Fetch stores and hubs on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoadingStores(true);
+      try {
+        const storesData = await getLogisticsStores();
+        // Map API fields to component fields
+        const mappedStores = storesData.map((store) => ({
+          id: store.id,
+          name: store.store_name,
+          address: store.location,
+          region: store.region_name,
+          daysRemaining: store.days_remaining,
+        }));
+        setStores(mappedStores);
+
+        const hubsData = await getLogisticsHubStatus();
+        setHubs(hubsData);
+      } catch (error) {
+        console.error('Failed to fetch stores/hubs:', error);
+      } finally {
+        setLoadingStores(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   // Toast auto-hide effect
   React.useEffect(() => {
     if (toast.visible) {
@@ -41,14 +77,14 @@ export function SupplyRequests({ onNavigate }) {
   // Get unique regions from stores
   const storesByRegion = useMemo(() => {
     const grouped = {};
-    STORES.forEach((store) => {
+    stores.forEach((store) => {
       if (!grouped[store.region]) {
         grouped[store.region] = [];
       }
       grouped[store.region].push(store);
     });
     return grouped;
-  }, []);
+  }, [stores]);
 
   // Separate pending and completed requests
   const pendingRequests = useMemo(
@@ -199,7 +235,7 @@ export function SupplyRequests({ onNavigate }) {
     );
 
     // Create new request
-    const selectedStore = STORES.find((s) => s.id === toStoreId);
+    const selectedStore = stores.find((s) => s.id === toStoreId);
     const ingredientBreakdown = ingredients
       .filter((ing) => ing.name && ing.qty)
       .map((ing) => ({
@@ -424,12 +460,12 @@ export function SupplyRequests({ onNavigate }) {
                               <div className={styles.storeInfo}>
                                 <div>
                                   <strong>Store:</strong>{' '}
-                                  {STORES.find((s) => s.name === request.store)
+                                  {stores.find((s) => s.name === request.store)
                                     ?.name || request.store}
                                 </div>
                                 <div>
                                   <strong>Address:</strong>{' '}
-                                  {STORES.find((s) => s.name === request.store)
+                                  {stores.find((s) => s.name === request.store)
                                     ?.address || 'N/A'}
                                 </div>
                               </div>
@@ -671,7 +707,7 @@ export function SupplyRequests({ onNavigate }) {
                 <input
                   type="text"
                   className={styles.inputDisabled}
-                  value="Chicago Hub"
+                  value={hubs.length > 0 ? hubs[0].name : 'Loading hub...'}
                   disabled
                   readOnly
                 />
@@ -825,7 +861,7 @@ export function SupplyRequests({ onNavigate }) {
                     style={{ marginTop: 'var(--spacing-s)' }}
                   >
                     <option value="">Select source store...</option>
-                    {STORES.filter((s) => s.id !== toStoreId).map((store) => (
+                    {stores.filter((s) => s.id !== toStoreId).map((store) => (
                       <option key={store.id} value={store.id}>
                         {store.name}
                       </option>

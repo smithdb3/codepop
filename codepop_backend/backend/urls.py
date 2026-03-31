@@ -27,6 +27,12 @@ from .views import (
 )
 from .views import MachineOperations
 from .views import ScheduleOperations
+from .views import (
+    RegionListView, AdminStoreListCreateView, AdminStoreDetailView,
+    AdminSupplyHubListCreateView, AdminSupplyHubDetailView, RegionalStatusView,
+    LogisticsStoreListView, LogisticsStoreDetailView, LogisticsCriticalStoresView,
+    LogisticsHubStatusView
+)
 
 #this ensures that the url calls the right function from the views for each type of request
 preferences_list = PreferencesOperations.as_view({
@@ -290,6 +296,28 @@ urlpatterns = [
 
     # KPIs
     path('api/admin/kpi/', AdminKPIView.as_view(), name='admin_kpi'),
+
+    # Regions
+    path('api/regions/', RegionListView.as_view(), name='region_list'),
+
+    # Super Admin — Stores
+    path('api/admin/stores/', AdminStoreListCreateView.as_view(), name='admin_stores_list_create'),
+    path('api/admin/stores/<int:pk>/', AdminStoreDetailView.as_view(), name='admin_store_detail'),
+
+    # Super Admin — Supply Hubs
+    path('api/admin/hubs/', AdminSupplyHubListCreateView.as_view(), name='admin_hubs_list_create'),
+    path('api/admin/hubs/<int:pk>/', AdminSupplyHubDetailView.as_view(), name='admin_hub_detail'),
+
+    # Super Admin — Regional Status
+    path('api/admin/regional-status/', RegionalStatusView.as_view(), name='admin_regional_status'),
+
+    # Logistics — Stores (critical endpoint must come before <int:pk>)
+    path('api/logistics/stores/critical/', LogisticsCriticalStoresView.as_view(), name='logistics_critical_stores'),
+    path('api/logistics/stores/', LogisticsStoreListView.as_view(), name='logistics_stores_list'),
+    path('api/logistics/stores/<int:pk>/', LogisticsStoreDetailView.as_view(), name='logistics_store_detail'),
+
+    # Logistics — Hub Status
+    path('api/logistics/hub-status/', LogisticsHubStatusView.as_view(), name='logistics_hub_status'),
 
     # Hub endpoints (only meaningful when IS_HUB=True, but available on all nodes)
     path('api/hub/register/',       HubRegisterView.as_view(),       name='hub_register'),

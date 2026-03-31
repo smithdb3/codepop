@@ -245,9 +245,25 @@ class Region(models.Model):
     name         = models.CharField(max_length=50, choices=REGION_CHOICES, unique=True)
     display_name = models.CharField(max_length=100)
     hub_api_endpoint = models.URLField(blank=True)  # e.g. http://10.0.0.1:8000
+    is_active    = models.BooleanField(default=True)
 
     def __str__(self):
         return self.display_name
+
+
+class SupplyHub(models.Model):
+    """
+    Represents a regional supply hub that distributes inventory to stores.
+    Tracks hub inventory levels and delivery status.
+    """
+    name = models.CharField(max_length=255)
+    region = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True, blank=True, related_name='supply_hubs')
+    inventory_pct = models.FloatField(default=0.0)
+    active_deliveries_count = models.IntegerField(default=0)
+    pending_orders_count = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.name} ({self.region})"
 
 
 class StoreRegistry(models.Model):
@@ -263,11 +279,14 @@ class StoreRegistry(models.Model):
     ]
     store_id     = models.IntegerField(unique=True)
     store_name   = models.CharField(max_length=255)
+    location     = models.CharField(max_length=255, blank=True)  # human-readable address
     region       = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True, blank=True, related_name='stores')
     api_endpoint = models.URLField()           # e.g. http://10.0.0.2:8000
     latitude     = models.FloatField(null=True, blank=True)
     longitude    = models.FloatField(null=True, blank=True)
     status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    manager      = models.ForeignKey('ManagerProfile', on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_stores')
+    machine_count = models.IntegerField(default=0)
     registered_at    = models.DateTimeField(auto_now_add=True)
     last_heartbeat   = models.DateTimeField(null=True, blank=True)
     missed_heartbeats = models.IntegerField(default=0)

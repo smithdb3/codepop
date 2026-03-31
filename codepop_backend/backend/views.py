@@ -11,8 +11,8 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule
-from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule, Region, StoreRegistry, SupplyHub
+from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 import stripe
@@ -30,6 +30,12 @@ from .drinkAI import generate_soda
 from rest_framework.permissions import BasePermission
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
+
+class IsSuperUser(BasePermission):
+    """Permission class to check if user is a superuser."""
+    def has_permission(self, request, view):
+        return request.user and request.user.is_superuser
 
 
 def _propagate_to_home_store(user_id: int):
@@ -1346,4 +1352,158 @@ class AdminKPIView(APIView):
             'manager_count': manager_count,
             'admin_count': admin_count,
         })
+
+
+# ─────────────────────────────────────────────
+# STORES & SUPPLY HUBS VIEWS
+# ─────────────────────────────────────────────
+
+class RegionListView(ListAPIView):
+    """List all regions."""
+    queryset = Region.objects.all()
+    serializer_class = RegionSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class AdminStoreListCreateView(ListCreateAPIView):
+    """List and create stores (Super Admin)."""
+    serializer_class = StoreRegistrySerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        queryset = StoreRegistry.objects.all()
+        region = self.request.query_params.get('region')
+        status = self.request.query_params.get('status')
+        search = self.request.query_params.get('search')
+
+        if region:
+            queryset = queryset.filter(region__name=region)
+        if status:
+            queryset = queryset.filter(status=status)
+        if search:
+            queryset = queryset.filter(store_name__icontains=search)
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+
+class AdminStoreDetailView(RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a store (Super Admin)."""
+    queryset = StoreRegistry.objects.all()
+    serializer_class = StoreRegistrySerializer
+    permission_classes = [IsSuperUser]
+
+
+class AdminSupplyHubListCreateView(ListCreateAPIView):
+    """List and create supply hubs (Super Admin)."""
+    serializer_class = SupplyHubSerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        queryset = SupplyHub.objects.all()
+        region = self.request.query_params.get('region')
+
+        if region:
+            queryset = queryset.filter(region__name=region)
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+
+class AdminSupplyHubDetailView(RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a supply hub (Super Admin)."""
+    queryset = SupplyHub.objects.all()
+    serializer_class = SupplyHubSerializer
+    permission_classes = [IsSuperUser]
+
+
+class RegionalStatusView(APIView):
+    """Get regional aggregation stats (Super Admin)."""
+    permission_classes = [IsSuperUser]
+
+    def get(self, request):
+        from django.db.models import Count, Q
+
+        regional_stats = []
+        regions = Region.objects.all()
+
+        for region in regions:
+            online_count = StoreRegistry.objects.filter(
+                region=region,
+                status='active'
+            ).count()
+            unreachable_count = StoreRegistry.objects.filter(
+                region=region,
+                status='unreachable'
+            ).count()
+
+            regional_stats.append({
+                'id': region.id,
+                'name': region.display_name,
+                'online_stores': online_count,
+                'unreachable_stores': unreachable_count,
+            })
+
+        return Response(regional_stats)
+
+
+class LogisticsStoreListView(ListAPIView):
+    """List stores with filtering (Logistics Manager)."""
+    serializer_class = StoreRegistrySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = StoreRegistry.objects.all()
+        health = self.request.query_params.get('health')
+        region = self.request.query_params.get('region')
+        search = self.request.query_params.get('search')
+
+        if health:
+            # Stub: all stores return 'good' until Part 4
+            if health == 'good':
+                pass  # all stores
+            elif health in ['critical', 'low']:
+                # Stub: return empty until Part 4 provides inventory
+                queryset = queryset.none()
+
+        if region:
+            queryset = queryset.filter(region__name=region)
+
+        if search:
+            queryset = queryset.filter(store_name__icontains=search)
+
+        return queryset
+
+
+class LogisticsStoreDetailView(ListAPIView):
+    """Get store detail with related data (Logistics Manager)."""
+    serializer_class = StoreRegistrySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        pk = self.kwargs.get('pk')
+        return StoreRegistry.objects.filter(pk=pk)
+
+
+class LogisticsCriticalStoresView(ListAPIView):
+    """Get top 5 critical stores (Logistics Manager)."""
+    serializer_class = StoreRegistrySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Stub: return stores with status='unreachable' ordered by last_heartbeat
+        return StoreRegistry.objects.filter(
+            status='unreachable'
+        ).order_by('last_heartbeat')[:5]
+
+
+class LogisticsHubStatusView(ListAPIView):
+    """Get hub status for logistics manager's region (Logistics Manager)."""
+    queryset = SupplyHub.objects.all()
+    serializer_class = SupplyHubSerializer
+    permission_classes = [IsAuthenticated]
 

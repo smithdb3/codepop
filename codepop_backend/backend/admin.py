@@ -3,7 +3,7 @@ from .models import (
     # Existing models
     Preference, Drink, Inventory, Notification, Order, Revenue,
     # Distributed system models
-    Region, StoreRegistry, VisitingUserCache, PendingProfileUpdate,
+    Region, StoreRegistry, SupplyHub, VisitingUserCache, PendingProfileUpdate,
     SyncAuditLog, SupplyRequest, Machine, Schedule,
     RepairStaffProfile, LogisticsManagerProfile,
 )
@@ -18,8 +18,13 @@ admin.site.register(Region)
 
 @admin.register(StoreRegistry)
 class StoreRegistryAdmin(admin.ModelAdmin):
-    list_display = ('store_id', 'store_name', 'region', 'status', 'last_heartbeat')
+    list_display = ('store_id', 'store_name', 'region', 'status', 'last_heartbeat', 'machine_count')
     list_filter  = ('status', 'region')
+
+@admin.register(SupplyHub)
+class SupplyHubAdmin(admin.ModelAdmin):
+    list_display = ('name', 'region', 'inventory_pct', 'active_deliveries_count', 'pending_orders_count')
+    list_filter  = ('region',)
 
 @admin.register(VisitingUserCache)
 class VisitingUserCacheAdmin(admin.ModelAdmin):

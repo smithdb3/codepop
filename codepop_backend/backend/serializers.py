@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Permission, Role, UserProfile, AuditLog, Machine, Schedule
+from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -285,4 +285,85 @@ class AuditLogSerializer(serializers.ModelSerializer):
         if obj.actor and hasattr(obj.actor, 'admin_profile') and obj.actor.admin_profile.role:
             return obj.actor.admin_profile.role.name
         return 'Unknown'
+
+
+# ─────────────────────────────────────────────
+# STORES & SUPPLY HUBS SERIALIZERS
+# ─────────────────────────────────────────────
+
+class RegionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Region
+        fields = ['id', 'name', 'display_name', 'hub_api_endpoint', 'is_active']
+
+
+class SupplyHubSerializer(serializers.ModelSerializer):
+    region_name = serializers.CharField(source='region.display_name', read_only=True)
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SupplyHub
+        fields = ['id', 'name', 'region', 'region_name', 'inventory_pct', 'active_deliveries_count', 'pending_orders_count', 'status']
+
+    def get_status(self, obj):
+        return 'online' if obj.inventory_pct > 0 else 'degraded'
+
+
+class StoreRegistrySerializer(serializers.ModelSerializer):
+    region_name = serializers.CharField(source='region.display_name', read_only=True)
+    manager_name = serializers.SerializerMethodField()
+    supply_health_status = serializers.SerializerMethodField()
+    days_remaining = serializers.SerializerMethodField()
+    restock_by_date = serializers.SerializerMethodField()
+    active_requests = serializers.SerializerMethodField()
+    ingredient_levels = serializers.SerializerMethodField()
+    forecast_data = serializers.SerializerMethodField()
+    requests = serializers.SerializerMethodField()
+    history = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StoreRegistry
+        fields = [
+            'id', 'store_id', 'store_name', 'location', 'region', 'region_name',
+            'status', 'manager', 'manager_name', 'last_heartbeat', 'machine_count',
+            'supply_health_status', 'days_remaining', 'restock_by_date', 'active_requests',
+            'ingredient_levels', 'forecast_data', 'requests', 'history'
+        ]
+
+    def get_manager_name(self, obj):
+        if obj.manager and obj.manager.user:
+            return obj.manager.user.get_full_name() or obj.manager.user.username
+        return None
+
+    def get_supply_health_status(self, obj):
+        # Stub: always 'good' until Part 4 provides inventory data
+        return 'good'
+
+    def get_days_remaining(self, obj):
+        # Stub: Part 4 will populate this
+        return 0
+
+    def get_restock_by_date(self, obj):
+        # Stub: Part 4 will populate this
+        return None
+
+    def get_active_requests(self, obj):
+        # Stub: Part 5 will populate this
+        return 0
+
+    def get_ingredient_levels(self, obj):
+        # Stub: Part 4 will populate this
+        return []
+
+    def get_forecast_data(self, obj):
+        # Stub: Part 4/14 will populate this
+        return []
+
+    def get_requests(self, obj):
+        # Stub: Part 5 will populate this
+        return []
+
+    def get_history(self, obj):
+        # Stub: Part 5 will populate this
+        return []
 
