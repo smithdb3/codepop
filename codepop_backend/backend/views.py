@@ -1326,3 +1326,140 @@ class AdminKPIView(APIView):
             'admin_count': admin_count,
         })
 
+
+# ─────────────────────────────────────────────
+# REPAIR STAFF DASHBOARD — MACHINE VIEWS
+# ─────────────────────────────────────────────
+
+from .models import Machine, RepairRecord, MachinePart, MachineNote, MachinePhoto
+from .serializers import (
+    MachineListSerializer, MachineDetailSerializer,
+    RepairRecordSerializer, MachinePartSerializer,
+    MachineNoteSerializer, MachinePhotoSerializer
+)
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status as http_status
+
+
+class MachineListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Filter to machines in the technician's assigned store(s) if a
+        # RepairStaffProfile exists; otherwise return all machines.
+        if hasattr(request.user, 'repair_profile') and request.user.repair_profile.assigned_store_id:
+            machines = Machine.objects.filter(
+                store_id=request.user.repair_profile.assigned_store_id
+            )
+        else:
+            machines = Machine.objects.all()
+        serializer = MachineListSerializer(
+            machines, many=True, context={'request': request}
+        )
+        return Response(serializer.data)
+
+
+class MachineDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, machine_id):
+        machine = get_object_or_404(Machine, machine_id=machine_id)
+        serializer = MachineDetailSerializer(machine, context={'request': request})
+        return Response(serializer.data)
+
+
+class MachineStatusUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, machine_id):
+        machine = get_object_or_404(Machine, machine_id=machine_id)
+        new_status = request.data.get('status')
+        if not new_status:
+            return Response({'error': 'status is required'}, status=http_status.HTTP_400_BAD_REQUEST)
+
+        valid_statuses = [s[0] for s in Machine.STATUS_CHOICES]
+        if new_status not in valid_statuses:
+            return Response(
+                {'error': f'Invalid status. Choices: {valid_statuses}'},
+                status=http_status.HTTP_400_BAD_REQUEST
+            )
+
+        machine.status = new_status
+        machine.save(update_fields=['status', 'last_status_change'])
+        serializer = MachineDetailSerializer(machine, context={'request': request})
+        return Response(serializer.data)
+
+
+class MachineHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, machine_id):
+        machine = get_object_or_404(Machine, machine_id=machine_id)
+        records = RepairRecord.objects.filter(machine=machine).order_by('-started_at')[:10]
+        serializer = RepairRecordSerializer(records, many=True, context={'request': request})
+        return Response(serializer.data)
+
+
+class MachinePartsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, machine_id):
+        machine = get_object_or_404(Machine, machine_id=machine_id)
+        parts = MachinePart.objects.filter(machine=machine, is_compatible=True)
+        serializer = MachinePartSerializer(parts, many=True, context={'request': request})
+        return Response(serializer.data)
+
+
+class MachineNotesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, machine_id):
+        machine = get_object_or_404(Machine, machine_id=machine_id)
+        notes = MachineNote.objects.filter(machine=machine).order_by('-created_at')
+        serializer = MachineNoteSerializer(notes, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    def post(self, request, machine_id):
+        machine = get_object_or_404(Machine, machine_id=machine_id)
+        content = request.data.get('content', '').strip()
+        if not content:
+            return Response({'error': 'content is required'}, status=http_status.HTTP_400_BAD_REQUEST)
+        note = MachineNote.objects.create(
+            machine=machine,
+            author=request.user,
+            content=content
+        )
+        serializer = MachineNoteSerializer(note, context={'request': request})
+        return Response(serializer.data, status=http_status.HTTP_201_CREATED)
+
+
+class MachinePhotosView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, machine_id):
+        machine = get_object_or_404(Machine, machine_id=machine_id)
+        photo_file = request.FILES.get('photo')
+        if not photo_file:
+            return Response({'error': 'photo file is required'}, status=http_status.HTTP_400_BAD_REQUEST)
+        photo = MachinePhoto.objects.create(
+            machine=machine,
+            photo=photo_file,
+            uploaded_by=request.user
+        )
+        serializer = MachinePhotoSerializer(photo, context={'request': request})
+        return Response(serializer.data, status=http_status.HTTP_201_CREATED)
+
+
+class MachinePhotoDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, machine_id, photo_id):
+        machine = get_object_or_404(Machine, machine_id=machine_id)
+        photo = get_object_or_404(MachinePhoto, id=photo_id, machine=machine)
+        # Only the uploader or a superuser may delete
+        if photo.uploaded_by != request.user and not request.user.is_superuser:
+            return Response({'error': 'Permission denied'}, status=http_status.HTTP_403_FORBIDDEN)
+        photo.photo.delete(save=False)  # remove file from disk
+        photo.delete()
+        return Response(status=http_status.HTTP_204_NO_CONTENT)
+

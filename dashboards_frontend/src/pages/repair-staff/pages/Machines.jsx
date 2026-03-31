@@ -1,6 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DataTable } from '../../super-admin/components/DataTable';
-import { MACHINES, MACHINE_HISTORY, MACHINE_PARTS } from '../mockData';
+import {
+  getMachines, getMachineHistory, getMachineParts,
+  getMachineNotes, createMachineNote, uploadMachinePhoto, deleteMachinePhoto
+} from '../../../api/machines';
 import styles from './Machines.module.css';
 
 export function Machines({ onNavigate }) {
@@ -17,28 +20,70 @@ export function Machines({ onNavigate }) {
   const [noteText, setNoteText] = useState('');
   const [expandedHistoryRow, setExpandedHistoryRow] = useState(null);
 
+  // API data and loading states
+  const [machines, setMachines] = useState([]);
+  const [machinesLoading, setMachinesLoading] = useState(true);
+  const [machinesError, setMachinesError] = useState(null);
+  const [drawerHistory, setDrawerHistory] = useState([]);
+  const [drawerParts, setDrawerParts] = useState([]);
+  const [drawerNotes, setDrawerNotes] = useState([]);
+  const [drawerPhotos, setDrawerPhotos] = useState([]);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+
+  // Load machines on mount
+  useEffect(() => {
+    setMachinesLoading(true);
+    getMachines()
+      .then((data) => {
+        setMachines(data || []);
+        setMachinesLoading(false);
+      })
+      .catch((err) => {
+        setMachinesError(err.message);
+        setMachinesLoading(false);
+      });
+  }, []);
+
+  // Load drawer sub-resources when drawer opens
+  useEffect(() => {
+    if (!drawerMachine) return;
+    setDrawerLoading(true);
+    Promise.all([
+      getMachineHistory(drawerMachine.id),
+      getMachineParts(drawerMachine.id),
+      getMachineNotes(drawerMachine.id),
+    ])
+      .then(([history, parts, notes]) => {
+        setDrawerHistory(history || []);
+        setDrawerParts(parts || []);
+        setDrawerNotes(notes || []);
+        setDrawerLoading(false);
+      })
+      .catch(() => setDrawerLoading(false));
+  }, [drawerMachine]);
+
   // Get unique stores and models for filter dropdowns
-  const stores = [...new Map(MACHINES.map((m) => [m.storeId, m])).values()];
-  const models = [...new Set(MACHINES.map((m) => m.model))].sort();
+  const stores = [...new Map(machines.map((m) => [m.store_id, m])).values()];
+  const models = [...new Set(machines.map((m) => m.model))].sort();
 
   // Filter logic
   const filteredMachines = useMemo(() => {
-    return MACHINES.filter((m) => {
+    return machines.filter((m) => {
       const matchesPill = statusFilter === 'all' || m.status === statusFilter;
       const matchesSearch =
         !searchTerm ||
         m.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.storeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.store_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         m.model.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = !filterStatus || m.status === filterStatus;
-      const matchesStore = !filterStore || m.storeId === Number(filterStore);
+      const matchesStore = !filterStore || m.store_id === Number(filterStore);
       const matchesType = !filterType || m.model === filterType;
       const matchesParts = !filterParts || (filterParts === 'pending' ? m.status === 'parts_pending' : !m.status === 'parts_pending');
       return (
         matchesPill && matchesSearch && matchesStatus && matchesStore && matchesType && matchesParts
       );
     });
-  }, [statusFilter, searchTerm, filterStatus, filterStore, filterType, filterParts]);
+  }, [statusFilter, searchTerm, filterStatus, filterStore, filterType, filterParts, machines]);
 
   // Handle checkbox selection
   const toggleRowSelect = (machineId) => {
@@ -83,7 +128,7 @@ export function Machines({ onNavigate }) {
           <strong>{row.id}</strong>
           <br />
           <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-            {row.storeName}
+            {row.store_name}
           </span>
         </>
       ),
@@ -109,7 +154,7 @@ export function Machines({ onNavigate }) {
       render: (val) => <RepairStatusBadge status={val} />,
     },
     {
-      key: 'downtimeDuration',
+      key: 'downtime_duration',
       label: 'Downtime',
       sortable: true,
       render: (val) =>
@@ -120,17 +165,17 @@ export function Machines({ onNavigate }) {
         ),
     },
     {
-      key: 'lastService',
+      key: 'last_service',
       label: 'Last Service',
       sortable: true,
     },
     {
-      key: 'priorityScore',
+      key: 'priority_score',
       label: 'Priority',
       sortable: true,
     },
     {
-      key: 'revenueImpact',
+      key: 'revenue_impact',
       label: 'Revenue Impact',
       sortable: true,
       render: (val, row) =>
@@ -335,13 +380,19 @@ export function Machines({ onNavigate }) {
         </div>
 
         {/* DataTable */}
-        <DataTable
-          columns={columns}
-          data={filteredMachines}
-          searchable={false}
-          rowsPerPage={25}
-          onRowClick={(row) => setDrawerMachine(row)}
-        />
+        {machinesLoading ? (
+          <p>Loading machines...</p>
+        ) : machinesError ? (
+          <p style={{ color: 'red' }}>Error: {machinesError}</p>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={filteredMachines}
+            searchable={false}
+            rowsPerPage={25}
+            onRowClick={(row) => setDrawerMachine(row)}
+          />
+        )}
       </div>
 
       {/* Bulk Actions Bar */}
@@ -399,7 +450,7 @@ export function Machines({ onNavigate }) {
 
             {/* Tabs */}
             <div className={styles.tabs}>
-              {['details', 'history', 'parts', 'notes'].map((tab) => (
+              {['details', 'history', 'parts', 'notes', 'photos'].map((tab) => (
                 <button
                   key={tab}
                   className={`${styles.tab} ${drawerTab === tab ? styles.active : ''}`}
@@ -418,33 +469,33 @@ export function Machines({ onNavigate }) {
                   <div className={styles.infoSection}>
                     <div className={styles.infoPair}>
                       <span className={styles.infoLabel}>Install Date:</span>
-                      <span>{drawerMachine.installDate}</span>
+                      <span>{drawerMachine.install_date}</span>
                     </div>
                     <div className={styles.infoPair}>
                       <span className={styles.infoLabel}>Warranty:</span>
-                      <span>{drawerMachine.warrantyStatus}</span>
+                      <span>{drawerMachine.warranty_status}</span>
                     </div>
                     <div className={styles.infoPair}>
                       <span className={styles.infoLabel}>Assigned Tech:</span>
-                      <span>{drawerMachine.assignedTech || 'Unassigned'}</span>
+                      <span>{drawerMachine.assigned_tech || 'Unassigned'}</span>
                     </div>
                     <div className={styles.infoPair}>
                       <span className={styles.infoLabel}>Repair State:</span>
-                      <span>{drawerMachine.repairState}</span>
+                      <span>{drawerMachine.repair_state}</span>
                     </div>
-                    {drawerMachine.estimatedCompletion && (
+                    {drawerMachine.estimated_completion && (
                       <div className={styles.infoPair}>
                         <span className={styles.infoLabel}>Est. Completion:</span>
                         <span>
                           {new Date(
-                            drawerMachine.estimatedCompletion
+                            drawerMachine.estimated_completion
                           ).toLocaleString()}
                         </span>
                       </div>
                     )}
                     <div className={styles.infoPair}>
                       <span className={styles.infoLabel}>Last Update:</span>
-                      <span>{drawerMachine.lastUpdateTime}</span>
+                      <span>{drawerMachine.last_update_time}</span>
                     </div>
                   </div>
                 </div>
@@ -453,10 +504,10 @@ export function Machines({ onNavigate }) {
               {drawerTab === 'history' && (
                 <div>
                   <h4 className={styles.sectionHeading}>Repair History</h4>
-                  {MACHINE_HISTORY[drawerMachine.id] ? (
-                    MACHINE_HISTORY[drawerMachine.id].map((entry, idx) => (
+                  {drawerHistory.length > 0 ? (
+                    drawerHistory.map((entry, idx) => (
                       <div
-                        key={idx}
+                        key={entry.id}
                         className={styles.historyEntry}
                         onClick={() =>
                           setExpandedHistoryRow(
@@ -466,7 +517,7 @@ export function Machines({ onNavigate }) {
                       >
                         <div className={styles.historyHeader}>
                           <div>
-                            <strong>{entry.issueType}</strong>
+                            <strong>{entry.issue_type}</strong>
                             <div className={styles.historyMeta}>
                               {entry.date} • {entry.technician} • {entry.duration}
                             </div>
@@ -488,12 +539,12 @@ export function Machines({ onNavigate }) {
                               <strong>Diagnosis:</strong> {entry.diagnosis}
                             </div>
                             <div className={styles.historyDetail}>
-                              <strong>Steps:</strong> {entry.stepsText}
+                              <strong>Steps:</strong> {entry.steps_text}
                             </div>
-                            {entry.partsReplaced.length > 0 && (
+                            {entry.parts_replaced.length > 0 && (
                               <div className={styles.historyDetail}>
                                 <strong>Parts Replaced:</strong>{' '}
-                                {entry.partsReplaced.join(', ')}
+                                {entry.parts_replaced.join(', ')}
                               </div>
                             )}
                           </div>
@@ -509,19 +560,19 @@ export function Machines({ onNavigate }) {
               {drawerTab === 'parts' && (
                 <div>
                   <h4 className={styles.sectionHeading}>Common Parts</h4>
-                  {MACHINE_PARTS[drawerMachine.model] ? (
+                  {drawerParts.length > 0 ? (
                     <div>
-                      {MACHINE_PARTS[drawerMachine.model].map((part) => (
+                      {drawerParts.map((part) => (
                         <div key={part.id} className={styles.partItem}>
                           <div>
-                            <strong>{part.partName}</strong>
-                            <div className={styles.partMeta}>{part.partNumber}</div>
+                            <strong>{part.part_name}</strong>
+                            <div className={styles.partMeta}>{part.part_number}</div>
                           </div>
                           <div className={styles.partStatus}>
-                            <StockBadge status={part.stockStatus} />
-                            {part.qtyAvailable > 0 && (
+                            <StockBadge status={part.stock_status} />
+                            {part.qty_available > 0 && (
                               <span className={styles.qty}>
-                                Qty: {part.qtyAvailable}
+                                Qty: {part.qty_available}
                               </span>
                             )}
                             {part.eta && (
@@ -554,13 +605,13 @@ export function Machines({ onNavigate }) {
                   <button
                     className={styles.primaryBtn}
                     onClick={() => {
-                      console.log(
-                        'Note saved for',
-                        drawerMachine.id,
-                        ':',
-                        noteText
-                      );
-                      setNoteText('');
+                      if (!noteText.trim()) return;
+                      createMachineNote(drawerMachine.id, noteText)
+                        .then((newNote) => {
+                          setDrawerNotes((prev) => [newNote, ...prev]);
+                          setNoteText('');
+                        })
+                        .catch((err) => console.error('Failed to save note:', err));
                     }}
                   >
                     Save Note
@@ -568,16 +619,63 @@ export function Machines({ onNavigate }) {
                   <h4 className={styles.sectionHeading} style={{ marginTop: '20px' }}>
                     Previous Notes
                   </h4>
-                  {drawerMachine.lastNote && (
-                    <div className={styles.noteItem}>
-                      <div className={styles.noteContent}>
-                        {drawerMachine.lastNote}
+                  {drawerNotes.length === 0 ? (
+                    <p style={{ color: 'var(--color-text-secondary)' }}>No notes yet</p>
+                  ) : (
+                    drawerNotes.map((note) => (
+                      <div key={note.id} className={styles.noteItem}>
+                        <div className={styles.noteContent}>{note.content}</div>
+                        <div className={styles.noteTime}>
+                          {note.author} — {new Date(note.created_at).toLocaleString()}
+                        </div>
                       </div>
-                      <div className={styles.noteTime}>
-                        {drawerMachine.lastUpdateTime}
-                      </div>
-                    </div>
+                    ))
                   )}
+                </div>
+              )}
+
+              {drawerTab === 'photos' && (
+                <div>
+                  <h4 className={styles.sectionHeading}>Machine Photos</h4>
+                  {drawerPhotos.length === 0 ? (
+                    <p style={{ color: 'var(--color-text-secondary)' }}>No photos uploaded</p>
+                  ) : (
+                    drawerPhotos.map((photo) => (
+                      <div key={photo.id} style={{ marginBottom: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '12px' }}>
+                        <img src={photo.url} alt="machine" style={{ maxWidth: '100%', borderRadius: '4px', marginBottom: '8px' }} />
+                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
+                          {photo.uploaded_by} — {new Date(photo.created_at).toLocaleString()}
+                        </div>
+                        <button
+                          onClick={() =>
+                            deleteMachinePhoto(drawerMachine.id, photo.id)
+                              .then(() => setDrawerPhotos((prev) => prev.filter((p) => p.id !== photo.id)))
+                              .catch((err) => console.error('Failed to delete photo:', err))
+                          }
+                          style={{ fontSize: '12px', padding: '4px 8px', cursor: 'pointer' }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ))
+                  )}
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
+                    <h4 className={styles.sectionHeading}>Upload Photo</h4>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        uploadMachinePhoto(drawerMachine.id, file)
+                          .then((photo) => {
+                            setDrawerPhotos((prev) => [photo, ...prev]);
+                            e.target.value = '';
+                          })
+                          .catch((err) => console.error('Failed to upload photo:', err));
+                      }}
+                    />
+                  </div>
                 </div>
               )}
             </div>

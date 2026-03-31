@@ -23,7 +23,10 @@ from .views import emailAPI
 from .views import (
     PermissionListView, RoleListCreateView, RoleDetailView,
     UserListView, UserCreateView, UserDetailView,
-    UserDisableView, UserEnableView, AuditLogListView, AdminKPIView
+    UserDisableView, UserEnableView, AuditLogListView, AdminKPIView,
+    MachineListView, MachineDetailView, MachineStatusUpdateView,
+    MachineHistoryView, MachinePartsView, MachineNotesView,
+    MachinePhotosView, MachinePhotoDeleteView
 )
 
 #this ensures that the url calls the right function from the views for each type of request
@@ -265,4 +268,14 @@ urlpatterns = [
     path('api/inter-node/user-sync/',      InterNodeUserSyncView.as_view(),      name='internode_user_sync'),
     path('api/inter-node/profile-update/', InterNodeProfileUpdateView.as_view(), name='internode_profile_update'),
     path('api/inter-node/health-check/',   InterNodeHealthCheckView.as_view(),   name='internode_health_check'),
+
+    # ── Repair Staff Machine Endpoints ──────────────────────────────────────
+    path('api/repair/machines/', MachineListView.as_view(), name='repair_machine_list'),
+    path('api/repair/machines/<str:machine_id>/', MachineDetailView.as_view(), name='repair_machine_detail'),
+    path('api/repair/machines/<str:machine_id>/status/', MachineStatusUpdateView.as_view(), name='repair_machine_status'),
+    path('api/repair/machines/<str:machine_id>/history/', MachineHistoryView.as_view(), name='repair_machine_history'),
+    path('api/repair/machines/<str:machine_id>/parts/', MachinePartsView.as_view(), name='repair_machine_parts'),
+    path('api/repair/machines/<str:machine_id>/notes/', MachineNotesView.as_view(), name='repair_machine_notes'),
+    path('api/repair/machines/<str:machine_id>/photos/', MachinePhotosView.as_view(), name='repair_machine_photos'),
+    path('api/repair/machines/<str:machine_id>/photos/<int:photo_id>/', MachinePhotoDeleteView.as_view(), name='repair_machine_photo_delete'),
 ]
