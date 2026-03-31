@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { SUPPLY_REQUESTS } from '../mockData';
+import { getLogisticsSupplyRequests, updateSupplyRequestStatus } from '../../../api/supplyRequests';
 import { getLogisticsStores } from '../../../api/stores';
 import { getLogisticsHubStatus } from '../../../api/hubs';
 import { getLogisticsHubInventory } from '../../../api/inventory';
@@ -11,6 +11,8 @@ export function SupplyRequests({ onNavigate }) {
   const [hubs, setHubs] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [loadingStores, setLoadingStores] = useState(false);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+
   // View state
   const [showNewRequestDrawer, setShowNewRequestDrawer] = useState(false);
   const [expandedRequestId, setExpandedRequestId] = useState(null);
@@ -21,8 +23,8 @@ export function SupplyRequests({ onNavigate }) {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDeliveryType, setFilterDeliveryType] = useState('all');
 
-  // Requests state (local copy for mutations)
-  const [requests, setRequests] = useState(SUPPLY_REQUESTS);
+  // Requests state (from API)
+  const [requests, setRequests] = useState([]);
 
   // Form state
   const [toStoreId, setToStoreId] = useState('');
@@ -36,13 +38,26 @@ export function SupplyRequests({ onNavigate }) {
   // Toast state
   const [toast, setToast] = useState({ visible: false, message: '' });
 
-  // Fetch stores and hubs on mount
+  // Fetch supply requests
+  const fetchRequests = async () => {
+    try {
+      setLoadingRequests(true);
+      const data = await getLogisticsSupplyRequests();
+      setRequests(data || []);
+    } catch (error) {
+      console.error('Failed to fetch supply requests:', error);
+      setToast({ visible: true, message: 'Failed to load supply requests' });
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  // Fetch stores, hubs, and requests on mount
   useEffect(() => {
     const fetchData = async () => {
       setLoadingStores(true);
       try {
         const storesData = await getLogisticsStores();
-        // Map API fields to component fields
         const mappedStores = storesData.map((store) => ({
           id: store.id,
           name: store.store_name,
@@ -55,13 +70,15 @@ export function SupplyRequests({ onNavigate }) {
         const hubsData = await getLogisticsHubStatus();
         setHubs(hubsData);
 
-        // Fetch inventory items from the first hub
         if (hubsData.length > 0) {
           const items = await getLogisticsHubInventory(hubsData[0].id);
           setInventoryItems(items);
         }
+
+        // Fetch supply requests
+        await fetchRequests();
       } catch (error) {
-        console.error('Failed to fetch stores/hubs/inventory:', error);
+        console.error('Failed to fetch data:', error);
       } finally {
         setLoadingStores(false);
       }
@@ -93,12 +110,12 @@ export function SupplyRequests({ onNavigate }) {
 
   // Separate pending and completed requests
   const pendingRequests = useMemo(
-    () => requests.filter((r) => r.status !== 'delivered'),
+    () => requests.filter((r) => r.status !== 'fulfilled' && r.status !== 'denied'),
     [requests]
   );
 
   const completedRequests = useMemo(
-    () => requests.filter((r) => r.status === 'delivered'),
+    () => requests.filter((r) => r.status === 'fulfilled' || r.status === 'denied'),
     [requests]
   );
 
@@ -107,23 +124,21 @@ export function SupplyRequests({ onNavigate }) {
     return pendingRequests.filter((request) => {
       const matchesSearch =
         search === '' ||
-        request.store.toLowerCase().includes(search.toLowerCase()) ||
-        request.id.toLowerCase().includes(search.toLowerCase());
+        request.store_name.toLowerCase().includes(search.toLowerCase()) ||
+        request.id.toString().includes(search);
       const matchesStatus =
         filterStatus === 'all' || request.status === filterStatus;
-      const matchesDeliveryType =
-        filterDeliveryType === 'all' || request.deliveryType === filterDeliveryType;
-      return matchesSearch && matchesStatus && matchesDeliveryType;
+      return matchesSearch && matchesStatus;
     });
-  }, [pendingRequests, search, filterStatus, filterDeliveryType]);
+  }, [pendingRequests, search, filterStatus]);
 
   // Filter completed requests
   const filteredCompletedRequests = useMemo(() => {
     return completedRequests.filter((request) => {
       const matchesSearch =
         search === '' ||
-        request.store.toLowerCase().includes(search.toLowerCase()) ||
-        request.id.toLowerCase().includes(search.toLowerCase());
+        request.store_name.toLowerCase().includes(search.toLowerCase()) ||
+        request.id.toString().includes(search);
       return matchesSearch;
     });
   }, [completedRequests, search]);
@@ -146,15 +161,23 @@ export function SupplyRequests({ onNavigate }) {
     );
   };
 
-  // Handle cancel request
-  const handleCancelRequest = (requestId) => {
-    setRequests(
-      requests.filter((r) => r.id !== requestId)
-    );
-    setToast({
-      visible: true,
-      message: `Request ${requestId} cancelled.`,
-    });
+  // Handle action buttons (approve/deny/fulfill)
+  const handleUpdateStatus = async (requestId, newStatus) => {
+    try {
+      await updateSupplyRequestStatus(requestId, newStatus);
+      // Refresh requests from API
+      await fetchRequests();
+      setToast({
+        visible: true,
+        message: `Request ${requestId} updated to ${newStatus}`,
+      });
+    } catch (error) {
+      console.error('Failed to update request:', error);
+      setToast({
+        visible: true,
+        message: 'Failed to update request',
+      });
+    }
   };
 
   // Get status badge style
@@ -172,17 +195,17 @@ export function SupplyRequests({ onNavigate }) {
           color: '#1D4ED8',
           label: 'Approved',
         };
-      case 'in_transit':
-        return {
-          bg: '#CFFAFE',
-          color: '#0891B2',
-          label: 'In Transit',
-        };
-      case 'delivered':
+      case 'fulfilled':
         return {
           bg: '#DCFCE7',
           color: '#15803D',
-          label: 'Delivered',
+          label: 'Fulfilled',
+        };
+      case 'denied':
+        return {
+          bg: '#FEE2E2',
+          color: '#DC2626',
+          label: 'Denied',
         };
       default:
         return {
@@ -211,7 +234,6 @@ export function SupplyRequests({ onNavigate }) {
 
   // Handle submit new request
   const handleSubmitRequest = () => {
-    // Validate required fields
     if (!toStoreId) {
       alert('Please select a destination store');
       return;
@@ -230,59 +252,10 @@ export function SupplyRequests({ onNavigate }) {
       return;
     }
 
-    // Get highest request ID number
-    const highestId = Math.max(
-      ...requests.map((r) => {
-        const num = parseInt(r.id.split('-')[2], 10);
-        return isNaN(num) ? 0 : num;
-      }),
-      0
-    );
-
-    // Create new request
-    const selectedStore = stores.find((s) => s.id === toStoreId);
-    const ingredientBreakdown = ingredients
-      .filter((ing) => ing.name && ing.qty)
-      .map((ing) => ({
-        name: ing.name,
-        qty: parseInt(ing.qty, 10),
-        unit: ing.unit,
-        aiSuggested: ing.aiSuggested,
-      }));
-
-    const ingredientsSummary = ingredientBreakdown
-      .map((ing) => ing.name)
-      .slice(0, 2)
-      .join(', ') + (ingredientBreakdown.length > 2 ? '...' : '');
-
-    const newRequest = {
-      id: `REQ-2026-${String(highestId + 1).padStart(3, '0')}`,
-      store: selectedStore.name,
-      ingredientsSummary,
-      submittedDate: new Date().toISOString().split('T')[0],
-      status: 'pending',
-      deliveryType,
-      sourceStore: deliveryType === 'nearby' ? sourceStore : null,
-      eta: null,
-      completedDate: null,
-      ingredientBreakdown,
-      notes: specialInstructions,
-      approvalTimeline: [
-        {
-          date: new Date().toISOString().split('T')[0],
-          status: 'submitted',
-          comment: 'Request received',
-        },
-      ],
-    };
-
-    // Add to requests
-    setRequests([newRequest, ...requests]);
-    setShowNewRequestDrawer(false);
-    resetForm();
+    // Create new request - this would be handled by manager, not logistics
     setToast({
       visible: true,
-      message: `Request submitted successfully — ID: ${newRequest.id}`,
+      message: 'Note: Supply requests are created by store managers, not logistics staff.',
     });
   };
 
@@ -324,18 +297,17 @@ export function SupplyRequests({ onNavigate }) {
             <tr>
               <th>Request ID</th>
               <th>Store</th>
-              <th>Ingredients Summary</th>
+              <th>Items Summary</th>
               <th>Submitted Date</th>
               <th>Status</th>
-              <th>Delivery Type</th>
-              <th>ETA</th>
+              <th>Urgency</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredPendingRequests.length === 0 ? (
               <tr>
-                <td colSpan="8" className={styles.emptyRow}>
+                <td colSpan="7" className={styles.emptyRow}>
                   No pending requests
                 </td>
               </tr>
@@ -343,194 +315,92 @@ export function SupplyRequests({ onNavigate }) {
               filteredPendingRequests.map((request) => {
                 const isExpanded = expandedRequestId === request.id;
                 const badge = getStatusBadgeStyle(request.status);
+                const itemsSummary = request.items.map(i => `${i.name} (${i.qty})`).join(', ');
 
                 return (
                   <React.Fragment key={request.id}>
                     <tr
-                      className={isExpanded ? styles.expandedRowTrigger : ''}
                       onClick={() => toggleExpandedRow(request.id)}
+                      style={{ cursor: 'pointer' }}
                     >
-                      <td className={styles.requestIdCell}>
-                        <button
-                          className={styles.requestIdLink}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleExpandedRow(request.id);
-                          }}
-                        >
-                          {request.id}
-                        </button>
-                      </td>
-                      <td>{request.store}</td>
-                      <td>{request.ingredientsSummary}</td>
-                      <td className={styles.dateCell}>
-                        {new Date(request.submittedDate).toLocaleDateString(
-                          'en-US',
-                          {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          }
-                        )}
-                      </td>
+                      <td>#{request.id}</td>
+                      <td>{request.store_name || '-'}</td>
+                      <td>{itemsSummary}</td>
+                      <td>{new Date(request.created_at).toLocaleDateString()}</td>
                       <td>
                         <span
-                          className={styles.statusBadge}
                           style={{
                             backgroundColor: badge.bg,
                             color: badge.color,
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '0.85rem',
+                            fontWeight: '500',
                           }}
                         >
                           {badge.label}
                         </span>
                       </td>
-                      <td>{getDeliveryTypeLabel(request.deliveryType)}</td>
-                      <td className={styles.dateCell}>
-                        {request.eta
-                          ? new Date(request.eta).toLocaleDateString(
-                              'en-US',
-                              {
-                                month: 'short',
-                                day: 'numeric',
-                              }
-                            )
-                          : '—'}
-                      </td>
-                      <td className={styles.actionsCell}>
-                        <button
-                          className={styles.viewButton}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleExpandedRow(request.id);
-                          }}
-                          title="View details"
-                        >
-                          👁
-                        </button>
+                      <td>{request.urgency || '-'}</td>
+                      <td>
                         {request.status === 'pending' && (
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button
+                              className={styles.approveBtn}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUpdateStatus(request.id, 'approved');
+                              }}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              className={styles.denyBtn}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUpdateStatus(request.id, 'denied');
+                              }}
+                            >
+                              Deny
+                            </button>
+                          </div>
+                        )}
+                        {request.status === 'approved' && (
                           <button
-                            className={styles.cancelButton}
+                            className={styles.fulfillBtn}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleCancelRequest(request.id);
+                              handleUpdateStatus(request.id, 'fulfilled');
                             }}
                           >
-                            Cancel
+                            Fulfill
                           </button>
-                        )}
-                        {request.status !== 'pending' && (
-                          <span className={styles.cancelButtonDisabled}>
-                            Cancel
-                          </span>
                         )}
                       </td>
                     </tr>
-
                     {isExpanded && (
                       <tr className={styles.expandedRow}>
-                        <td colSpan="8">
+                        <td colSpan="7">
                           <div className={styles.expandedContent}>
-                            {/* Detailed Ingredients Breakdown */}
-                            <div className={styles.expandedSection}>
-                              <h4 className={styles.expandedSectionTitle}>
-                                Ingredients Breakdown
-                              </h4>
-                              <table className={styles.ingredientBreakdownTable}>
-                                <thead>
-                                  <tr>
-                                    <th>Name</th>
-                                    <th>Qty</th>
-                                    <th>Unit</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {request.ingredientBreakdown.map(
-                                    (ingredient, idx) => (
-                                      <tr key={idx}>
-                                        <td>{ingredient.name}</td>
-                                        <td>{ingredient.qty}</td>
-                                        <td>{ingredient.unit}</td>
-                                      </tr>
-                                    )
-                                  )}
-                                </tbody>
-                              </table>
+                            <div>
+                              <h4>Items Requested:</h4>
+                              <ul>
+                                {request.items.map((item, idx) => (
+                                  <li key={idx}>
+                                    {item.name} - {item.qty} {item.unit}
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
-
-                            {/* Store Info */}
-                            <div className={styles.expandedSection}>
-                              <h4 className={styles.expandedSectionTitle}>
-                                Store Information
-                              </h4>
-                              <div className={styles.storeInfo}>
-                                <div>
-                                  <strong>Store:</strong>{' '}
-                                  {stores.find((s) => s.name === request.store)
-                                    ?.name || request.store}
-                                </div>
-                                <div>
-                                  <strong>Address:</strong>{' '}
-                                  {stores.find((s) => s.name === request.store)
-                                    ?.address || 'N/A'}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Notes */}
                             {request.notes && (
-                              <div className={styles.expandedSection}>
-                                <h4 className={styles.expandedSectionTitle}>
-                                  Notes
-                                </h4>
-                                <p className={styles.notes}>
-                                  {request.notes}
-                                </p>
+                              <div>
+                                <h4>Notes:</h4>
+                                <p>{request.notes}</p>
                               </div>
                             )}
-
-                            {/* Approval Timeline */}
-                            <div className={styles.expandedSection}>
-                              <h4 className={styles.expandedSectionTitle}>
-                                Approval Timeline
-                              </h4>
-                              <div className={styles.timeline}>
-                                {request.approvalTimeline.map(
-                                  (event, idx) => {
-                                    const eventBadge = getStatusBadgeStyle(
-                                      event.status
-                                    );
-                                    return (
-                                      <div
-                                        key={idx}
-                                        className={styles.timelineEvent}
-                                      >
-                                        <span
-                                          className={
-                                            styles.timelineEventBadge
-                                          }
-                                          style={{
-                                            backgroundColor: eventBadge.bg,
-                                            color: eventBadge.color,
-                                          }}
-                                        >
-                                          {eventBadge.label}
-                                        </span>
-                                        <span className={styles.timelineDate}>
-                                          {new Date(
-                                            event.date
-                                          ).toLocaleDateString('en-US', {
-                                            month: 'short',
-                                            day: 'numeric',
-                                          })}
-                                        </span>
-                                        <span className={styles.timelineComment}>
-                                          {event.comment}
-                                        </span>
-                                      </div>
-                                    );
-                                  }
-                                )}
-                              </div>
+                            <div>
+                              <h4>Requested By:</h4>
+                              <p>{request.created_by_name || 'Unknown'}</p>
                             </div>
                           </div>
                         </td>
@@ -548,15 +418,16 @@ export function SupplyRequests({ onNavigate }) {
 
   // Completed Requests Table
   const CompletedRequestsTable = () => (
-    <div className={styles.completedSection}>
+    <div className={styles.tableSection}>
       <div
-        className={styles.collapsibleHeader}
+        className={styles.tableHeader}
         onClick={() => setCompletedExpanded(!completedExpanded)}
+        style={{ cursor: 'pointer' }}
       >
-        <h3 className={styles.completedTitle}>Completed Requests</h3>
-        <button className={styles.toggleButton}>
-          {completedExpanded ? '▼' : '▲'}
-        </button>
+        <h3>
+          Completed Requests {completedExpanded ? '▼' : '▶'}
+        </h3>
+        <span className={styles.count}>({filteredCompletedRequests.length})</span>
       </div>
 
       {completedExpanded && (
@@ -566,10 +437,10 @@ export function SupplyRequests({ onNavigate }) {
               <tr>
                 <th>Request ID</th>
                 <th>Store</th>
-                <th>Ingredients</th>
-                <th>Date Completed</th>
-                <th>Delivery Type</th>
-                <th>Source Location</th>
+                <th>Items Summary</th>
+                <th>Submitted</th>
+                <th>Completed</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -580,36 +451,33 @@ export function SupplyRequests({ onNavigate }) {
                   </td>
                 </tr>
               ) : (
-                filteredCompletedRequests.map((request) => (
-                  <tr key={request.id}>
-                    <td className={styles.requestIdCell}>
-                      <span className={styles.requestIdText}>
-                        {request.id}
-                      </span>
-                    </td>
-                    <td>{request.store}</td>
-                    <td>{request.ingredientsSummary}</td>
-                    <td className={styles.dateCell}>
-                      {request.completedDate
-                        ? new Date(request.completedDate).toLocaleDateString(
-                            'en-US',
-                            {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            }
-                          )
-                        : '—'}
-                    </td>
-                    <td>{getDeliveryTypeLabel(request.deliveryType)}</td>
-                    <td>
-                      {request.sourceStore
-                        ? STORES.find((s) => s.id === request.sourceStore)
-                            ?.name || request.sourceStore
-                        : 'Chicago Hub'}
-                    </td>
-                  </tr>
-                ))
+                filteredCompletedRequests.map((request) => {
+                  const badge = getStatusBadgeStyle(request.status);
+                  const itemsSummary = request.items.map(i => `${i.name} (${i.qty})`).join(', ');
+                  return (
+                    <tr key={request.id}>
+                      <td>#{request.id}</td>
+                      <td>{request.store_name || '-'}</td>
+                      <td>{itemsSummary}</td>
+                      <td>{new Date(request.created_at).toLocaleDateString()}</td>
+                      <td>{request.fulfilled_at ? new Date(request.fulfilled_at).toLocaleDateString() : '-'}</td>
+                      <td>
+                        <span
+                          style={{
+                            backgroundColor: badge.bg,
+                            color: badge.color,
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '0.85rem',
+                            fontWeight: '500',
+                          }}
+                        >
+                          {badge.label}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -620,300 +488,57 @@ export function SupplyRequests({ onNavigate }) {
 
   return (
     <div className={styles.page}>
-      {/* Page Header */}
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Supply Requests</h1>
-        <button
-          className={styles.newRequestButton}
-          onClick={() => setShowNewRequestDrawer(true)}
-        >
-          New Request
-        </button>
-      </div>
+      <h1 className={styles.title}>Supply Requests</h1>
 
-      {/* Filter Toolbar */}
-      <div className={styles.filterToolbar}>
-        <input
-          type="text"
-          className={styles.searchInput}
-          placeholder="Search by store or request ID..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: '280px' }}
-        />
+      {loadingRequests && <div>Loading requests...</div>}
+      {loadingStores && <div>Loading stores...</div>}
 
-        <select
-          className={styles.filterSelect}
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-        >
-          <option value="all">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="in_transit">In Transit</option>
-          <option value="delivered">Delivered</option>
-        </select>
-
-        <select
-          className={styles.filterSelect}
-          value={filterDeliveryType}
-          onChange={(e) => setFilterDeliveryType(e.target.value)}
-        >
-          <option value="all">All Delivery Types</option>
-          <option value="hub">Supply Hub</option>
-          <option value="nearby">Nearby Store</option>
-        </select>
-
-        {hasActiveFilters && (
-          <button
-            className={styles.clearFiltersButton}
-            onClick={handleClearFilters}
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
-
-      {/* Pending Requests Section */}
-      <div className={styles.pendingSection}>
-        <h2 className={styles.sectionTitle}>
-          Pending Requests ({filteredPendingRequests.length})
-        </h2>
-        <PendingRequestsTable />
-      </div>
-
-      {/* Completed Requests Section */}
-      <CompletedRequestsTable />
-
-      {/* New Supply Request Drawer */}
-      {showNewRequestDrawer && (
+      {!loadingRequests && !loadingStores && (
         <>
-          <div
-            className={styles.drawerOverlay}
-            onClick={() => setShowNewRequestDrawer(false)}
-          />
-          <div className={styles.requestDrawer}>
-            {/* Drawer Header */}
-            <div className={styles.drawerHeader}>
-              <h2 className={styles.drawerTitle}>New Supply Request</h2>
-              <button
-                className={styles.closeButton}
-                onClick={() => setShowNewRequestDrawer(false)}
-              >
-                ✕
+          {/* Filters */}
+          <div className={styles.filtersBar}>
+            <input
+              type="text"
+              placeholder="Search by store name or request ID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className={styles.searchInput}
+            />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className={styles.filterSelect}
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="fulfilled">Fulfilled</option>
+              <option value="denied">Denied</option>
+            </select>
+            {hasActiveFilters && (
+              <button onClick={handleClearFilters} className={styles.clearFiltersBtn}>
+                Clear Filters
               </button>
-            </div>
+            )}
+          </div>
 
-            {/* Drawer Body */}
-            <div className={styles.drawerBody}>
-              {/* Hub (read-only) */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Hub</label>
-                <input
-                  type="text"
-                  className={styles.inputDisabled}
-                  value={hubs.length > 0 ? hubs[0].name : 'Loading hub...'}
-                  disabled
-                  readOnly
-                />
-              </div>
+          {/* Pending Requests */}
+          <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>Pending Requests ({filteredPendingRequests.length})</h2>
+            <PendingRequestsTable />
+          </div>
 
-              {/* To Store */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>
-                  To Store <span className={styles.required}>*</span>
-                </label>
-                <select
-                  className={styles.formSelect}
-                  value={toStoreId}
-                  onChange={(e) => setToStoreId(e.target.value)}
-                >
-                  <option value="">Select a store...</option>
-                  {Object.entries(storesByRegion).map(([region, stores]) => (
-                    <optgroup key={region} label={region}>
-                      {stores.map((store) => (
-                        <option key={store.id} value={store.id}>
-                          {store.name} ({store.daysRemaining} days remaining)
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-
-              {/* Ingredients */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>
-                  Ingredients <span className={styles.required}>*</span>
-                </label>
-                <div className={styles.ingredientTable}>
-                  <div className={styles.ingredientTableHeader}>
-                    <div className={styles.ingredientCol}>Ingredient</div>
-                    <div className={styles.ingredientCol}>Qty</div>
-                    <div className={styles.ingredientCol}>Unit</div>
-                    <div className={styles.ingredientCol}>AI Suggested</div>
-                    <div className={styles.ingredientCol}>Action</div>
-                  </div>
-
-                  {ingredients.map((ingredient, index) => (
-                    <div key={index} className={styles.ingredientRow}>
-                      <select
-                        className={styles.ingredientSelect}
-                        value={ingredient.name}
-                        onChange={(e) =>
-                          handleIngredientChange(index, 'name', e.target.value)
-                        }
-                      >
-                        <option value="">Select...</option>
-                        {inventoryItems.map((item) => (
-                          <option key={item.id} value={item.item_name}>
-                            {item.item_name}
-                          </option>
-                        ))}
-                      </select>
-
-                      <input
-                        type="number"
-                        className={styles.ingredientQtyInput}
-                        value={ingredient.qty}
-                        onChange={(e) =>
-                          handleIngredientChange(index, 'qty', e.target.value)
-                        }
-                        placeholder="0"
-                        min="0"
-                      />
-
-                      <select
-                        className={styles.ingredientUnitSelect}
-                        value={ingredient.unit}
-                        onChange={(e) =>
-                          handleIngredientChange(index, 'unit', e.target.value)
-                        }
-                      >
-                        <option value="cases">cases</option>
-                        <option value="boxes">boxes</option>
-                        <option value="units">units</option>
-                      </select>
-
-                      <div className={styles.aiSuggested}>
-                        <span className={styles.aiSuggestedText}>
-                          (Suggested: {ingredient.aiSuggested})
-                        </span>
-                        {ingredient.aiSuggested > 0 && (
-                          <button
-                            className={styles.fillAiButton}
-                            onClick={() => handleFillAISuggestion(index)}
-                            title="Fill with AI suggestion"
-                          >
-                            ✓
-                          </button>
-                        )}
-                      </div>
-
-                      <button
-                        className={styles.deleteIngredientButton}
-                        onClick={() => handleRemoveIngredient(index)}
-                        disabled={ingredients.length === 1}
-                        title="Delete ingredient"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <button
-                  className={styles.addIngredientButton}
-                  onClick={handleAddIngredient}
-                >
-                  + Add Ingredient
-                </button>
-              </div>
-
-              {/* Delivery Source */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>
-                  Delivery Source <span className={styles.required}>*</span>
-                </label>
-                <div className={styles.radioGroup}>
-                  <label className={styles.radioLabel}>
-                    <input
-                      type="radio"
-                      name="deliveryType"
-                      value="hub"
-                      checked={deliveryType === 'hub'}
-                      onChange={(e) => setDeliveryType(e.target.value)}
-                    />
-                    <span>Request from Supply Hub</span>
-                  </label>
-                  <label className={styles.radioLabel}>
-                    <input
-                      type="radio"
-                      name="deliveryType"
-                      value="nearby"
-                      checked={deliveryType === 'nearby'}
-                      onChange={(e) => setDeliveryType(e.target.value)}
-                    />
-                    <span>Request from Nearby Store</span>
-                  </label>
-                </div>
-
-                {deliveryType === 'nearby' && (
-                  <select
-                    className={styles.formSelect}
-                    value={sourceStore}
-                    onChange={(e) => setSourceStore(e.target.value)}
-                    style={{ marginTop: 'var(--spacing-s)' }}
-                  >
-                    <option value="">Select source store...</option>
-                    {stores.filter((s) => s.id !== toStoreId).map((store) => (
-                      <option key={store.id} value={store.id}>
-                        {store.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {/* Special Instructions */}
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Special Instructions</label>
-                <textarea
-                  className={styles.formTextarea}
-                  value={specialInstructions}
-                  onChange={(e) => setSpecialInstructions(e.target.value)}
-                  placeholder="Add any special notes..."
-                  rows="4"
-                />
-              </div>
-
-              {/* Form Buttons */}
-              <div className={styles.formButtons}>
-                <button
-                  className={styles.submitButton}
-                  onClick={handleSubmitRequest}
-                >
-                  Submit Request
-                </button>
-                <button
-                  className={styles.cancelFormButton}
-                  onClick={() => {
-                    setShowNewRequestDrawer(false);
-                    resetForm();
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+          {/* Completed Requests */}
+          <div className={styles.section}>
+            <CompletedRequestsTable />
           </div>
         </>
       )}
 
-      {/* Toast Notification */}
+      {/* Toast notification */}
       {toast.visible && (
         <div className={styles.toast}>
-          <span>{toast.message}</span>
+          {toast.message}
         </div>
       )}
     </div>

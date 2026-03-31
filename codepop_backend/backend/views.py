@@ -11,8 +11,8 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem
-from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, ManagerProfile
+from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer, SupplyRequestSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 import stripe
@@ -1651,4 +1651,91 @@ class ManagerInventoryListView(ListAPIView):
             queryset = queryset.filter(category=category)
 
         return queryset
+
+
+# ─────────────────────────────────────────────
+# SUPPLY REQUEST VIEWS
+# ─────────────────────────────────────────────
+
+class LogisticsSupplyRequestListView(ListAPIView):
+    """List all supply requests with optional filters (status, store, hub, urgency)"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = SupplyRequestSerializer
+
+    def get_queryset(self):
+        qs = SupplyRequest.objects.all().order_by('-created_at')
+        for param in ('status', 'store', 'hub', 'urgency'):
+            val = self.request.query_params.get(param)
+            if val:
+                qs = qs.filter(**{param: val})
+        return qs
+
+
+class LogisticsSupplyRequestDetailView(RetrieveUpdateAPIView):
+    """Retrieve or update (approve/deny/fulfill) a supply request"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = SupplyRequestSerializer
+    queryset = SupplyRequest.objects.all()
+
+    def perform_update(self, serializer):
+        new_status = self.request.data.get('status')
+        extra = {}
+        if new_status == 'approved':
+            extra = {'approved_by': self.request.user, 'approved_at': timezone.now()}
+        elif new_status == 'fulfilled':
+            extra = {'fulfilled_at': timezone.now()}
+        serializer.save(**extra)
+
+
+class ManagerSupplyRequestListCreateView(ListCreateAPIView):
+    """List manager's store supply requests or create a new one"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = SupplyRequestSerializer
+
+    def get_queryset(self):
+        try:
+            profile = ManagerProfile.objects.get(user=self.request.user)
+            qs = SupplyRequest.objects.filter(store_id=profile.assigned_store_id).order_by('-created_at')
+            status_filter = self.request.query_params.get('status')
+            if status_filter:
+                qs = qs.filter(status=status_filter)
+            return qs
+        except ManagerProfile.DoesNotExist:
+            return SupplyRequest.objects.none()
+
+    def perform_create(self, serializer):
+        try:
+            profile = ManagerProfile.objects.get(user=self.request.user)
+            serializer.save(store_id=profile.assigned_store_id, created_by=self.request.user)
+        except ManagerProfile.DoesNotExist:
+            raise PermissionDenied("Manager profile not found")
+
+
+class ManagerSupplyRequestDetailView(RetrieveUpdateDestroyAPIView):
+    """Retrieve or cancel (delete) a manager's pending supply request"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = SupplyRequestSerializer
+
+    def get_queryset(self):
+        try:
+            profile = ManagerProfile.objects.get(user=self.request.user)
+            return SupplyRequest.objects.filter(
+                store_id=profile.assigned_store_id,
+                status='pending'
+            )
+        except ManagerProfile.DoesNotExist:
+            return SupplyRequest.objects.none()
+
+
+class AdminSupplyRequestListView(ListAPIView):
+    """List all supply requests (for admin KPI dashboard)"""
+    permission_classes = [IsAdminUser]
+    serializer_class = SupplyRequestSerializer
+
+    def get_queryset(self):
+        qs = SupplyRequest.objects.all().order_by('-created_at')
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs
 

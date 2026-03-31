@@ -35,7 +35,10 @@ from .views import (
     AdminHubInventoryListView, AdminHubInventoryDetailView,
     AdminStoreInventoryListView, AdminStoreInventoryDetailView,
     LogisticsHubInventoryListView, LogisticsStoreInventoryListView,
-    ManagerInventoryListView
+    ManagerInventoryListView,
+    LogisticsSupplyRequestListView, LogisticsSupplyRequestDetailView,
+    ManagerSupplyRequestListCreateView, ManagerSupplyRequestDetailView,
+    AdminSupplyRequestListView
 )
 
 #this ensures that the url calls the right function from the views for each type of request
@@ -339,6 +342,17 @@ urlpatterns = [
 
     # Manager — Inventory
     path('api/manager/inventory/', ManagerInventoryListView.as_view(), name='manager_inventory_list'),
+
+    # Logistics — Supply Requests
+    path('api/logistics/supply-requests/', LogisticsSupplyRequestListView.as_view(), name='logistics_supply_request_list'),
+    path('api/logistics/supply-requests/<int:pk>/', LogisticsSupplyRequestDetailView.as_view(), name='logistics_supply_request_detail'),
+
+    # Manager — Supply Requests
+    path('api/manager/supply-requests/', ManagerSupplyRequestListCreateView.as_view(), name='manager_supply_request_list'),
+    path('api/manager/supply-requests/<int:pk>/', ManagerSupplyRequestDetailView.as_view(), name='manager_supply_request_detail'),
+
+    # Admin — Supply Requests
+    path('api/admin/supply-requests/', AdminSupplyRequestListView.as_view(), name='admin_supply_request_list'),
 
     # Hub endpoints (only meaningful when IS_HUB=True, but available on all nodes)
     path('api/hub/register/',       HubRegisterView.as_view(),       name='hub_register'),

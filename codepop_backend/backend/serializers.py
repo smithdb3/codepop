@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem
+from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -359,8 +359,7 @@ class StoreRegistrySerializer(serializers.ModelSerializer):
         return None
 
     def get_active_requests(self, obj):
-        # Stub: Part 5 will populate this
-        return 0
+        return SupplyRequest.objects.filter(store=obj, status='pending').count()
 
     def get_ingredient_levels(self, obj):
         from backend.models import StoreInventoryItem
@@ -372,12 +371,40 @@ class StoreRegistrySerializer(serializers.ModelSerializer):
         return []
 
     def get_requests(self, obj):
-        # Stub: Part 5 will populate this
-        return []
+        qs = SupplyRequest.objects.filter(store=obj).order_by('-created_at')[:5]
+        return SupplyRequestSerializer(qs, many=True).data
 
     def get_history(self, obj):
-        # Stub: Part 5 will populate this
-        return []
+        qs = SupplyRequest.objects.filter(store=obj, status__in=['fulfilled', 'denied']).order_by('-updated_at')[:5]
+        return SupplyRequestSerializer(qs, many=True).data
+
+
+# ─────────────────────────────────────────────
+# SUPPLY REQUEST SERIALIZER
+# ─────────────────────────────────────────────
+
+class SupplyRequestSerializer(serializers.ModelSerializer):
+    store_name = serializers.CharField(source='store.store_name', read_only=True)
+    hub_name = serializers.CharField(source='hub.name', read_only=True, allow_null=True, default=None)
+    created_by_name = serializers.SerializerMethodField()
+    approved_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SupplyRequest
+        fields = ['id', 'store', 'store_name', 'hub', 'hub_name', 'items', 'status', 'urgency',
+                  'created_by', 'created_by_name', 'approved_by', 'approved_by_name',
+                  'approved_at', 'fulfilled_at', 'notes', 'created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'approved_at', 'fulfilled_at']
+
+    def get_created_by_name(self, obj):
+        if obj.created_by:
+            return obj.created_by.get_full_name() or obj.created_by.username
+        return None
+
+    def get_approved_by_name(self, obj):
+        if obj.approved_by:
+            return obj.approved_by.get_full_name() or obj.approved_by.username
+        return None
 
 
 # ─────────────────────────────────────────────
