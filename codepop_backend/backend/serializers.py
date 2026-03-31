@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub
+from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -336,12 +336,23 @@ class StoreRegistrySerializer(serializers.ModelSerializer):
         return None
 
     def get_supply_health_status(self, obj):
-        # Stub: always 'good' until Part 4 provides inventory data
+        from backend.models import StoreInventoryItem
+        items = list(StoreInventoryItem.objects.filter(store=obj))
+        if not items:
+            return 'good'
+        for item in items:
+            if item.quantity < item.threshold or item.days_remaining <= 3:
+                return 'critical'
+        for item in items:
+            if item.quantity < item.threshold * 2:
+                return 'low'
         return 'good'
 
     def get_days_remaining(self, obj):
-        # Stub: Part 4 will populate this
-        return 0
+        from backend.models import StoreInventoryItem
+        from django.db.models import Min
+        result = StoreInventoryItem.objects.filter(store=obj).aggregate(Min('days_remaining'))
+        return result.get('days_remaining__min') or 0
 
     def get_restock_by_date(self, obj):
         # Stub: Part 4 will populate this
@@ -352,8 +363,9 @@ class StoreRegistrySerializer(serializers.ModelSerializer):
         return 0
 
     def get_ingredient_levels(self, obj):
-        # Stub: Part 4 will populate this
-        return []
+        from backend.models import StoreInventoryItem
+        items = StoreInventoryItem.objects.filter(store=obj)
+        return StoreInventoryItemSerializer(items, many=True).data
 
     def get_forecast_data(self, obj):
         # Stub: Part 4/14 will populate this
@@ -366,4 +378,69 @@ class StoreRegistrySerializer(serializers.ModelSerializer):
     def get_history(self, obj):
         # Stub: Part 5 will populate this
         return []
+
+
+# ─────────────────────────────────────────────
+# INVENTORY SERIALIZERS
+# ─────────────────────────────────────────────
+
+class HubInventoryItemSerializer(serializers.ModelSerializer):
+    health_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HubInventoryItem
+        fields = ['id', 'hub', 'item_name', 'category', 'quantity', 'threshold', 'unit', 'last_updated', 'health_status']
+
+    def get_health_status(self, obj):
+        if obj.quantity < obj.threshold:
+            return 'critical'
+        elif obj.quantity < obj.threshold * 2:
+            return 'low'
+        return 'in_stock'
+
+
+class StoreInventoryItemSerializer(serializers.ModelSerializer):
+    health_status = serializers.SerializerMethodField()
+    level = serializers.IntegerField(source='quantity', read_only=True)
+    capacity = serializers.IntegerField(source='max_capacity', read_only=True)
+    current_level_pct = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    avg_daily_usage = serializers.SerializerMethodField()
+    trend_direction = serializers.SerializerMethodField()
+    trend_pct = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StoreInventoryItem
+        fields = [
+            'id', 'store', 'item_name', 'category', 'quantity', 'max_capacity', 'threshold',
+            'days_remaining', 'last_updated', 'health_status', 'level', 'capacity',
+            'current_level_pct', 'status', 'avg_daily_usage', 'trend_direction', 'trend_pct'
+        ]
+
+    def get_health_status(self, obj):
+        if obj.quantity < obj.threshold or obj.days_remaining <= 3:
+            return 'critical'
+        elif obj.quantity < obj.threshold * 2:
+            return 'low'
+        return 'in_stock'
+
+    def get_current_level_pct(self, obj):
+        if obj.max_capacity > 0:
+            return round((obj.quantity / obj.max_capacity) * 100)
+        return 0
+
+    def get_status(self, obj):
+        return self.get_health_status(obj)
+
+    def get_avg_daily_usage(self, obj):
+        # Stub: Phase 14 AI/analytics will populate this
+        return 0
+
+    def get_trend_direction(self, obj):
+        # Stub: Phase 14 will populate this
+        return 'flat'
+
+    def get_trend_pct(self, obj):
+        # Stub: Phase 14 will populate this
+        return 0
 

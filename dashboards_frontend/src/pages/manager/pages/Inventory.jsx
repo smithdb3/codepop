@@ -1,16 +1,78 @@
-import React, { useState } from 'react';
-import { INVENTORY, AI_RECOMMENDATIONS } from '../mockData';
+import React, { useState, useEffect } from 'react';
+import { AI_RECOMMENDATIONS } from '../mockData';
+import { getManagerInventory } from '../../../api/inventory';
 import styles from './Inventory.module.css';
 
 export function Inventory() {
   const [activeTab, setActiveTab] = useState('syrups');
   const [sortBy, setSortBy] = useState('name');
   const [filterBy, setFilterBy] = useState('all');
+  const [inventoryItems, setInventoryItems] = useState({
+    syrups: [],
+    sodas: [],
+    addIns: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch inventory from API and group by category
+  useEffect(() => {
+    const fetchInventory = async () => {
+      try {
+        setLoading(true);
+        const data = await getManagerInventory();
+
+        // Group items by category and transform shape
+        const grouped = {
+          syrups: [],
+          sodas: [],
+          addIns: [],
+        };
+
+        data.forEach((item) => {
+          const transformedItem = {
+            id: item.id.toString(),
+            name: item.item_name,
+            level: item.level || item.quantity,
+            capacity: item.capacity || item.max_capacity,
+            daysRemaining: item.days_remaining,
+            trend: item.trend_pct || 0,
+            unit: item.unit || 'units',
+            pct: item.current_level_pct || Math.round((item.quantity / (item.max_capacity || 1)) * 100),
+          };
+
+          if (item.category === 'syrup') {
+            grouped.syrups.push(transformedItem);
+          } else if (item.category === 'soda') {
+            grouped.sodas.push(transformedItem);
+          } else if (item.category === 'add-in') {
+            grouped.addIns.push(transformedItem);
+          }
+        });
+
+        setInventoryItems(grouped);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch inventory:', err);
+        setError('Failed to load inventory data');
+        // Fall back to empty data instead of mock
+        setInventoryItems({
+          syrups: [],
+          sodas: [],
+          addIns: [],
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInventory();
+  }, []);
 
   const tabData = {
-    syrups: INVENTORY.syrups,
-    sodas: INVENTORY.sodas,
-    addIns: INVENTORY.addIns,
+    syrups: inventoryItems.syrups,
+    sodas: inventoryItems.sodas,
+    addIns: inventoryItems.addIns,
   };
 
   const currentItems = tabData[activeTab];
@@ -36,6 +98,24 @@ export function Inventory() {
   const getTrendIcon = (trend) => {
     return trend < -10 ? '▼▼' : trend < 0 ? '▼' : '→';
   };
+
+  if (loading) {
+    return (
+      <div className={styles.page}>
+        <h1 className={styles.title}>Inventory Management</h1>
+        <p>Loading inventory...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.page}>
+        <h1 className={styles.title}>Inventory Management</h1>
+        <p style={{ color: 'red' }}>{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>

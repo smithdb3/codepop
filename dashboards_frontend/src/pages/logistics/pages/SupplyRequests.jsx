@@ -2,15 +2,14 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { SUPPLY_REQUESTS } from '../mockData';
 import { getLogisticsStores } from '../../../api/stores';
 import { getLogisticsHubStatus } from '../../../api/hubs';
+import { getLogisticsHubInventory } from '../../../api/inventory';
 import styles from './SupplyRequests.module.css';
-
-// Stub inventory items (Part 4 will populate this)
-const INVENTORY_ITEMS = [];
 
 export function SupplyRequests({ onNavigate }) {
   // API state
   const [stores, setStores] = useState([]);
   const [hubs, setHubs] = useState([]);
+  const [inventoryItems, setInventoryItems] = useState([]);
   const [loadingStores, setLoadingStores] = useState(false);
   // View state
   const [showNewRequestDrawer, setShowNewRequestDrawer] = useState(false);
@@ -55,8 +54,14 @@ export function SupplyRequests({ onNavigate }) {
 
         const hubsData = await getLogisticsHubStatus();
         setHubs(hubsData);
+
+        // Fetch inventory items from the first hub
+        if (hubsData.length > 0) {
+          const items = await getLogisticsHubInventory(hubsData[0].id);
+          setInventoryItems(items);
+        }
       } catch (error) {
-        console.error('Failed to fetch stores/hubs:', error);
+        console.error('Failed to fetch stores/hubs/inventory:', error);
       } finally {
         setLoadingStores(false);
       }
@@ -760,9 +765,9 @@ export function SupplyRequests({ onNavigate }) {
                         }
                       >
                         <option value="">Select...</option>
-                        {INVENTORY_ITEMS.map((item) => (
-                          <option key={item.id} value={item.name}>
-                            {item.name}
+                        {inventoryItems.map((item) => (
+                          <option key={item.id} value={item.item_name}>
+                            {item.item_name}
                           </option>
                         ))}
                       </select>

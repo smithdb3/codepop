@@ -546,3 +546,50 @@ class ManagerProfile(models.Model):
 
     def __str__(self):
         return f"Manager: {self.user.username}"
+
+
+class HubInventoryItem(models.Model):
+    """
+    Inventory for regional supply hubs.
+    """
+    CATEGORY_CHOICES = [
+        ('syrup', 'Syrup'),
+        ('soda', 'Soda'),
+        ('add-in', 'Add-In'),
+        ('physical', 'Physical'),
+    ]
+
+    hub = models.ForeignKey(SupplyHub, on_delete=models.CASCADE, related_name='inventory_items')
+    item_name = models.CharField(max_length=100)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    quantity = models.PositiveIntegerField(default=0)
+    threshold = models.PositiveIntegerField(default=0)
+    unit = models.CharField(max_length=30, default='units')
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.hub.name} — {self.item_name}"
+
+
+class StoreInventoryItem(models.Model):
+    """
+    Inventory for individual stores.
+    """
+    CATEGORY_CHOICES = [
+        ('syrup', 'Syrup'),
+        ('soda', 'Soda'),
+        ('add-in', 'Add-In'),
+        ('physical', 'Physical'),
+    ]
+
+    store = models.ForeignKey(StoreRegistry, on_delete=models.CASCADE, related_name='inventory_items')
+    item_name = models.CharField(max_length=100)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    quantity = models.PositiveIntegerField(default=0)
+    max_capacity = models.PositiveIntegerField(default=100)
+    threshold = models.PositiveIntegerField(default=0)
+    days_remaining = models.PositiveIntegerField(default=0)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.store.store_name} — {self.item_name}"

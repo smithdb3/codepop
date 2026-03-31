@@ -31,7 +31,11 @@ from .views import (
     RegionListView, AdminStoreListCreateView, AdminStoreDetailView,
     AdminSupplyHubListCreateView, AdminSupplyHubDetailView, RegionalStatusView,
     LogisticsStoreListView, LogisticsStoreDetailView, LogisticsCriticalStoresView,
-    LogisticsHubStatusView
+    LogisticsHubStatusView,
+    AdminHubInventoryListView, AdminHubInventoryDetailView,
+    AdminStoreInventoryListView, AdminStoreInventoryDetailView,
+    LogisticsHubInventoryListView, LogisticsStoreInventoryListView,
+    ManagerInventoryListView
 )
 
 #this ensures that the url calls the right function from the views for each type of request
@@ -311,6 +315,14 @@ urlpatterns = [
     # Super Admin — Regional Status
     path('api/admin/regional-status/', RegionalStatusView.as_view(), name='admin_regional_status'),
 
+    # Super Admin — Hub Inventory
+    path('api/admin/hubs/<int:hub_pk>/inventory/', AdminHubInventoryListView.as_view(), name='admin_hub_inventory_list'),
+    path('api/admin/hubs/<int:hub_pk>/inventory/<int:pk>/', AdminHubInventoryDetailView.as_view(), name='admin_hub_inventory_detail'),
+
+    # Super Admin — Store Inventory
+    path('api/admin/stores/<int:store_pk>/inventory/', AdminStoreInventoryListView.as_view(), name='admin_store_inventory_list'),
+    path('api/admin/stores/<int:store_pk>/inventory/<int:pk>/', AdminStoreInventoryDetailView.as_view(), name='admin_store_inventory_detail'),
+
     # Logistics — Stores (critical endpoint must come before <int:pk>)
     path('api/logistics/stores/critical/', LogisticsCriticalStoresView.as_view(), name='logistics_critical_stores'),
     path('api/logistics/stores/', LogisticsStoreListView.as_view(), name='logistics_stores_list'),
@@ -318,6 +330,15 @@ urlpatterns = [
 
     # Logistics — Hub Status
     path('api/logistics/hub-status/', LogisticsHubStatusView.as_view(), name='logistics_hub_status'),
+
+    # Logistics — Hub Inventory
+    path('api/logistics/hubs/<int:hub_pk>/inventory/', LogisticsHubInventoryListView.as_view(), name='logistics_hub_inventory_list'),
+
+    # Logistics — Store Inventory
+    path('api/logistics/stores/<int:store_pk>/inventory/', LogisticsStoreInventoryListView.as_view(), name='logistics_store_inventory_list'),
+
+    # Manager — Inventory
+    path('api/manager/inventory/', ManagerInventoryListView.as_view(), name='manager_inventory_list'),
 
     # Hub endpoints (only meaningful when IS_HUB=True, but available on all nodes)
     path('api/hub/register/',       HubRegisterView.as_view(),       name='hub_register'),

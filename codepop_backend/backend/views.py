@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from django.db.models import F, Q
+from django.db.models import F, Q, ExpressionWrapper
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -11,8 +11,8 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule, Region, StoreRegistry, SupplyHub
-from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem
+from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 import stripe
@@ -1337,12 +1337,24 @@ class AdminKPIView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
+        from backend.models import StoreInventoryItem
+        from django.db.models import Q, F, IntegerField, ExpressionWrapper
+
         total_users = User.objects.count()
         active_users = User.objects.filter(is_active=True).count()
         disabled_users = User.objects.filter(is_active=False).count()
         deleted_users = UserProfile.objects.filter(is_deleted=True).count()
         manager_count = UserProfile.objects.filter(role__name='Manager').count()
         admin_count = User.objects.filter(is_staff=True).count()
+
+        # Inventory health KPIs
+        total_items = StoreInventoryItem.objects.count()
+        healthy_items = StoreInventoryItem.objects.filter(quantity__gte=F('threshold')).count()
+        inventory_health_pct = round((healthy_items / total_items * 100)) if total_items > 0 else 100
+
+        critical_stores = StoreInventoryItem.objects.filter(
+            Q(quantity__lt=F('threshold')) | Q(days_remaining__lte=3)
+        ).values('store').distinct().count()
 
         return Response({
             'total_users': total_users,
@@ -1351,6 +1363,8 @@ class AdminKPIView(APIView):
             'deleted_users': deleted_users,
             'manager_count': manager_count,
             'admin_count': admin_count,
+            'inventory_health_pct': inventory_health_pct,
+            'critical_stores': critical_stores,
         })
 
 
@@ -1457,18 +1471,31 @@ class LogisticsStoreListView(ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        from backend.models import StoreInventoryItem
+        from django.db.models import Q, F, ExpressionWrapper, IntegerField
+
         queryset = StoreRegistry.objects.all()
         health = self.request.query_params.get('health')
         region = self.request.query_params.get('region')
         search = self.request.query_params.get('search')
 
         if health:
-            # Stub: all stores return 'good' until Part 4
-            if health == 'good':
+            if health == 'critical':
+                critical_store_ids = StoreInventoryItem.objects.filter(
+                    Q(quantity__lt=F('threshold')) | Q(days_remaining__lte=3)
+                ).values_list('store_id', flat=True).distinct()
+                queryset = queryset.filter(id__in=critical_store_ids)
+            elif health == 'low':
+                low_store_ids = StoreInventoryItem.objects.filter(
+                    quantity__lt=ExpressionWrapper(
+                        F('threshold') * 2, output_field=IntegerField()
+                    )
+                ).exclude(
+                    Q(quantity__lt=F('threshold')) | Q(days_remaining__lte=3)
+                ).values_list('store_id', flat=True).distinct()
+                queryset = queryset.filter(id__in=low_store_ids)
+            elif health == 'good':
                 pass  # all stores
-            elif health in ['critical', 'low']:
-                # Stub: return empty until Part 4 provides inventory
-                queryset = queryset.none()
 
         if region:
             queryset = queryset.filter(region__name=region)
@@ -1506,4 +1533,122 @@ class LogisticsHubStatusView(ListAPIView):
     queryset = SupplyHub.objects.all()
     serializer_class = SupplyHubSerializer
     permission_classes = [IsAuthenticated]
+
+
+# ─────────────────────────────────────────────
+# INVENTORY VIEWS
+# ─────────────────────────────────────────────
+
+class AdminHubInventoryListView(ListCreateAPIView):
+    """List and create hub inventory items (Super Admin)."""
+    serializer_class = HubInventoryItemSerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        hub_pk = self.kwargs.get('hub_pk')
+        queryset = HubInventoryItem.objects.filter(hub_id=hub_pk)
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+        return queryset
+
+
+class AdminHubInventoryDetailView(RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a hub inventory item (Super Admin)."""
+    serializer_class = HubInventoryItemSerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        hub_pk = self.kwargs.get('hub_pk')
+        return HubInventoryItem.objects.filter(hub_id=hub_pk)
+
+
+class AdminStoreInventoryListView(ListCreateAPIView):
+    """List and create store inventory items (Super Admin)."""
+    serializer_class = StoreInventoryItemSerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        store_pk = self.kwargs.get('store_pk')
+        queryset = StoreInventoryItem.objects.filter(store_id=store_pk)
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+        return queryset
+
+
+class AdminStoreInventoryDetailView(RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a store inventory item (Super Admin)."""
+    serializer_class = StoreInventoryItemSerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        store_pk = self.kwargs.get('store_pk')
+        return StoreInventoryItem.objects.filter(store_id=store_pk)
+
+
+class LogisticsHubInventoryListView(ListAPIView):
+    """List hub inventory items with filtering (Logistics Manager)."""
+    serializer_class = HubInventoryItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        hub_pk = self.kwargs.get('hub_pk')
+        queryset = HubInventoryItem.objects.filter(hub_id=hub_pk)
+        category = self.request.query_params.get('category')
+        health = self.request.query_params.get('health')
+        search = self.request.query_params.get('search')
+
+        if category:
+            queryset = queryset.filter(category=category)
+        if health:
+            if health == 'critical':
+                queryset = queryset.filter(quantity__lt=F('threshold'))
+            elif health == 'low':
+                queryset = queryset.filter(
+                    quantity__lt=ExpressionWrapper(
+                        F('threshold') * 2, output_field=models.IntegerField()
+                    )
+                ).exclude(quantity__lt=F('threshold'))
+        if search:
+            queryset = queryset.filter(item_name__icontains=search)
+
+        return queryset
+
+
+class LogisticsStoreInventoryListView(ListAPIView):
+    """List store inventory items (Logistics Manager)."""
+    serializer_class = StoreInventoryItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        store_pk = self.kwargs.get('store_pk')
+        queryset = StoreInventoryItem.objects.filter(store_id=store_pk)
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+        return queryset
+
+
+class ManagerInventoryListView(ListAPIView):
+    """List inventory for the logged-in manager's assigned store (Manager)."""
+    serializer_class = StoreInventoryItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from backend.models import ManagerProfile
+        user = self.request.user
+        try:
+            manager = ManagerProfile.objects.get(user=user)
+            if not manager.assigned_store:
+                return StoreInventoryItem.objects.none()
+            queryset = StoreInventoryItem.objects.filter(store=manager.assigned_store)
+        except ManagerProfile.DoesNotExist:
+            return StoreInventoryItem.objects.none()
+
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+
+        return queryset
 

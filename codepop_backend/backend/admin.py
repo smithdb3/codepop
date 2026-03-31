@@ -6,6 +6,8 @@ from .models import (
     Region, StoreRegistry, SupplyHub, VisitingUserCache, PendingProfileUpdate,
     SyncAuditLog, SupplyRequest, Machine, Schedule,
     RepairStaffProfile, LogisticsManagerProfile,
+    # Inventory models
+    HubInventoryItem, StoreInventoryItem,
 )
 
 admin.site.register(Preference)
@@ -58,3 +60,5 @@ class MachineAdmin(admin.ModelAdmin):
 admin.site.register(Schedule)
 admin.site.register(RepairStaffProfile)
 admin.site.register(LogisticsManagerProfile)
+admin.site.register(HubInventoryItem)
+admin.site.register(StoreInventoryItem)
