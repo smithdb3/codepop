@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SCHEDULE_JOBS } from '../mockData';
 import styles from './Schedule.module.css';
 import { Scheduler } from '../components/Scheduler';
+import { Schedule as ScheduleComponent } from '../components/Schedule';
 
 export function Schedule({ onNavigate }) {
   const [view, setView] = useState('timeline');
@@ -70,6 +71,7 @@ export function Schedule({ onNavigate }) {
         </div>
       </div>
       <Scheduler></Scheduler>
+      <ScheduleComponent></ScheduleComponent>
       {/* Calendar/Gantt View */}
       {view === 'timeline' && (
         <div className={styles.ganttContainer}>

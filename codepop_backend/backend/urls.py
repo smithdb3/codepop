@@ -98,6 +98,8 @@ machine_detail = MachineOperations.as_view({'get': 'retrieve', 'put': 'update', 
 
 machine_update_status = MachineOperations.as_view({'patch': 'update_status'})
 
+get_schedules = ScheduleOperations.as_view({'get': 'get_user_schedules'})
+
 schedule_list = ScheduleOperations.as_view({'get': 'list', 'post': 'create'})
 
 schedule_detail = ScheduleOperations.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
@@ -258,7 +260,7 @@ urlpatterns = [
     # - DELETE: Remove the specific machine from the database.
     path('machines/<int:pk>/', machine_detail, name='machine_detail'),
 
-    # Updates a machines status
+    # - PATCH: Updates a machines status
     path('machines/<int:pk>/update-status/', machine_update_status, name='machine_update_status'),
 
     # Schedule related URLs
@@ -271,7 +273,10 @@ urlpatterns = [
     # - GET: Retrieve details of a specific schedule.
     # - PUT: Update the specific schedule.
     # - DELETE: Remove the specific schedule from the database.
-    path('schedules/<int:pk>/', machine_detail, name='machine_detail'),
+    path('schedules/<int:pk>/', schedule_detail, name='schedule_detail'),
+
+    # - GET: Returns the schedules associated with a user
+    path('schedules/get_user_schedules/', get_schedules, name='get_schedules'),
 
     # Endpoint to do operations on user accounts for the Admin Dashboard
     # - GET: Retrieve a list of all users
