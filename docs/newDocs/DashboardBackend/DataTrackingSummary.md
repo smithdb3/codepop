@@ -100,7 +100,7 @@ All 5 dashboards (Admin, Manager, Repair Staff, Logistics Manager, Super Admin) 
 
 ---
 
-### 6. Deliveries
+### 6. Deliveries (Done)
 **Model:** `Delivery` (new)
 
 **Fields:**

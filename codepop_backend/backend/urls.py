@@ -38,7 +38,9 @@ from .views import (
     ManagerInventoryListView,
     LogisticsSupplyRequestListView, LogisticsSupplyRequestDetailView,
     ManagerSupplyRequestListCreateView, ManagerSupplyRequestDetailView,
-    AdminSupplyRequestListView
+    AdminSupplyRequestListView,
+    LogisticsDeliveryListCreateView, LogisticsDeliveryDetailView,
+    LogisticsDeliveryKPIView, LogisticsDriverListView
 )
 
 #this ensures that the url calls the right function from the views for each type of request
@@ -359,6 +361,15 @@ urlpatterns = [
 
     # Admin — Supply Requests
     path('api/admin/supply-requests/', AdminSupplyRequestListView.as_view(), name='admin_supply_request_list'),
+
+    # Logistics — Deliveries
+    # NOTE: kpi/ MUST come before <int:pk>/ or Django will try to match "kpi" as an integer ID
+    path('api/logistics/deliveries/kpi/', LogisticsDeliveryKPIView.as_view(), name='logistics_deliveries_kpi'),
+    path('api/logistics/deliveries/', LogisticsDeliveryListCreateView.as_view(), name='logistics_deliveries_list_create'),
+    path('api/logistics/deliveries/<int:pk>/', LogisticsDeliveryDetailView.as_view(), name='logistics_delivery_detail'),
+
+    # Logistics — Drivers
+    path('api/logistics/drivers/', LogisticsDriverListView.as_view(), name='logistics_drivers_list'),
 
     # Hub endpoints (only meaningful when IS_HUB=True, but available on all nodes)
     path('api/hub/register/',       HubRegisterView.as_view(),       name='hub_register'),

@@ -11,8 +11,8 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, ManagerProfile
-from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer, SupplyRequestSerializer
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, ManagerProfile, Delivery
+from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer, SupplyRequestSerializer, DeliverySerializer, DriverSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 import stripe
@@ -1754,4 +1754,70 @@ class AdminSupplyRequestListView(ListAPIView):
         if status_filter:
             qs = qs.filter(status=status_filter)
         return qs
+
+
+# ─────────────────────────────────────────────
+# DELIVERY VIEWS
+# ─────────────────────────────────────────────
+
+class LogisticsDeliveryListCreateView(ListCreateAPIView):
+    """List all deliveries with filters, or create a new one."""
+    permission_classes = [IsAuthenticated]
+    serializer_class = DeliverySerializer
+
+    def get_queryset(self):
+        qs = Delivery.objects.prefetch_related('stores').select_related(
+            'hub', 'driver'
+        ).order_by('-created_at')
+
+        status_filter = self.request.query_params.get('status')
+        hub_filter    = self.request.query_params.get('hub')
+        store_filter  = self.request.query_params.get('store')
+
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        if hub_filter:
+            qs = qs.filter(hub_id=hub_filter)
+        if store_filter:
+            qs = qs.filter(stores__id=store_filter)
+
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class LogisticsDeliveryDetailView(RetrieveUpdateAPIView):
+    """Retrieve or update (status transition) a delivery."""
+    permission_classes = [IsAuthenticated]
+    serializer_class = DeliverySerializer
+    queryset = Delivery.objects.prefetch_related('stores').select_related(
+        'hub', 'driver'
+    )
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+
+class LogisticsDeliveryKPIView(APIView):
+    """Return deliveries KPI counts for the Overview dashboard."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        in_transit_count = Delivery.objects.filter(
+            status__in=['in_transit', 'scheduled']
+        ).count()
+        return Response({'deliveriesInTransit': in_transit_count})
+
+
+class LogisticsDriverListView(ListAPIView):
+    """Return list of users that can be assigned as drivers."""
+    permission_classes = [IsAuthenticated]
+    serializer_class = DriverSerializer
+
+    def get_queryset(self):
+        # Return active non-superuser users as potential drivers.
+        return User.objects.filter(
+            is_active=True, is_superuser=False
+        ).order_by('first_name', 'last_name')
 

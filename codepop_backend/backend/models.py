@@ -471,6 +471,36 @@ class SupplyRequest(models.Model):
         return f"SupplyRequest #{self.id} [{self.status}] store={self.store_id}"
 
 
+class Delivery(models.Model):
+    """
+    Represents a delivery from a regional supply hub to one or more stores.
+    Tracks driver, route order, status, and ETA. Supports multi-store routes.
+    """
+    STATUS_CHOICES = [
+        ('scheduled',  'Scheduled'),
+        ('in_transit', 'In Transit'),
+        ('delivered',  'Delivered'),
+        ('cancelled',  'Cancelled'),
+    ]
+
+    hub           = models.ForeignKey('SupplyHub', on_delete=models.CASCADE, related_name='deliveries')
+    driver        = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                      null=True, blank=True, related_name='assigned_deliveries')
+    stores        = models.ManyToManyField('StoreRegistry', related_name='deliveries', blank=True)
+    route         = models.JSONField(default=list)   # ordered list of StoreRegistry PKs
+    status        = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    eta           = models.DateTimeField(null=True, blank=True)
+    delivery_date = models.DateField(null=True, blank=True)
+    notes         = models.TextField(blank=True, default='')
+    created_by    = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                      null=True, blank=True, related_name='created_deliveries')
+    created_at    = models.DateTimeField(auto_now_add=True)
+    updated_at    = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Delivery #{self.id} [{self.status}] hub={self.hub_id}"
+
+
 class Machine(models.Model):
     """
     Represents one robotic drink-dispensing machine at a store.

@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest
+from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, Delivery
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -471,4 +472,165 @@ class StoreInventoryItemSerializer(serializers.ModelSerializer):
     def get_trend_pct(self, obj):
         # Stub: Phase 14 will populate this
         return 0
+
+
+class DeliverySerializer(serializers.ModelSerializer):
+    """
+    Serializer for Delivery model with computed fields for frontend compatibility.
+    Produces fields matching the mockData shape.
+    """
+    hub_name        = serializers.CharField(source='hub.name', read_only=True)
+    driver_name     = serializers.SerializerMethodField()
+    driver          = serializers.SerializerMethodField()  # alias for driver_name
+    driver_id       = serializers.PrimaryKeyRelatedField(
+                          source='driver',
+                          queryset=User.objects.all(),
+                          allow_null=True, required=False)
+    store_ids       = serializers.PrimaryKeyRelatedField(
+                          source='stores',
+                          queryset=StoreRegistry.objects.all(),
+                          many=True, write_only=True, required=False)
+    stores_detail   = serializers.SerializerMethodField()
+
+    # Computed fields matching mockData shape
+    storeName               = serializers.SerializerMethodField()
+    storeAddress            = serializers.SerializerMethodField()
+    currentSupplyPct        = serializers.SerializerMethodField()
+    forecastedDepletionDate = serializers.SerializerMethodField()
+    suggestedRestockWindow  = serializers.SerializerMethodField()
+    lastDelivery            = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = Delivery
+        fields = [
+            'id', 'hub', 'hub_name',
+            'driver_id', 'driver_name', 'driver',
+            'store_ids', 'stores_detail',
+            'route', 'status', 'eta', 'delivery_date',
+            'notes', 'created_by', 'created_at', 'updated_at',
+            # Frontend-shape computed fields
+            'storeName', 'storeAddress', 'currentSupplyPct',
+            'forecastedDepletionDate', 'suggestedRestockWindow', 'lastDelivery',
+        ]
+        read_only_fields = ['id', 'created_by', 'created_at', 'updated_at',
+                            'hub_name', 'driver_name', 'driver', 'stores_detail',
+                            'storeName', 'storeAddress', 'currentSupplyPct',
+                            'forecastedDepletionDate', 'suggestedRestockWindow',
+                            'lastDelivery']
+
+    def get_driver_name(self, obj):
+        if obj.driver:
+            return obj.driver.get_full_name() or obj.driver.username
+        return None
+
+    def get_driver(self, obj):
+        """Alias for driver_name for frontend compatibility."""
+        if obj.driver:
+            return obj.driver.get_full_name() or obj.driver.username
+        return None
+
+    def get_stores_detail(self, obj):
+        stores = obj.stores.all()
+        return [{'id': s.id, 'store_name': s.store_name, 'location': s.location}
+                for s in stores]
+
+    def _primary_store(self, obj):
+        """Return first store in route order, or first M2M store."""
+        if obj.route:
+            store = obj.stores.filter(id=obj.route[0]).first()
+            if store:
+                return store
+        return obj.stores.first()
+
+    def get_storeName(self, obj):
+        store = self._primary_store(obj)
+        return store.store_name if store else ''
+
+    def get_storeAddress(self, obj):
+        store = self._primary_store(obj)
+        return store.location if store else ''
+
+    def get_currentSupplyPct(self, obj):
+        """Average supply % across all stores in this delivery."""
+        store_ids = list(obj.stores.values_list('id', flat=True))
+        if not store_ids:
+            return 0
+        pcts = []
+        for sid in store_ids:
+            items = StoreInventoryItem.objects.filter(store_id=sid)
+            if items.exists():
+                total = sum(
+                    round((i.quantity / i.max_capacity) * 100) if i.max_capacity > 0 else 0
+                    for i in items
+                )
+                pcts.append(total // items.count())
+        return round(sum(pcts) / len(pcts)) if pcts else 0
+
+    def get_forecastedDepletionDate(self, obj):
+        """Forecast depletion date based on min days_remaining."""
+        from django.utils import timezone
+        from datetime import timedelta
+        store_ids = list(obj.stores.values_list('id', flat=True))
+        if not store_ids:
+            return None
+        min_days = StoreInventoryItem.objects.filter(
+            store_id__in=store_ids, days_remaining__gt=0
+        ).order_by('days_remaining').values_list('days_remaining', flat=True).first()
+        if min_days is None:
+            return None
+        return (timezone.now().date() + timedelta(days=min_days)).isoformat()
+
+    def get_suggestedRestockWindow(self, obj):
+        """Restock window recommendation."""
+        store_ids = list(obj.stores.values_list('id', flat=True))
+        if not store_ids:
+            return 'ok'
+        min_days = StoreInventoryItem.objects.filter(
+            store_id__in=store_ids
+        ).order_by('days_remaining').values_list('days_remaining', flat=True).first()
+        if min_days is None:
+            return 'ok'
+        if min_days <= 1:
+            return 'immediate'
+        if min_days <= 7:
+            return 'this_week'
+        if min_days <= 14:
+            return 'next_week'
+        return 'ok'
+
+    def get_lastDelivery(self, obj):
+        """Most recent delivered delivery for the primary store."""
+        store = self._primary_store(obj)
+        if not store:
+            return None
+        last = Delivery.objects.filter(
+            stores=store, status='delivered'
+        ).order_by('-delivery_date').first()
+        if last and last.delivery_date:
+            return last.delivery_date.isoformat()
+        return None
+
+    def create(self, validated_data):
+        """Create delivery, populate M2M stores and route."""
+        stores = validated_data.pop('stores', [])
+        instance = Delivery.objects.create(**validated_data)
+        if stores:
+            instance.stores.set(stores)
+            # Populate route from stores order if not provided
+            if not instance.route:
+                instance.route = [s.id for s in stores]
+                instance.save()
+        return instance
+
+
+class DriverSerializer(serializers.ModelSerializer):
+    """Serializer for drivers (User objects used for delivery assignment)."""
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'name', 'username']
+
+    def get_name(self, obj):
+        return obj.get_full_name() or obj.username
 

@@ -4,7 +4,7 @@ from .models import (
     Preference, Drink, Inventory, Notification, Order, Revenue,
     # Distributed system models
     Region, StoreRegistry, SupplyHub, VisitingUserCache, PendingProfileUpdate,
-    SyncAuditLog, SupplyRequest, Machine, Schedule,
+    SyncAuditLog, SupplyRequest, Machine, Schedule, Delivery,
     RepairStaffProfile, LogisticsManagerProfile,
     # Inventory models
     HubInventoryItem, StoreInventoryItem,
@@ -51,6 +51,12 @@ class SyncAuditLogAdmin(admin.ModelAdmin):
 class SupplyRequestAdmin(admin.ModelAdmin):
     list_display = ('id', 'store', 'status', 'urgency', 'created_at')
     list_filter  = ('status', 'urgency')
+
+@admin.register(Delivery)
+class DeliveryAdmin(admin.ModelAdmin):
+    list_display  = ('id', 'hub', 'driver', 'status', 'delivery_date', 'eta', 'created_at')
+    list_filter   = ('status', 'hub')
+    filter_horizontal = ('stores',)
 
 @admin.register(Machine)
 class MachineAdmin(admin.ModelAdmin):
