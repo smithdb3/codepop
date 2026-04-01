@@ -1014,7 +1014,11 @@ class ScheduleOperations(viewsets.ModelViewSet):
     queryset = Schedule.objects.all()
     serializer_class = ScheduleSerializer
     permission_classes = [IsAuthenticated]
-
+    
+    def get_user_schedules(self, request):
+        user_schedules = Schedule.objects.filter(assigned_to=request.user)
+        serializer = self.get_serializer(user_schedules, many=True)
+        return Response(serializer.data)
 
 # ─────────────────────────────────────────────
 # ADMIN DASHBOARD VIEWS
