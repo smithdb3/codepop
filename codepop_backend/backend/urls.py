@@ -9,7 +9,7 @@ from .internode_views import (
     InterNodeProfileUpdateView, InterNodeHealthCheckView,
 )
 from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken, CheckEmailView
-from .views import StripePaymentIntentView
+from .views import StripePaymentIntentView, StripeConfigView
 from .views import UserPreferenceLookup, PreferencesOperations
 from .views import DrinkOperations, UserDrinksLookup
 from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdateAPIView
@@ -153,6 +153,7 @@ urlpatterns = [
 
     # Stripe payment
     path('create-payment-intent/', StripePaymentIntentView.as_view(), name='create-payment-intent'),
+    path('config/stripe/', StripeConfigView.as_view(), name='stripe-config'),
 
     # Inventory URLs
     # Endpoint to list all inventory items
