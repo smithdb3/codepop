@@ -1015,6 +1015,7 @@ class ScheduleOperations(viewsets.ModelViewSet):
     serializer_class = ScheduleSerializer
     permission_classes = [IsAuthenticated]
     
+    # Returns all the schedules associated with a user
     def get_user_schedules(self, request):
         user_schedules = Schedule.objects.filter(assigned_to=request.user)
         serializer = self.get_serializer(user_schedules, many=True)
