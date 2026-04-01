@@ -27,7 +27,7 @@ export function Scheduler() {
                     const Schedule = {
                         machine: components[0], //Machine ID
                         assigned_to: localStorage.getItem("cp_user_id"),
-                        scheduled_at: new Date().toISOString(),
+                        scheduled_at: new Date().toISOString(), //Dajngo expects dates in this format
                         completed_at: null,
                         description: components[1],
                     };
@@ -52,7 +52,7 @@ export function Scheduler() {
 
     return (
             <div id="file-upload">
-                <label className={styles.uploadButton}> Upload Schedule
+                <label className={styles.uploadButton}> {loading ? "Uploading...": "Upload Schedule"}
                     <input
                     onChange={handleUpload}
                     type="file"
