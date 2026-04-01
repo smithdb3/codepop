@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone
+from django.conf import settings
 
 class Preference(models.Model):
     # Primary key will be automatically created as 'id' unless you specify otherwise
@@ -245,9 +246,25 @@ class Region(models.Model):
     name         = models.CharField(max_length=50, choices=REGION_CHOICES, unique=True)
     display_name = models.CharField(max_length=100)
     hub_api_endpoint = models.URLField(blank=True)  # e.g. http://10.0.0.1:8000
+    is_active    = models.BooleanField(default=True)
 
     def __str__(self):
         return self.display_name
+
+
+class SupplyHub(models.Model):
+    """
+    Represents a regional supply hub that distributes inventory to stores.
+    Tracks hub inventory levels and delivery status.
+    """
+    name = models.CharField(max_length=255)
+    region = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True, blank=True, related_name='supply_hubs')
+    inventory_pct = models.FloatField(default=0.0)
+    active_deliveries_count = models.IntegerField(default=0)
+    pending_orders_count = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.name} ({self.region})"
 
 
 class StoreRegistry(models.Model):
@@ -263,11 +280,14 @@ class StoreRegistry(models.Model):
     ]
     store_id     = models.IntegerField(unique=True)
     store_name   = models.CharField(max_length=255)
+    location     = models.CharField(max_length=255, blank=True)  # human-readable address
     region       = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True, blank=True, related_name='stores')
     api_endpoint = models.URLField()           # e.g. http://10.0.0.2:8000
     latitude     = models.FloatField(null=True, blank=True)
     longitude    = models.FloatField(null=True, blank=True)
     status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    manager      = models.ForeignKey('ManagerProfile', on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_stores')
+    machine_count = models.IntegerField(default=0)
     registered_at    = models.DateTimeField(auto_now_add=True)
     last_heartbeat   = models.DateTimeField(null=True, blank=True)
     missed_heartbeats = models.IntegerField(default=0)
@@ -419,25 +439,36 @@ class SyncAuditLog(models.Model):
 class SupplyRequest(models.Model):
     """
     A restocking request from a store to its regional hub.
-    Submitted via POST /api/hub/supply-request/ (not yet implemented — Phase 10 extension).
+    Supports multi-item requests with approval tracking and urgency levels.
     """
+    URGENCY_CHOICES = [
+        ('low', 'Low'),
+        ('normal', 'Normal'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    ]
     STATUS_CHOICES = [
-        ('pending',   'Pending'),
-        ('approved',  'Approved'),
-        ('denied',    'Denied'),
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('denied', 'Denied'),
         ('fulfilled', 'Fulfilled'),
     ]
-    store_id     = models.IntegerField()
-    region       = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True, blank=True, related_name='supply_requests')
-    item_name    = models.CharField(max_length=100)
-    quantity     = models.PositiveIntegerField()
-    status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    created_at   = models.DateTimeField(auto_now_add=True)
-    updated_at   = models.DateTimeField(auto_now=True)
-    notes        = models.TextField(blank=True)
+
+    store       = models.ForeignKey('StoreRegistry', on_delete=models.CASCADE, related_name='supply_requests', null=True)
+    hub         = models.ForeignKey('SupplyHub', on_delete=models.SET_NULL, null=True, blank=True, related_name='supply_requests')
+    items       = models.JSONField(default=list)  # [{name, qty, unit}]
+    status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    urgency     = models.CharField(max_length=20, choices=URGENCY_CHOICES, default='normal')
+    created_by  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='supply_requests_created')
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='supply_requests_approved')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    fulfilled_at = models.DateTimeField(null=True, blank=True)
+    notes       = models.TextField(blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"SupplyRequest store {self.store_id}: {self.quantity}x {self.item_name} ({self.status})"
+        return f"SupplyRequest #{self.id} [{self.status}] store={self.store_id}"
 
 
 class Machine(models.Model):
@@ -527,3 +558,50 @@ class ManagerProfile(models.Model):
 
     def __str__(self):
         return f"Manager: {self.user.username}"
+
+
+class HubInventoryItem(models.Model):
+    """
+    Inventory for regional supply hubs.
+    """
+    CATEGORY_CHOICES = [
+        ('syrup', 'Syrup'),
+        ('soda', 'Soda'),
+        ('add-in', 'Add-In'),
+        ('physical', 'Physical'),
+    ]
+
+    hub = models.ForeignKey(SupplyHub, on_delete=models.CASCADE, related_name='inventory_items')
+    item_name = models.CharField(max_length=100)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    quantity = models.PositiveIntegerField(default=0)
+    threshold = models.PositiveIntegerField(default=0)
+    unit = models.CharField(max_length=30, default='units')
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.hub.name} — {self.item_name}"
+
+
+class StoreInventoryItem(models.Model):
+    """
+    Inventory for individual stores.
+    """
+    CATEGORY_CHOICES = [
+        ('syrup', 'Syrup'),
+        ('soda', 'Soda'),
+        ('add-in', 'Add-In'),
+        ('physical', 'Physical'),
+    ]
+
+    store = models.ForeignKey(StoreRegistry, on_delete=models.CASCADE, related_name='inventory_items')
+    item_name = models.CharField(max_length=100)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    quantity = models.PositiveIntegerField(default=0)
+    max_capacity = models.PositiveIntegerField(default=100)
+    threshold = models.PositiveIntegerField(default=0)
+    days_remaining = models.PositiveIntegerField(default=0)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.store.store_name} — {self.item_name}"

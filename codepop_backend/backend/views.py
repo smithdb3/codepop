@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from django.db.models import F, Q
+from django.db.models import F, Q, ExpressionWrapper
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
@@ -11,8 +11,8 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule
-from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, ManagerProfile
+from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer, SupplyRequestSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 import stripe
@@ -30,6 +30,12 @@ from .drinkAI import generate_soda
 from rest_framework.permissions import BasePermission
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
+
+class IsSuperUser(BasePermission):
+    """Permission class to check if user is a superuser."""
+    def has_permission(self, request, view):
+        return request.user and request.user.is_superuser
 
 
 def _propagate_to_home_store(user_id: int):
@@ -1342,12 +1348,24 @@ class AdminKPIView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
+        from backend.models import StoreInventoryItem
+        from django.db.models import Q, F, IntegerField, ExpressionWrapper
+
         total_users = User.objects.count()
         active_users = User.objects.filter(is_active=True).count()
         disabled_users = User.objects.filter(is_active=False).count()
         deleted_users = UserProfile.objects.filter(is_deleted=True).count()
         manager_count = UserProfile.objects.filter(role__name='Manager').count()
         admin_count = User.objects.filter(is_staff=True).count()
+
+        # Inventory health KPIs
+        total_items = StoreInventoryItem.objects.count()
+        healthy_items = StoreInventoryItem.objects.filter(quantity__gte=F('threshold')).count()
+        inventory_health_pct = round((healthy_items / total_items * 100)) if total_items > 0 else 100
+
+        critical_stores = StoreInventoryItem.objects.filter(
+            Q(quantity__lt=F('threshold')) | Q(days_remaining__lte=3)
+        ).values('store').distinct().count()
 
         return Response({
             'total_users': total_users,
@@ -1356,5 +1374,384 @@ class AdminKPIView(APIView):
             'deleted_users': deleted_users,
             'manager_count': manager_count,
             'admin_count': admin_count,
+            'inventory_health_pct': inventory_health_pct,
+            'critical_stores': critical_stores,
         })
+
+
+# ─────────────────────────────────────────────
+# STORES & SUPPLY HUBS VIEWS
+# ─────────────────────────────────────────────
+
+class RegionListView(ListAPIView):
+    """List all regions."""
+    queryset = Region.objects.all()
+    serializer_class = RegionSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class AdminStoreListCreateView(ListCreateAPIView):
+    """List and create stores (Super Admin)."""
+    serializer_class = StoreRegistrySerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        queryset = StoreRegistry.objects.all()
+        region = self.request.query_params.get('region')
+        status = self.request.query_params.get('status')
+        search = self.request.query_params.get('search')
+
+        if region:
+            queryset = queryset.filter(region__name=region)
+        if status:
+            queryset = queryset.filter(status=status)
+        if search:
+            queryset = queryset.filter(store_name__icontains=search)
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+
+class AdminStoreDetailView(RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a store (Super Admin)."""
+    queryset = StoreRegistry.objects.all()
+    serializer_class = StoreRegistrySerializer
+    permission_classes = [IsSuperUser]
+
+
+class AdminSupplyHubListCreateView(ListCreateAPIView):
+    """List and create supply hubs (Super Admin)."""
+    serializer_class = SupplyHubSerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        queryset = SupplyHub.objects.all()
+        region = self.request.query_params.get('region')
+
+        if region:
+            queryset = queryset.filter(region__name=region)
+
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+
+class AdminSupplyHubDetailView(RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a supply hub (Super Admin)."""
+    queryset = SupplyHub.objects.all()
+    serializer_class = SupplyHubSerializer
+    permission_classes = [IsSuperUser]
+
+
+class RegionalStatusView(APIView):
+    """Get regional aggregation stats (Super Admin)."""
+    permission_classes = [IsSuperUser]
+
+    def get(self, request):
+        from django.db.models import Count, Q
+
+        regional_stats = []
+        regions = Region.objects.all()
+
+        for region in regions:
+            online_count = StoreRegistry.objects.filter(
+                region=region,
+                status='active'
+            ).count()
+            unreachable_count = StoreRegistry.objects.filter(
+                region=region,
+                status='unreachable'
+            ).count()
+
+            regional_stats.append({
+                'id': region.id,
+                'name': region.display_name,
+                'online_stores': online_count,
+                'unreachable_stores': unreachable_count,
+            })
+
+        return Response(regional_stats)
+
+
+class LogisticsStoreListView(ListAPIView):
+    """List stores with filtering (Logistics Manager)."""
+    serializer_class = StoreRegistrySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from backend.models import StoreInventoryItem
+        from django.db.models import Q, F, ExpressionWrapper, IntegerField
+
+        queryset = StoreRegistry.objects.all()
+        health = self.request.query_params.get('health')
+        region = self.request.query_params.get('region')
+        search = self.request.query_params.get('search')
+
+        if health:
+            if health == 'critical':
+                critical_store_ids = StoreInventoryItem.objects.filter(
+                    Q(quantity__lt=F('threshold')) | Q(days_remaining__lte=3)
+                ).values_list('store_id', flat=True).distinct()
+                queryset = queryset.filter(id__in=critical_store_ids)
+            elif health == 'low':
+                low_store_ids = StoreInventoryItem.objects.filter(
+                    quantity__lt=ExpressionWrapper(
+                        F('threshold') * 2, output_field=IntegerField()
+                    )
+                ).exclude(
+                    Q(quantity__lt=F('threshold')) | Q(days_remaining__lte=3)
+                ).values_list('store_id', flat=True).distinct()
+                queryset = queryset.filter(id__in=low_store_ids)
+            elif health == 'good':
+                pass  # all stores
+
+        if region:
+            queryset = queryset.filter(region__name=region)
+
+        if search:
+            queryset = queryset.filter(store_name__icontains=search)
+
+        return queryset
+
+
+class LogisticsStoreDetailView(ListAPIView):
+    """Get store detail with related data (Logistics Manager)."""
+    serializer_class = StoreRegistrySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        pk = self.kwargs.get('pk')
+        return StoreRegistry.objects.filter(pk=pk)
+
+
+class LogisticsCriticalStoresView(ListAPIView):
+    """Get top 5 critical stores (Logistics Manager)."""
+    serializer_class = StoreRegistrySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Stub: return stores with status='unreachable' ordered by last_heartbeat
+        return StoreRegistry.objects.filter(
+            status='unreachable'
+        ).order_by('last_heartbeat')[:5]
+
+
+class LogisticsHubStatusView(ListAPIView):
+    """Get hub status for logistics manager's region (Logistics Manager)."""
+    queryset = SupplyHub.objects.all()
+    serializer_class = SupplyHubSerializer
+    permission_classes = [IsAuthenticated]
+
+
+# ─────────────────────────────────────────────
+# INVENTORY VIEWS
+# ─────────────────────────────────────────────
+
+class AdminHubInventoryListView(ListCreateAPIView):
+    """List and create hub inventory items (Super Admin)."""
+    serializer_class = HubInventoryItemSerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        hub_pk = self.kwargs.get('hub_pk')
+        queryset = HubInventoryItem.objects.filter(hub_id=hub_pk)
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+        return queryset
+
+
+class AdminHubInventoryDetailView(RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a hub inventory item (Super Admin)."""
+    serializer_class = HubInventoryItemSerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        hub_pk = self.kwargs.get('hub_pk')
+        return HubInventoryItem.objects.filter(hub_id=hub_pk)
+
+
+class AdminStoreInventoryListView(ListCreateAPIView):
+    """List and create store inventory items (Super Admin)."""
+    serializer_class = StoreInventoryItemSerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        store_pk = self.kwargs.get('store_pk')
+        queryset = StoreInventoryItem.objects.filter(store_id=store_pk)
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+        return queryset
+
+
+class AdminStoreInventoryDetailView(RetrieveUpdateDestroyAPIView):
+    """Retrieve, update, or delete a store inventory item (Super Admin)."""
+    serializer_class = StoreInventoryItemSerializer
+    permission_classes = [IsSuperUser]
+
+    def get_queryset(self):
+        store_pk = self.kwargs.get('store_pk')
+        return StoreInventoryItem.objects.filter(store_id=store_pk)
+
+
+class LogisticsHubInventoryListView(ListAPIView):
+    """List hub inventory items with filtering (Logistics Manager)."""
+    serializer_class = HubInventoryItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        hub_pk = self.kwargs.get('hub_pk')
+        queryset = HubInventoryItem.objects.filter(hub_id=hub_pk)
+        category = self.request.query_params.get('category')
+        health = self.request.query_params.get('health')
+        search = self.request.query_params.get('search')
+
+        if category:
+            queryset = queryset.filter(category=category)
+        if health:
+            if health == 'critical':
+                queryset = queryset.filter(quantity__lt=F('threshold'))
+            elif health == 'low':
+                queryset = queryset.filter(
+                    quantity__lt=ExpressionWrapper(
+                        F('threshold') * 2, output_field=models.IntegerField()
+                    )
+                ).exclude(quantity__lt=F('threshold'))
+        if search:
+            queryset = queryset.filter(item_name__icontains=search)
+
+        return queryset
+
+
+class LogisticsStoreInventoryListView(ListAPIView):
+    """List store inventory items (Logistics Manager)."""
+    serializer_class = StoreInventoryItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        store_pk = self.kwargs.get('store_pk')
+        queryset = StoreInventoryItem.objects.filter(store_id=store_pk)
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+        return queryset
+
+
+class ManagerInventoryListView(ListAPIView):
+    """List inventory for the logged-in manager's assigned store (Manager)."""
+    serializer_class = StoreInventoryItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from backend.models import ManagerProfile
+        user = self.request.user
+        try:
+            manager = ManagerProfile.objects.get(user=user)
+            if not manager.assigned_store:
+                return StoreInventoryItem.objects.none()
+            queryset = StoreInventoryItem.objects.filter(store=manager.assigned_store)
+        except ManagerProfile.DoesNotExist:
+            return StoreInventoryItem.objects.none()
+
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+
+        return queryset
+
+
+# ─────────────────────────────────────────────
+# SUPPLY REQUEST VIEWS
+# ─────────────────────────────────────────────
+
+class LogisticsSupplyRequestListView(ListAPIView):
+    """List all supply requests with optional filters (status, store, hub, urgency)"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = SupplyRequestSerializer
+
+    def get_queryset(self):
+        qs = SupplyRequest.objects.all().order_by('-created_at')
+        for param in ('status', 'store', 'hub', 'urgency'):
+            val = self.request.query_params.get(param)
+            if val:
+                qs = qs.filter(**{param: val})
+        return qs
+
+
+class LogisticsSupplyRequestDetailView(RetrieveUpdateAPIView):
+    """Retrieve or update (approve/deny/fulfill) a supply request"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = SupplyRequestSerializer
+    queryset = SupplyRequest.objects.all()
+
+    def perform_update(self, serializer):
+        new_status = self.request.data.get('status')
+        instance = serializer.save()
+
+        # Update status and related fields
+        if new_status:
+            instance.status = new_status
+            if new_status == 'approved':
+                instance.approved_by = self.request.user
+                instance.approved_at = timezone.now()
+            elif new_status == 'fulfilled':
+                instance.fulfilled_at = timezone.now()
+            instance.save()
+
+
+class ManagerSupplyRequestListCreateView(ListCreateAPIView):
+    """List manager's store supply requests or create a new one"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = SupplyRequestSerializer
+
+    def get_queryset(self):
+        try:
+            profile = ManagerProfile.objects.get(user=self.request.user)
+            qs = SupplyRequest.objects.filter(store_id=profile.assigned_store_id).order_by('-created_at')
+            status_filter = self.request.query_params.get('status')
+            if status_filter:
+                qs = qs.filter(status=status_filter)
+            return qs
+        except ManagerProfile.DoesNotExist:
+            return SupplyRequest.objects.none()
+
+    def perform_create(self, serializer):
+        try:
+            profile = ManagerProfile.objects.get(user=self.request.user)
+            serializer.save(store_id=profile.assigned_store_id, created_by=self.request.user)
+        except ManagerProfile.DoesNotExist:
+            raise PermissionDenied("Manager profile not found")
+
+
+class ManagerSupplyRequestDetailView(RetrieveUpdateDestroyAPIView):
+    """Retrieve or cancel (delete) a manager's pending supply request"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = SupplyRequestSerializer
+
+    def get_queryset(self):
+        try:
+            profile = ManagerProfile.objects.get(user=self.request.user)
+            return SupplyRequest.objects.filter(
+                store_id=profile.assigned_store_id,
+                status='pending'
+            )
+        except ManagerProfile.DoesNotExist:
+            return SupplyRequest.objects.none()
+
+
+class AdminSupplyRequestListView(ListAPIView):
+    """List all supply requests (for admin KPI dashboard)"""
+    permission_classes = [IsAdminUser]
+    serializer_class = SupplyRequestSerializer
+
+    def get_queryset(self):
+        qs = SupplyRequest.objects.all().order_by('-created_at')
+        status_filter = self.request.query_params.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs
 

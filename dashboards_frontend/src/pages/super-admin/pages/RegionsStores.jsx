@@ -1,13 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DataTable } from '../components/DataTable';
 import { Modal } from '../components/Modal';
 import { StatusBadge } from '../components/StatusBadge';
-import { REGIONS, STORES } from '../mockData';
+import { getRegions } from '../../../api/regions';
+import { getAdminStores as getStoresApi, createStore as createStoreApi } from '../../../api/stores';
 import styles from './RegionsStores.module.css';
 
 export function RegionsStores() {
-  const [selectedRegion, setSelectedRegion] = useState('chicago');
+  const [regions, setRegions] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [selectedRegion, setSelectedRegion] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    storeName: '',
+    address: '',
+    region: '',
+    operatingHours: '',
+    apiEndpoint: '',
+  });
 
   const storeColumns = [
     { key: 'name', label: 'Store Name', sortable: true },
@@ -16,7 +29,7 @@ export function RegionsStores() {
       key: 'status',
       label: 'Status',
       sortable: true,
-      render: (val) => <StatusBadge status={val} text={val === 'online' ? 'Online' : 'Offline'} />,
+      render: (val) => <StatusBadge status={val === 'active' ? 'online' : 'offline'} text={val === 'active' ? 'Online' : 'Offline'} />,
     },
     { key: 'orders', label: 'Active Orders', sortable: true },
     {
@@ -29,7 +42,101 @@ export function RegionsStores() {
     { key: 'lastCheck', label: 'Last Check', sortable: true },
   ];
 
-  const filteredStores = STORES.filter((store) => store.region === selectedRegion);
+  // Fetch regions on mount
+  useEffect(() => {
+    const fetchRegions = async () => {
+      try {
+        const data = await getRegions();
+        setRegions(data);
+        if (data.length > 0) {
+          setSelectedRegion(data[0].name);
+        }
+      } catch (error) {
+        console.error('Failed to fetch regions:', error);
+      }
+    };
+    fetchRegions();
+  }, []);
+
+  // Fetch stores when selected region changes
+  useEffect(() => {
+    if (!selectedRegion) return;
+
+    const fetchStores = async () => {
+      setLoading(true);
+      try {
+        const data = await getStoresApi({ region: selectedRegion });
+        // Map API fields to table fields
+        const mappedStores = data.map((store) => ({
+          ...store,
+          name: store.store_name,
+          region: store.region_name,
+          status: store.status === 'active' ? 'online' : 'offline',
+          orders: 0, // Stub: Part 11
+          inventory: 0, // Stub: Part 4
+          revenue: '—', // Stub: Part 11
+          lastCheck: store.last_heartbeat ? new Date(store.last_heartbeat).toLocaleString() : '—',
+        }));
+        setStores(mappedStores);
+      } catch (error) {
+        console.error('Failed to fetch stores:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStores();
+  }, [selectedRegion]);
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleCreateStore = async () => {
+    if (!formData.storeName || !formData.address || !formData.region || !formData.apiEndpoint) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    try {
+      await createStoreApi({
+        store_name: formData.storeName,
+        location: formData.address,
+        region: parseInt(formData.region),
+        api_endpoint: formData.apiEndpoint,
+      });
+
+      // Refresh stores list
+      const data = await getStoresApi({ region: selectedRegion });
+      const mappedStores = data.map((store) => ({
+        ...store,
+        name: store.store_name,
+        region: store.region_name,
+        status: store.status === 'active' ? 'online' : 'offline',
+        orders: 0,
+        inventory: 0,
+        revenue: '—',
+        lastCheck: store.last_heartbeat ? new Date(store.last_heartbeat).toLocaleString() : '—',
+      }));
+      setStores(mappedStores);
+
+      // Close modal and reset form
+      setShowCreateModal(false);
+      setFormData({
+        storeName: '',
+        address: '',
+        region: selectedRegion,
+        operatingHours: '',
+        apiEndpoint: '',
+      });
+    } catch (error) {
+      console.error('Failed to create store:', error);
+      alert('Failed to create store');
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -44,18 +151,18 @@ export function RegionsStores() {
       </div>
 
       <div className={styles.regionSelector}>
-        {REGIONS.map((region) => (
+        {regions.map((region) => (
           <button
             key={region.id}
-            className={`${styles.regionBtn} ${selectedRegion === region.id ? styles.active : ''}`}
-            onClick={() => setSelectedRegion(region.id)}
+            className={`${styles.regionBtn} ${selectedRegion === region.name ? styles.active : ''}`}
+            onClick={() => setSelectedRegion(region.name)}
           >
-            {region.name}
+            {region.display_name}
           </button>
         ))}
       </div>
 
-      <DataTable columns={storeColumns} data={filteredStores} searchable={true} rowsPerPage={25} />
+      {loading ? <p>Loading stores...</p> : <DataTable columns={storeColumns} data={stores} searchable={true} rowsPerPage={25} />}
 
       <Modal
         isOpen={showCreateModal}
@@ -65,25 +172,48 @@ export function RegionsStores() {
         <form className={styles.form}>
           <div className={styles.formGroup}>
             <label>Store Name</label>
-            <input type="text" placeholder="e.g., Downtown Location" />
+            <input
+              type="text"
+              name="storeName"
+              placeholder="e.g., Downtown Location"
+              value={formData.storeName}
+              onChange={handleFormChange}
+            />
           </div>
           <div className={styles.formGroup}>
             <label>Address</label>
-            <input type="text" placeholder="Street address" />
+            <input
+              type="text"
+              name="address"
+              placeholder="Street address"
+              value={formData.address}
+              onChange={handleFormChange}
+            />
           </div>
           <div className={styles.formGroup}>
             <label>Region</label>
-            <select defaultValue={selectedRegion}>
-              {REGIONS.map((r) => (
+            <select
+              name="region"
+              value={formData.region}
+              onChange={handleFormChange}
+            >
+              <option value="">Select a region</option>
+              {regions.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.name}
+                  {r.display_name}
                 </option>
               ))}
             </select>
           </div>
           <div className={styles.formGroup}>
-            <label>Operating Hours</label>
-            <input type="text" placeholder="e.g., 7am - 10pm" />
+            <label>API Endpoint</label>
+            <input
+              type="url"
+              name="apiEndpoint"
+              placeholder="e.g., http://store.example.com:8000"
+              value={formData.apiEndpoint}
+              onChange={handleFormChange}
+            />
           </div>
           <div className={styles.formActions}>
             <button
@@ -93,7 +223,11 @@ export function RegionsStores() {
             >
               Cancel
             </button>
-            <button type="button" className={styles.submitBtn}>
+            <button
+              type="button"
+              className={styles.submitBtn}
+              onClick={handleCreateStore}
+            >
               Create Store
             </button>
           </div>
