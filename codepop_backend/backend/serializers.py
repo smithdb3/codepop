@@ -394,7 +394,8 @@ class SupplyRequestSerializer(serializers.ModelSerializer):
         fields = ['id', 'store', 'store_name', 'hub', 'hub_name', 'items', 'status', 'urgency',
                   'created_by', 'created_by_name', 'approved_by', 'approved_by_name',
                   'approved_at', 'fulfilled_at', 'notes', 'created_at', 'updated_at']
-        read_only_fields = ['created_at', 'updated_at', 'approved_at', 'fulfilled_at']
+        read_only_fields = ['id', 'store', 'store_name', 'status', 'created_by', 'created_by_name',
+                           'approved_by', 'approved_by_name', 'approved_at', 'fulfilled_at', 'created_at', 'updated_at']
 
     def get_created_by_name(self, obj):
         if obj.created_by:

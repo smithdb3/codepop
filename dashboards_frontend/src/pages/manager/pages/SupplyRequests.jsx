@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getManagerSupplyRequests, createSupplyRequest, cancelSupplyRequest } from '../../../api/supplyRequests';
 import { getManagerInventory } from '../../../api/inventory';
+import { getLogisticsHubStatus } from '../../../api/hubs';
 import { MANAGER } from '../mockData';
 import styles from './SupplyRequests.module.css';
 
 export function SupplyRequests() {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [historyRequests, setHistoryRequests] = useState([]);
+  const [hubs, setHubs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -22,11 +24,17 @@ export function SupplyRequests() {
 
   const rowsPerPage = 25;
 
-  // Fetch supply requests
+  // Fetch supply requests and hubs
   useEffect(() => {
-    async function fetchRequests() {
+    async function fetchData() {
       try {
         setLoading(true);
+
+        // Fetch hubs
+        const hubsData = await getLogisticsHubStatus();
+        setHubs(hubsData || []);
+
+        // Fetch supply requests
         const pending = await getManagerSupplyRequests('pending');
         const fulfilled = await getManagerSupplyRequests('fulfilled');
         const denied = await getManagerSupplyRequests('denied');
@@ -35,13 +43,13 @@ export function SupplyRequests() {
         setHistoryRequests([...(fulfilled || []), ...(denied || [])]);
         setError(null);
       } catch (err) {
-        console.error('Failed to fetch supply requests:', err);
-        setError('Failed to load supply requests');
+        console.error('Failed to fetch data:', err);
+        setError('Failed to load data');
       } finally {
         setLoading(false);
       }
     }
-    fetchRequests();
+    fetchData();
   }, []);
 
   // Pending requests pagination
@@ -100,7 +108,7 @@ export function SupplyRequests() {
 
     try {
       const newRequest = await createSupplyRequest({
-        hub: selectedHub,
+        hub: parseInt(selectedHub),
         items: requestItems,
         notes,
         urgency,
@@ -159,10 +167,11 @@ export function SupplyRequests() {
                 className={styles.select}
               >
                 <option value="">Select a hub...</option>
-                <option value="1">Regional Hub - North</option>
-                <option value="2">Regional Hub - South</option>
-                <option value="3">Regional Hub - East</option>
-                <option value="4">Regional Hub - West</option>
+                {hubs.map((hub) => (
+                  <option key={hub.id} value={hub.id}>
+                    {hub.name}
+                  </option>
+                ))}
               </select>
             </div>
 

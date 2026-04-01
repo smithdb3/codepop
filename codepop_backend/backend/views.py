@@ -1684,12 +1684,17 @@ class LogisticsSupplyRequestDetailView(RetrieveUpdateAPIView):
 
     def perform_update(self, serializer):
         new_status = self.request.data.get('status')
-        extra = {}
-        if new_status == 'approved':
-            extra = {'approved_by': self.request.user, 'approved_at': timezone.now()}
-        elif new_status == 'fulfilled':
-            extra = {'fulfilled_at': timezone.now()}
-        serializer.save(**extra)
+        instance = serializer.save()
+
+        # Update status and related fields
+        if new_status:
+            instance.status = new_status
+            if new_status == 'approved':
+                instance.approved_by = self.request.user
+                instance.approved_at = timezone.now()
+            elif new_status == 'fulfilled':
+                instance.fulfilled_at = timezone.now()
+            instance.save()
 
 
 class ManagerSupplyRequestListCreateView(ListCreateAPIView):
