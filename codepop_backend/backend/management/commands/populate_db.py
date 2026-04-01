@@ -1,7 +1,8 @@
 from django.core.management.base import BaseCommand
 from backend.models import (
     Inventory, Drink, Preference, Region, StoreRegistry,
-    Machine, Schedule, RepairStaffProfile, LogisticsManagerProfile
+    Machine, Schedule, RepairStaffProfile, LogisticsManagerProfile,
+    RepairRecord, MachinePart, MachineNote, MachinePhoto
 )
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -251,15 +252,65 @@ class Command(BaseCommand):
                 )
                 store_id += 1
 
-        # Seeding Machines (one per status)
+        # Seeding Machines (one per status) with repair tracking fields
+        now = timezone.now()
         machines_data = [
-            {'machine_id': '1', 'name': 'Dispenser Alpha', 'location': 'Bay 1', 'status': 'NORMAL', 'store_id': 1},
-            {'machine_id': '2', 'name': 'Dispenser Beta', 'location': 'Bay 2', 'status': 'WARNING', 'store_id': 1},
-            {'machine_id': '3', 'name': 'Dispenser Gamma', 'location': 'Bay 3', 'status': 'ERROR', 'store_id': 1},
-            {'machine_id': '4', 'name': 'Dispenser Delta', 'location': 'Bay 4', 'status': 'OUT_OF_ORDER', 'store_id': 1},
-            {'machine_id': '5', 'name': 'Dispenser Epsilon', 'location': 'Bay 5', 'status': 'SCHEDULE_SERVICE', 'store_id': 1},
-            {'machine_id': '6', 'name': 'Dispenser Zeta', 'location': 'Bay 6', 'status': 'REPAIR_START', 'store_id': 1},
-            {'machine_id': '7', 'name': 'Dispenser Eta', 'location': 'Bay 7', 'status': 'REPAIR_END', 'store_id': 1},
+            {
+                'machine_id': '1', 'name': 'Dispenser Alpha', 'location': 'Bay 1', 'status': 'NORMAL', 'store_id': 1,
+                'install_date': now.date() - datetime.timedelta(days=730),  # 2 years ago
+                'warranty_expiry': now.date() + datetime.timedelta(days=365),  # 1 year from now
+                'last_repair_date': now - datetime.timedelta(days=30),
+                'completion_estimate': None,
+                'model_number': 'CP-3000', 'serial_number': 'SN-001-2024'
+            },
+            {
+                'machine_id': '2', 'name': 'Dispenser Beta', 'location': 'Bay 2', 'status': 'WARNING', 'store_id': 1,
+                'install_date': now.date() - datetime.timedelta(days=365),  # 1 year ago
+                'warranty_expiry': now.date() + datetime.timedelta(days=730),  # 2 years from now
+                'last_repair_date': now - datetime.timedelta(days=7),
+                'completion_estimate': now + datetime.timedelta(days=2),
+                'model_number': 'CP-3000', 'serial_number': 'SN-002-2024'
+            },
+            {
+                'machine_id': '3', 'name': 'Dispenser Gamma', 'location': 'Bay 3', 'status': 'ERROR', 'store_id': 1,
+                'install_date': now.date() - datetime.timedelta(days=1460),  # 4 years ago
+                'warranty_expiry': now.date() - datetime.timedelta(days=90),  # expired 3 months ago
+                'last_repair_date': now - datetime.timedelta(days=60),
+                'completion_estimate': now + datetime.timedelta(days=5),
+                'model_number': 'CP-2500', 'serial_number': 'SN-003-2023'
+            },
+            {
+                'machine_id': '4', 'name': 'Dispenser Delta', 'location': 'Bay 4', 'status': 'OUT_OF_ORDER', 'store_id': 1,
+                'install_date': now.date() - datetime.timedelta(days=1095),  # 3 years ago
+                'warranty_expiry': now.date(),  # expires today
+                'last_repair_date': now - datetime.timedelta(days=15),
+                'completion_estimate': now + datetime.timedelta(days=3),
+                'model_number': 'CP-3000', 'serial_number': 'SN-004-2024'
+            },
+            {
+                'machine_id': '5', 'name': 'Dispenser Epsilon', 'location': 'Bay 5', 'status': 'SCHEDULE_SERVICE', 'store_id': 1,
+                'install_date': now.date() - datetime.timedelta(days=550),  # ~1.5 years ago
+                'warranty_expiry': now.date() + datetime.timedelta(days=180),  # 6 months from now
+                'last_repair_date': now - datetime.timedelta(days=45),
+                'completion_estimate': None,
+                'model_number': 'CP-3000', 'serial_number': 'SN-005-2024'
+            },
+            {
+                'machine_id': '6', 'name': 'Dispenser Zeta', 'location': 'Bay 6', 'status': 'REPAIR_START', 'store_id': 1,
+                'install_date': now.date() - datetime.timedelta(days=730),  # 2 years ago
+                'warranty_expiry': now.date() + datetime.timedelta(days=365),
+                'last_repair_date': now - datetime.timedelta(days=1),
+                'completion_estimate': now + datetime.timedelta(hours=12),
+                'model_number': 'CP-3000', 'serial_number': 'SN-006-2024'
+            },
+            {
+                'machine_id': '7', 'name': 'Dispenser Eta', 'location': 'Bay 7', 'status': 'REPAIR_END', 'store_id': 1,
+                'install_date': now.date() - datetime.timedelta(days=1825),  # 5 years ago
+                'warranty_expiry': now.date() - datetime.timedelta(days=365),  # expired 1 year ago
+                'last_repair_date': now - datetime.timedelta(hours=2),
+                'completion_estimate': None,
+                'model_number': 'CP-2500', 'serial_number': 'SN-007-2023'
+            },
         ]
         machines_dict = {}
         for m in machines_data:
@@ -280,24 +331,23 @@ class Command(BaseCommand):
         )
 
         # Seeding Schedules
-        now = timezone.now()
         schedules_data = [
             {
-                'machine': machines_dict['M001'],
+                'machine': machines_dict['1'],
                 'assigned_to': repair_user,
                 'scheduled_at': now + datetime.timedelta(days=7),
                 'completed_at': None,
                 'description': 'Routine maintenance and fluid check'
             },
             {
-                'machine': machines_dict['M002'],
+                'machine': machines_dict['2'],
                 'assigned_to': repair_user,
                 'scheduled_at': now - datetime.timedelta(days=2),
                 'completed_at': now - datetime.timedelta(days=1),
                 'description': 'Warning light investigation and reset'
             },
             {
-                'machine': machines_dict['M003'],
+                'machine': machines_dict['3'],
                 'assigned_to': repair_user,
                 'scheduled_at': now - datetime.timedelta(days=5),
                 'completed_at': None,
@@ -306,5 +356,100 @@ class Command(BaseCommand):
         ]
         for s in schedules_data:
             Schedule.objects.create(**s)
+
+        # Seeding RepairRecords (repair history for machines)
+        repair_records_data = [
+            {
+                'machine': machines_dict['1'],
+                'technician': repair_user,
+                'repair_type': 'Preventive Maintenance',
+                'started_at': now - datetime.timedelta(days=30),
+                'completed_at': now - datetime.timedelta(days=29, hours=23),
+                'status': 'completed',
+                'notes': 'Fluid levels checked and topped off. All seals intact.'
+            },
+            {
+                'machine': machines_dict['2'],
+                'technician': repair_user,
+                'repair_type': 'Valve Replacement',
+                'started_at': now - datetime.timedelta(days=7),
+                'completed_at': now - datetime.timedelta(days=6, hours=22),
+                'status': 'completed',
+                'notes': 'Main dispenser valve replaced due to leakage. New valve model V-2024-A installed.'
+            },
+            {
+                'machine': machines_dict['2'],
+                'technician': repair_user,
+                'repair_type': 'Dispenser Cleaning',
+                'started_at': now - datetime.timedelta(days=1),
+                'completed_at': None,
+                'status': 'in_progress',
+                'notes': 'Heavy residue buildup detected. Performing deep clean of all nozzles.'
+            },
+            {
+                'machine': machines_dict['3'],
+                'technician': repair_user,
+                'repair_type': 'Motor Assembly Repair',
+                'started_at': now - datetime.timedelta(days=60),
+                'completed_at': None,
+                'status': 'awaiting_parts',
+                'notes': 'Motor assembly failure. Parts on order from supplier. ETA: 5 days.'
+            },
+            {
+                'machine': machines_dict['6'],
+                'technician': repair_user,
+                'repair_type': 'Control Board Replacement',
+                'started_at': now - datetime.timedelta(hours=1),
+                'completed_at': None,
+                'status': 'in_progress',
+                'notes': 'Control board showing intermittent errors. Replacement unit installed, running diagnostics.'
+            },
+        ]
+        for rr in repair_records_data:
+            RepairRecord.objects.create(**rr)
+
+        # Seeding MachineParts (compatible parts for machines)
+        machine_parts_data = [
+            {'machine': machines_dict['1'], 'part_name': 'Dispenser Valve Assembly', 'part_number': 'DV-2024-001', 'stock_qty': 3, 'eta_days': None, 'is_compatible': True},
+            {'machine': machines_dict['1'], 'part_name': 'O-Ring Kit (Standard)', 'part_number': 'OR-KIT-001', 'stock_qty': 12, 'eta_days': None, 'is_compatible': True},
+            {'machine': machines_dict['1'], 'part_name': 'Main Motor Assembly', 'part_number': 'MMA-3000-A', 'stock_qty': 0, 'eta_days': 7, 'is_compatible': True},
+            {'machine': machines_dict['2'], 'part_name': 'Dispenser Valve Assembly', 'part_number': 'DV-2024-001', 'stock_qty': 3, 'eta_days': None, 'is_compatible': True},
+            {'machine': machines_dict['2'], 'part_name': 'Control Board Module', 'part_number': 'CBM-2024-X', 'stock_qty': 1, 'eta_days': None, 'is_compatible': True},
+            {'machine': machines_dict['3'], 'part_name': 'Main Motor Assembly', 'part_number': 'MMA-2500-B', 'stock_qty': 0, 'eta_days': 5, 'is_compatible': True},
+            {'machine': machines_dict['3'], 'part_name': 'Pump Housing', 'part_number': 'PH-2500-001', 'stock_qty': 2, 'eta_days': None, 'is_compatible': True},
+            {'machine': machines_dict['6'], 'part_name': 'Control Board Module', 'part_number': 'CBM-2024-X', 'stock_qty': 1, 'eta_days': None, 'is_compatible': True},
+            {'machine': machines_dict['6'], 'part_name': 'Power Supply Unit', 'part_number': 'PSU-3000-V2', 'stock_qty': 0, 'eta_days': 3, 'is_compatible': True},
+        ]
+        for part in machine_parts_data:
+            MachinePart.objects.create(**part)
+
+        # Seeding MachineNotes (technician notes)
+        machine_notes_data = [
+            {'machine': machines_dict['1'], 'author': repair_user, 'content': 'Unit running smoothly. Scheduled next maintenance for 90 days.'},
+            {'machine': machines_dict['1'], 'author': repair_user, 'content': 'Customer reported unusual noise from dispenser. Checked motor bearings—minor wear but within spec.'},
+            {'machine': machines_dict['2'], 'author': repair_user, 'content': 'Valve leak detected during pressure test. Customer notified of replacement needed.'},
+            {'machine': machines_dict['2'], 'author': repair_user, 'content': 'After valve replacement, tested at full pressure—all systems nominal.'},
+            {'machine': machines_dict['2'], 'author': repair_user, 'content': 'High residue detected. Schedule deep cleaning before next use.'},
+            {'machine': machines_dict['3'], 'author': repair_user, 'content': 'Motor assembly catastrophic failure. Unit inoperable. Parts sourced, ETA 5 days.'},
+            {'machine': machines_dict['4'], 'author': repair_user, 'content': 'Warranty expired. Customer approved out-of-warranty repair. Parts quote sent.'},
+            {'machine': machines_dict['6'], 'author': repair_user, 'content': 'Control board generating error code 42. Diagnostic test in progress.'},
+            {'machine': machines_dict['6'], 'author': repair_user, 'content': 'Control board replacement installed. Running post-repair diagnostics now.'},
+            {'machine': machines_dict['7'], 'author': repair_user, 'content': 'Unit returned to service after warranty-expired repair. Tested for 2 hours—stable.'},
+        ]
+        for note in machine_notes_data:
+            MachineNote.objects.create(**note)
+
+        # Seeding MachinePhotos (photo attachments)
+        # Note: In production, these would be actual uploaded files. For seeding, we create records with placeholder paths.
+        machine_photos_data = [
+            {'machine': machines_dict['2'], 'photo': 'machine_photos/machine_2_valve_leak_001.jpg', 'uploaded_by': repair_user},
+            {'machine': machines_dict['2'], 'photo': 'machine_photos/machine_2_valve_leak_002.jpg', 'uploaded_by': repair_user},
+            {'machine': machines_dict['3'], 'photo': 'machine_photos/machine_3_motor_failure_001.jpg', 'uploaded_by': repair_user},
+            {'machine': machines_dict['3'], 'photo': 'machine_photos/machine_3_motor_failure_002.jpg', 'uploaded_by': repair_user},
+            {'machine': machines_dict['6'], 'photo': 'machine_photos/machine_6_control_board_damage.jpg', 'uploaded_by': repair_user},
+            {'machine': machines_dict['7'], 'photo': 'machine_photos/machine_7_post_repair_test.jpg', 'uploaded_by': repair_user},
+        ]
+        for photo in machine_photos_data:
+            MachinePhoto.objects.create(**photo)
 
         self.stdout.write(self.style.SUCCESS('Successfully populated the database.'))

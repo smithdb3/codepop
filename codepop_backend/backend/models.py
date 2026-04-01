@@ -494,6 +494,12 @@ class Machine(models.Model):
     last_status_change = models.DateTimeField(auto_now=True)
     notes        = models.TextField(blank=True)
     store_id     = models.IntegerField()  # which store this machine belongs to
+    install_date = models.DateField(null=True, blank=True)
+    warranty_expiry = models.DateField(null=True, blank=True)
+    last_repair_date = models.DateTimeField(null=True, blank=True)
+    completion_estimate = models.DateTimeField(null=True, blank=True)
+    model_number = models.CharField(max_length=100, blank=True)
+    serial_number = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
         return f"Machine {self.machine_id} ({self.name}) — {self.status}"
@@ -513,6 +519,92 @@ class Schedule(models.Model):
 
     def __str__(self):
         return f"Schedule for {self.machine} at {self.scheduled_at}"
+
+
+class RepairRecord(models.Model):
+    """
+    Immutable record of a completed or in-progress repair job on a machine.
+    Created when repair staff works on a machine.
+    Tied to Machine and repair staff technician (auth.User).
+    """
+    STATUS_CHOICES = [
+        ('in_progress',    'In Progress'),
+        ('awaiting_parts', 'Awaiting Parts'),
+        ('completed',      'Completed'),
+        ('escalated',      'Escalated'),
+    ]
+    machine      = models.ForeignKey(Machine, on_delete=models.CASCADE, related_name='repair_records')
+    technician   = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, related_name='repairs_performed')
+    repair_type  = models.CharField(max_length=100)  # e.g. "Valve Replacement", "Dispenser Cleaning"
+    started_at   = models.DateTimeField()
+    completed_at = models.DateTimeField(null=True, blank=True)
+    status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='in_progress')
+    notes        = models.TextField(blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-started_at']
+
+    def __str__(self):
+        return f"RepairRecord {self.id}: {self.repair_type} on {self.machine} by {self.technician}"
+
+
+class MachinePart(models.Model):
+    """
+    Represents a compatible part for a machine.
+    Tracks stock availability and estimated time-to-arrival if out of stock.
+    """
+    machine      = models.ForeignKey(Machine, on_delete=models.CASCADE, related_name='compatible_parts')
+    part_name    = models.CharField(max_length=100)
+    part_number  = models.CharField(max_length=50)
+    stock_qty    = models.PositiveIntegerField(default=0)
+    eta_days     = models.PositiveIntegerField(null=True, blank=True)  # days until in stock if out
+    is_compatible = models.BooleanField(default=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('machine', 'part_number')
+
+    def __str__(self):
+        return f"{self.part_name} ({self.part_number}) for {self.machine}"
+
+
+class MachineNote(models.Model):
+    """
+    Internal technician notes on a machine.
+    Created by repair staff as they diagnose or work on machines.
+    Displayed in reverse chronological order on machine detail view.
+    """
+    machine      = models.ForeignKey(Machine, on_delete=models.CASCADE, related_name='machine_notes')
+    author       = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, related_name='machine_notes_created')
+    content      = models.TextField()
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Note by {self.author} on {self.machine} at {self.created_at}"
+
+
+class MachinePhoto(models.Model):
+    """
+    Photo attachment for a machine.
+    Used by repair staff to document machine condition, damage, or diagnostics.
+    Supports upload and deletion.
+    """
+    machine      = models.ForeignKey(Machine, on_delete=models.CASCADE, related_name='photos')
+    photo        = models.ImageField(upload_to='machine_photos/')  # or FileField for generic files
+    uploaded_by  = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, related_name='machine_photos_uploaded')
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Photo of {self.machine} uploaded by {self.uploaded_by} at {self.created_at}"
+
 
 # should repair staff be over multiple stores?
 

@@ -149,7 +149,7 @@ class RevenueSerializer(serializers.ModelSerializer):
             revenue_instance.calculate_total_amount()
         revenue_instance.save()
         return revenue_instance
-    
+
 class MachineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Machine
@@ -285,6 +285,226 @@ class AuditLogSerializer(serializers.ModelSerializer):
         if obj.actor and hasattr(obj.actor, 'admin_profile') and obj.actor.admin_profile.role:
             return obj.actor.admin_profile.role.name
         return 'Unknown'
+
+
+# ─────────────────────────────────────────────
+# REPAIR STAFF DASHBOARD — MACHINE SERIALIZERS
+# ─────────────────────────────────────────────
+
+from .models import Machine, RepairRecord, MachinePart, MachineNote, MachinePhoto
+
+
+class MachineNoteSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MachineNote
+        fields = ['id', 'content', 'author', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def get_author(self, obj):
+        if obj.author:
+            name = f"{obj.author.first_name} {obj.author.last_name}".strip()
+            return name or obj.author.username
+        return 'Unknown'
+
+
+class MachinePhotoSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    uploaded_by = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MachinePhoto
+        fields = ['id', 'url', 'uploaded_by', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def get_url(self, obj):
+        request = self.context.get('request')
+        if obj.photo and request:
+            return request.build_absolute_uri(obj.photo.url)
+        return None
+
+    def get_uploaded_by(self, obj):
+        if obj.uploaded_by:
+            name = f"{obj.uploaded_by.first_name} {obj.uploaded_by.last_name}".strip()
+            return name or obj.uploaded_by.username
+        return 'Unknown'
+
+
+class MachinePartSerializer(serializers.ModelSerializer):
+    stock_status = serializers.SerializerMethodField()
+    qty_available = serializers.IntegerField(source='stock_qty')
+    eta = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MachinePart
+        fields = ['id', 'part_name', 'part_number', 'stock_status', 'qty_available', 'eta', 'is_compatible']
+
+    def get_stock_status(self, obj):
+        if obj.stock_qty > 0:
+            return 'in_stock'
+        elif obj.eta_days is not None:
+            return 'order_pending'
+        return 'back_order'
+
+    def get_eta(self, obj):
+        if obj.eta_days is None:
+            return None
+        from django.utils import timezone
+        import datetime
+        return (timezone.now().date() + datetime.timedelta(days=obj.eta_days)).isoformat()
+
+
+class RepairRecordSerializer(serializers.ModelSerializer):
+    date = serializers.DateTimeField(source='started_at', format='%Y-%m-%d')
+    technician = serializers.SerializerMethodField()
+    issue_type = serializers.CharField(source='repair_type')
+    duration = serializers.SerializerMethodField()
+    outcome = serializers.SerializerMethodField()
+    diagnosis = serializers.CharField(source='notes')
+    steps_text = serializers.SerializerMethodField()
+    parts_replaced = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RepairRecord
+        fields = [
+            'id', 'date', 'technician', 'issue_type',
+            'duration', 'outcome', 'diagnosis', 'steps_text',
+            'parts_replaced', 'status', 'started_at', 'completed_at'
+        ]
+
+    def get_technician(self, obj):
+        if obj.technician:
+            name = f"{obj.technician.first_name} {obj.technician.last_name}".strip()
+            return name or obj.technician.username
+        return 'Unknown'
+
+    def get_duration(self, obj):
+        if obj.completed_at and obj.started_at:
+            delta = obj.completed_at - obj.started_at
+            total_minutes = int(delta.total_seconds() / 60)
+            hours, minutes = divmod(total_minutes, 60)
+            if hours > 0:
+                return f"{hours}h {minutes}m" if minutes else f"{hours}h"
+            return f"{minutes}m"
+        return None
+
+    def get_outcome(self, obj):
+        return 'resolved' if obj.status == 'completed' else 'unresolved'
+
+    def get_steps_text(self, obj):
+        return obj.notes or ''
+
+    def get_parts_replaced(self, obj):
+        return []
+
+
+class MachineListSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source='machine_id')
+    store_id = serializers.IntegerField()
+    store_name = serializers.SerializerMethodField()
+    model = serializers.CharField(source='model_number')
+    serial = serializers.CharField(source='serial_number')
+    downtime_duration = serializers.SerializerMethodField()
+    last_service = serializers.SerializerMethodField()
+    priority_score = serializers.SerializerMethodField()
+    revenue_impact = serializers.SerializerMethodField()
+    install_date = serializers.DateField()
+    warranty_status = serializers.SerializerMethodField()
+    repair_state = serializers.SerializerMethodField()
+    estimated_completion = serializers.DateTimeField(source='completion_estimate')
+    assigned_tech = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Machine
+        fields = [
+            'id', 'store_id', 'store_name', 'model', 'serial',
+            'status', 'downtime_duration', 'last_service',
+            'priority_score', 'revenue_impact', 'install_date',
+            'warranty_status', 'repair_state', 'estimated_completion',
+            'assigned_tech',
+        ]
+
+    def get_store_name(self, obj):
+        from .models import StoreRegistry
+        store = StoreRegistry.objects.filter(store_id=obj.store_id).first()
+        return store.store_name if store else f'Store #{obj.store_id}'
+
+    def get_downtime_duration(self, obj):
+        if obj.status in ('NORMAL', 'SCHEDULE_SERVICE'):
+            return None
+        from django.utils import timezone
+        delta = timezone.now() - obj.last_status_change
+        total_minutes = int(delta.total_seconds() / 60)
+        hours, minutes = divmod(total_minutes, 60)
+        if hours > 0:
+            return f"{hours}h {minutes}m"
+        return f"{minutes}m"
+
+    def get_last_service(self, obj):
+        if obj.last_repair_date:
+            return obj.last_repair_date.date().isoformat()
+        return None
+
+    def get_priority_score(self, obj):
+        score_map = {
+            'ERROR': 90, 'OUT_OF_ORDER': 85, 'REPAIR_START': 70,
+            'WARNING': 50, 'SCHEDULE_SERVICE': 30, 'REPAIR_END': 20, 'NORMAL': 5
+        }
+        return score_map.get(obj.status, 0)
+
+    def get_revenue_impact(self, obj):
+        if obj.status == 'NORMAL':
+            return 0
+        return 250
+
+    def get_warranty_status(self, obj):
+        if not obj.warranty_expiry:
+            return 'Unknown'
+        from django.utils import timezone
+        return 'Active' if obj.warranty_expiry >= timezone.now().date() else 'Expired'
+
+    def get_repair_state(self, obj):
+        label_map = {
+            'NORMAL': 'Healthy', 'WARNING': 'Warning',
+            'ERROR': 'Error', 'OUT_OF_ORDER': 'Out of Order',
+            'SCHEDULE_SERVICE': 'Scheduled', 'REPAIR_START': 'In Progress',
+            'REPAIR_END': 'Testing',
+        }
+        return label_map.get(obj.status, obj.status)
+
+    def get_assigned_tech(self, obj):
+        latest = obj.repair_records.filter(
+            status__in=['in_progress', 'awaiting_parts']
+        ).select_related('technician').first()
+        if latest and latest.technician:
+            name = f"{latest.technician.first_name} {latest.technician.last_name}".strip()
+            return name or latest.technician.username
+        return None
+
+
+class MachineDetailSerializer(MachineListSerializer):
+    last_note = serializers.SerializerMethodField()
+    last_update_time = serializers.SerializerMethodField()
+
+    class Meta(MachineListSerializer.Meta):
+        fields = MachineListSerializer.Meta.fields + ['last_note', 'last_update_time', 'notes']
+
+    def get_last_note(self, obj):
+        note = MachineNote.objects.filter(machine=obj).order_by('-created_at').first()
+        return note.content if note else obj.notes or None
+
+    def get_last_update_time(self, obj):
+        from django.utils import timezone
+        delta = timezone.now() - obj.last_status_change
+        minutes = int(delta.total_seconds() / 60)
+        if minutes < 60:
+            return f"{minutes} minutes ago"
+        hours = minutes // 60
+        if hours < 24:
+            return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        days = hours // 24
+        return f"{days} day{'s' if days != 1 else ''} ago"
 
 
 # ─────────────────────────────────────────────
