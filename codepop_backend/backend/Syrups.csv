@@ -1,49 +1,49 @@
 index,name,type
-0,coconut,fruit tropical neutral
-1,pineapple,fruit tropical cool
+0,Coconut,fruit tropical neutral
+1,Pineapple,fruit tropical cool
 2,passion fruit,fruit tropical cool
-3,mango,fruit tropical cool
-4,guava,fruit tropical cool
-5,banana,fruit tropical cool
-6,strawberry,fruit berry cool
-7,raspberry,fruit berry cool
-8,blackberry,fruit berry cool
-9,pomegranate,fruit berry cool
-10,cranberry,fruit berry cool
-11,grape,fruit berry cool
-12,kiwi,fruit berry cool
-13,huckleberry,fruit berry cool
-14,peach,fruit other cool
-15,watermelon,fruit other cool
-16,green apple,fruit other cool
-17,pear,fruit other cool
-18,cherry,fruit other cool
-19,orange,fruit citrus cool
-20,blood orange,fruit citrus cool
-21,grapefruit,fruit citrus cool
-22,sweetened lime,fruit citrus cool
-23,lemon,fruit citrus cool
-24,lime,fruit citrus cool
-25,vanilla,dessert warm
-26,cupcake,dessert warm
-27,salted caramel,dessert warm
-28,chocolate milano,dessert warm
-29,cinnamon,dessert warm
-30,choc chip cookie dough,dessert warm
-31,brown sugar cinnamon,dessert warm
-32,hazelnut,dessert warm
-33,white chocolate,dessert warm
-34,butterscotch,dessert warm
-35,blue raspberry,candy cool
-36,sour,fruit candy cool
-37,blue curacao,candy cool
-38,bubble gum,candy cool
-39,cotton candy,candy cool
-40,mojito,herbal cool
-41,cucumber,herbal cool
-42,lavender,herbal warm
-43,pumpkin spice,spice warm
-44,peppermint,spice warm
-45,irish cream,spice warm
-46,gingerbread,spice warm
-47,butterbrew mix,spice warm
+3,Mango,fruit tropical cool
+4,Guava,fruit tropical cool
+5,Banana,fruit tropical cool
+6,Strawberry,fruit berry cool
+7,Raspberry,fruit berry cool
+8,Blackberry,fruit berry cool
+9,Pomegranate,fruit berry cool
+10,Cranberry,fruit berry cool
+11,Grape,fruit berry cool
+12,Kiwi,fruit berry cool
+13,Huckleberry,fruit berry cool
+14,Peach,fruit other cool
+15,Watermelon,fruit other cool
+16,Green apple,fruit other cool
+17,Pear,fruit other cool
+18,Cherry,fruit other cool
+19,Orange,fruit citrus cool
+20,Blood orange,fruit citrus cool
+21,Grapefruit,fruit citrus cool
+22,Sweetened lime,fruit citrus cool
+23,Lemon,fruit citrus cool
+24,Lime,fruit citrus cool
+25,Vanilla,dessert warm
+26,Cupcake,dessert warm
+27,Salted caramel,dessert warm
+28,Chocolate milano,dessert warm
+29,Cinnamon,dessert warm
+30,Choc chip cookie dough,dessert warm
+31,Brown sugar cinnamon,dessert warm
+32,Hazelnut,dessert warm
+33,White chocolate,dessert warm
+34,Butterscotch,dessert warm
+35,Blue raspberry,candy cool
+36,Sour,fruit candy cool
+37,Blue curacao,candy cool
+38,Bubble gum,candy cool
+39,Cotton candy,candy cool
+40,Mojito,herbal cool
+41,Cucumber,herbal cool
+42,Lavender,herbal warm
+43,Pumpkin spice,spice warm
+44,Peppermint,spice warm
+45,Irish cream,spice warm
+46,Gingerbread,spice warm
+47,Butterbrew mix,spice warm
