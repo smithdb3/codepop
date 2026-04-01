@@ -678,9 +678,16 @@ class UserOrdersLookup(ListCreateAPIView):
         user = get_object_or_404(User, pk=user_id)
         serializer.save(UserID=user)
 
+class StripeConfigView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({'publishableKey': settings.STRIPE_PUBLISHABLE_KEY})
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class StripePaymentIntentView(View):
-    
+
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body)
@@ -695,7 +702,6 @@ class StripePaymentIntentView(View):
             # Create an ephemeral key for the customer
             ephemeral_key = stripe.EphemeralKey.create(
                 customer=customer['id'],
-                stripe_version='2024-09-30.acacia',
             )
 
             # Create a payment intent
@@ -711,7 +717,7 @@ class StripePaymentIntentView(View):
                 'paymentIntent': payment_intent.client_secret,
                 'ephemeralKey': ephemeral_key.secret,
                 'customer': customer.id,
-                'publishableKey': 'TODO: get a new publishable stripe key'
+                'publishableKey': settings.STRIPE_PUBLISHABLE_KEY
             })
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)

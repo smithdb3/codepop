@@ -17,28 +17,51 @@ export default function CheckoutForm(totalPrice) {
   const [loading, setLoading] = useState(false);
 
   const fetchPaymentSheetParams = async () => {
-    const response = await fetch(`${getBaseURL()}/backend/create-payment-intent/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: totalPrice }), // amount in cents
-    });
-    const { paymentIntent, ephemeralKey, customer } = await response.json();
-    setStripeNum(paymentIntent);
-    return { paymentIntent, ephemeralKey, customer };
+    try {
+      const url = `${getBaseURL()}/backend/create-payment-intent/`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: totalPrice }), // amount in dollars, backend converts to cents
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const { paymentIntent, ephemeralKey, customer } = data;
+
+      if (!paymentIntent || !ephemeralKey || !customer) {
+        throw new Error('Missing required payment fields from server');
+      }
+
+      setStripeNum(paymentIntent);
+      return { paymentIntent, ephemeralKey, customer };
+    } catch (error) {
+      console.error('Error fetching payment sheet params:', error);
+      throw error;
+    }
   };
 
   const initializePaymentSheet = async () => {
-    const { paymentIntent, ephemeralKey, customer } = await fetchPaymentSheetParams();
-    const { error } = await initPaymentSheet({
-      merchantDisplayName: "Example, Inc.",
-      customerId: customer,
-      customerEphemeralKeySecret: ephemeralKey,
-      paymentIntentClientSecret: paymentIntent,
-      allowsDelayedPaymentMethods: true,
-      returnURL: 'codepop://stripe-callback',
-    });
-    if (!error) setLoading(true);
-    else Alert.alert("Error", error.message);
+    try {
+      const { paymentIntent, ephemeralKey, customer } = await fetchPaymentSheetParams();
+      const { error } = await initPaymentSheet({
+        merchantDisplayName: "CodePop",
+        customerId: customer,
+        customerEphemeralKeySecret: ephemeralKey,
+        paymentIntentClientSecret: paymentIntent,
+        allowsDelayedPaymentMethods: true,
+        returnURL: 'codepop://stripe-callback',
+      });
+      if (!error) setLoading(true);
+      else Alert.alert("Error", error.message);
+    } catch (error) {
+      Alert.alert("Error", error.message || 'Failed to initialize payment sheet');
+    }
   };
 
   // function to remove all drinks from cart list after sucessful checkout
@@ -47,10 +70,8 @@ export default function CheckoutForm(totalPrice) {
       const cartList = await AsyncStorage.getItem('checkoutList');
       const currentList = cartList ? JSON.parse(cartList) : [];
       const token = await AsyncStorage.getItem('userToken');
-      
+
       const userId = await AsyncStorage.getItem('userId');
-      
-      console.log(currentList);
 
       const response = await fetch(`${getBaseURL()}/backend/orders/`, {
         method: 'POST',
@@ -70,21 +91,16 @@ export default function CheckoutForm(totalPrice) {
       if (response.ok) {
         const data = await response.json(); // Parse JSON if returned
         orderNum = data.OrderID;
-        console.log('Order Num:', orderNum);
         await AsyncStorage.setItem("orderNum", orderNum.toString());
       } else {
         console.error('Failed to create order:', response.status, await response.text());
       }
 
- 
       // Update the local state to remove the drink from the cart page
       setDrinks(null);
-  
+
       // Update the AsyncStorage to remove the drink ID from the checkout list
       await AsyncStorage.removeItem("checkoutList");
-      
-
-      console.log("cart cleared sucessfully");
       
     } catch (error) {
       console.error('Error removing drinks from cart:', error);
@@ -107,8 +123,7 @@ export default function CheckoutForm(totalPrice) {
       });
     
       if (response.ok) {
-        const data = await response.json(); // Parse the response if needed
-        console.log("Revenue recorded successfully:", data);
+        // Revenue recorded successfully
       } else {
         const errorMessage = await response.text(); // Retrieve error details
         console.error("Failed to record revenue:", response.status, errorMessage);
@@ -119,27 +134,33 @@ export default function CheckoutForm(totalPrice) {
   }
 
   const openPaymentSheet = async () => {
-    const { error } = await presentPaymentSheet();
-  
-    if (error) {
-      Alert.alert(`Error code: ${error.code}`, error.message);
-    } else {
-      Alert.alert('Success', 'Your order is confirmed!', [
-        {
-          text: 'OK',
-          onPress: async () => {
-            await removeAllDrinks();
-            await addRevenue();
-            const response = await fetch(`${getBaseURL()}/backend/email/${orderNum}/`, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            });
-            navigation.navigate('PostCheckout');
+    try {
+      const { error } = await presentPaymentSheet();
+
+      if (error) {
+        console.error('Stripe error:', error);
+        Alert.alert(`Error code: ${error.code}`, error.message);
+      } else {
+        Alert.alert('Success', 'Your order is confirmed!', [
+          {
+            text: 'OK',
+            onPress: async () => {
+              await removeAllDrinks();
+              await addRevenue();
+              const response = await fetch(`${getBaseURL()}/backend/email/${orderNum}/`, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              });
+              navigation.navigate('PostCheckout');
+            },
           },
-        },
-      ]);
+        ]);
+      }
+    } catch (err) {
+      console.error('Exception in openPaymentSheet:', err);
+      Alert.alert('Error', 'An unexpected error occurred');
     }
   };
 
