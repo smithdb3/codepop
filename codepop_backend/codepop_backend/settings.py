@@ -130,6 +130,9 @@ HUB_ENDPOINTS = {
     'seattle':    os.getenv('HUB_SEATTLE_URL',     ''),  # Provision later
 }
 
+# Google Gemini API
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+
 # Rate limiting — inter-node endpoints only
 RATELIMIT_ENABLE = True
 RATELIMIT_USE_CACHE = 'default'

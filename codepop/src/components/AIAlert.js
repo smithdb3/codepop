@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Button, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { getBaseURL } from '../../ip_address'
+import { useTheme } from '../theme';
+import { getBaseURL } from '../../ip_address';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Gif from './Gif';
 import { sodaOptions, syrupOptions, AddInOptions } from './Ingredients';
@@ -9,121 +10,99 @@ import Modal from 'react-native-modal';
 
 const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
+  const [selectedSize, setSelectedSize] = useState(drinkDict.Size || '24oz');
 
-  const createObj = async () => {
+  const sizes = ['16oz', '24oz', '32oz'];
+
+  const createObj = async (size) => {
     try {
-      // Ensure SodaUsed, SyrupsUsed, and AddIns are arrays
       const sodaUsed = Array.isArray(drinkDict.SodaUsed) && drinkDict.SodaUsed.length > 0 ? drinkDict.SodaUsed : [drinkDict.SodaUsed];
       const syrupsUsed = Array.isArray(drinkDict.SyrupsUsed) ? drinkDict.SyrupsUsed : [];
       const addIns = Array.isArray(drinkDict.AddIns) ? drinkDict.AddIns : [];
-  
-      // If SodaUsed is empty, set it to ["DefaultSoda"] (or any default soda)
-      if (sodaUsed.length === 0) {
-        console.warn('SodaUsed is empty, setting to default soda.');
-      }
-  
+
       const response = await fetch(`${getBaseURL()}/backend/drinks/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          Name: "AI drink", // Example name for the drink
-          SodaUsed: sodaUsed, // Make sure it's an array with at least one item
-          SyrupsUsed: syrupsUsed, // Make sure it's an array
-          AddIns: addIns, // Make sure it's an array
-          Price: 2.00,
+          Name: 'AI drink',
+          SodaUsed: sodaUsed,
+          SyrupsUsed: syrupsUsed,
+          AddIns: addIns,
+          Price: 2.0,
           User_Created: true,
-          Size: drinkDict.Size || "24oz", // Default size
-          Ice: drinkDict.Ice || "regular", // Default ice amount
+          Size: size,
+          Ice: 'regular',
         }),
       });
-  
-      // Check if the response is not OK (status code not in the range 200-299)
+
       if (!response.ok) {
-        const errorText = await response.text(); // Get the error message from the response body
+        const errorText = await response.text();
         console.error('Failed to create drink. Status:', response.status);
         console.error('Response Text:', errorText);
         throw new Error(`Failed to create drink: ${response.status} - ${errorText}`);
       }
-  
+
       const data = await response.json();
-      // gets list of out of storage on your phone
-      let cartList = await AsyncStorage.getItem("checkoutList");
+      let cartList = await AsyncStorage.getItem('checkoutList');
       const currentList = cartList ? JSON.parse(cartList) : [];
-  
-      const drinkID = data.DrinkID; // assuming the response contains DrinkID
+      const drinkID = data.DrinkID;
       const updatedList = [...currentList, drinkID];
       await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
 
-      console.log("created drink obj")
-      return data; // Return the created drink object
-  
+      console.log('created drink obj');
+      return data;
     } catch (error) {
-      console.error('Error in createObj:', error); // Log any other errors
-      throw error; // Rethrow error to be handled by the caller
-    }
-  };
-  
-  
-  
-  const edit = async () => {
-    try {
-      const drink = await createObj(); // Wait for the drink object to be created
-      navigation.navigate('UpdateDrink', { drink }); // Pass the drink object to the UpdateDrink page
-    } catch (error) {
-      console.error('Error in edit:', error);
+      console.error('Error in createObj:', error);
+      throw error;
     }
   };
 
-  const AddToCart = async () => {
+  const addToCart = async () => {
     try {
-      await createObj(); // Add the drink to the cart
+      await createObj(selectedSize);
+      toggleModal();
       navigation.navigate('Cart');
     } catch (error) {
-      console.error('Error in AddToCart:', error);
+      console.error('Error in addToCart:', error);
+      Alert.alert('Error', 'Failed to add drink to cart. Please try again.');
     }
   };
 
-  // // reactive drink stuff
   const getLayers = (soda, syrups, addins) => {
     const layers = [];
     const totalItems = soda.length + syrups.length + addins.length;
-  
+
     soda.forEach((sodaName) => {
       const sodaOption = sodaOptions.find((opt) => opt.label === sodaName);
       if (sodaOption) {
         layers.push({ color: sodaOption.color, height: 100 / totalItems });
-      } else {
       }
     });
-  
+
     syrups.forEach((syrupName) => {
       const syrupOption = syrupOptions.find((opt) => opt.label === syrupName);
       if (syrupOption) {
         layers.push({ color: syrupOption.color, height: 100 / totalItems });
-      } else {
       }
     });
-  
+
     addins.forEach((addinName) => {
-      const addInOption = AddInOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
+      const addInOption = AddInOptions.find((opt) => opt.label === addinName);
       if (addInOption) {
         layers.push({ color: addInOption.color, height: 100 / totalItems });
-      } else {
       }
     });
     return layers;
   };
+
   const sodaUsed = Array.isArray(drinkDict.SodaUsed) && drinkDict.SodaUsed.length > 0 ? drinkDict.SodaUsed : [drinkDict.SodaUsed];
   const syrupsUsed = Array.isArray(drinkDict.SyrupsUsed) ? drinkDict.SyrupsUsed : [];
   const addIns = Array.isArray(drinkDict.AddIns) ? drinkDict.AddIns : [];
 
-  
-
   const layers = getLayers(sodaUsed, syrupsUsed, addIns);
-  console.log(layers);
-
 
   return (
     <Modal
@@ -134,31 +113,57 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
       animationIn="slideInUp"
       animationOut="slideOutDown"
     >
-      <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Your Drink is ...</Text>
-        <Text style={styles.modalText}>
-          A {drinkDict.Size} drink with {drinkDict.Ice} Ice
-        </Text>
+      <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+        {/* Header with close button */}
+        <View style={styles.headerRow}>
+          <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Your Drink</Text>
+          <TouchableOpacity onPress={toggleModal} style={styles.closeButton}>
+            <Text style={[styles.closeButtonText, { color: colors.textPrimary }]}>✕</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Size Selector */}
+        <View style={styles.sizeSection}>
+          <Text style={[styles.sizeLabel, { color: colors.textPrimary }]}>Select Size</Text>
+          <View style={styles.sizeRow}>
+            {sizes.map((size) => (
+              <TouchableOpacity
+                key={size}
+                style={[
+                  styles.sizeButton,
+                  selectedSize === size
+                    ? [styles.sizeButtonSelected, { backgroundColor: colors.primary }]
+                    : [styles.sizeButtonUnselected, { borderColor: colors.border }],
+                ]}
+                onPress={() => setSelectedSize(size)}
+              >
+                <Text
+                  style={[
+                    styles.sizeButtonText,
+                    { color: selectedSize === size ? '#fff' : colors.textPrimary },
+                  ]}
+                >
+                  {size}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Body: Ingredients and Gif */}
         <View style={styles.body}>
           {/* Ingredients List */}
           <View style={styles.textNbuttons}>
-            <View style={styles.ingredientsText}>
-              <Text style={styles.ingredientsText}>Soda: {sodaUsed.join(", ")}</Text>
-              <Text style={styles.ingredientsText}>Syrups: {syrupsUsed.join(", ")}</Text>
-              <Text style={styles.ingredientsText}>Add-ins: {addIns.join(", ")}</Text>
-            </View>
-            <View style={styles.buttonsContainer}>
-              <TouchableOpacity style={styles.buttons} onPress={() => (edit(), toggleModal())}>
-                <Text style={styles.buttonText}>Edit</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.buttons} onPress={() => (AddToCart(), toggleModal())}>
-                <Text style={styles.buttonText}>Add to Cart</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.buttons} onPress={toggleModal}>
-                <Text style={styles.buttonText}>Dismiss</Text>
-              </TouchableOpacity>
+            <View style={[styles.ingredientsBox, { backgroundColor: colors.secondary }]}>
+              <Text style={[styles.ingredientsText, { color: colors.textPrimary }]}>
+                Soda: {sodaUsed.join(', ')}
+              </Text>
+              <Text style={[styles.ingredientsText, { color: colors.textPrimary }]}>
+                Syrups: {syrupsUsed.join(', ')}
+              </Text>
+              <Text style={[styles.ingredientsText, { color: colors.textPrimary }]}>
+                Add-ins: {addIns.join(', ')}
+              </Text>
             </View>
           </View>
 
@@ -167,19 +172,25 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
             <Gif layers={layers} />
           </View>
         </View>
+
+        {/* Add to Cart Button */}
+        <TouchableOpacity
+          style={[styles.addToCartButton, { backgroundColor: colors.primary }]}
+          onPress={addToCart}
+        >
+          <Text style={styles.addToCartButtonText}>Add to Cart</Text>
+        </TouchableOpacity>
       </View>
     </Modal>
-
   );
 };
 
 const styles = StyleSheet.create({
   modal: {
-    justifyContent: 'flex-end', // Align modal at the bottom
-    margin: 0, // Remove any margins from the modal
+    justifyContent: 'flex-end',
+    margin: 0,
   },
   modalContent: {
-    backgroundColor: '#C6C8EE',
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -189,70 +200,96 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  sizeSection: {
+    marginBottom: 20,
+  },
+  sizeLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  sizeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  sizeButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+  },
+  sizeButtonSelected: {
+    borderColor: 'transparent',
+  },
+  sizeButtonUnselected: {
+    backgroundColor: 'transparent',
+  },
+  sizeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   body: {
-    flexDirection: 'row', // Align ingredients and GIF horizontally
+    flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
   },
   textNbuttons: {
-    flex: 1, // Take up available space
+    flex: 1,
     paddingRight: 16,
   },
-  ingredientsText: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 15,
-    backgroundColor: '#D30C7B', // Optional: background color to make it stand out
+  ingredientsBox: {
     borderRadius: 10,
-    padding: 10,
+    padding: 12,
+  },
+  ingredientsText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
   },
   graphicContainer: {
-    flex: 0, // Allow the GIF container to take up remaining space
+    flex: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonsContainer: {
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    marginTop: 5, // Adds space between buttons and the content above
-  },
-  buttons: {
-    backgroundColor: '#8DF1D3',
-    paddingVertical: 12, // Adjust padding for better size
-    paddingHorizontal: 25,
+  addToCartButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     borderRadius: 8,
+    alignItems: 'center',
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
     shadowRadius: 3,
-    marginBottom: 10, // Adds space between buttons
   },
-  buttonText: {
-    color: '#000',
-    fontSize: 16,
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  modalTitle: {
-    fontSize: 30,
-    fontWeight: 'bold',
-  },
-  modalText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginVertical: 20,
-    padding: 10,                // Adds space inside the border
-    borderWidth: 2,             // Thickness of the border
-    borderColor: '#F92758',     // Color of the border
-    borderRadius: 10,           // Rounds the corners
-    backgroundColor: '#F92758', // Optional: background color to make it stand out
+  addToCartButtonText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
-
 
 export default AIAlert;

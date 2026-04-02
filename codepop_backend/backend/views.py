@@ -836,7 +836,7 @@ class GenerateAIDrink(APIView):
             return Response({'error': str(e)}, status=400)
     
     def generate_account_user(self, user_id):
-        """Generate AI drink for a registered user using their preferences."""
+        """Generate AI drink for a registered user using their preferences and order history."""
         user = get_object_or_404(User, pk=user_id)
         preferences = Preference.objects.filter(UserID=user)
         preferences_list = []
@@ -846,8 +846,23 @@ class GenerateAIDrink(APIView):
                 preferences_list.append(pref.Preference)
         else:
             preferences_list = ["mango", "peach", "vanilla", "salted caramel", "orange", "lavender", "peppermint", "blue raspberry"]
+
+        # Fetch last 5 completed orders
+        recent_orders = Order.objects.filter(
+            UserID=user, OrderStatus='completed'
+        ).order_by('-CreationTime').prefetch_related('Drinks')[:5]
+
+        order_history = []
+        for order in recent_orders:
+            for drink in order.Drinks.all():
+                order_history.append({
+                    'syrups': drink.SyrupsUsed or [],
+                    'soda': drink.SodaUsed[0] if drink.SodaUsed and len(drink.SodaUsed) > 0 else '',
+                    'addins': drink.AddIns or [],
+                })
+
         print("User") # Test code
-        return self.generate_response_data(preferences_list, user_created=True)
+        return self.generate_response_data(preferences_list, user_created=True, order_history=order_history)
 
     def generate_general_user(self):
         """Generate AI drink for a general user with hardcoded preferences."""
@@ -855,9 +870,9 @@ class GenerateAIDrink(APIView):
         print("General") # Test code
         return self.generate_response_data(preferences, user_created=False)
 
-    def generate_response_data(self, preferences, user_created):
+    def generate_response_data(self, preferences, user_created, order_history=None):
         """Helper function to generate response data."""
-        result = generate_soda(preferences)
+        result = generate_soda(preferences, order_history=order_history)
         if result is None:
             return None
         return {

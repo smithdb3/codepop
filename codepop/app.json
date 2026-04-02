@@ -15,7 +15,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "CodePop uses your location to show nearby stores and pickup options."
-      }
+      },
+      "bundleIdentifier": "com.anonymous.codepop"
     },
     "android": {
       "adaptiveIcon": {
