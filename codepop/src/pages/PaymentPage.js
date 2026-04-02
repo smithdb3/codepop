@@ -204,6 +204,7 @@ const PaymentPage = () => {
   const handlePayNow = async () => {
     setLoading(true);
     try {
+      await initializePaymentSheet();
       await openPaymentSheet();
     } catch (err) {
       console.error('Payment error:', err);
