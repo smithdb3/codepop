@@ -257,14 +257,14 @@ export function Machines({ onNavigate }) {
           className={`${styles.pill} ${statusFilter === 'all' ? styles.active : ''}`}
           onClick={() => setStatusFilter('all')}
         >
-          All ({MACHINES.length})
+          All ({machines.length})
         </button>
         <button
           className={`${styles.pill} ${statusFilter === 'critical' ? styles.active : ''}`}
           onClick={() => setStatusFilter('critical')}
         >
           <span className={styles.pillBadge} style={{ background: '#FEE2E2' }}>
-            {MACHINES.filter((m) => m.status === 'critical').length}
+            {machines.filter((m) => m.status === 'critical').length}
           </span>{' '}
           Critical
         </button>
@@ -273,7 +273,7 @@ export function Machines({ onNavigate }) {
           onClick={() => setStatusFilter('degraded')}
         >
           <span className={styles.pillBadge} style={{ background: '#FEF3C7' }}>
-            {MACHINES.filter((m) => m.status === 'degraded').length}
+            {machines.filter((m) => m.status === 'degraded').length}
           </span>{' '}
           Degraded
         </button>
@@ -282,7 +282,7 @@ export function Machines({ onNavigate }) {
           onClick={() => setStatusFilter('operational')}
         >
           <span className={styles.pillBadge} style={{ background: '#DCFCE7' }}>
-            {MACHINES.filter((m) => m.status === 'operational').length}
+            {machines.filter((m) => m.status === 'operational').length}
           </span>{' '}
           Operational
         </button>
@@ -291,7 +291,7 @@ export function Machines({ onNavigate }) {
           onClick={() => setStatusFilter('parts_pending')}
         >
           <span className={styles.pillBadge} style={{ background: '#E0E7FF' }}>
-            {MACHINES.filter((m) => m.status === 'parts_pending').length}
+            {machines.filter((m) => m.status === 'parts_pending').length}
           </span>{' '}
           Parts Pending
         </button>
