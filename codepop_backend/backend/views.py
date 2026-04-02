@@ -708,6 +708,7 @@ class StripePaymentIntentView(View):
             # Create an ephemeral key for the customer
             ephemeral_key = stripe.EphemeralKey.create(
                 customer=customer['id'],
+                stripe_version='2023-10-16',
             )
 
             # Create a payment intent

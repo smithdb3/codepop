@@ -771,8 +771,16 @@ const PaymentPage = () => {
 
   const styles = makeStyles(colors);
 
+  if (!stripePublishableKey) {
+    return (
+      <View style={styles.wholePage}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
-    <StripeProvider publishableKey={stripePublishableKey || ''}>
+    <StripeProvider publishableKey={stripePublishableKey}>
       <View style={styles.wholePage}>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
