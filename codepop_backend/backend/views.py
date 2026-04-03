@@ -1038,19 +1038,20 @@ class MachineOperations(viewsets.ModelViewSet):
         machine.save()
         return Response({'status': machine.status}, status=status.HTTP_200_OK)
     
-    def get_machine_store_location(self, request, pk=None):
+    def get_machine_pair(self, request, pk=None):
         machine = self.get_object()
         store = get_object_or_404(StoreRegistry, store_id=machine.store_id)
 
         store_data = {
+            'store_id': store.store_id,
             'store_name': store.store_name,
             'latitude': store.latitude,
             'longitude': store.longitude
         }
 
         return Response({
+            'store': store_data,
             'machine': MachineSerializer(machine).data,
-            'store': store_data
         })
     
 class ScheduleOperations(viewsets.ModelViewSet):

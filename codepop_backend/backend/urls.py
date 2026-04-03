@@ -98,7 +98,7 @@ machine_list = MachineOperations.as_view({'get': 'list', 'post': 'create'})
 
 machine_detail = MachineOperations.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
 
-machine_special_operations = MachineOperations.as_view({'patch': 'update_status', 'get': 'get_machine_location'})
+machine_special_operations = MachineOperations.as_view({'patch': 'update_status', 'get': 'get_machine_pair'})
 
 get_schedules = ScheduleOperations.as_view({'get': 'get_user_schedules'})
 
