@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/NavBar';
 import { getBaseURL } from '../../ip_address';
 import { useTheme } from '../theme';
+import TabNavigationContext from '../context/TabNavigationContext';
 
 const CartPage = ({ insideTabContainer = false, isFocused = true, navigation: navProp }) => {
   const navigation = navProp || useNavigation();
   const { colors } = useTheme();
+  const tabNav = useContext(TabNavigationContext);
   const [groupedDrinks, setGroupedDrinks] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [subtotal, setSubtotal] = useState(0);
@@ -217,7 +219,14 @@ const CartPage = ({ insideTabContainer = false, isFocused = true, navigation: na
 
         <View style={styles.drinkActions}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('CreateDrink', { drinkToEdit: drink })}
+            onPress={() => {
+              if (tabNav && tabNav.setDrinkToEdit) {
+                tabNav.setDrinkToEdit(drink);
+                tabNav.navigateToTab(1); // Navigate to Create tab (tab index 1)
+              } else {
+                navigation.navigate('CreateDrink', { drinkToEdit: drink });
+              }
+            }}
             style={styles.editButton}
           >
             <Icon name="pencil" size={20} color={colors.textPrimary} />

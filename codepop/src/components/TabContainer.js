@@ -23,6 +23,7 @@ const TabContainer = ({ navigation }) => {
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [mountedTabs, setMountedTabs] = useState(new Set([0]));
   const [shouldGenerateDrink, setShouldGenerateDrink] = useState(false);
+  const [drinkToEdit, setDrinkToEdit] = useState(null);
 
   const translateX = useSharedValue(0);
 
@@ -78,7 +79,7 @@ const TabContainer = ({ navigation }) => {
   ];
 
   return (
-    <TabNavigationContext.Provider value={{ activeTabIndex, navigateToTab, shouldGenerateDrink }}>
+    <TabNavigationContext.Provider value={{ activeTabIndex, navigateToTab, shouldGenerateDrink, drinkToEdit, setDrinkToEdit }}>
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Fixed Header */}
         <View style={headerStyle}>

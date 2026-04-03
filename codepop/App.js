@@ -13,7 +13,6 @@ import CreateAccountPage from './src/pages/CreateAccountPage';
 import ManagerDash from './src/pages/ManagerDash';
 import PaymentPage from './src/pages/PaymentPage';
 import PostCheckout from './src/pages/PostCheckout';
-import UpdateDrink from './src/pages/UpdateDrink';
 import TabContainer from './src/components/TabContainer';
 import CodePopLogo from './src/components/CodePopLogo';
 import { getBaseURL, initBaseURL } from './ip_address';
