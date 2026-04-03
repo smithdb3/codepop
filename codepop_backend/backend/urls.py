@@ -11,7 +11,7 @@ from .internode_views import (
 from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken, CheckEmailView
 from .views import StripePaymentIntentView, StripeConfigView
 from .views import UserPreferenceLookup, PreferencesOperations
-from .views import DrinkOperations, UserDrinksLookup
+from .views import DrinkOperations, UserDrinksLookup, SeasonalDrinkListView
 from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdateAPIView
 from .views import NotificationOperations, UserNotificationLookup
 from .views import OrderOperations, UserOrdersLookup
@@ -162,6 +162,10 @@ urlpatterns = [
 
     # Retrieve Drinks by UserID
     path('users/<int:user_id>/drinks/', UserDrinksLookup.as_view(), name='user drink list'),
+
+    # Seasonal Drinks
+    # - GET: Retrieve all active seasonal drinks for the carousel
+    path('seasonal-drinks/', SeasonalDrinkListView.as_view(), name='seasonal_drinks_list'),
 
     #inventory related URLs
     # Endpoint to list all drinks created by a specific user identified by their user ID.

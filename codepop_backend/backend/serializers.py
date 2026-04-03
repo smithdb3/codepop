@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, Delivery
+from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, Delivery, SeasonalDrink
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -634,3 +634,8 @@ class DriverSerializer(serializers.ModelSerializer):
     def get_name(self, obj):
         return obj.get_full_name() or obj.username
 
+
+class SeasonalDrinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SeasonalDrink
+        fields = ['id', 'name', 'description', 'image_url', 'season', 'price', 'soda', 'syrups', 'add_ins', 'is_active']
