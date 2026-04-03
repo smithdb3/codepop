@@ -3,19 +3,17 @@ from rest_framework.views import APIView
 from .views import refund_order
 from .models import Order, Revenue
 from django.http import JsonResponse
+from django.conf import settings
+from groq import Groq
 import re
 
-try:
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-    import torch
+# Initialize Groq client if API key is configured
+client = None
+if settings.GROQ_API_KEY:
+    client = Groq(api_key=settings.GROQ_API_KEY)
     CHATBOT_AVAILABLE = True
-    # Load Flan-T5 model and tokenizer
-    tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-medium")
-    model = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-medium")
-except ImportError:
+else:
     CHATBOT_AVAILABLE = False
-    tokenizer = None
-    model = None
 
 class Chatbot(APIView):
 
@@ -414,31 +412,26 @@ class Chatbot(APIView):
 
         full_input = grounding_info + user_input
 
-        # encode the new user input, add the eos_token and return a tensor in Pytorch
-        new_user_input_ids = tokenizer.encode(user_input + tokenizer.eos_token, return_tensors='pt')
-        attention_mask = torch.ones_like(new_user_input_ids)
-
-        # append the new user input tokens to the chat history
-        bot_input_ids =  new_user_input_ids
-
-        # generated a response while limiting the total chat history to 1000 tokens, 
-        chat_history_ids = model.generate(bot_input_ids, 
-                                          max_length=1000, 
-                                          pad_token_id=tokenizer.eos_token_id, 
-                                          temperature = 1.0, 
-                                          top_k=50,
-                                          do_sample=True,
-                                          attention_mask = attention_mask,
-                                          top_p=0.9,)
-        
-
-        # Decode and print the response
-        response = tokenizer.decode(chat_history_ids[:, bot_input_ids.shape[-1]:][0], skip_special_tokens=True)
-        print("Model response:", response)
+        # Call Groq API for general customer service response
+        try:
+            response_obj = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": "You are Tonic, a friendly and helpful customer service bot for CodePop, a custom soda ordering app. Be concise and empathetic in your responses."},
+                    {"role": "user", "content": user_input}
+                ],
+                temperature=0.7,
+                max_tokens=150,
+            )
+            response = response_obj.choices[0].message.content.strip()
+            print("Tonic response:", response)
+        except Exception as e:
+            print(f"Groq API error: {e}")
+            response = "I'm sorry, I'm having trouble processing your request. Please try again later."
 
         return JsonResponse({
-            "responses": [response], 
-            "wrong_drink_phase": "none", 
+            "responses": [response],
+            "wrong_drink_phase": "none",
             "refund_phase":"none",
             "order_num": "none",
             "drink_nums": "none"})

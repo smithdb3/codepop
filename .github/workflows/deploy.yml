@@ -45,7 +45,7 @@ jobs:
           REDIS_URL: redis://localhost:6379/0
           INTER_NODE_SECRET: test-secret
           IS_HUB: 'False'
-          GEMINI_API_KEY: ''
+          GROQ_API_KEY: ''
         run: |
           cd codepop_backend
           python manage.py migrate
@@ -68,14 +68,14 @@ jobs:
             cd ~/codepop/codepop_backend
 
             # Update distributed system env vars (remove old values, append fresh ones)
-            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^HUB_LOGAN_URL=\|^HUB_ATLANTA_URL=\|^IS_HUB=\|^GEMINI_API_KEY=" .env > .env.tmp && mv .env.tmp .env || true
+            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^HUB_LOGAN_URL=\|^HUB_ATLANTA_URL=\|^IS_HUB=\|^GROQ_API_KEY=" .env > .env.tmp && mv .env.tmp .env || true
             echo "IS_HUB=True" >> .env
             # Public IP (same as SSH host) — not hostname -I, which is VPC-internal on GCP
             echo "MY_API_ENDPOINT=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
             echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
             echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
-            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
 
             git fetch origin master
             git reset --hard origin/master
@@ -98,13 +98,13 @@ jobs:
             set -e
             cd ~/codepop/codepop_backend
 
-            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^HUB_LOGAN_URL=\|^HUB_ATLANTA_URL=\|^IS_HUB=\|^GEMINI_API_KEY=" .env > .env.tmp && mv .env.tmp .env || true
+            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^HUB_LOGAN_URL=\|^HUB_ATLANTA_URL=\|^IS_HUB=\|^GROQ_API_KEY=" .env > .env.tmp && mv .env.tmp .env || true
             echo "IS_HUB=True" >> .env
             echo "MY_API_ENDPOINT=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
             echo "HUB_LOGAN_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
             echo "HUB_ATLANTA_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
-            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
 
             git fetch origin master
             git reset --hard origin/master
@@ -128,11 +128,11 @@ jobs:
             set -e
             cd ~/codepop/codepop_backend
 
-            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=\|^GEMINI_API_KEY=" .env > .env.tmp && mv .env.tmp .env || true
+            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=\|^GROQ_API_KEY=" .env > .env.tmp && mv .env.tmp .env || true
             echo "IS_HUB=False" >> .env
             echo "MY_API_ENDPOINT=http://${{ secrets.LOGAN_STORE1_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
-            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
 
             git fetch origin master
             git reset --hard origin/master
@@ -155,11 +155,11 @@ jobs:
             set -e
             cd ~/codepop/codepop_backend
 
-            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=\|^GEMINI_API_KEY=" .env > .env.tmp && mv .env.tmp .env || true
+            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=\|^GROQ_API_KEY=" .env > .env.tmp && mv .env.tmp .env || true
             echo "IS_HUB=False" >> .env
             echo "MY_API_ENDPOINT=http://${{ secrets.LOGAN_STORE2_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.LOGAN_HUB_IP }}:8000" >> .env
-            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
 
             git fetch origin master
             git reset --hard origin/master
@@ -182,11 +182,11 @@ jobs:
             set -e
             cd ~/codepop/codepop_backend
 
-            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=\|^GEMINI_API_KEY=" .env > .env.tmp && mv .env.tmp .env || true
+            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=\|^GROQ_API_KEY=" .env > .env.tmp && mv .env.tmp .env || true
             echo "IS_HUB=False" >> .env
             echo "MY_API_ENDPOINT=http://${{ secrets.ATLANTA_STORE1_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
-            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
 
             git fetch origin master
             git reset --hard origin/master
@@ -209,11 +209,11 @@ jobs:
             set -e
             cd ~/codepop/codepop_backend
 
-            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=\|^GEMINI_API_KEY=" .env > .env.tmp && mv .env.tmp .env || true
+            grep -v "^MY_API_ENDPOINT=\|^HUB_URL=\|^IS_HUB=\|^GROQ_API_KEY=" .env > .env.tmp && mv .env.tmp .env || true
             echo "IS_HUB=False" >> .env
             echo "MY_API_ENDPOINT=http://${{ secrets.ATLANTA_STORE2_IP }}:8000" >> .env
             echo "HUB_URL=http://${{ secrets.ATLANTA_HUB_IP }}:8000" >> .env
-            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+            echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
 
             git fetch origin master
             git reset --hard origin/master
