@@ -110,7 +110,7 @@ const SeasonalCarousel = ({ readOnly = false }) => {
             const updatedList = [...currentList, created.DrinkID];
             await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
 
-            setSizePickerId(null);
+            setShowSizePicker(false);
             setSuccessId(item.id);
             setTimeout(() => setSuccessId(null), 2000);
         } catch (error) {
