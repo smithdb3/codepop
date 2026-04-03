@@ -35,9 +35,23 @@ def _build_user_payload(user: User) -> dict:
     """
     Constructs the safe, minimal user payload for inter-node transfer.
     Uses Django's internal hashed password (PBKDF2) — never raw password.
+    Includes full drink objects for cross-store portability.
     """
+    from .models import Drink
     prefs = list(Preference.objects.filter(UserID=user).values_list('Preference', flat=True))
-    favs  = list(user.drink_set.filter(Favorite=user).values_list('DrinkID', flat=True))
+    favorite_drinks = [
+        {
+            "home_drink_id": d.DrinkID,
+            "Name": d.Name,
+            "SodaUsed": d.SodaUsed or [],
+            "SyrupsUsed": d.SyrupsUsed or [],
+            "AddIns": d.AddIns or [],
+            "Ice": d.Ice,
+            "Price": float(d.Price),
+            "Size": d.Size,
+        }
+        for d in Drink.objects.filter(Favorite=user)
+    ]
     role = 'admin' if user.is_superuser else ('manager' if user.is_staff else 'customer')
     return {
         'user_id':            user.pk,
@@ -47,7 +61,7 @@ def _build_user_payload(user: User) -> dict:
         'first_name':         user.first_name,
         'last_name':          user.last_name,
         'preferences':        prefs,
-        'favorite_drink_ids': favs,
+        'favorite_drinks':    favorite_drinks,  # full drink objects (replaces broken favorite_drink_ids)
         'role':               role,
         'home_store_id':      int(settings.STORE_ID),
         'home_store_endpoint': os.getenv('MY_API_ENDPOINT', ''),  # this store's own direct URL
@@ -140,7 +154,45 @@ class InterNodeProfileUpdateView(APIView):
             for pref in changes['preferences']:
                 Preference.objects.create(UserID=user, Preference=pref)
 
-        # Apply favorite drink changes
+        # Apply favorite drink changes (new format with full drink objects)
+        if 'favorite_drinks' in changes:
+            from .models import Drink
+            # Remove user from all existing favorite drinks
+            for d in Drink.objects.filter(Favorite=user):
+                d.Favorite.remove(user)
+            updated = []
+            for drink_data in changes['favorite_drinks']:
+                home_id = drink_data.get('home_drink_id')
+                if home_id:
+                    # Existing drink — re-add to favorites
+                    try:
+                        drink = Drink.objects.get(pk=home_id)
+                        drink.Favorite.add(user)
+                        updated.append({**drink_data, 'home_drink_id': drink.DrinkID})
+                    except Drink.DoesNotExist:
+                        pass  # drink deleted on home store; skip
+                else:
+                    # New drink created at visiting store — create it here
+                    drink = Drink.objects.create(
+                        Name=drink_data.get('Name', 'Saved Drink'),
+                        SodaUsed=drink_data.get('SodaUsed') or [],
+                        SyrupsUsed=drink_data.get('SyrupsUsed') or [],
+                        AddIns=drink_data.get('AddIns') or [],
+                        Price=float(drink_data.get('Price', 2.00)),
+                        Size=drink_data.get('Size', '24oz'),
+                        Ice=drink_data.get('Ice', 'regular'),
+                        User_Created=True,
+                    )
+                    drink.Favorite.add(user)
+                    updated.append({**drink_data, 'home_drink_id': drink.DrinkID})
+            # Rebuild payload with confirmed home_drink_ids
+            payload = _build_user_payload(user)
+            payload['favorite_drinks'] = updated
+            _log('profile_update', f'store-{requesting}', f'store-{settings.STORE_ID}',
+                 True, user_email=user.email, data_types='preferences,favorite_drinks')
+            return Response(payload)
+
+        # Apply favorite drink changes (legacy format with IDs only)
         if 'favorite_drink_ids' in changes:
             from .models import Drink
             user_drinks = Drink.objects.filter(Favorite=user)

@@ -11,6 +11,7 @@ import AIAlert from '../components/AIAlert';
 import CodePopLogo from '../components/CodePopLogo';
 import { useTheme } from '../theme';
 import TabNavigationContext from '../context/TabNavigationContext';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const flavorMap = {
   // Sodas
@@ -149,8 +150,53 @@ const CreateDrinkPage = ({ insideTabContainer = false, isFocused = true, navigat
     } catch (error) {
       console.error('Error adding drink to cart:', error);
     }
-  };  
-  
+  };
+
+  const saveDrink = async () => {
+    if (!selectedIce || !selectedSize || SodaUsed.length === 0) {
+      Alert.alert("Please choose a Soda, Size, and Ice Amount first.");
+      return;
+    }
+    try {
+      const uid = await AsyncStorage.getItem('userId');
+      const token = await AsyncStorage.getItem('userToken');
+      if (!uid) {
+        Alert.alert('Sign in required', 'You must be signed in to save drinks.');
+        return;
+      }
+
+      // Create the drink record
+      const drinkRes = await fetch(`${getBaseURL()}/backend/drinks/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          Name: 'Saved Drink',
+          SodaUsed,
+          SyrupsUsed,
+          AddIns,
+          Price: 2.00,
+          User_Created: true,
+          Size: selectedSize,
+          Ice: selectedIce,
+        }),
+      });
+      if (!drinkRes.ok) throw new Error(`Create: ${drinkRes.status}`);
+      const { DrinkID } = await drinkRes.json();
+
+      // Favorite it for this user
+      const favRes = await fetch(`${getBaseURL()}/backend/users/${uid}/favorites/${DrinkID}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
+        body: JSON.stringify({ action: 'add' }),
+      });
+      if (!favRes.ok) throw new Error(`Favorite: ${favRes.status}`);
+
+      Alert.alert('Drink Saved!', 'Find it in the Saved Drinks section on the home screen.');
+    } catch (e) {
+      console.error('saveDrink:', e);
+      Alert.alert('Error', 'Could not save drink. Please try again.');
+    }
+  };
 
   const handleSizeSelection = (size) => {
     setSize(size);
@@ -543,6 +589,9 @@ const CreateDrinkPage = ({ insideTabContainer = false, isFocused = true, navigat
         <View style={styles.pinnedButtonRow}>
           <TouchableOpacity onPress={GenerateAI} style={[styles.pinnedButton, styles.secondaryButton]}>
             <Text style={styles.secondaryButtonText}>Ask Tonic</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={saveDrink} style={[styles.pinnedButton, styles.secondaryButton, { flex: 0.5 }]}>
+            <Icon name="heart-outline" size={20} color="#8B5CF6" />
           </TouchableOpacity>
           <TouchableOpacity onPress={addToCart} style={[styles.pinnedButton, styles.primaryButton]}>
             <Text style={styles.primaryButtonText}>Add to My Order</Text>

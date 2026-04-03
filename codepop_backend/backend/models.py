@@ -346,7 +346,10 @@ class VisitingUserCache(models.Model):
 
     # Preferences and favorites stored as JSON for portability
     preferences   = models.JSONField(default=list)     # e.g. ["Fruity", "Sweet"]
-    favorite_drink_ids = models.JSONField(default=list) # e.g. [42, 87, 105]
+    favorite_drink_ids = models.JSONField(default=list) # e.g. [42, 87, 105] (legacy)
+    favorite_drinks = models.JSONField(default=list)   # Full drink objects for cross-store portability
+    # Shape per entry: {"cache_drink_id": "uuid", "home_drink_id": 42|null, "Name": "...",
+    #  "SodaUsed": [...], "SyrupsUsed": [...], "AddIns": [...], "Ice": "...", "Price": 2.0, "Size": "24oz"}
 
     cached_at     = models.DateTimeField(auto_now_add=True)
     expires_at    = models.DateTimeField()  # cached_at + 24h; set on create

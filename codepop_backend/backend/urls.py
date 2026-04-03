@@ -11,7 +11,7 @@ from .internode_views import (
 from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken, CheckEmailView
 from .views import StripePaymentIntentView, StripeConfigView
 from .views import UserPreferenceLookup, PreferencesOperations
-from .views import DrinkOperations, UserDrinksLookup, SeasonalDrinkListView
+from .views import DrinkOperations, UserDrinksLookup, UserFavoriteToggleView, SeasonalDrinkListView
 from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdateAPIView
 from .views import NotificationOperations, UserNotificationLookup
 from .views import OrderOperations, UserOrdersLookup
@@ -162,6 +162,9 @@ urlpatterns = [
 
     # Retrieve Drinks by UserID
     path('users/<int:user_id>/drinks/', UserDrinksLookup.as_view(), name='user drink list'),
+
+    # Toggle favorite for a drink (int for home users, UUID for visiting users)
+    path('users/<int:user_id>/favorites/<str:drink_id>/', UserFavoriteToggleView.as_view(), name='user_favorite_toggle'),
 
     # Seasonal Drinks
     # - GET: Retrieve all active seasonal drinks for the carousel

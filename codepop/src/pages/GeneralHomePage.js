@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import React, { useState, useEffect, useContext } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
 import NavBar from '../components/NavBar';
 import SeasonalCarousel from '../components/SeasonalCarousel';
 import { CodePopLogo } from '../components/CodePopLogo';
@@ -9,12 +9,7 @@ import StoreSelectionModal from '../components/StoreSelectionModal';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../theme';
 import TabNavigationContext from '../context/TabNavigationContext';
-
-const SAVED_DRINKS = [
-  { id: 1, name: 'Cherry Fizz', description: 'Cherry syrup + lemon-lime soda', price: 4.99 },
-  { id: 2, name: 'Mango Sunrise', description: 'Mango syrup + coconut water + cream soda', price: 5.49 },
-  { id: 3, name: 'Mint Glacier', description: 'Mint syrup + club soda + blue raspberry', price: 4.75 },
-];
+import { getBaseURL } from '../../ip_address';
 
 const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigation: navProp }) => {
   const { colors } = useTheme();
@@ -31,6 +26,9 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [selectedStoreName, setSelectedStoreName] = useState(null);
   const [storePickerRequired, setStorePickerRequired] = useState(false);
+  const [savedDrinks, setSavedDrinks] = useState([]);
+  const [savedDrinksLoading, setSavedDrinksLoading] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   const makeStyles = (colors) => StyleSheet.create({
     container: {
@@ -277,9 +275,35 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
       fontSize: 14,
       fontWeight: '600',
     },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 12,
+    },
+    buttonContainer: {
+      gap: 12,
+    },
   });
 
   const styles = makeStyles(colors);
+
+  // Fetch saved drinks for the user
+  const fetchSavedDrinks = async (uid) => {
+    setSavedDrinksLoading(true);
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const res = await fetch(`${getBaseURL()}/backend/users/${uid}/drinks/`, {
+        headers: { 'Authorization': `Token ${token}` },
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      setSavedDrinks(await res.json());
+    } catch (e) {
+      console.error('fetchSavedDrinks:', e);
+    } finally {
+      setSavedDrinksLoading(false);
+    }
+  };
 
   // Check login status and store selection when the screen gains focus
   useEffect(() => {
@@ -307,6 +331,9 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
         if (token && storedName) {
           setIsLoggedIn(true);
           setName(storedName);
+          const uid = await AsyncStorage.getItem('userId');
+          setUserId(uid);
+          if (uid) fetchSavedDrinks(uid);
         } else {
           setIsLoggedIn(false);
         }
@@ -366,47 +393,113 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
     }));
   };
 
-  const renderDrinkCard = (drink) => (
-    <View key={drink.id} style={styles.drinkCard}>
-      <Text style={styles.drinkName}>{drink.name}</Text>
-      <Text style={styles.drinkDescription}>{drink.description}</Text>
-      <Text style={styles.drinkPrice}>${drink.price}</Text>
+  const handleUnfavorite = async (drinkId) => {
+    setSavedDrinks(prev => prev.filter(d => d.DrinkID !== drinkId)); // optimistic update
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const res = await fetch(`${getBaseURL()}/backend/users/${userId}/favorites/${drinkId}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
+        body: JSON.stringify({ action: 'remove' }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+    } catch (e) {
+      console.error('handleUnfavorite:', e);
+      Alert.alert('Error', 'Could not remove drink. Please try again.');
+      fetchSavedDrinks(userId); // restore on failure
+    }
+  };
 
-      <View style={styles.drinkActions}>
-        <TouchableOpacity style={styles.deleteButton}>
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => handleToggleSizeSelector(drink.id)}
-        >
-          <Text style={styles.primaryButtonText}>Add to Cart</Text>
-        </TouchableOpacity>
-      </View>
+  const handleAddSavedDrinkToCart = async (drink, size) => {
+    try {
+      const res = await fetch(`${getBaseURL()}/backend/drinks/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          Name: drink.Name || 'Saved Drink',
+          SodaUsed: drink.SodaUsed,
+          SyrupsUsed: drink.SyrupsUsed || [],
+          AddIns: drink.AddIns || [],
+          Price: 2.00,
+          User_Created: true,
+          Size: size,
+          Ice: drink.Ice || 'regular',
+        }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json();
+      const cartRaw = await AsyncStorage.getItem('checkoutList');
+      const cart = cartRaw ? JSON.parse(cartRaw) : [];
+      await AsyncStorage.setItem('checkoutList', JSON.stringify([...cart, data.DrinkID]));
+      // Close size selector and navigate to cart
+      setShowSizeSelector({});
+      if (tabNav?.navigateToTab) tabNav.navigateToTab(2);
+      else navigation.navigate('Cart');
+    } catch (e) {
+      console.error('handleAddSavedDrinkToCart:', e);
+      Alert.alert('Error', 'Could not add to cart. Please try again.');
+    }
+  };
 
-      {showSizeSelector[drink.id] && (
-        <View style={styles.sizeSelector}>
-          {['S', 'M', 'L'].map(size => (
-            <TouchableOpacity
-              key={size}
-              style={[
-                styles.sizeOption,
-                selectedSize[drink.id] === size && styles.sizeOptionSelected
-              ]}
-              onPress={() => handleSelectSize(drink.id, size)}
-            >
-              <Text style={[
-                styles.sizeOptionText,
-                selectedSize[drink.id] === size && styles.sizeOptionSelectedText
-              ]}>
-                {size}
-              </Text>
-            </TouchableOpacity>
-          ))}
+  const renderDrinkCard = (drink) => {
+    const sizeChosen = selectedSize[drink.DrinkID];
+    const sizeOpen = showSizeSelector[drink.DrinkID];
+    const description = [
+      ...(drink.SodaUsed || []),
+      ...(drink.SyrupsUsed || []),
+      ...(drink.AddIns || []),
+    ].join(' + ');
+
+    return (
+      <View key={drink.DrinkID} style={styles.drinkCard}>
+        <Text style={styles.drinkName}>{drink.Name || 'Custom Drink'}</Text>
+        <Text style={styles.drinkDescription}>{description}</Text>
+
+        <View style={styles.drinkActions}>
+          <TouchableOpacity style={styles.deleteButton} onPress={() => handleUnfavorite(drink.DrinkID)}>
+            <Icon name="heart-dislike-outline" size={16} color="#FFFFFF" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() => handleToggleSizeSelector(drink.DrinkID)}
+          >
+            <Text style={styles.primaryButtonText}>{sizeOpen ? 'Cancel' : 'Add to Cart'}</Text>
+          </TouchableOpacity>
         </View>
-      )}
-    </View>
-  );
+
+        {sizeOpen && (
+          <View style={styles.sizeSelector}>
+            {['16oz', '24oz', '32oz'].map(size => (
+              <TouchableOpacity
+                key={size}
+                style={[
+                  styles.sizeOption,
+                  sizeChosen === size && styles.sizeOptionSelected
+                ]}
+                onPress={() => handleSelectSize(drink.DrinkID, size)}
+              >
+                <Text style={[
+                  styles.sizeOptionText,
+                  sizeChosen === size && styles.sizeOptionSelectedText
+                ]}>
+                  {size}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {sizeOpen && sizeChosen && (
+          <TouchableOpacity
+            style={[styles.primaryButton, { marginTop: 8 }]}
+            onPress={() => handleAddSavedDrinkToCart(drink, sizeChosen)}
+          >
+            <Text style={styles.primaryButtonText}>Confirm — {sizeChosen}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   const handleStoreModalClose = async (meta) => {
     if (meta && meta.cancelled === false) {
@@ -483,8 +576,22 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
             </View>
 
             <View style={styles.savedDrinksSection}>
-              <Text style={styles.sectionTitle}>Saved Drinks</Text>
-              {SAVED_DRINKS.map(drink => renderDrinkCard(drink))}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text style={styles.savedDrinksSectionTitle}>Saved Drinks</Text>
+                {savedDrinksLoading && (
+                  <Text style={{ fontSize: 12, color: colors.textMuted }}>Loading…</Text>
+                )}
+              </View>
+
+              {!savedDrinksLoading && savedDrinks.length === 0 && (
+                <View style={{ padding: 16, backgroundColor: colors.surface2, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center' }}>
+                    No saved drinks yet. Create a drink and tap "Save" to add it here.
+                  </Text>
+                </View>
+              )}
+
+              {savedDrinks.map(drink => renderDrinkCard(drink))}
             </View>
 
             <View style={styles.buttonContainer}>

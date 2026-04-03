@@ -11,7 +11,7 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, ManagerProfile, Delivery, SeasonalDrink
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, ManagerProfile, Delivery, SeasonalDrink, VisitingUserCache
 from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer, SupplyRequestSerializer, DeliverySerializer, DriverSerializer, SeasonalDrinkSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
@@ -23,6 +23,7 @@ from django.views import View #maybe delete these three?
 from django.utils.decorators import method_decorator
 import json
 import requests
+import uuid
 from datetime import timedelta
 from rest_framework.decorators import action
 from django.utils.dateparse import parse_datetime
@@ -44,7 +45,7 @@ def _propagate_to_home_store(user_id: int):
     preferences and favorites back to their home store via P2P.
     If home store unreachable, queue in PendingProfileUpdate.
     """
-    from .models import VisitingUserCache, PendingProfileUpdate
+    from .models import PendingProfileUpdate
 
     cache = VisitingUserCache.objects.filter(
         user_id=user_id, expires_at__gt=timezone.now()
@@ -53,9 +54,9 @@ def _propagate_to_home_store(user_id: int):
         return  # Home user — no propagation needed
 
     changes = {
-        'preferences':        list(Preference.objects.filter(
+        'preferences': list(Preference.objects.filter(
             UserID__pk=user_id).values_list('Preference', flat=True)),
-        'favorite_drink_ids': cache.favorite_drink_ids,
+        'favorite_drinks': cache.favorite_drinks,  # full drink data
     }
 
     # Try immediate delivery to home store
@@ -70,8 +71,16 @@ def _propagate_to_home_store(user_id: int):
         )
         if resp.status_code == 200:
             confirmed = resp.json()
+            update_fields = ['preferences']
             cache.preferences = confirmed.get('preferences', changes['preferences'])
-            cache.save(update_fields=['preferences'])
+            # Update cache: home store fills in home_drink_id for newly created drinks
+            if 'favorite_drinks' in confirmed:
+                cache.favorite_drinks = [
+                    d if d.get('cache_drink_id') else {**d, 'cache_drink_id': str(uuid.uuid4())}
+                    for d in confirmed['favorite_drinks']
+                ]
+                update_fields.append('favorite_drinks')
+            cache.save(update_fields=update_fields)
             return
     except requests.RequestException:
         pass  # Fall through to queueing
@@ -254,7 +263,10 @@ class CustomAuthToken(ObtainAuthToken):
                 'role':               user_data['role'],
                 'home_store_endpoint': home_store_endpoint,
                 'preferences':        user_data.get('preferences', []),
-                'favorite_drink_ids': user_data.get('favorite_drink_ids', []),
+                'favorite_drinks': [
+                    {**d, 'cache_drink_id': str(uuid.uuid4())}
+                    for d in user_data.get('favorite_drinks', [])
+                ],
                 'expires_at':         timezone.now() + timedelta(hours=24),
             }
         )
@@ -427,15 +439,105 @@ class DrinkOperations(viewsets.ModelViewSet):
 
 class UserDrinksLookup(ListAPIView):
     serializer_class = DrinkSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         """
         Retrieve drinks that are marked as favorites by the provided user ID.
+        For home users: returns real Drink records from M2M.
+        For visiting users: returns cached drink data.
         """
-        user_id = self.kwargs['user_id']  # Retrieve the 'user_id' from the URL
+        user_id = self.kwargs['user_id']
         user = get_object_or_404(User, pk=user_id)
         return Drink.objects.filter(Favorite=user_id)
+
+    def list(self, request, *args, **kwargs):
+        user_id = self.kwargs['user_id']
+        # Check if this is a visiting user
+        cache = VisitingUserCache.objects.filter(
+            user_id=user_id, expires_at__gt=timezone.now()
+        ).first()
+        if cache:
+            drinks = [
+                {**d, "DrinkID": d.get("cache_drink_id", d.get("home_drink_id"))}
+                for d in cache.favorite_drinks
+            ]
+            return Response(drinks)
+        # Home user: use normal queryset
+        return super().list(request, *args, **kwargs)
+
+
+class UserFavoriteToggleView(APIView):
+    """
+    PATCH /backend/users/<user_id>/favorites/<drink_id>/
+    Toggles a drink's favorite status for a user.
+    Handles both home users (int drink_id) and visiting users (UUID cache_drink_id).
+    Body: { "action": "add" } or { "action": "remove" }
+    """
+    permission_classes = [AllowAny]
+
+    def patch(self, request, user_id, drink_id):
+        action = request.data.get("action")
+        if action not in ("add", "remove"):
+            return Response(
+                {"error": "action must be 'add' or 'remove'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if this is a visiting user (has cache entry)
+        cache = VisitingUserCache.objects.filter(
+            user_id=user_id, expires_at__gt=timezone.now()
+        ).first()
+        if cache:
+            return self._toggle_visiting(request, cache, drink_id, action)
+
+        # Home user — use Drink.Favorite M2M
+        user = get_object_or_404(User, pk=user_id)
+        try:
+            drink = Drink.objects.get(pk=int(drink_id))
+        except (Drink.DoesNotExist, ValueError):
+            return Response({"error": "Drink not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if action == "add":
+            drink.Favorite.add(user)
+        else:
+            drink.Favorite.remove(user)
+        _propagate_to_home_store(user_id)
+        return Response({"favorited": action == "add", "drink_id": drink_id})
+
+    def _toggle_visiting(self, request, cache, drink_id, action):
+        if action == "add":
+            # drink_id is the local DrinkID (int) created just before this call
+            try:
+                local_drink = Drink.objects.get(pk=int(drink_id))
+            except (Drink.DoesNotExist, ValueError):
+                return Response({"error": "Drink not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            cache_drink_id = str(uuid.uuid4())
+            entry = {
+                "cache_drink_id": cache_drink_id,
+                "home_drink_id": None,
+                "Name": local_drink.Name,
+                "SodaUsed": local_drink.SodaUsed or [],
+                "SyrupsUsed": local_drink.SyrupsUsed or [],
+                "AddIns": local_drink.AddIns or [],
+                "Ice": local_drink.Ice,
+                "Price": float(local_drink.Price),
+                "Size": local_drink.Size,
+            }
+            cache.favorite_drinks = cache.favorite_drinks + [entry]
+            cache.save(update_fields=["favorite_drinks"])
+            _propagate_to_home_store(cache.user_id)
+            return Response({"favorited": True, "drink_id": cache_drink_id})
+        else:
+            # drink_id is cache_drink_id (UUID string) for visiting users
+            cache.favorite_drinks = [
+                d for d in cache.favorite_drinks
+                if d.get("cache_drink_id") != drink_id
+            ]
+            cache.save(update_fields=["favorite_drinks"])
+            _propagate_to_home_store(cache.user_id)
+            return Response({"favorited": False, "drink_id": drink_id})
 
 
 class SeasonalDrinkListView(ListAPIView):
