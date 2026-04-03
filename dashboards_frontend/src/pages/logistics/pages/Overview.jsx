@@ -1,17 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { KPICard } from '../../super-admin/components/KPICard';
 import {
   LOGISTICS_MANAGER,
   STORES,
-  DELIVERIES,
   KPI_DATA,
   HUB_STATUS,
 } from '../mockData';
+import { getDeliveriesKPI, getLogisticsDeliveries } from '../../../api/deliveries';
 import styles from './Overview.module.css';
 
 export function Overview({ onNavigate }) {
   const [dismissedCriticalBanner, setDismissedCriticalBanner] = useState(false);
   const [dismissedWarningBanner, setDismissedWarningBanner] = useState(false);
+  const [deliveriesInTransit, setDeliveriesInTransit] = useState(KPI_DATA.deliveriesInTransit);
+  const [liveDeliveries, setLiveDeliveries] = useState([]);
+
+  // Fetch deliveries KPI and live deliveries on mount
+  useEffect(() => {
+    getDeliveriesKPI()
+      .then((data) => {
+        if (data && data.deliveriesInTransit !== undefined) {
+          setDeliveriesInTransit(data.deliveriesInTransit);
+        }
+      })
+      .catch((err) => console.error('Failed to load deliveries KPI:', err));
+
+    getLogisticsDeliveries({ status: 'in_transit' })
+      .then((data) => setLiveDeliveries(data || []))
+      .catch(() => {});
+  }, []);
 
   // Count stores by supply health status
   const criticalStores = STORES.filter((s) => s.supplyHealthStatus === 'critical');
@@ -24,10 +41,10 @@ export function Overview({ onNavigate }) {
     .sort((a, b) => a.daysRemaining - b.daysRemaining)
     .slice(0, 5);
 
-  // Filter deliveries in transit or out for delivery, limit to 5
-  const upcomingDeliveries = DELIVERIES.filter(
-    (d) => d.status === 'in_transit' || d.status === 'out_for_delivery'
-  ).slice(0, 5);
+  // Filter deliveries in transit or scheduled, limit to 5
+  const upcomingDeliveries = liveDeliveries
+    .filter((d) => d.status === 'in_transit' || d.status === 'scheduled')
+    .slice(0, 5);
 
   // Format time
   const formatTime = (isoTime) => {
@@ -134,7 +151,7 @@ export function Overview({ onNavigate }) {
         <div className={styles.kpiWrapper} style={{ '--kpi-accent': '#FF2E63' }}>
           <KPICard
             label="Deliveries In Transit"
-            value={KPI_DATA.deliveriesInTransit}
+            value={deliveriesInTransit}
           />
         </div>
         <div className={styles.kpiWrapper} style={{ '--kpi-accent': '#F59E0B' }}>

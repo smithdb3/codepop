@@ -101,6 +101,9 @@ const GeneralHomePage = () => {
       flexDirection: 'row',
       gap: 12,
     },
+    tonicSingleButton: {
+      flex: 1,
+    },
     logoBlock: {
       alignItems: 'center',
       marginBottom: 24,
@@ -508,13 +511,10 @@ const GeneralHomePage = () => {
 
             <View style={styles.tonicSection}>
               <Text style={styles.tonicSectionHeader}>Generate a Drink with Tonic</Text>
-              <Text style={styles.tonicSectionSub}>Your AI bartender — choose how it creates your drink</Text>
+              <Text style={styles.tonicSectionSub}>Your AI bartender</Text>
               <View style={styles.tonicButtonRow}>
-                <TouchableOpacity style={styles.primaryButton} onPress={generateDrinks}>
-                  <Text style={styles.primaryButtonText}>Based on My{'\n'}Preferences</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.secondaryButton}>
-                  <Text style={styles.secondaryButtonText}>Try Something{'\n'}New</Text>
+                <TouchableOpacity style={[styles.primaryButton, styles.tonicSingleButton]} onPress={generateDrinks}>
+                  <Text style={styles.primaryButtonText}>Ask Tonic</Text>
                 </TouchableOpacity>
               </View>
             </View>

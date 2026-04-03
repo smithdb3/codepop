@@ -75,11 +75,11 @@ const CreateDrinkPage = () => {
 
   useFocusEffect(
     React.useCallback(() => {
+      resetDrinkForm();
       if (route.params?.fromGenerateButton) {
         console.log("Generating drinks activated from home page button");
         GenerateAI();
       }
-      resetDrinkForm();
     }, [route.params?.fromGenerateButton, route.params?.fromCartPage])
   );
 
@@ -206,8 +206,8 @@ const CreateDrinkPage = () => {
     });
   };
   
-  // function for generate drink button which generates a drink with AI   
-    
+  // function for generate drink button which generates a drink with AI
+
   const GenerateAI = async () => {
     try {
       const user_id = await AsyncStorage.getItem('userId');
@@ -225,10 +225,20 @@ const CreateDrinkPage = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Error when trying to generate AI drink. Status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Backend error response:', errorText);
+        throw new Error(`Error when trying to generate AI drink. Status: ${response.status} - ${errorText}`);
       }
 
       const drink = await response.json();
+
+      // Pre-fill the form fields with the AI-generated drink
+      setSoda(drink.SodaUsed ? [drink.SodaUsed] : []);
+      setSyrups(drink.SyrupsUsed || []);
+      setAddIns(drink.AddIns || []);
+      setSize(drink.Size || '24oz');
+      setIce('Regular');
+
       setDrinkDict(drink);
       setModalVisible(true);
       console.log(drink);

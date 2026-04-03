@@ -9,7 +9,7 @@ from .internode_views import (
     InterNodeProfileUpdateView, InterNodeHealthCheckView,
 )
 from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken, CheckEmailView
-from .views import StripePaymentIntentView
+from .views import StripePaymentIntentView, StripeConfigView
 from .views import UserPreferenceLookup, PreferencesOperations
 from .views import DrinkOperations, UserDrinksLookup
 from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdateAPIView
@@ -27,6 +27,21 @@ from .views import (
 )
 from .views import MachineOperations
 from .views import ScheduleOperations
+from .views import (
+    RegionListView, AdminStoreListCreateView, AdminStoreDetailView,
+    AdminSupplyHubListCreateView, AdminSupplyHubDetailView, RegionalStatusView,
+    LogisticsStoreListView, LogisticsStoreDetailView, LogisticsCriticalStoresView,
+    LogisticsHubStatusView,
+    AdminHubInventoryListView, AdminHubInventoryDetailView,
+    AdminStoreInventoryListView, AdminStoreInventoryDetailView,
+    LogisticsHubInventoryListView, LogisticsStoreInventoryListView,
+    ManagerInventoryListView,
+    LogisticsSupplyRequestListView, LogisticsSupplyRequestDetailView,
+    ManagerSupplyRequestListCreateView, ManagerSupplyRequestDetailView,
+    AdminSupplyRequestListView,
+    LogisticsDeliveryListCreateView, LogisticsDeliveryDetailView,
+    LogisticsDeliveryKPIView, LogisticsDriverListView
+)
 
 #this ensures that the url calls the right function from the views for each type of request
 preferences_list = PreferencesOperations.as_view({
@@ -155,6 +170,7 @@ urlpatterns = [
 
     # Stripe payment
     path('create-payment-intent/', StripePaymentIntentView.as_view(), name='create-payment-intent'),
+    path('config/stripe/', StripeConfigView.as_view(), name='stripe-config'),
 
     # Inventory URLs
     # Endpoint to list all inventory items
@@ -295,6 +311,65 @@ urlpatterns = [
 
     # KPIs
     path('api/admin/kpi/', AdminKPIView.as_view(), name='admin_kpi'),
+
+    # Regions
+    path('api/regions/', RegionListView.as_view(), name='region_list'),
+
+    # Super Admin — Stores
+    path('api/admin/stores/', AdminStoreListCreateView.as_view(), name='admin_stores_list_create'),
+    path('api/admin/stores/<int:pk>/', AdminStoreDetailView.as_view(), name='admin_store_detail'),
+
+    # Super Admin — Supply Hubs
+    path('api/admin/hubs/', AdminSupplyHubListCreateView.as_view(), name='admin_hubs_list_create'),
+    path('api/admin/hubs/<int:pk>/', AdminSupplyHubDetailView.as_view(), name='admin_hub_detail'),
+
+    # Super Admin — Regional Status
+    path('api/admin/regional-status/', RegionalStatusView.as_view(), name='admin_regional_status'),
+
+    # Super Admin — Hub Inventory
+    path('api/admin/hubs/<int:hub_pk>/inventory/', AdminHubInventoryListView.as_view(), name='admin_hub_inventory_list'),
+    path('api/admin/hubs/<int:hub_pk>/inventory/<int:pk>/', AdminHubInventoryDetailView.as_view(), name='admin_hub_inventory_detail'),
+
+    # Super Admin — Store Inventory
+    path('api/admin/stores/<int:store_pk>/inventory/', AdminStoreInventoryListView.as_view(), name='admin_store_inventory_list'),
+    path('api/admin/stores/<int:store_pk>/inventory/<int:pk>/', AdminStoreInventoryDetailView.as_view(), name='admin_store_inventory_detail'),
+
+    # Logistics — Stores (critical endpoint must come before <int:pk>)
+    path('api/logistics/stores/critical/', LogisticsCriticalStoresView.as_view(), name='logistics_critical_stores'),
+    path('api/logistics/stores/', LogisticsStoreListView.as_view(), name='logistics_stores_list'),
+    path('api/logistics/stores/<int:pk>/', LogisticsStoreDetailView.as_view(), name='logistics_store_detail'),
+
+    # Logistics — Hub Status
+    path('api/logistics/hub-status/', LogisticsHubStatusView.as_view(), name='logistics_hub_status'),
+
+    # Logistics — Hub Inventory
+    path('api/logistics/hubs/<int:hub_pk>/inventory/', LogisticsHubInventoryListView.as_view(), name='logistics_hub_inventory_list'),
+
+    # Logistics — Store Inventory
+    path('api/logistics/stores/<int:store_pk>/inventory/', LogisticsStoreInventoryListView.as_view(), name='logistics_store_inventory_list'),
+
+    # Manager — Inventory
+    path('api/manager/inventory/', ManagerInventoryListView.as_view(), name='manager_inventory_list'),
+
+    # Logistics — Supply Requests
+    path('api/logistics/supply-requests/', LogisticsSupplyRequestListView.as_view(), name='logistics_supply_request_list'),
+    path('api/logistics/supply-requests/<int:pk>/', LogisticsSupplyRequestDetailView.as_view(), name='logistics_supply_request_detail'),
+
+    # Manager — Supply Requests
+    path('api/manager/supply-requests/', ManagerSupplyRequestListCreateView.as_view(), name='manager_supply_request_list'),
+    path('api/manager/supply-requests/<int:pk>/', ManagerSupplyRequestDetailView.as_view(), name='manager_supply_request_detail'),
+
+    # Admin — Supply Requests
+    path('api/admin/supply-requests/', AdminSupplyRequestListView.as_view(), name='admin_supply_request_list'),
+
+    # Logistics — Deliveries
+    # NOTE: kpi/ MUST come before <int:pk>/ or Django will try to match "kpi" as an integer ID
+    path('api/logistics/deliveries/kpi/', LogisticsDeliveryKPIView.as_view(), name='logistics_deliveries_kpi'),
+    path('api/logistics/deliveries/', LogisticsDeliveryListCreateView.as_view(), name='logistics_deliveries_list_create'),
+    path('api/logistics/deliveries/<int:pk>/', LogisticsDeliveryDetailView.as_view(), name='logistics_delivery_detail'),
+
+    # Logistics — Drivers
+    path('api/logistics/drivers/', LogisticsDriverListView.as_view(), name='logistics_drivers_list'),
 
     # Hub endpoints (only meaningful when IS_HUB=True, but available on all nodes)
     path('api/hub/register/',       HubRegisterView.as_view(),       name='hub_register'),

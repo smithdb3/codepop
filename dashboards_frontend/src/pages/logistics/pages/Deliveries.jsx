@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { DELIVERIES, STORES, RECURRING_SCHEDULES, DRIVERS } from '../mockData';
+import { RECURRING_SCHEDULES } from '../mockData';
+import { getLogisticsDeliveries, createDelivery, getDrivers } from '../../../api/deliveries';
+import { getLogisticsStores } from '../../../api/stores';
 import styles from './Deliveries.module.css';
 
 export function Deliveries({ onNavigate }) {
@@ -18,6 +20,12 @@ export function Deliveries({ onNavigate }) {
   });
   const [toast, setToast] = useState({ visible: false, message: '' });
 
+  // Delivery API state
+  const [deliveries, setDeliveries] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [loadingDeliveries, setLoadingDeliveries] = useState(false);
+
   // Automated Scheduling state
   const [automatedForm, setAutomatedForm] = useState({
     pattern: 'weekly',
@@ -30,6 +38,21 @@ export function Deliveries({ onNavigate }) {
   });
   const [schedules, setSchedules] = useState(RECURRING_SCHEDULES);
 
+  // Fetch deliveries, drivers, and stores on mount
+  useEffect(() => {
+    setLoadingDeliveries(true);
+    Promise.all([getLogisticsDeliveries(), getDrivers(), getLogisticsStores()])
+      .then(([deliveriesData, driversData, storesData]) => {
+        setDeliveries(deliveriesData || []);
+        setDrivers(driversData || []);
+        setStores(storesData || []);
+      })
+      .catch((err) => {
+        console.error('Failed to load deliveries, drivers, or stores:', err);
+      })
+      .finally(() => setLoadingDeliveries(false));
+  }, []);
+
   // Toast auto-hide effect
   useEffect(() => {
     if (toast.visible) {
@@ -41,15 +64,15 @@ export function Deliveries({ onNavigate }) {
   }, [toast.visible]);
 
   // Filter deliveries for planning view
-  const plannedDeliveries = DELIVERIES;
+  const plannedDeliveries = deliveries;
 
-  // Get stores not in route
-  const availableStores = STORES.filter(
+  // Get stores not in route (using real store data from API)
+  const availableStores = stores.filter(
     (store) => !routeStops.some((rs) => rs.id === store.id)
   ).filter((store) =>
-    store.name.toLowerCase().includes(storeSearch.toLowerCase()) ||
-    store.address.toLowerCase().includes(storeSearch.toLowerCase())
-  ).sort((a, b) => a.daysRemaining - b.daysRemaining);
+    store.store_name.toLowerCase().includes(storeSearch.toLowerCase()) ||
+    store.location.toLowerCase().includes(storeSearch.toLowerCase())
+  );
 
   // Handle drag start
   const handleDragStart = (e, index) => {
@@ -127,15 +150,39 @@ export function Deliveries({ onNavigate }) {
   };
 
   // Confirm schedule
-  const handleConfirmSchedule = () => {
+  const handleConfirmSchedule = async () => {
     if (!scheduleForm.date || !scheduleForm.driver) {
       alert('Please fill in date and driver');
       return;
     }
-    setShowScheduleModal(false);
-    setRouteStops([]);
-    setScheduleForm({ date: '', driver: '', notes: '' });
-    setToast({ visible: true, message: 'Route scheduled successfully!' });
+
+    try {
+      // Use hub id=1 as default
+      const hubId = 1;
+      const storeIds = routeStops.map((s) => s.id);
+
+      await createDelivery({
+        hub: hubId,
+        driver_id: parseInt(scheduleForm.driver),
+        store_ids: storeIds,
+        route: storeIds,
+        delivery_date: scheduleForm.date,
+        eta: `${scheduleForm.date}T09:00:00`,
+        notes: scheduleForm.notes,
+      });
+
+      // Refresh list
+      const updated = await getLogisticsDeliveries();
+      setDeliveries(updated || []);
+
+      setShowScheduleModal(false);
+      setRouteStops([]);
+      setScheduleForm({ date: '', driver: '', notes: '' });
+      setToast({ visible: true, message: 'Route scheduled successfully!' });
+    } catch (err) {
+      console.error('Failed to create delivery:', err);
+      setToast({ visible: true, message: 'Failed to schedule delivery. Try again.' });
+    }
   };
 
   // Cancel schedule
@@ -378,23 +425,10 @@ export function Deliveries({ onNavigate }) {
                       >
                         <div className={styles.storeInfo}>
                           <div className={styles.storeRowName}>
-                            {store.name}
+                            {store.store_name}
                           </div>
                           <div className={styles.storeRowAddress}>
-                            {store.address}
-                          </div>
-                          <div className={styles.storeRowDetails}>
-                            <span
-                              className={styles.supplyBadge}
-                              style={getStoreSupplyBadge(
-                                store.ingredientLevels[0]?.pct || 50
-                              )}
-                            >
-                              {store.ingredientLevels[0]?.pct || 50}%
-                            </span>
-                            <span className={styles.daysRemaining}>
-                              {store.daysRemaining}d remaining
-                            </span>
+                            {store.location}
                           </div>
                         </div>
                         <button
@@ -524,7 +558,7 @@ export function Deliveries({ onNavigate }) {
                     }
                   >
                     <option value="">Select driver...</option>
-                    {DRIVERS.map((driver) => (
+                    {drivers.map((driver) => (
                       <option key={driver.id} value={driver.id}>
                         {driver.name}
                       </option>

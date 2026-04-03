@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -9,11 +9,16 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from 'recharts';
-import { STORES, INVENTORY_ITEMS } from '../mockData';
+import { getLogisticsStores } from '../../../api/stores';
 import { DataTable } from '../../super-admin/components/DataTable';
 import styles from './Stores.module.css';
 
+// Stub inventory items (Part 4 will populate this)
+const INVENTORY_ITEMS = [];
+
 export function Stores({ onNavigate }) {
+  const [stores, setStores] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
   const [search, setSearch] = useState('');
   const [filterHealth, setFilterHealth] = useState('all');
@@ -23,15 +28,46 @@ export function Stores({ onNavigate }) {
   const [drawerTab, setDrawerTab] = useState('summary');
   const [historyLimit, setHistoryLimit] = useState(10);
 
-  // Get unique regions from STORES
-  const regions = useMemo(() => {
-    const regionSet = new Set(STORES.map((s) => s.region));
-    return Array.from(regionSet).sort();
+  // Fetch stores on mount
+  useEffect(() => {
+    const fetchStores = async () => {
+      setLoading(true);
+      try {
+        const data = await getLogisticsStores();
+        // Map API fields to component fields
+        const mappedStores = data.map((store) => ({
+          ...store,
+          name: store.store_name,
+          address: store.location,
+          region: store.region_name,
+          supplyHealthStatus: store.supply_health_status,
+          daysRemaining: store.days_remaining,
+          restockByDate: store.restock_by_date,
+          activeRequests: store.active_requests,
+          ingredientLevels: store.ingredient_levels || [],
+          forecastData: store.forecast_data || [],
+          requests: store.requests || [],
+          history: store.history || [],
+        }));
+        setStores(mappedStores);
+      } catch (error) {
+        console.error('Failed to fetch stores:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStores();
   }, []);
+
+  // Get unique regions from stores
+  const regions = useMemo(() => {
+    const regionSet = new Set(stores.map((s) => s.region));
+    return Array.from(regionSet).sort();
+  }, [stores]);
 
   // Filter stores
   const filteredStores = useMemo(() => {
-    return STORES.filter((store) => {
+    return stores.filter((store) => {
       const matchesSearch =
         search === '' ||
         store.name.toLowerCase().includes(search.toLowerCase());
@@ -41,7 +77,7 @@ export function Stores({ onNavigate }) {
         filterRegion === 'all' || store.region === filterRegion;
       return matchesSearch && matchesHealth && matchesRegion;
     });
-  }, [search, filterHealth, filterRegion]);
+  }, [stores, search, filterHealth, filterRegion]);
 
   // Check if any filter is active
   const hasActiveFilter =
@@ -627,7 +663,9 @@ export function Stores({ onNavigate }) {
       </div>
 
       {/* Content */}
-      {filteredStores.length > 0 ? (
+      {loading ? (
+        <div className={styles.emptyState}>Loading stores...</div>
+      ) : filteredStores.length > 0 ? (
         viewMode === 'grid' ? (
           <GridView />
         ) : (

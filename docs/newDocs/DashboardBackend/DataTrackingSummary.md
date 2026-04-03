@@ -44,7 +44,7 @@ All 5 dashboards (Admin, Manager, Repair Staff, Logistics Manager, Super Admin) 
 
 ---
 
-### 3. Stores & Supply Hubs
+### 3. Stores & Supply Hubs (DONE)
 **Models:** `StoreRegistry` (exists), `SupplyHub` (new)
 
 **Fields:**
@@ -60,7 +60,7 @@ All 5 dashboards (Admin, Manager, Repair Staff, Logistics Manager, Super Admin) 
 
 ---
 
-### 4. Inventory (split into two scopes)
+### 4. Inventory (split into two scopes) (DONE)
 
 #### 4a. Hub Inventory (regional supply hub stock)
 **Model:** `HubInventoryItem`
@@ -84,7 +84,7 @@ All 5 dashboards (Admin, Manager, Repair Staff, Logistics Manager, Super Admin) 
 
 ---
 
-### 5. Supply Requests
+### 5. Supply Requests (DONE)
 **Model:** `SupplyRequest` (exists, needs extension)
 
 **Fields to add/verify:**
@@ -100,7 +100,7 @@ All 5 dashboards (Admin, Manager, Repair Staff, Logistics Manager, Super Admin) 
 
 ---
 
-### 6. Deliveries
+### 6. Deliveries (Done)
 **Model:** `Delivery` (new)
 
 **Fields:**

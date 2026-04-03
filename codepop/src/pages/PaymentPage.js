@@ -61,7 +61,21 @@ const PaymentPage = () => {
   const [checkoutLocationPref, setCheckoutLocationPref] = useState(null);
 
   // Stripe
-  const { initializePaymentSheet, openPaymentSheet } = CheckoutForm(totalPrice);
+  const [stripePublishableKey, setStripePublishableKey] = useState(null);
+  const { initializePaymentSheet, openPaymentSheet, loading: paymentSheetReady } = CheckoutForm(totalPrice);
+
+  useEffect(() => {
+    const fetchStripeKey = async () => {
+      try {
+        const response = await fetch(`${getBaseURL()}/backend/config/stripe/`);
+        const data = await response.json();
+        setStripePublishableKey(data.publishableKey);
+      } catch (e) {
+        console.error('Failed to fetch Stripe publishable key:', e);
+      }
+    };
+    fetchStripeKey();
+  }, []);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -99,7 +113,9 @@ const PaymentPage = () => {
   );
 
   useEffect(() => {
-    initializePaymentSheet();
+    if (totalPrice > 0) {
+      initializePaymentSheet();
+    }
   }, [totalPrice]);
 
   const calculatePrice = (drink) => {
@@ -188,6 +204,7 @@ const PaymentPage = () => {
   const handlePayNow = async () => {
     setLoading(true);
     try {
+      await initializePaymentSheet();
       await openPaymentSheet();
     } catch (err) {
       console.error('Payment error:', err);
@@ -755,9 +772,16 @@ const PaymentPage = () => {
 
   const styles = makeStyles(colors);
 
+  if (!stripePublishableKey) {
+    return (
+      <View style={styles.wholePage}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return (
-//    <StripeProvider publishableKey="pk_test_51QEDP7HwEWxwIyaLoeRGprLwnn6Fj7jZljzxglWudPSTSe6sMyFPAjHZsnMOy1HuwZhUYT9JGZbOsxhXxkFTJp9700JSZTZKIz">
-    <StripeProvider publishableKey="pk_test_51TBSA2LNi1I4SwBPEBvNlh31QCL1FbDpbfTVqS3pLM2tKcLgL8Txkp9Z7c7B1Rwx7pNBz7aiGnbn8pC6oJakKwvy00l4GxOtT3">
+    <StripeProvider publishableKey={stripePublishableKey}>
       <View style={styles.wholePage}>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -1024,10 +1048,10 @@ const PaymentPage = () => {
           {!(retryCount >= 3) && (
             <TouchableOpacity
               onPress={handlePayNow}
-              disabled={loading}
-              style={[styles.payButton, loading && styles.payButtonDisabled]}
+              disabled={loading || !paymentSheetReady}
+              style={[styles.payButton, (loading || !paymentSheetReady) && styles.payButtonDisabled]}
             >
-              {loading ? (
+              {(loading || !paymentSheetReady) ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.payButtonText}>Pay Now · ${total.toFixed(2)}</Text>

@@ -3,9 +3,11 @@ from .models import (
     # Existing models
     Preference, Drink, Inventory, Notification, Order, Revenue,
     # Distributed system models
-    Region, StoreRegistry, VisitingUserCache, PendingProfileUpdate,
-    SyncAuditLog, SupplyRequest, Machine, Schedule,
+    Region, StoreRegistry, SupplyHub, VisitingUserCache, PendingProfileUpdate,
+    SyncAuditLog, SupplyRequest, Machine, Schedule, Delivery,
     RepairStaffProfile, LogisticsManagerProfile,
+    # Inventory models
+    HubInventoryItem, StoreInventoryItem,
 )
 
 admin.site.register(Preference)
@@ -18,8 +20,13 @@ admin.site.register(Region)
 
 @admin.register(StoreRegistry)
 class StoreRegistryAdmin(admin.ModelAdmin):
-    list_display = ('store_id', 'store_name', 'region', 'status', 'last_heartbeat')
+    list_display = ('store_id', 'store_name', 'region', 'status', 'last_heartbeat', 'machine_count')
     list_filter  = ('status', 'region')
+
+@admin.register(SupplyHub)
+class SupplyHubAdmin(admin.ModelAdmin):
+    list_display = ('name', 'region', 'inventory_pct', 'active_deliveries_count', 'pending_orders_count')
+    list_filter  = ('region',)
 
 @admin.register(VisitingUserCache)
 class VisitingUserCacheAdmin(admin.ModelAdmin):
@@ -42,8 +49,14 @@ class SyncAuditLogAdmin(admin.ModelAdmin):
 
 @admin.register(SupplyRequest)
 class SupplyRequestAdmin(admin.ModelAdmin):
-    list_display = ('store_id', 'item_name', 'quantity', 'status', 'created_at')
-    list_filter  = ('status', 'region')
+    list_display = ('id', 'store', 'status', 'urgency', 'created_at')
+    list_filter  = ('status', 'urgency')
+
+@admin.register(Delivery)
+class DeliveryAdmin(admin.ModelAdmin):
+    list_display  = ('id', 'hub', 'driver', 'status', 'delivery_date', 'eta', 'created_at')
+    list_filter   = ('status', 'hub')
+    filter_horizontal = ('stores',)
 
 @admin.register(Machine)
 class MachineAdmin(admin.ModelAdmin):
@@ -53,3 +66,5 @@ class MachineAdmin(admin.ModelAdmin):
 admin.site.register(Schedule)
 admin.site.register(RepairStaffProfile)
 admin.site.register(LogisticsManagerProfile)
+admin.site.register(HubInventoryItem)
+admin.site.register(StoreInventoryItem)

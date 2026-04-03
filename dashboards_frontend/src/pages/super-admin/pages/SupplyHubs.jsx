@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DataTable } from '../components/DataTable';
 import { StatusBadge } from '../components/StatusBadge';
-import { REGIONS, HUBS } from '../mockData';
+import { getRegions } from '../../../api/regions';
+import { getAdminHubs } from '../../../api/hubs';
 import styles from './SupplyHubs.module.css';
 
 export function SupplyHubs() {
-  const [selectedRegion, setSelectedRegion] = useState('chicago');
+  const [regions, setRegions] = useState([]);
+  const [hubs, setHubs] = useState([]);
+  const [selectedRegion, setSelectedRegion] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const hubColumns = [
     { key: 'name', label: 'Hub Name', sortable: true },
@@ -21,7 +25,46 @@ export function SupplyHubs() {
     { key: 'lastUpdated', label: 'Last Updated', sortable: true },
   ];
 
-  const filteredHubs = HUBS.filter((hub) => hub.region === selectedRegion);
+  // Fetch regions on mount
+  useEffect(() => {
+    const fetchRegions = async () => {
+      try {
+        const data = await getRegions();
+        setRegions(data);
+        if (data.length > 0) {
+          setSelectedRegion(data[0].name);
+        }
+      } catch (error) {
+        console.error('Failed to fetch regions:', error);
+      }
+    };
+    fetchRegions();
+  }, []);
+
+  // Fetch hubs when selected region changes
+  useEffect(() => {
+    if (!selectedRegion) return;
+
+    const fetchHubs = async () => {
+      setLoading(true);
+      try {
+        const data = await getAdminHubs({ region: selectedRegion });
+        // Map API fields to table fields
+        const mappedHubs = data.map((hub) => ({
+          ...hub,
+          region: hub.region_name,
+          inventory: hub.inventory_pct,
+          lastUpdated: new Date().toLocaleString(), // Placeholder
+        }));
+        setHubs(mappedHubs);
+      } catch (error) {
+        console.error('Failed to fetch hubs:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHubs();
+  }, [selectedRegion]);
 
   return (
     <div className={styles.page}>
@@ -31,18 +74,18 @@ export function SupplyHubs() {
       </div>
 
       <div className={styles.regionSelector}>
-        {REGIONS.map((region) => (
+        {regions.map((region) => (
           <button
             key={region.id}
-            className={`${styles.regionBtn} ${selectedRegion === region.id ? styles.active : ''}`}
-            onClick={() => setSelectedRegion(region.id)}
+            className={`${styles.regionBtn} ${selectedRegion === region.name ? styles.active : ''}`}
+            onClick={() => setSelectedRegion(region.name)}
           >
-            {region.name}
+            {region.display_name}
           </button>
         ))}
       </div>
 
-      <DataTable columns={hubColumns} data={filteredHubs} searchable={true} rowsPerPage={25} />
+      {loading ? <p>Loading hubs...</p> : <DataTable columns={hubColumns} data={hubs} searchable={true} rowsPerPage={25} />}
     </div>
   );
 }

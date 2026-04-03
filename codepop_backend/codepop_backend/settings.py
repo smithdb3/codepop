@@ -12,12 +12,13 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from dotenv import load_dotenv
-load_dotenv()
-
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load .env from the backend root directory
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -128,6 +129,9 @@ HUB_ENDPOINTS = {
     'phoenix':    os.getenv('HUB_PHOENIX_URL',     ''),  # Provision later
     'seattle':    os.getenv('HUB_SEATTLE_URL',     ''),  # Provision later
 }
+
+# Google Gemini API
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 
 # Rate limiting — inter-node endpoints only
 RATELIMIT_ENABLE = True

@@ -16,6 +16,10 @@ const LOCAL_DEV_URL = Platform.OS === 'android'
   ? 'http://10.0.2.2:8000'
   : 'http://localhost:8000';
 
+// Use local backend unless explicitly set to false in .env
+// Defaults to local if EXPO_PUBLIC_USE_LOCAL is not set
+const USE_LOCAL_BACKEND = process.env.EXPO_PUBLIC_USE_LOCAL !== 'false';
+
 // Module-level cache for store base URL
 // Defaults to local dev until user selects a store (stored in AsyncStorage)
 let _storeBaseURL = LOCAL_DEV_URL;
@@ -65,9 +69,14 @@ export function getBaseURL() {
 
 /**
  * Initialize the base URL from AsyncStorage on app startup.
- * Reads the saved selectedStoreEndpoint and updates the cache.
+ * If USE_LOCAL_BACKEND is true, always uses local. Otherwise reads saved selectedStoreEndpoint.
  */
 export async function initBaseURL() {
+  if (USE_LOCAL_BACKEND) {
+    _storeBaseURL = LOCAL_DEV_URL;
+    return;
+  }
+
   try {
     const savedEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint');
     if (savedEndpoint) {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -13,12 +13,13 @@ import {
   ReferenceLine,
 } from 'recharts';
 import {
-  INVENTORY_ITEMS,
   TOP_TRENDING_DATA,
   REGIONAL_VARIATION_DATA,
   SEASONAL_PATTERNS_DATA,
   AI_INSIGHTS,
 } from '../mockData';
+import { getLogisticsHubStatus } from '../../../api/hubs';
+import { getLogisticsHubInventory } from '../../../api/inventory';
 import { DataTable } from '../../super-admin/components/DataTable';
 import styles from './Inventory.module.css';
 
@@ -30,10 +31,75 @@ export function Inventory({ onNavigate }) {
   const [filterLevel, setFilterLevel] = useState('all');
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDir, setSortDir] = useState('asc');
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [selectedHubId, setSelectedHubId] = useState(null);
+  const [hubs, setHubs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch hubs and set default hub
+  useEffect(() => {
+    const fetchHubs = async () => {
+      try {
+        const hubsData = await getLogisticsHubStatus();
+        setHubs(hubsData);
+        if (hubsData.length > 0) {
+          setSelectedHubId(hubsData[0].id);
+        }
+      } catch (err) {
+        console.error('Failed to fetch hubs:', err);
+        setError('Failed to load hub data');
+      }
+    };
+    fetchHubs();
+  }, []);
+
+  // Fetch inventory for selected hub
+  useEffect(() => {
+    if (!selectedHubId) return;
+
+    const fetchInventory = async () => {
+      try {
+        setLoading(true);
+        const data = await getLogisticsHubInventory(selectedHubId);
+
+        // Transform API response to match expected shape
+        const transformed = data.map((item) => ({
+          id: item.id.toString(),
+          name: item.item_name,
+          category: {
+            'syrup': 'Syrups',
+            'soda': 'Sodas',
+            'add-in': 'Add-ins',
+            'physical': 'Physical',
+          }[item.category] || item.category,
+          currentLevelPct: item.current_level_pct || 0,
+          avgDailyUsage: item.avg_daily_usage || 0,
+          daysRemaining: item.days_remaining || 0,
+          trendDirection: item.trend_direction || 'flat',
+          trendPct: item.trend_pct || 0,
+          status: item.status || 'in_stock',
+          quantity: item.quantity,
+          threshold: item.threshold,
+        }));
+
+        setInventoryItems(transformed);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to fetch inventory:', err);
+        setError('Failed to load inventory data');
+        setInventoryItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInventory();
+  }, [selectedHubId]);
 
   // Filter inventory items
   const filteredItems = useMemo(() => {
-    let result = INVENTORY_ITEMS;
+    let result = inventoryItems;
 
     if (search) {
       result = result.filter((item) =>
@@ -165,8 +231,43 @@ export function Inventory({ onNavigate }) {
   // Chart palette colors for consistency
   const chartColors = ['#FF2E63', '#08D9D6', '#F59E0B', '#10B981', '#8B5CF6'];
 
+  if (error) {
+    return (
+      <div className={styles.page}>
+        <h1 className={styles.pageTitle}>Inventory</h1>
+        <p style={{ color: 'red' }}>{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.page}>
+      {/* Hub Selector */}
+      {hubs.length > 0 && (
+        <div style={{ marginBottom: '20px' }}>
+          <label htmlFor="hubSelect" style={{ marginRight: '10px', fontWeight: '600' }}>
+            Select Hub:
+          </label>
+          <select
+            id="hubSelect"
+            value={selectedHubId || ''}
+            onChange={(e) => setSelectedHubId(Number(e.target.value))}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '4px',
+              border: '1px solid #ddd',
+              fontSize: '14px',
+            }}
+          >
+            {hubs.map((hub) => (
+              <option key={hub.id} value={hub.id}>
+                {hub.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Inventory</h1>
@@ -192,8 +293,12 @@ export function Inventory({ onNavigate }) {
         </div>
       </div>
 
+      {loading && <p>Loading inventory...</p>}
+
       {/* Tab Bar */}
-      <div className={styles.tabBar}>
+      {!loading && (
+        <>
+          <div className={styles.tabBar}>
         <button
           className={`${styles.tab} ${activeTab === 'supply' ? styles.active : ''}`}
           onClick={() => setActiveTab('supply')}
@@ -205,12 +310,12 @@ export function Inventory({ onNavigate }) {
           onClick={() => setActiveTab('trends')}
         >
           Usage Trends
-        </button>
-      </div>
+          </button>
+        </div>
 
-      {/* Supply Levels Tab */}
-      {activeTab === 'supply' && (
-        <div>
+        {/* Supply Levels Tab */}
+        {activeTab === 'supply' && (
+          <div>
           {/* Filter Toolbar */}
           <div className={styles.filterToolbar}>
             <input
@@ -267,12 +372,12 @@ export function Inventory({ onNavigate }) {
               No inventory items match your filters.
             </div>
           )}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Usage Trends Tab */}
-      {activeTab === 'trends' && (
-        <div>
+        {/* Usage Trends Tab */}
+        {activeTab === 'trends' && (
+          <div>
           {/* AI Badge */}
           <div className={styles.aiBadgeWrapper}>
             <span className={styles.aiBadge}>AI Generated</span>
@@ -386,6 +491,8 @@ export function Inventory({ onNavigate }) {
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );
