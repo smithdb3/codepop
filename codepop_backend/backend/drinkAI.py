@@ -10,6 +10,8 @@ client = None
 if settings.GROQ_API_KEY:
     client = Groq(api_key=settings.GROQ_API_KEY)
 
+DRINK_AI_AVAILABLE = client is not None
+
 
 def _load_catalog():
     """
