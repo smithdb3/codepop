@@ -1,8 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import React, { useState, useEffect, useContext } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { getBaseURL } from '../../ip_address';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import NavBar from '../components/NavBar';
 import SeasonalCarousel from '../components/SeasonalCarousel';
 import { CodePopLogo } from '../components/CodePopLogo';
@@ -20,6 +19,7 @@ const SAVED_DRINKS = [
 const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigation: navProp }) => {
   const { colors } = useTheme();
   const hookNavigation = useNavigation();
+  const isNavFocused = useIsFocused();
   const navigation = navProp ?? hookNavigation;
   const tabNav = useContext(TabNavigationContext);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -283,7 +283,7 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
 
   // Check login status and store selection when the screen gains focus
   useEffect(() => {
-    if (!isFocused) return;
+    if (!isFocused || !isNavFocused) return;
     let cancelled = false;
 
     const checkLoginStatus = async () => {
@@ -327,54 +327,7 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
     return () => {
       cancelled = true;
     };
-  }, [isFocused]);
-
-  // Logout function
-  const handleLogout = async () => {
-    try {
-      // Send logout request to the backend
-      const token = await AsyncStorage.getItem('userToken');
-      console.log('Token for logout:', token ? token.substring(0, 10) + '...' : 'null');
-      console.log('Base URL:', getBaseURL());
-
-      const response = await fetch(`${getBaseURL()}/backend/auth/logout/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      console.log('Logout response status:', response.status);
-      const responseData = await response.json().catch(() => null);
-      console.log('Logout response:', responseData);
-
-      // Clear AsyncStorage on success (200) or if token is already invalid (401)
-      if (response.status === 200 || response.status === 401) {
-        await AsyncStorage.removeItem('userToken');
-        await AsyncStorage.removeItem('userId');
-        await AsyncStorage.removeItem('first_name');
-        await AsyncStorage.removeItem('userRole');
-
-        setIsLoggedIn(false);
-        setName(null);
-        setIsAdmin(false);
-        setIsManager(false);
-
-        Alert.alert(
-          'Logout successful!',
-          '',
-          [{ text: 'OK', onPress: () => navigation.navigate('GeneralHome') }],
-          { cancelable: false }
-        );
-      } else {
-        Alert.alert('Logout failed, please try again.');
-      }
-    } catch (error) {
-      console.error('Error during logout:', error);
-      Alert.alert('Logout failed, please try again later.');
-    }
-  };
+  }, [isFocused, isNavFocused]);
 
   // Login button press
   const goToLoginPage = () => {
@@ -535,9 +488,6 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
             </View>
 
             <View style={styles.buttonContainer}>
-              <TouchableOpacity onPress={handleLogout} style={styles.secondaryButton}>
-                <Text style={styles.secondaryButtonText}>Logout</Text>
-              </TouchableOpacity>
               {isAdmin && (
                 <TouchableOpacity onPress={goToAdminDash} style={styles.secondaryButton}>
                   <Text style={styles.secondaryButtonText}>Admin Dash</Text>

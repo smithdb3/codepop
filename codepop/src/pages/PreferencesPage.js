@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -9,16 +9,19 @@ import {
   Alert,
   Switch,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/NavBar';
 import { getBaseURL } from '../../ip_address';
 import { useTheme } from '../theme';
 import StoreSelectionModal from '../components/StoreSelectionModal';
+import TabNavigationContext from '../context/TabNavigationContext';
 
 const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigation: navProp }) => {
   const navigation = navProp || useNavigation();
+  const isNavFocused = useIsFocused();
+  const tabNav = useContext(TabNavigationContext);
   const { colors, themeMode, setThemeMode } = useTheme();
 
   // Auth & User State
@@ -49,7 +52,7 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
 
   // Load data on focus
   useEffect(() => {
-    if (!isFocused) return;
+    if (!isFocused || !isNavFocused) return;
     let isMounted = true;
     const loadData = async () => {
       if (isMounted) {
@@ -60,7 +63,7 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
     return () => {
       isMounted = false;
     };
-  }, [isFocused]);
+  }, [isFocused, isNavFocused]);
 
   const checkLoginStatus = async () => {
     try {
@@ -153,17 +156,12 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
         await AsyncStorage.removeItem('userRole');
         await AsyncStorage.removeItem('userEmail');
 
-        Alert.alert(
-          'Logout successful!',
-          '',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('GeneralHome'),
-            },
-          ],
-          { cancelable: false }
-        );
+        setIsLoggedIn(false);
+        setFirstName('');
+        setUserEmail('');
+        setUserId('');
+        setUserToken('');
+        tabNav?.navigateToTab(0);
       } else {
         Alert.alert('Logout failed, please try again.');
       }

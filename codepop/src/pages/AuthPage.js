@@ -46,6 +46,7 @@ const AuthPage = ({ navigation, route }) => {
           await AsyncStorage.setItem('userToken', data.token);
           await AsyncStorage.setItem('userId', data.user_id.toString());
           await AsyncStorage.setItem('first_name', data.first_name);
+          await AsyncStorage.setItem('userEmail', trimmed);
           if(data.userRole === 'admin'){
             await AsyncStorage.setItem('userRole', 'admin');
             navigation.navigate('AdminDash');
