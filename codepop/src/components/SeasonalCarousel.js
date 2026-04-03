@@ -1,25 +1,30 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { getBaseURL } from '../../ip_address';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: windowWidth } = Dimensions.get('window');
+const CARD_HEIGHT = 400;
 
 const SeasonalCarousel = ({ readOnly = false }) => {
     const navigation = useNavigation();
+
     const [data, setData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [expandedId, setExpandedId] = useState(null);
+    const [sizePickerId, setSizePickerId] = useState(null);
+    const [selectedSizes, setSelectedSizes] = useState({});
+    const [addingId, setAddingId] = useState(null);
+    const [successId, setSuccessId] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch(`${getBaseURL()}/backend/drinks/`, {
+                const response = await fetch(`${getBaseURL()}/backend/seasonal-drinks/`, {
                     method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                 });
                 if (!response.ok) {
                     setData([]);
@@ -31,17 +36,17 @@ const SeasonalCarousel = ({ readOnly = false }) => {
                     return;
                 }
                 const parsedDrinks = drinks.map((drink) => ({
-                    drinkID: drink.DrinkID,
-                    name: drink.Name,
-                    price: drink.Price,
-                    sodaUsed: drink.SodaUsed,
-                    syrupsUsed: drink.SyrupsUsed,
-                    addIns: drink.AddIns,
-                    user_Created: drink.user_Created,
+                    id:          drink.id,
+                    name:        drink.name,
+                    description: drink.description,
+                    imageUrl:    drink.image_url,
+                    price:       drink.price,
+                    soda:        drink.soda,
+                    syrups:      drink.syrups || [],
+                    addIns:      drink.add_ins || [],
                 }));
                 setData(parsedDrinks);
             } catch {
-                // Offline or no API: avoid console.error — it triggers RN LogBox "Network request failed"
                 setData([]);
             } finally {
                 setIsLoading(false);
@@ -49,88 +54,190 @@ const SeasonalCarousel = ({ readOnly = false }) => {
         };
         fetchData();
     }, []);
-    
-    const createDrink = async (item) => {
-        console.log('creating drinks...');
-        try {
-            // Get the list from AsyncStorage, or initialize as an empty array
-            cartList = await AsyncStorage.getItem("checkoutList");
-            const currentList = cartList && cartList !== 'null' ? JSON.parse(cartList) : [];
-            const cleanedList = currentList.filter(item => item !== null && item !== undefined);
 
-            // Log the item to ensure it has the correct structure
-            console.log(item);
+    const handleAddToCart = async (item, size) => {
+        if (readOnly) {
+            Alert.alert(
+                'Sign in required',
+                'Please sign in to add drinks to your cart.',
+                [
+                    { text: 'Sign In', onPress: () => navigation.navigate('Auth') },
+                    { text: 'Cancel', style: 'cancel' }
+                ]
+            );
+            return;
+        }
+
+        setAddingId(item.id);
+        try {
+            const token = await AsyncStorage.getItem('userToken');
+            const cartList = await AsyncStorage.getItem('checkoutList');
+            const currentList = cartList ? JSON.parse(cartList) : [];
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) {
+                headers['Authorization'] = `Token ${token}`;
+            }
+
+            console.log('DEBUG: token =', token);
+            console.log('DEBUG: headers =', headers);
+            console.log('DEBUG: baseURL =', getBaseURL());
 
             const response = await fetch(`${getBaseURL()}/backend/drinks/`, {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                  Name: item.name,  // Example name for the drink
-                  SodaUsed: item.sodaUsed,  // Default value if SodaUsed is null
-                  SyrupsUsed: item.syrupsUsed,
-                  AddIns: item.addIns,
-                  Price: item.price,
-                  User_Created: true,    // Assuming the user is creating the drink
-                  Size: '24oz',
-                  Ice: 'Regular',
-                })
-              });
-            
-              if (!response.ok) {
-                throw new Error(`Failed to add drink. Status: ${response.status}`);
-              }
-              // add drink item (the drinks ID) to the checkout list from App.js
-              try{
-                // gets list of out of storage on your phone
-                cartList = await AsyncStorage.getItem("checkoutList");
-                const currentList = cartList ? JSON.parse(cartList) : [];
-                // takes the response (what we get after we create a drink) and extracts the drinkID
-                const data = await response.json();
-                const drinkID = data.DrinkID;
-                // add the drinkID to the checkoutList
-                const updatedList = [...currentList, drinkID]
-                // Saves the checkoutlist back into the storage on the phone
-                await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
-                navigation.navigate('Cart');
-              }catch (error){
-                console.log(error)
-              }
-          
-            // Optionally, verify the save operation
-            const savedList = await AsyncStorage.getItem('checkoutList');
-            console.log("Updated Checkout List:", savedList);
-          
-        } catch (error) {
-            console.log("Error:", error);
-        }
-          
-        
-    }
+                headers,
+                body: JSON.stringify({
+                    Name: item.name,
+                    SodaUsed: [item.soda],
+                    SyrupsUsed: item.syrups,
+                    AddIns: item.addIns,
+                    Price: item.price,
+                    Size: size,
+                    Ice: 'regular',
+                    User_Created: true,
+                }),
+            });
 
-    const renderItem = ({ item }) => (
-        <TouchableOpacity style={styles.carouselItem} onPress={readOnly ? undefined : () => createDrink(item)}>
-            <Image
-                source={require('../../assets/temp-carousel-drink.png')}
-                style={styles.image}
-            />
-            <Text style={styles.drinkName}>{item.name}</Text>
-            <Text style={styles.drinkPrice}>${typeof item.price === 'number' ? item.price.toFixed(2) : '—'}</Text>
-        </TouchableOpacity>
-    );
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const created = await response.json();
+            const updatedList = [...currentList, created.DrinkID];
+            await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
+
+            setSizePickerId(null);
+            setSuccessId(item.id);
+            setTimeout(() => setSuccessId(null), 2000);
+        } catch (error) {
+            console.log('SeasonalCarousel add-to-cart error:', error);
+            Alert.alert('Could not add to cart', 'Please try again.');
+        } finally {
+            setAddingId(null);
+        }
+    };
+
+    const renderItem = ({ item }) => {
+        const isExpanded = expandedId === item.id;
+        const showSize = sizePickerId === item.id;
+        const selectedSize = selectedSizes[item.id];
+        const isAdding = addingId === item.id;
+        const justAdded = successId === item.id;
+
+        return (
+            <View style={styles.card}>
+                {/* Image */}
+                {item.imageUrl ? (
+                    <Image source={{ uri: item.imageUrl }} style={styles.image} />
+                ) : (
+                    <Image source={require('../../assets/temp-carousel-drink.png')} style={styles.image} />
+                )}
+
+                {/* Name + Price row */}
+                <View style={styles.headerRow}>
+                    <Text style={styles.drinkName}>{item.name}</Text>
+                    <Text style={styles.drinkPrice}>${item.price.toFixed(2)}</Text>
+                </View>
+
+                {/* Description */}
+                <Text style={styles.drinkDescription} numberOfLines={2}>
+                    {item.description}
+                </Text>
+
+                {/* Expanded ingredients */}
+                {isExpanded && (
+                    <View style={styles.ingredientsBlock}>
+                        <Text style={styles.ingredientLabel}>
+                            Base: <Text style={styles.ingredientValue}>{item.soda}</Text>
+                        </Text>
+                        {item.syrups.length > 0 && (
+                            <Text style={styles.ingredientLabel}>
+                                Syrups: <Text style={styles.ingredientValue}>{item.syrups.join(', ')}</Text>
+                            </Text>
+                        )}
+                        {item.addIns.length > 0 && (
+                            <Text style={styles.ingredientLabel}>
+                                Add-ins: <Text style={styles.ingredientValue}>{item.addIns.join(', ')}</Text>
+                            </Text>
+                        )}
+                    </View>
+                )}
+
+                {/* Action row */}
+                {!showSize ? (
+                    <View style={styles.actionRow}>
+                        <TouchableOpacity
+                            style={styles.detailsButton}
+                            onPress={() => setExpandedId(isExpanded ? null : item.id)}
+                        >
+                            <Text style={styles.detailsButtonText}>{isExpanded ? 'Hide' : 'Details'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.addButton, justAdded && styles.addButtonSuccess]}
+                            onPress={() => {
+                                if (readOnly) {
+                                    Alert.alert('Sign in required', 'Please sign in to add drinks to your cart.',
+                                        [{ text: 'Sign In', onPress: () => navigation.navigate('Auth') },
+                                         { text: 'Cancel', style: 'cancel' }]);
+                                    return;
+                                }
+                                setSizePickerId(item.id);
+                            }}
+                        >
+                            <Text style={styles.addButtonText}>{justAdded ? 'Added!' : 'Add to Cart'}</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    /* Size picker mode */
+                    <View>
+                        <Text style={styles.sizeLabel}>Choose a size:</Text>
+                        <View style={styles.sizeRow}>
+                            {['16oz', '24oz', '32oz'].map(size => (
+                                <TouchableOpacity
+                                    key={size}
+                                    style={[styles.sizeOption, selectedSize === size && styles.sizeOptionSelected]}
+                                    onPress={() => setSelectedSizes(prev => ({ ...prev, [item.id]: size }))}
+                                >
+                                    <Text style={[styles.sizeOptionText, selectedSize === size && styles.sizeOptionSelectedText]}>
+                                        {size}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                        <View style={styles.sizeConfirmRow}>
+                            <TouchableOpacity
+                                style={styles.cancelButton}
+                                onPress={() => setSizePickerId(null)}
+                            >
+                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.confirmButton, (!selectedSize || isAdding) && styles.confirmButtonDisabled]}
+                                onPress={() => selectedSize && handleAddToCart(item, selectedSize)}
+                                disabled={!selectedSize || isAdding}
+                            >
+                                <Text style={styles.confirmButtonText}>
+                                    {isAdding ? 'Adding...' : 'Confirm'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+            </View>
+        );
+    };
 
     return (
-        <View style={{ height: 250, justifyContent: 'center' }}>
+        <View style={styles.wrapper}>
             {isLoading ? (
-                <Text style={styles.emptyText}>Loading...</Text>
+                <Text style={styles.emptyText}>Loading seasonal drinks...</Text>
             ) : data.length === 0 ? (
                 <Text style={styles.emptyText}>No seasonal drinks available.</Text>
             ) : (
                 <Carousel
                     width={windowWidth}
-                    height={250}
+                    height={CARD_HEIGHT}
                     autoPlay={true}
+                    autoPlayInterval={4000}
+                    scrollAnimationDuration={800}
                     data={data}
                     renderItem={renderItem}
                 />
@@ -140,39 +247,167 @@ const SeasonalCarousel = ({ readOnly = false }) => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
+    wrapper: {
+        height: CARD_HEIGHT,
         justifyContent: 'center',
-        alignItems: 'center',
-        padding: 0,
-        margin: 0,
     },
-    carouselItem: {
+    card: {
         backgroundColor: '#FFFFFF',
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        borderRadius: 8,
-        padding: 20,
+        borderRadius: 12,
+        padding: 16,
         margin: 10,
-        alignItems: 'center',
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 2, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 3,
-    },
-    drinkName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    drinkPrice: {
-        fontSize: 16,
+        shadowColor: '#FF2E63',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+        elevation: 4,
     },
     image: {
-        width: 150,
-        height: 150,
-        borderRadius: 10,
-      },
+        width: '100%',
+        height: 110,
+        borderRadius: 8,
+        resizeMode: 'cover',
+        marginBottom: 10,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    drinkName: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1A1A2E',
+        flex: 1,
+        marginRight: 8,
+    },
+    drinkPrice: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#FF2E63',
+    },
+    drinkDescription: {
+        fontSize: 12,
+        color: '#6B7280',
+        marginBottom: 10,
+        lineHeight: 17,
+    },
+    ingredientsBlock: {
+        backgroundColor: '#F0FDFC',
+        borderRadius: 8,
+        padding: 10,
+        marginBottom: 10,
+        borderLeftWidth: 3,
+        borderLeftColor: '#08D9D6',
+    },
+    ingredientLabel: {
+        fontSize: 12,
+        color: '#374151',
+        marginBottom: 3,
+        fontWeight: '600',
+    },
+    ingredientValue: {
+        fontWeight: '400',
+        color: '#6B7280',
+    },
+    actionRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 4,
+    },
+    detailsButton: {
+        flex: 0.4,
+        borderWidth: 1,
+        borderColor: '#08D9D6',
+        borderRadius: 8,
+        paddingVertical: 8,
+        alignItems: 'center',
+    },
+    detailsButtonText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#08D9D6',
+    },
+    addButton: {
+        flex: 0.6,
+        backgroundColor: '#FF2E63',
+        borderRadius: 8,
+        paddingVertical: 8,
+        alignItems: 'center',
+    },
+    addButtonSuccess: {
+        backgroundColor: '#10B981',
+    },
+    addButtonText: {
+        color: '#FFFFFF',
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    sizeLabel: {
+        fontSize: 12,
+        color: '#6B7280',
+        marginBottom: 6,
+        textAlign: 'center',
+    },
+    sizeRow: {
+        flexDirection: 'row',
+        gap: 8,
+        marginBottom: 8,
+    },
+    sizeOption: {
+        flex: 1,
+        borderWidth: 1.5,
+        borderColor: '#D1D5DB',
+        borderRadius: 8,
+        paddingVertical: 8,
+        alignItems: 'center',
+        backgroundColor: '#F9FAFB',
+    },
+    sizeOptionSelected: {
+        borderColor: '#FF2E63',
+        backgroundColor: '#FFF0F3',
+    },
+    sizeOptionText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#374151',
+    },
+    sizeOptionSelectedText: {
+        color: '#FF2E63',
+    },
+    sizeConfirmRow: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    cancelButton: {
+        flex: 0.4,
+        borderWidth: 1,
+        borderColor: '#D1D5DB',
+        borderRadius: 8,
+        paddingVertical: 8,
+        alignItems: 'center',
+    },
+    cancelButtonText: {
+        fontSize: 13,
+        color: '#6B7280',
+        fontWeight: '600',
+    },
+    confirmButton: {
+        flex: 0.6,
+        backgroundColor: '#FF2E63',
+        borderRadius: 8,
+        paddingVertical: 8,
+        alignItems: 'center',
+    },
+    confirmButtonDisabled: {
+        backgroundColor: '#F9A8B4',
+    },
+    confirmButtonText: {
+        color: '#FFFFFF',
+        fontSize: 13,
+        fontWeight: '700',
+    },
     emptyText: {
         textAlign: 'center',
         color: '#9CA3AF',
