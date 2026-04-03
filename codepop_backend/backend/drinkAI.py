@@ -1,16 +1,16 @@
-import google.generativeai as genai
+from groq import Groq
 from django.conf import settings
 import json
 import random
 import csv
 import os
 
-# Check if Gemini API is configured
-DRINK_AI_AVAILABLE = bool(settings.GEMINI_API_KEY)
+# Initialize Groq client if API key is configured
+client = None
+if settings.GROQ_API_KEY:
+    client = Groq(api_key=settings.GROQ_API_KEY)
 
-if DRINK_AI_AVAILABLE:
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-2.5-flash')
+DRINK_AI_AVAILABLE = client is not None
 
 
 def _load_catalog():
@@ -84,7 +84,8 @@ def _generate_random_drink(catalog):
 
 def generate_soda(user_preferences, order_history=None):
     """
-    Generate a personalized drink recommendation using Google Gemini.
+    Generate a personalized drink recommendation using Groq (Llama 3.3 70B).
+    Falls back to random drink if API key is not configured or API fails.
 
     Args:
         user_preferences: list of ingredient names user likes (from Preference model)
@@ -93,15 +94,12 @@ def generate_soda(user_preferences, order_history=None):
 
     Returns:
         dict with keys 'syrups' (list), 'soda' (list with 1 element), 'addins' (list)
-        or None if AI is unavailable
+        or None if API key is not configured
     """
-    if not DRINK_AI_AVAILABLE:
-        return None
-
     catalog = _load_catalog()
 
     # Fallback if API key is not configured
-    if not settings.GEMINI_API_KEY:
+    if not settings.GROQ_API_KEY or not client:
         return _generate_random_drink(catalog)
 
     # Build context strings
@@ -149,12 +147,16 @@ Respond with ONLY a JSON object (no markdown, no explanation):
 {{"syrups": ["name1", "name2"], "soda": "name", "addins": ["name1"]}}"""
 
     try:
-        response = model.generate_content(prompt)
-        response_text = response.text.strip()
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+        response_text = response.choices[0].message.content.strip()
 
         # Try to parse JSON from response
         try:
-            # Handle potential markdown code blocks
+            # Groq with json_object format should return valid JSON, but handle edge cases
             if "```json" in response_text:
                 response_text = response_text.split("```json")[1].split("```")[0].strip()
             elif "```" in response_text:

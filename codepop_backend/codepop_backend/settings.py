@@ -130,8 +130,8 @@ HUB_ENDPOINTS = {
     'seattle':    os.getenv('HUB_SEATTLE_URL',     ''),  # Provision later
 }
 
-# Google Gemini API
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+# Groq API
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
 
 # Rate limiting — inter-node endpoints only
 RATELIMIT_ENABLE = True
