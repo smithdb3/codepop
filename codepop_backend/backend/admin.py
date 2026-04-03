@@ -8,6 +8,8 @@ from .models import (
     RepairStaffProfile, LogisticsManagerProfile,
     # Inventory models
     HubInventoryItem, StoreInventoryItem,
+    # Seasonal drinks
+    SeasonalDrink,
 )
 
 admin.site.register(Preference)
@@ -17,6 +19,14 @@ admin.site.register(Notification)
 admin.site.register(Order)
 admin.site.register(Revenue)
 admin.site.register(Region)
+
+
+@admin.register(SeasonalDrink)
+class SeasonalDrinkAdmin(admin.ModelAdmin):
+    list_display  = ('name', 'season', 'price', 'is_active')
+    list_filter   = ('season', 'is_active')
+    list_editable = ('is_active',)
+    search_fields = ('name',)
 
 @admin.register(StoreRegistry)
 class StoreRegistryAdmin(admin.ModelAdmin):

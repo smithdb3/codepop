@@ -147,6 +147,33 @@ class Revenue(models.Model):
             return f"Revenue {self.RevenueID} for unknown Order {self.OrderID}: ${self.TotalAmount:.2f}"
 
 
+class SeasonalDrink(models.Model):
+    """
+    Represents a seasonal drink available for a specific time of year.
+    These are pre-designed drinks shown in the carousel on the home page.
+    Admins can toggle is_active to control visibility without deleting records.
+    """
+    SEASON_CHOICES = [
+        ('spring', 'Spring'),
+        ('summer', 'Summer'),
+        ('fall',   'Fall'),
+        ('winter', 'Winter'),
+    ]
+
+    name        = models.CharField(max_length=255)
+    description = models.CharField(max_length=500, blank=True)
+    image_url   = models.URLField(blank=True)
+    season      = models.CharField(max_length=10, choices=SEASON_CHOICES, default='spring')
+    price       = models.FloatField()
+    soda        = models.CharField(max_length=255)
+    syrups      = ArrayField(models.CharField(max_length=255), blank=True, default=list)
+    add_ins     = ArrayField(models.CharField(max_length=255), blank=True, default=list)
+    is_active   = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.season})"
+
+
 # ─────────────────────────────────────────────
 # ADMIN DASHBOARD MODELS
 # ─────────────────────────────────────────────
