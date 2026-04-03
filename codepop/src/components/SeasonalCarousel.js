@@ -1,14 +1,16 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import { getBaseURL } from '../../ip_address';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import TabNavigationContext from '../context/TabNavigationContext';
 
 const { width: windowWidth } = Dimensions.get('window');
 
 const SeasonalCarousel = ({ readOnly = false }) => {
     const navigation = useNavigation();
+    const tabNav = useContext(TabNavigationContext);
     const [data, setData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -93,7 +95,11 @@ const SeasonalCarousel = ({ readOnly = false }) => {
                 const updatedList = [...currentList, drinkID]
                 // Saves the checkoutlist back into the storage on the phone
                 await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
-                navigation.navigate('Cart');
+                if (tabNav && tabNav.navigateToTab) {
+                  tabNav.navigateToTab(2); // Navigate to Cart tab
+                } else {
+                  navigation.navigate('Cart');
+                }
               }catch (error){
                 console.log(error)
               }

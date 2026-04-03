@@ -8,15 +8,15 @@ import {
   TextInput,
   FlatList,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/NavBar';
 import { getBaseURL } from '../../ip_address';
 import { useTheme } from '../theme';
 
-const CartPage = () => {
-  const navigation = useNavigation();
+const CartPage = ({ insideTabContainer = false, isFocused = true, navigation: navProp }) => {
+  const navigation = navProp || useNavigation();
   const { colors } = useTheme();
   const [groupedDrinks, setGroupedDrinks] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
@@ -27,12 +27,11 @@ const CartPage = () => {
   const [promoError, setPromoError] = useState('');
   const [savedDrinks, setSavedDrinks] = useState([]);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchDrinks();
-      loadSavedDrinks();
-    }, [])
-  );
+  useEffect(() => {
+    if (!isFocused) return;
+    fetchDrinks();
+    loadSavedDrinks();
+  }, [isFocused]);
 
   const loadSavedDrinks = async () => {
     try {
@@ -598,7 +597,7 @@ const CartPage = () => {
   const styles = makeStyles(colors);
 
   return (
-    <View style={styles.wholePage}>
+    <View style={[styles.wholePage, insideTabContainer && { paddingBottom: 50 }]}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.headerSection}>
           <Text style={styles.pageTitle}>Your Cart</Text>
@@ -682,7 +681,7 @@ const CartPage = () => {
         )}
       </ScrollView>
 
-      <NavBar />
+      {!insideTabContainer && <NavBar />}
     </View>
   );
 };

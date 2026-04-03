@@ -7,18 +7,14 @@ import { TouchableOpacity, StyleSheet, Text, Alert} from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AdminDash from './src/pages/AdminDash';
 import AuthPage from './src/pages/AuthPage';
-import CartPage from './src/pages/CartPage';
 import CheckoutForm from './src/pages/CheckoutForm';
-import ComplaintsPage from './src/pages/ComplaintsPage';
 import CompletePage from './src/pages/CompletePage';
 import CreateAccountPage from './src/pages/CreateAccountPage';
-import CreateDrinkPage from './src/pages/CreateDrinkPage';
-import GeneralHomePage from './src/pages/GeneralHomePage';
 import ManagerDash from './src/pages/ManagerDash';
 import PaymentPage from './src/pages/PaymentPage';
 import PostCheckout from './src/pages/PostCheckout';
-import PreferencesPage from './src/pages/PreferencesPage';
 import UpdateDrink from './src/pages/UpdateDrink';
+import TabContainer from './src/components/TabContainer';
 import CodePopLogo from './src/components/CodePopLogo';
 import { getBaseURL, initBaseURL } from './ip_address';
 import { ThemeProvider, useTheme } from './src/theme';
@@ -84,45 +80,11 @@ const AppNavigator = () => {
           },}}
         />
         <Stack.Screen
-          name="Cart"
-          component={CartPage}
-          options={{
-            headerTitle: () => <CodePopLogo size={28} />,
-            headerTitleAlign: 'center',
-          }}
-        />
-        <Stack.Screen
-          name="CreateDrink"
-          component={CreateDrinkPage}
-          options={{
-            headerTitle: () => <CodePopLogo size={28} />,
-            headerTitleAlign: 'center',
-          }}
-        />
-        <Stack.Screen
-          name="ComplaintsPage"
-          component={ComplaintsPage}
-          options={{
-            headerTitle: () => <CodePopLogo size={28} />,
-            headerTitleAlign: 'center',
-          }}
-        />
-        <Stack.Screen
-          name="Preferences"
-          component={PreferencesPage}
-          options={{
-            headerTitle: () => <CodePopLogo size={28} />,
-            headerTitleAlign: 'center',
-          }}
-        />
-        <Stack.Screen
           name="GeneralHome"
-          component={GeneralHomePage}
+          component={TabContainer}
           options={{
             headerShown: false,
-            headerTitleStyle: {
-              // fontFamily: 'CherryBombOne',
-            },}}
+          }}
         />
         <Stack.Screen
           name="payment"

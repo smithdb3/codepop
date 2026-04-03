@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
 import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
-import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import Gif from '../components/Gif';
 import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
 import { getBaseURL } from '../../ip_address'
@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AIAlert from '../components/AIAlert';
 import CodePopLogo from '../components/CodePopLogo';
 import { useTheme } from '../theme';
+import TabNavigationContext from '../context/TabNavigationContext';
 
 const flavorMap = {
   // Sodas
@@ -53,10 +54,10 @@ const getDrinkTags = (sodas, syrups, addins) => {
 };
 
 
-const CreateDrinkPage = () => {
-  const route = useRoute();
-  const navigation = useNavigation();
+const CreateDrinkPage = ({ insideTabContainer = false, isFocused = true, navigation: navProp }) => {
+  const navigation = navProp || useNavigation();
   const { colors } = useTheme();
+  const tabNav = useContext(TabNavigationContext);
   const [drinkDict, setDrinkDict] = useState([]);
   const [isModalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -73,15 +74,17 @@ const CreateDrinkPage = () => {
   const [selectedSize, setSize] = useState(null);
   const [selectedIce, setIce] = useState(null);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      resetDrinkForm();
-      if (route.params?.fromGenerateButton) {
-        console.log("Generating drinks activated from home page button");
+  useEffect(() => {
+    if (!isFocused) return;
+    resetDrinkForm();
+    if (tabNav && tabNav.shouldGenerateDrink) {
+      // Add a small delay to ensure UI has updated before generating
+      const timer = setTimeout(() => {
         GenerateAI();
-      }
-    }, [route.params?.fromGenerateButton, route.params?.fromCartPage])
-  );
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isFocused, tabNav?.shouldGenerateDrink]);
 
   const resetDrinkForm = () => {
     setSoda([]);  // Clear selected sodas
@@ -137,7 +140,11 @@ const CreateDrinkPage = () => {
           console.log(error)
         }
 
-        navigation.navigate('Cart');
+        if (tabNav && tabNav.navigateToTab) {
+          tabNav.navigateToTab(2); // Navigate to Cart tab
+        } else {
+          navigation.navigate('Cart');
+        }
       }
     } catch (error) {
       console.error('Error adding drink to cart:', error);
@@ -474,7 +481,7 @@ const CreateDrinkPage = () => {
   const styles = makeStyles(colors);
 
   return (
-    <View style={styles.wholePage}>
+    <View style={[styles.wholePage, insideTabContainer && { paddingBottom: 50 }]}>
       {/* ── PINNED TOP SECTION ── */}
       <View style={styles.pinnedTop}>
         <View style={styles.reviewCard}>
@@ -637,10 +644,10 @@ const CreateDrinkPage = () => {
         />
 
         {/* Bottom spacing for NavBar */}
-        <View style={styles.navBarSpace} />
+        {!insideTabContainer && <View style={styles.navBarSpace} />}
       </ScrollView>
 
-      <NavBar />
+      {!insideTabContainer && <NavBar />}
     </View>
   );
 };

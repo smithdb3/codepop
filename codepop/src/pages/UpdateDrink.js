@@ -145,8 +145,8 @@ const UpdateDrink = ({route, navigation}) => {
         if (!response.ok) {
           throw new Error(`Failed to update drink. Status: ${response.status}`);
         }
-    
-        navigation.navigate('Cart');
+
+        navigation.navigate('GeneralHome');
       }
     } catch (error) {
       console.error('Error updating drink:', error);

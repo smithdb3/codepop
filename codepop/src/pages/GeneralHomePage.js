@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import React, { useState, useEffect, useContext } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { getBaseURL } from '../../ip_address';
 import NavBar from '../components/NavBar';
@@ -9,6 +9,7 @@ import { CodePopLogo } from '../components/CodePopLogo';
 import StoreSelectionModal from '../components/StoreSelectionModal';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../theme';
+import TabNavigationContext from '../context/TabNavigationContext';
 
 const SAVED_DRINKS = [
   { id: 1, name: 'Cherry Fizz', description: 'Cherry syrup + lemon-lime soda', price: 4.99 },
@@ -16,8 +17,11 @@ const SAVED_DRINKS = [
   { id: 3, name: 'Mint Glacier', description: 'Mint syrup + club soda + blue raspberry', price: 4.75 },
 ];
 
-const GeneralHomePage = () => {
+const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigation: navProp }) => {
   const { colors } = useTheme();
+  const hookNavigation = useNavigation();
+  const navigation = navProp ?? hookNavigation;
+  const tabNav = useContext(TabNavigationContext);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isManager, setIsManager] = useState(false);
@@ -27,7 +31,6 @@ const GeneralHomePage = () => {
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [selectedStoreName, setSelectedStoreName] = useState(null);
   const [storePickerRequired, setStorePickerRequired] = useState(false);
-  const navigation = useNavigation();
 
   const makeStyles = (colors) => StyleSheet.create({
     container: {
@@ -279,53 +282,52 @@ const GeneralHomePage = () => {
   const styles = makeStyles(colors);
 
   // Check login status and store selection when the screen gains focus
-  useFocusEffect(
-    React.useCallback(() => {
-      let cancelled = false;
+  useEffect(() => {
+    if (!isFocused) return;
+    let cancelled = false;
 
-      const checkLoginStatus = async () => {
-        try {
-          const storedName = await AsyncStorage.getItem('first_name');
-          const token = await AsyncStorage.getItem('userToken');
-          const userRole = await AsyncStorage.getItem('userRole');
-          const selectedEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint');
-          const storeName = await AsyncStorage.getItem('selectedStoreName');
+    const checkLoginStatus = async () => {
+      try {
+        const storedName = await AsyncStorage.getItem('first_name');
+        const token = await AsyncStorage.getItem('userToken');
+        const userRole = await AsyncStorage.getItem('userRole');
+        const selectedEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint');
+        const storeName = await AsyncStorage.getItem('selectedStoreName');
 
-          if (cancelled) return;
+        if (cancelled) return;
 
-          if (!selectedEndpoint) {
-            setStorePickerRequired(true);
-            setShowStoreModal(true);
-          } else {
-            setStorePickerRequired(false);
-            setSelectedStoreName(storeName);
-          }
+        if (!selectedEndpoint) {
+          setStorePickerRequired(true);
+          setShowStoreModal(true);
+        } else {
+          setStorePickerRequired(false);
+          setSelectedStoreName(storeName);
+        }
 
-          if (token && storedName) {
-            setIsLoggedIn(true);
-            setName(storedName);
-          } else {
-            setIsLoggedIn(false);
-          }
-          if (userRole == 'admin'){
-            setIsAdmin(true);
-          }else if(userRole == 'manager'){
+        if (token && storedName) {
+          setIsLoggedIn(true);
+          setName(storedName);
+        } else {
+          setIsLoggedIn(false);
+        }
+        if (userRole == 'admin'){
+          setIsAdmin(true);
+        }else if(userRole == 'manager'){
             setIsManager(true);
           }else{
             setIsAdmin(false);
             setIsManager(false);
           }
-        } catch (error) {
-          console.error('Error checking login status:', error);
-        }
-      };
+      } catch (error) {
+        console.error('Error checking login status:', error);
+      }
+    };
 
-      checkLoginStatus();
-      return () => {
-        cancelled = true;
-      };
-    }, [])
-  );
+    checkLoginStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, [isFocused]);
 
   // Logout function
   const handleLogout = async () => {
@@ -390,7 +392,11 @@ const GeneralHomePage = () => {
   // Generate drinks button press
   const generateDrinks = () => {
     console.log('generating drinks...');
-    navigation.navigate('CreateDrink', {fromGenerateButton: true} );
+    if (tabNav && tabNav.navigateToTab) {
+      tabNav.navigateToTab(1, { generateDrink: true }); // Navigate to Design tab and trigger generation
+    } else {
+      navigation.navigate('CreateDrink', {fromGenerateButton: true} );
+    }
   }
 
   const handleToggleSizeSelector = (drinkId) => {
@@ -458,8 +464,10 @@ const GeneralHomePage = () => {
     setSelectedStoreName(storeName);
   };
 
+  const Root = insideTabContainer ? View : SafeAreaView;
+
   return (
-    <SafeAreaView style={styles.container}>
+    <Root style={styles.container}>
       <StoreSelectionModal
         visible={showStoreModal}
         onClose={handleStoreModalClose}
@@ -467,10 +475,12 @@ const GeneralHomePage = () => {
       />
       {isLoggedIn ? (
         <>
-          <View style={styles.customHeader}>
-            <CodePopLogo size={32} />
-          </View>
-          <ScrollView contentContainerStyle={styles.contentContainer}>
+          {!insideTabContainer && (
+            <View style={styles.customHeader}>
+              <CodePopLogo size={32} />
+            </View>
+          )}
+          <ScrollView contentContainerStyle={[styles.contentContainer, insideTabContainer && { paddingBottom: 50 }]}>
             {selectedStoreName && (
               <TouchableOpacity
                 style={{
@@ -542,7 +552,7 @@ const GeneralHomePage = () => {
           </ScrollView>
         </>
       ) : (
-        <ScrollView contentContainerStyle={styles.notSignedInContainer}>
+        <ScrollView contentContainerStyle={[styles.notSignedInContainer, insideTabContainer && { paddingBottom: 80 }]}>
           {/* Logo at top */}
           <View style={styles.logoBlock}>
             <CodePopLogo size={64} />
@@ -569,8 +579,8 @@ const GeneralHomePage = () => {
           </View>
         </ScrollView>
       )}
-      <NavBar />
-    </SafeAreaView>
+      {!insideTabContainer && <NavBar />}
+    </Root>
   );
 };
 

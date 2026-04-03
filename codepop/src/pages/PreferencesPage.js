@@ -9,7 +9,7 @@ import {
   Alert,
   Switch,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/NavBar';
@@ -17,8 +17,8 @@ import { getBaseURL } from '../../ip_address';
 import { useTheme } from '../theme';
 import StoreSelectionModal from '../components/StoreSelectionModal';
 
-const PreferencesPage = () => {
-  const navigation = useNavigation();
+const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigation: navProp }) => {
+  const navigation = navProp || useNavigation();
   const { colors, themeMode, setThemeMode } = useTheme();
 
   // Auth & User State
@@ -48,18 +48,19 @@ const PreferencesPage = () => {
   const [notifPush, setNotifPush] = useState(true);
 
   // Load data on focus
-  useFocusEffect(
-    React.useCallback(() => {
-      let isMounted = true;
-      const loadData = async () => {
+  useEffect(() => {
+    if (!isFocused) return;
+    let isMounted = true;
+    const loadData = async () => {
+      if (isMounted) {
         await checkLoginStatus();
-      };
-      loadData();
-      return () => {
-        isMounted = false;
-      };
-    }, [])
-  );
+      }
+    };
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [isFocused]);
 
   const checkLoginStatus = async () => {
     try {
@@ -600,7 +601,7 @@ const PreferencesPage = () => {
   const styles = makeStyles(colors);
 
   const renderNotLoggedIn = () => (
-    <View style={styles.wholePage}>
+    <View style={[styles.wholePage, insideTabContainer && { paddingBottom: 50 }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.notLoggedInContainer}>
           <Icon name="lock-closed-outline" size={64} color={colors.emptyIcon} />
@@ -613,7 +614,7 @@ const PreferencesPage = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      <NavBar />
+      {!insideTabContainer && <NavBar />}
     </View>
   );
 
@@ -931,7 +932,7 @@ const PreferencesPage = () => {
   }
 
   return (
-    <View style={styles.wholePage}>
+    <View style={[styles.wholePage, insideTabContainer && { paddingBottom: 50 }]}>
       <StoreSelectionModal visible={showStoreModal} onClose={handleStoreModalClose} />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header Card */}
@@ -1004,7 +1005,7 @@ const PreferencesPage = () => {
         <View style={styles.navBarSpace} />
       </ScrollView>
 
-      <NavBar />
+      {!insideTabContainer && <NavBar />}
     </View>
   );
 };
