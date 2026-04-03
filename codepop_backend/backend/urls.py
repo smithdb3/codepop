@@ -98,7 +98,7 @@ machine_list = MachineOperations.as_view({'get': 'list', 'post': 'create'})
 
 machine_detail = MachineOperations.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
 
-machine_update_status = MachineOperations.as_view({'patch': 'update_status'})
+machine_special_operations = MachineOperations.as_view({'patch': 'update_status', 'get': 'get_machine_store_pair'})
 
 get_schedules = ScheduleOperations.as_view({'get': 'get_user_schedules'})
 
@@ -231,7 +231,7 @@ urlpatterns = [
     path('chatbot/', Chatbot.as_view(), name='chatbot'),
     # Endpoint to call the drinkAI when the generate drink button is clicked
     # One for account users and one for general users
-    # - GET: Retrive generated-drink information the AI sends back
+    # - GET: Retrieve generated-drink information the AI sends back
     # For account users: expects a user_id to be provided
     path('generate/<int:user_id>/', GenerateAIDrink.as_view(), name='account_ai_drink'),
     
@@ -264,7 +264,8 @@ urlpatterns = [
     path('machines/<int:pk>/', machine_detail, name='machine_detail'),
 
     # - PATCH: Updates a machines status
-    path('machines/<int:pk>/update-status/', machine_update_status, name='machine_update_status'),
+    # - GET: Returns a machine with it's associated  store
+    path('machines/<int:pk>/special-operations/', machine_special_operations, name='machine_special_operations'),
 
     # Schedule related URLs
     # Endpoint to list all schedules or create a new schedule
