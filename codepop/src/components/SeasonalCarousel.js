@@ -8,17 +8,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import TabNavigationContext from '../context/TabNavigationContext';
 
 const { width: windowWidth } = Dimensions.get('window');
-const CARD_HEIGHT = 400;
+const CARD_HEIGHT = 290;
+const CARD_HEIGHT_EXPANDED = 360;
 
 const SeasonalCarousel = ({ readOnly = false }) => {
     const navigation = useNavigation();
     
     const tabNav = useContext(TabNavigationContext);
 
+    const [containerWidth, setContainerWidth] = useState(windowWidth);
     const [data, setData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [expandedId, setExpandedId] = useState(null);
-    const [sizePickerId, setSizePickerId] = useState(null);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [showSizePicker, setShowSizePicker] = useState(false);
     const [selectedSizes, setSelectedSizes] = useState({});
     const [addingId, setAddingId] = useState(null);
     const [successId, setSuccessId] = useState(null);
@@ -120,8 +122,7 @@ const SeasonalCarousel = ({ readOnly = false }) => {
     };
 
     const renderItem = ({ item }) => {
-        const isExpanded = expandedId === item.id;
-        const showSize = sizePickerId === item.id;
+        const showSize = showSizePicker;
         const selectedSize = selectedSizes[item.id];
         const isAdding = addingId === item.id;
         const justAdded = successId === item.id;
@@ -170,7 +171,7 @@ const SeasonalCarousel = ({ readOnly = false }) => {
                     <View style={styles.actionRow}>
                         <TouchableOpacity
                             style={styles.detailsButton}
-                            onPress={() => setExpandedId(isExpanded ? null : item.id)}
+                            onPress={() => setIsExpanded(prev => !prev)}
                         >
                             <Text style={styles.detailsButtonText}>{isExpanded ? 'Hide' : 'Details'}</Text>
                         </TouchableOpacity>
@@ -183,7 +184,7 @@ const SeasonalCarousel = ({ readOnly = false }) => {
                                          { text: 'Cancel', style: 'cancel' }]);
                                     return;
                                 }
-                                setSizePickerId(item.id);
+                                setShowSizePicker(true);
                             }}
                         >
                             <Text style={styles.addButtonText}>{justAdded ? 'Added!' : 'Add to Cart'}</Text>
@@ -209,7 +210,7 @@ const SeasonalCarousel = ({ readOnly = false }) => {
                         <View style={styles.sizeConfirmRow}>
                             <TouchableOpacity
                                 style={styles.cancelButton}
-                                onPress={() => setSizePickerId(null)}
+                                onPress={() => setShowSizePicker(false)}
                             >
                                 <Text style={styles.cancelButtonText}>Cancel</Text>
                             </TouchableOpacity>
@@ -230,15 +231,15 @@ const SeasonalCarousel = ({ readOnly = false }) => {
     };
 
     return (
-        <View style={styles.wrapper}>
+        <View style={[styles.wrapper, { height: (isExpanded || showSizePicker) ? CARD_HEIGHT_EXPANDED : CARD_HEIGHT }]} onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
             {isLoading ? (
                 <Text style={styles.emptyText}>Loading seasonal drinks...</Text>
             ) : data.length === 0 ? (
                 <Text style={styles.emptyText}>No seasonal drinks available.</Text>
             ) : (
                 <Carousel
-                    width={windowWidth}
-                    height={CARD_HEIGHT}
+                    width={containerWidth}
+                    height={(isExpanded || showSizePicker) ? CARD_HEIGHT_EXPANDED : CARD_HEIGHT}
                     autoPlay={true}
                     autoPlayInterval={4000}
                     scrollAnimationDuration={800}
@@ -252,7 +253,6 @@ const SeasonalCarousel = ({ readOnly = false }) => {
 
 const styles = StyleSheet.create({
     wrapper: {
-        height: CARD_HEIGHT,
         justifyContent: 'center',
     },
     card: {
