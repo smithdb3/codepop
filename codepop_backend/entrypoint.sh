@@ -4,6 +4,9 @@ set -e
 echo "Running database migrations..."
 python manage.py migrate --noinput
 
+echo "Populating database with initial data (users, regions, machines, inventory, etc.)..."
+python manage.py populate_db || true
+
 echo "Collecting static files..."
 python manage.py collectstatic --noinput || true
 

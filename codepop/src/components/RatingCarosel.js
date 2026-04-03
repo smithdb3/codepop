@@ -6,7 +6,7 @@ import Carousel from 'react-native-reanimated-carousel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getBaseURL } from '../../ip_address';
 import Gif from './Gif';
-import { sodaOptions, syrupOptions, AddInOptions } from './Ingredients';
+import ingredientMeta from './Ingredients';
 
 // to do in phase 2: fix duplicate drink in carosel bug
 
@@ -21,30 +21,19 @@ const RatingCarosel = ({ purchasedDrinks }) => {
     const getLayers = (soda, syrups, addins) => {
         const layers = [];
         const totalItems = soda.length + syrups.length + addins.length;
-      
-        soda.forEach((sodaName) => {
-          const sodaOption = sodaOptions.find((opt) => opt.label === sodaName);
-          if (sodaOption) {
-            layers.push({ color: sodaOption.color, height: 100 / totalItems });
-          } else {
+        if (totalItems === 0) return layers;
+
+        const addLayer = (name) => {
+          if (!name) return;
+          const meta = ingredientMeta[name.toLowerCase()];
+          if (meta?.color) {
+            layers.push({ color: meta.color, height: 100 / totalItems });
           }
-        });
-      
-        syrups.forEach((syrupName) => {
-          const syrupOption = syrupOptions.find((opt) => opt.label === syrupName);
-          if (syrupOption) {
-            layers.push({ color: syrupOption.color, height: 100 / totalItems });
-          } else {
-          }
-        });
-      
-        addins.forEach((addinName) => {
-          const addInOption = AddInOptions.find((opt) => opt.label === addinName); 
-          if (addInOption) {
-            layers.push({ color: addInOption.color, height: 100 / totalItems });
-          } else {
-          }
-        });
+        };
+
+        soda.forEach(addLayer);
+        syrups.forEach(addLayer);
+        addins.forEach(addLayer);
         return layers;
     };  
 

@@ -553,6 +553,21 @@ class SeasonalDrinkListView(ListAPIView):
         return SeasonalDrink.objects.filter(is_active=True)
 
 
+class IngredientsListView(APIView):
+    """
+    GET /backend/ingredients/
+    Public endpoint — returns all ingredient names from Inventory, grouped by type.
+    Used by the frontend to populate drink builder dropdowns.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        sodas = list(Inventory.objects.filter(ItemType='Soda').values_list('ItemName', flat=True).order_by('ItemName'))
+        syrups = list(Inventory.objects.filter(ItemType='Syrup').values_list('ItemName', flat=True).order_by('ItemName'))
+        add_ins = list(Inventory.objects.filter(ItemType='Add In').values_list('ItemName', flat=True).order_by('ItemName'))
+        return Response({'sodas': sodas, 'syrups': syrups, 'add_ins': add_ins})
+
+
 class InventoryListAPIView(ListAPIView):
     """List all items that are not out of stock."""
     queryset = Inventory.objects.filter(Quantity__gt=0)

@@ -12,55 +12,78 @@ class Command(BaseCommand):
     help = 'Populates the database with initial data'
 
     def handle(self, *args, **kwargs):
-        # Creating some users
-        super_user = User.objects.create_superuser(
+        # Creating some users (use get_or_create to avoid duplicates)
+        super_user, _ = User.objects.get_or_create(
             username='super',
-            email='supertest@test.com',
-            password='password',
-            first_name='Lemonjello',
-            last_name='Smith'
+            defaults={
+                'email': 'supertest@test.com',
+                'first_name': 'Lemonjello',
+                'last_name': 'Smith',
+                'is_staff': True,
+                'is_superuser': True,
+            }
         )
+        if super_user.is_superuser == False:
+            super_user.is_superuser = True
+            super_user.is_staff = True
+            super_user.set_password('password')
+            super_user.save()
 
-        staff_user = User.objects.create_user(
+        staff_user, _ = User.objects.get_or_create(
             username='staff',
-            email='staff@codepop.com',
-            password= 'password',
-            first_name = 'Orlando',
-            is_staff = True,
-            is_superuser = False
+            defaults={
+                'email': 'staff@codepop.com',
+                'first_name': 'Orlando',
+                'is_staff': True,
+                'is_superuser': False,
+            }
         )
+        staff_user.set_password('password')
+        staff_user.save()
 
-        user1 = User.objects.create_user(
+        user1, _ = User.objects.get_or_create(
             username='test',
-            email='test@test.com',
-            password='password',
-            first_name='Orangejello',
-            last_name='Smith'
+            defaults={
+                'email': 'test@test.com',
+                'first_name': 'Orangejello',
+                'last_name': 'Smith',
+            }
         )
+        user1.set_password('password')
+        user1.save()
 
-        user2 = User.objects.create_user(
+        user2, _ = User.objects.get_or_create(
             username='test2',
-            email='test@testing.com',
-            password='password',
-            first_name='Bob',
-            last_name='Bobsford'
+            defaults={
+                'email': 'test@testing.com',
+                'first_name': 'Bob',
+                'last_name': 'Bobsford',
+            }
         )
+        user2.set_password('password')
+        user2.save()
 
-        repair_user = User.objects.create_user(
+        repair_user, _ = User.objects.get_or_create(
             username='repair1',
-            email='repair@codepop.com',
-            password='password',
-            first_name='Riley',
-            last_name='Wrench'
+            defaults={
+                'email': 'repair@codepop.com',
+                'first_name': 'Riley',
+                'last_name': 'Wrench',
+            }
         )
+        repair_user.set_password('password')
+        repair_user.save()
 
-        logistics_user = User.objects.create_user(
+        logistics_user, _ = User.objects.get_or_create(
             username='logistics1',
-            email='logistics@codepop.com',
-            password='password',
-            first_name='Logan',
-            last_name='Hub'
+            defaults={
+                'email': 'logistics@codepop.com',
+                'first_name': 'Logan',
+                'last_name': 'Hub',
+            }
         )
+        logistics_user.set_password('password')
+        logistics_user.save()
 
          # Data to insert into the Inventory table
         sodas = [
@@ -95,20 +118,37 @@ class Command(BaseCommand):
             }
         
 
-        # Inserting sodas
+        # Inserting sodas (use get_or_create to avoid duplicates)
         for soda in sodas:
-            Inventory.objects.create(**generate_inventory_data(soda, 'Soda'))
+            Inventory.objects.get_or_create(
+                ItemName=soda,
+                ItemType='Soda',
+                defaults={'Quantity': random.randint(50, 100), 'ThresholdLevel': random.randint(40, 90)}
+            )
 
         # Inserting syrups
         for syrup in syrups:
-            Inventory.objects.create(**generate_inventory_data(syrup, 'Syrup'))
+            Inventory.objects.get_or_create(
+                ItemName=syrup,
+                ItemType='Syrup',
+                defaults={'Quantity': random.randint(50, 100), 'ThresholdLevel': random.randint(40, 90)}
+            )
 
         # Inserting add-ins
         for add_in in add_ins:
-            Inventory.objects.create(**generate_inventory_data(add_in, 'Add In'))
+            Inventory.objects.get_or_create(
+                ItemName=add_in,
+                ItemType='Add In',
+                defaults={'Quantity': random.randint(50, 100), 'ThresholdLevel': random.randint(40, 90)}
+            )
 
+        # Inserting physical items
         for physical_item in physical_items:
-            Inventory.objects.create(**generate_inventory_data(physical_item, 'Physical Item'))
+            Inventory.objects.get_or_create(
+                ItemName=physical_item,
+                ItemType='Physical Item',
+                defaults={'Quantity': random.randint(50, 100), 'ThresholdLevel': random.randint(40, 90)}
+            )
 
         
 
@@ -183,7 +223,10 @@ class Command(BaseCommand):
             {'UserID': super_user, 'Preference': 'rootbeer'},
         ]
         for pref in preferences:
-            Preference.objects.create(**pref)
+            Preference.objects.get_or_create(
+                UserID=pref['UserID'],
+                Preference=pref['Preference']
+            )
 
         # Seeding Regions
         regions_data = [
@@ -197,7 +240,10 @@ class Command(BaseCommand):
         ]
         regions_dict = {}
         for r in regions_data:
-            region = Region.objects.create(**r)
+            region, _ = Region.objects.get_or_create(
+                name=r['name'],
+                defaults={'display_name': r['display_name'], 'hub_api_endpoint': r['hub_api_endpoint']}
+            )
             regions_dict[r['name']] = region
 
         # Seeding StoreRegistry (20 stores in Logan, 5 stores per neighboring region)
@@ -253,30 +299,32 @@ class Command(BaseCommand):
 
         # Seeding Machines (one per status)
         machines_data = [
-            {'machine_id': '1', 'name': 'Dispenser Alpha', 'location': 'Bay 1', 'status': 'NORMAL', 'store_id': 1},
-            {'machine_id': '2', 'name': 'Dispenser Beta', 'location': 'Bay 2', 'status': 'WARNING', 'store_id': 1},
-            {'machine_id': '3', 'name': 'Dispenser Gamma', 'location': 'Bay 3', 'status': 'ERROR', 'store_id': 1},
-            {'machine_id': '4', 'name': 'Dispenser Delta', 'location': 'Bay 4', 'status': 'OUT_OF_ORDER', 'store_id': 1},
-            {'machine_id': '5', 'name': 'Dispenser Epsilon', 'location': 'Bay 5', 'status': 'SCHEDULE_SERVICE', 'store_id': 1},
-            {'machine_id': '6', 'name': 'Dispenser Zeta', 'location': 'Bay 6', 'status': 'REPAIR_START', 'store_id': 1},
-            {'machine_id': '7', 'name': 'Dispenser Eta', 'location': 'Bay 7', 'status': 'REPAIR_END', 'store_id': 1},
+            {'machine_id': 'M001', 'name': 'Dispenser Alpha', 'location': 'Bay 1', 'status': 'NORMAL', 'store_id': 1},
+            {'machine_id': 'M002', 'name': 'Dispenser Beta', 'location': 'Bay 2', 'status': 'WARNING', 'store_id': 1},
+            {'machine_id': 'M003', 'name': 'Dispenser Gamma', 'location': 'Bay 3', 'status': 'ERROR', 'store_id': 1},
+            {'machine_id': 'M004', 'name': 'Dispenser Delta', 'location': 'Bay 4', 'status': 'OUT_OF_ORDER', 'store_id': 1},
+            {'machine_id': 'M005', 'name': 'Dispenser Epsilon', 'location': 'Bay 5', 'status': 'SCHEDULE_SERVICE', 'store_id': 1},
+            {'machine_id': 'M006', 'name': 'Dispenser Zeta', 'location': 'Bay 6', 'status': 'REPAIR_START', 'store_id': 1},
+            {'machine_id': 'M007', 'name': 'Dispenser Eta', 'location': 'Bay 7', 'status': 'REPAIR_END', 'store_id': 1},
         ]
         machines_dict = {}
         for m in machines_data:
-            machine = Machine.objects.create(**m)
+            machine, _ = Machine.objects.get_or_create(
+                machine_id=m['machine_id'],
+                defaults={'name': m['name'], 'location': m['location'], 'status': m['status'], 'store_id': m['store_id']}
+            )
             machines_dict[m['machine_id']] = machine
 
         # Seeding RepairStaffProfile
-        RepairStaffProfile.objects.create(
+        RepairStaffProfile.objects.get_or_create(
             user=repair_user,
-            region=regions_dict['chicago'],
-            assigned_store_id=1
+            defaults={'region': regions_dict['chicago'], 'assigned_store_id': 1}
         )
 
         # Seeding LogisticsManagerProfile
-        LogisticsManagerProfile.objects.create(
+        LogisticsManagerProfile.objects.get_or_create(
             user=logistics_user,
-            region=regions_dict['atlanta']
+            defaults={'region': regions_dict['atlanta']}
         )
 
         # Seeding Schedules

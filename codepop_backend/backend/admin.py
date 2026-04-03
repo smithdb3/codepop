@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django import forms
 from .models import (
     # Existing models
     Preference, Drink, Inventory, Notification, Order, Revenue,
@@ -21,8 +22,52 @@ admin.site.register(Revenue)
 admin.site.register(Region)
 
 
+class SeasonalDrinkAdminForm(forms.ModelForm):
+    """Custom form for SeasonalDrink with ingredient validation."""
+
+    class Meta:
+        model = SeasonalDrink
+        fields = '__all__'
+
+    def clean_soda(self):
+        soda = self.cleaned_data.get('soda', '').strip()
+        if soda:
+            valid_sodas = set(Inventory.objects.filter(ItemType='Soda').values_list('ItemName', flat=True))
+            if soda not in valid_sodas:
+                valid_list = ', '.join(sorted(valid_sodas))
+                raise forms.ValidationError(
+                    f'Invalid soda "{soda}". Valid options: {valid_list}'
+                )
+        return soda
+
+    def clean_syrups(self):
+        syrups = self.cleaned_data.get('syrups', [])
+        if syrups:
+            valid_syrups = set(Inventory.objects.filter(ItemType='Syrup').values_list('ItemName', flat=True))
+            invalid = [s for s in syrups if s not in valid_syrups]
+            if invalid:
+                valid_list = ', '.join(sorted(valid_syrups))
+                raise forms.ValidationError(
+                    f'Invalid syrups: {", ".join(invalid)}. Valid options: {valid_list}'
+                )
+        return syrups
+
+    def clean_add_ins(self):
+        add_ins = self.cleaned_data.get('add_ins', [])
+        if add_ins:
+            valid_add_ins = set(Inventory.objects.filter(ItemType='Add In').values_list('ItemName', flat=True))
+            invalid = [a for a in add_ins if a not in valid_add_ins]
+            if invalid:
+                valid_list = ', '.join(sorted(valid_add_ins))
+                raise forms.ValidationError(
+                    f'Invalid add-ins: {", ".join(invalid)}. Valid options: {valid_list}'
+                )
+        return add_ins
+
+
 @admin.register(SeasonalDrink)
 class SeasonalDrinkAdmin(admin.ModelAdmin):
+    form = SeasonalDrinkAdminForm
     list_display  = ('name', 'season', 'price', 'is_active')
     list_filter   = ('season', 'is_active')
     list_editable = ('is_active',)

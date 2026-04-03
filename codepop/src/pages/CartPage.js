@@ -217,7 +217,7 @@ const CartPage = ({ insideTabContainer = false, isFocused = true, navigation: na
 
         <View style={styles.drinkActions}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('UpdateDrink', { drink })}
+            onPress={() => navigation.navigate('CreateDrink', { drinkToEdit: drink })}
             style={styles.editButton}
           >
             <Icon name="pencil" size={20} color={colors.textPrimary} />

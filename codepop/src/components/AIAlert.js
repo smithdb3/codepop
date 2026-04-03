@@ -5,7 +5,7 @@ import { useTheme } from '../theme';
 import { getBaseURL } from '../../ip_address';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Gif from './Gif';
-import { sodaOptions, syrupOptions, AddInOptions } from './Ingredients';
+import ingredientMeta from './Ingredients';
 import Modal from 'react-native-modal';
 import TabNavigationContext from '../context/TabNavigationContext';
 
@@ -82,27 +82,19 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
   const getLayers = (soda, syrups, addins) => {
     const layers = [];
     const totalItems = soda.length + syrups.length + addins.length;
+    if (totalItems === 0) return layers;
 
-    soda.forEach((sodaName) => {
-      const sodaOption = sodaOptions.find((opt) => opt.label === sodaName);
-      if (sodaOption) {
-        layers.push({ color: sodaOption.color, height: 100 / totalItems });
+    const addLayer = (name) => {
+      if (!name) return;
+      const meta = ingredientMeta[name.toLowerCase()];
+      if (meta?.color) {
+        layers.push({ color: meta.color, height: 100 / totalItems });
       }
-    });
+    };
 
-    syrups.forEach((syrupName) => {
-      const syrupOption = syrupOptions.find((opt) => opt.label === syrupName);
-      if (syrupOption) {
-        layers.push({ color: syrupOption.color, height: 100 / totalItems });
-      }
-    });
-
-    addins.forEach((addinName) => {
-      const addInOption = AddInOptions.find((opt) => opt.label === addinName);
-      if (addInOption) {
-        layers.push({ color: addInOption.color, height: 100 / totalItems });
-      }
-    });
+    soda.forEach(addLayer);
+    syrups.forEach(addLayer);
+    addins.forEach(addLayer);
     return layers;
   };
 
