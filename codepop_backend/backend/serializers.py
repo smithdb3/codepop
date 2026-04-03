@@ -153,7 +153,7 @@ class RevenueSerializer(serializers.ModelSerializer):
 class MachineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Machine
-        fields = ['machine_id', 'name', 'location', 'status', 'notes']
+        fields = ['machine_id', 'name', 'location', 'status', 'notes', 'store_id']
 
 class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
