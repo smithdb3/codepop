@@ -29,6 +29,31 @@ export async function getMachine(machine_id) {
     }
 }
 
+export async function getMachinePair(machine_id) {
+  try {
+      const token = localStorage.getItem('cp_token');
+      const url = `${BASE_URL}/backend/machines/${machine_id}/special-operations/`;
+
+      const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+              'Authorization': `Token ${token}`,
+              'Content-Type': 'application/json',
+          },
+      });
+
+      if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      throw error;
+    }
+}
+
 export async function createMachine(machineData) {
   try {
       const token = localStorage.getItem('cp_token');
