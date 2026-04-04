@@ -1,5 +1,6 @@
 # Migration to seed Inventory and Regions, and purge fake seeded stores
 
+import sys
 from django.db import migrations
 
 SODAS = [
@@ -35,9 +36,8 @@ REGIONS = [
 
 def remove_fake_stores(apps, schema_editor):
     """Delete StoreRegistry rows seeded by populate_db (identified by .codepop.local endpoints)."""
-    from django.conf import settings
     # Skip during test runs
-    if getattr(settings, 'TESTING', False):
+    if 'test' in sys.argv:
         return
 
     StoreRegistry = apps.get_model('backend', 'StoreRegistry')
@@ -46,9 +46,8 @@ def remove_fake_stores(apps, schema_editor):
 
 def seed_catalog(apps, schema_editor):
     """Seed Inventory (sodas, syrups, add-ins, physical items) and Region data."""
-    from django.conf import settings
     # Skip during test runs
-    if getattr(settings, 'TESTING', False):
+    if 'test' in sys.argv:
         return
 
     Inventory = apps.get_model('backend', 'Inventory')
