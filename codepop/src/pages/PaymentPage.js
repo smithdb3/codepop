@@ -42,6 +42,7 @@ const PaymentPage = () => {
   // Recurring order
   const [isRecurring, setIsRecurring] = useState(false);
   const [showRecurringModal, setShowRecurringModal] = useState(false);
+  const [recurringConfirmed, setRecurringConfirmed] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState('1');
   const [recurringUnit, setRecurringUnit] = useState('week');
   const [recurringDays, setRecurringDays] = useState({ S: false, M: false, T: false, W: false, Th: false, F: false, Sa: false });
@@ -62,7 +63,15 @@ const PaymentPage = () => {
 
   // Stripe
   const [stripePublishableKey, setStripePublishableKey] = useState(null);
-  const { initializePaymentSheet, openPaymentSheet, loading: paymentSheetReady } = CheckoutForm(totalPrice);
+  const recurringConfig = isRecurring && recurringConfirmed ? {
+    interval: recurringInterval,
+    unit: recurringUnit,
+    days: recurringDays,
+    endType: recurringEndType,
+    endDate: recurringEndDate,
+    occurrences: recurringOccurrences,
+  } : null;
+  const { initializePaymentSheet, openPaymentSheet, loading: paymentSheetReady } = CheckoutForm(totalPrice, recurringConfig);
 
   useEffect(() => {
     const fetchStripeKey = async () => {
@@ -82,10 +91,13 @@ const PaymentPage = () => {
       fetchDrinks();
       setError('');
       setRetryCount(0);
-      // Set default recurring end date to 3 months from now
+      // Set default recurring end date to 3 months from now (in YYYY-MM-DD format)
       const futureDate = new Date();
       futureDate.setMonth(futureDate.getMonth() + 3);
-      setRecurringEndDate(futureDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+      const year = futureDate.getFullYear();
+      const month = String(futureDate.getMonth() + 1).padStart(2, '0');
+      const day = String(futureDate.getDate()).padStart(2, '0');
+      setRecurringEndDate(`${year}-${month}-${day}`);
 
       (async () => {
         try {
@@ -194,10 +206,12 @@ const PaymentPage = () => {
 
   const handleRecurringConfirm = () => {
     setShowRecurringModal(false);
+    setRecurringConfirmed(true);
   };
 
   const handleRecurringCancel = () => {
     setIsRecurring(false);
+    setRecurringConfirmed(false);
     setShowRecurringModal(false);
   };
 
@@ -555,6 +569,21 @@ const PaymentPage = () => {
       fontSize: 12,
       color: colors.secondary,
       fontWeight: '600',
+    },
+
+    // Recurring Order Confirmation
+    confirmationCard: {
+      backgroundColor: '#EFF6FF',
+      borderWidth: 1,
+      borderColor: '#BFDBFE',
+      borderRadius: 12,
+      padding: 16,
+      marginTop: 16,
+    },
+    confirmationText: {
+      fontSize: 13,
+      color: '#1E40AF',
+      lineHeight: 18,
     },
 
     // G. Pay Button
@@ -1027,6 +1056,15 @@ const PaymentPage = () => {
               </View>
             )}
           </View>
+
+          {/* Recurring Confirmation Info Box */}
+          {isRecurring && recurringConfirmed && (
+            <View style={styles.confirmationCard}>
+              <Text style={styles.confirmationText}>
+                By selecting this option, your order will be automatically placed and your saved payment method will be charged ${totalPrice.toFixed(2)} 30 minutes before your scheduled time. You can modify or cancel recurring orders at any time in your account settings.
+              </Text>
+            </View>
+          )}
 
           {/* F. Error Display (conditional) */}
           {error && (
