@@ -36,7 +36,7 @@ const TabContainer = ({ navigation }) => {
         setShouldGenerateDrink(true);
       }
       translateX.value = withTiming(-(index * screenWidth), {
-        duration: 250,
+        duration: 200,
       });
     },
     [activeTabIndex, screenWidth, translateX]
@@ -47,7 +47,7 @@ const TabContainer = ({ navigation }) => {
     if (shouldGenerateDrink && activeTabIndex === 1) {
       const timer = setTimeout(() => {
         setShouldGenerateDrink(false);
-      }, 200);
+      }, 280);
       return () => clearTimeout(timer);
     }
   }, [shouldGenerateDrink, activeTabIndex]);

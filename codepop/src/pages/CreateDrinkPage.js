@@ -120,7 +120,7 @@ useEffect(() => {
     if (tabNav && tabNav.shouldGenerateDrink) {
       const timer = setTimeout(() => {
         GenerateAI();
-      }, 100);
+      }, 220);
       return () => clearTimeout(timer);
     }
   }
