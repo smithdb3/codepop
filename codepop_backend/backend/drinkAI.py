@@ -75,10 +75,18 @@ def _generate_random_drink(catalog):
     num_addins = random.randint(0, 2)
     addins = [random.choice(catalog['addins']) for _ in range(num_addins)]
 
+    # Generate a simple playful name from adjectives and primary syrup/soda
+    adjectives = ['Fizzy', 'Sparkling', 'Chilled', 'Sweet', 'Bold', 'Dreamy', 'Crisp']
+    if syrups:
+        name = f"{random.choice(adjectives)} {syrups[0].title()} {soda[0].title()}"
+    else:
+        name = f"{random.choice(adjectives)} {soda[0].title()}"
+
     return {
         'syrups': syrups,
         'soda': soda,
         'addins': addins,
+        'name': name,
     }
 
 
@@ -142,9 +150,10 @@ Your task:
 2. Use 1-3 syrups, exactly 1 soda, and 0-2 add-ins
 3. If the user has order history, try to introduce slight variety (don't just repeat past drinks)
 4. Only use ingredient names from the lists above
+5. Invent a short, playful, creative name for the drink (2-5 words). Base it on the flavors or vibe — not a literal ingredient list.
 
 Respond with ONLY a JSON object (no markdown, no explanation):
-{{"syrups": ["name1", "name2"], "soda": "name", "addins": ["name1"]}}"""
+{{"syrups": ["name1", "name2"], "soda": "name", "addins": ["name1"], "name": "Creative Drink Name"}}"""
 
     try:
         response = client.chat.completions.create(
@@ -168,12 +177,14 @@ Respond with ONLY a JSON object (no markdown, no explanation):
             syrups = result.get('syrups', [])
             soda = result.get('soda', '')
             addins = result.get('addins', [])
+            drink_name = result.get('name', '').strip()
 
             if _validate_ingredients(syrups, soda, addins, catalog):
                 return {
                     'syrups': syrups,
                     'soda': [soda],  # Keep as list for backwards compatibility
                     'addins': addins,
+                    'name': drink_name,
                 }
             else:
                 # Invalid ingredients returned, fall back to random
@@ -186,3 +197,59 @@ Respond with ONLY a JSON object (no markdown, no explanation):
     except Exception as e:
         # API error or network issue, fall back to random
         return _generate_random_drink(catalog)
+
+
+def _fallback_name(sodas, syrups):
+    """
+    Fallback: generate a simple name from adjectives and ingredients.
+    """
+    adjectives = ['Fizzy', 'Sparkling', 'Chilled', 'Sweet', 'Bold', 'Dreamy', 'Crisp']
+    primary = (syrups + sodas)[0].title() if (syrups or sodas) else 'Soda'
+    return f"{random.choice(adjectives)} {primary}"
+
+
+def generate_drink_name(sodas, syrups, addins):
+    """
+    Generate a fun drink name for a user-built custom drink.
+    Takes lists of ingredient names and returns a creative name string.
+    Falls back to a simple adjective+ingredient combo if Groq is unavailable.
+
+    Args:
+        sodas: list of soda names (should have exactly 1)
+        syrups: list of syrup names
+        addins: list of add-in names
+
+    Returns:
+        str: a creative 2-5 word drink name
+    """
+    if not settings.GROQ_API_KEY or not client:
+        return _fallback_name(sodas, syrups)
+
+    ingredients_str = ", ".join(sodas + syrups + addins) or "assorted"
+    prompt = (
+        f"A custom soda drink contains: {ingredients_str}. "
+        f"Invent a short, playful, creative name for it (2-5 words). "
+        f"Base the name on the flavors or vibe — not a literal ingredient list. "
+        f'Respond with ONLY a JSON object: {{"name": "Creative Name"}}'
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+        response_text = response.choices[0].message.content.strip()
+
+        # Handle potential markdown wrapping
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+
+        result = json.loads(response_text)
+        name = result.get("name", "").strip()
+        return name if name else _fallback_name(sodas, syrups)
+    except Exception as e:
+        # Any JSON parsing or API error, fall back to simple adjective+ingredient
+        return _fallback_name(sodas, syrups)

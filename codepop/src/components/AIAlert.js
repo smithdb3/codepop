@@ -31,7 +31,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          Name: 'AI drink',
+          Name: drinkDict.Name || 'AI Drink',
           SodaUsed: sodaUsed,
           SyrupsUsed: syrupsUsed,
           AddIns: addIns,
@@ -123,7 +123,7 @@ const AIAlert = ({ isModalVisible, toggleModal, drinkDict }) => {
 
         {/* Header */}
         <View style={styles.headerRow}>
-          <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Your AI Drink</Text>
+          <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{drinkDict.Name || 'Your AI Drink'}</Text>
           <TouchableOpacity onPress={toggleModal} style={styles.closeButton}>
             <Text style={[styles.closeButtonText, { color: colors.textMuted }]}>✕</Text>
           </TouchableOpacity>

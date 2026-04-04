@@ -24,7 +24,7 @@ from .views import NotificationOperations, UserNotificationLookup
 from .views import OrderOperations, UserOrdersLookup
 from .views import RecurringOrderOperations, UserRecurringOrdersLookup
 from .customerAI import Chatbot
-from .views import GenerateAIDrink
+from .views import GenerateAIDrink, NameDrinkView
 from .views import RevenueViewSet, NationalRevenueView
 from .views import UserOperations
 from .views import emailAPI
@@ -277,6 +277,10 @@ urlpatterns = [
     
     # For general users: no user_id provided
     path('generate/', GenerateAIDrink.as_view(), name='general_ai_drink'),
+
+    # Endpoint to generate a drink name from ingredients
+    # - POST: Body { "sodas": [...], "syrups": [...], "addins": [...] }
+    path('name-drink/', NameDrinkView.as_view(), name='name_drink'),
 
     # Revenue related URLs
     # Endpoint to list all revenues or create a new revenue.

@@ -10,6 +10,7 @@ import { getBaseURL } from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AIAlert from '../components/AIAlert';
+import DrinkNameModal from '../components/DrinkNameModal';
 import CodePopLogo from '../components/CodePopLogo';
 import { useTheme } from '../theme';
 import TabNavigationContext from '../context/TabNavigationContext';
@@ -79,6 +80,8 @@ const [SyrupsUsed, setSyrups] = useState([]);
 const [AddIns, setAddIns] = useState([]);
 const [selectedSize, setSize] = useState(null);
 const [selectedIce, setIce] = useState(null);
+const [drinkName, setDrinkName] = useState('');
+const [isNameModalVisible, setNameModalVisible] = useState(false);
 
 useEffect(() => {
   if (!isFocused) {
@@ -100,6 +103,7 @@ useEffect(() => {
     setAddIns((drinkToEdit.AddIns || []).map(s => s.toLowerCase()));
     setSize(drinkToEdit.Size || null);
     setIce(iceNorm[drinkToEdit.Ice?.toLowerCase()] || drinkToEdit.Ice || null);
+    setDrinkName(drinkToEdit.Name || '');
     setCurrentDrinkToEdit(drinkToEdit);
     didPopulateFromEdit.current = true;
 
@@ -138,6 +142,7 @@ const resetDrinkForm = () => {
   setAddIns([]);  // Clear selected add-ins
   setIce(null);  // Clear selected ice amount
   setSize(null);  // Clear selected size
+  setDrinkName('');  // Clear drink name
 };
 
 const saveDrink = async () => {
@@ -145,6 +150,12 @@ const saveDrink = async () => {
     Alert.alert("Don't forget to choose a Soda, Size and Ice Amount!");
     return;
   }
+  setNameModalVisible(true);
+};
+
+const executeSave = async (confirmedName) => {
+  setNameModalVisible(false);
+  setDrinkName(confirmedName);
   try {
     const userId = await AsyncStorage.getItem('userId');
     const token = await AsyncStorage.getItem('userToken');
@@ -156,7 +167,7 @@ const saveDrink = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        Name: 'Saved Drink',
+        Name: confirmedName || 'My Drink',
         SodaUsed, SyrupsUsed, AddIns,
         Price: 2.00, User_Created: true,
         Size: selectedSize, Ice: selectedIce,
@@ -183,9 +194,26 @@ const addToCart = async () => {
     return;
   }
 
+  // Resolve drink name — generate one via AI if user hasn't named it
+  let resolvedName = drinkName.trim();
+  if (!resolvedName) {
+    try {
+      const res = await fetch(`${getBaseURL()}/backend/name-drink/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sodas: SodaUsed, syrups: SyrupsUsed, addins: AddIns }),
+      });
+      if (res.ok) {
+        const nameData = await res.json();
+        resolvedName = nameData.name || 'My Drink';
+      }
+    } catch (_) {}
+    resolvedName = resolvedName || 'My Drink';
+  }
+
   const drinkToEdit = currentDrinkToEdit;
   const body = JSON.stringify({
-    Name: drinkToEdit ? "Updated Drink" : "Drink in User Cart",
+    Name: resolvedName,
     SodaUsed, SyrupsUsed, AddIns,
     Price: 2.00, User_Created: true,
     Size: selectedSize, Ice: selectedIce,
@@ -332,6 +360,7 @@ const GenerateAI = async () => {
     setIce('Regular');
 
     setDrinkDict(drink);
+    setDrinkName(drink.Name || '');
     setModalVisible(true);
     console.log(drink);
   }
@@ -636,6 +665,15 @@ return (
           drinkDict={drinkDict}
         />
       )}
+
+      {/* Drink Name Modal */}
+      <DrinkNameModal
+        visible={isNameModalVisible}
+        initialName={drinkName}
+        title="Name Your Drink"
+        onConfirm={executeSave}
+        onDismiss={() => setNameModalVisible(false)}
+      />
     </View>
 
     {/* ── SCROLLABLE INGREDIENT SECTION ── */}
