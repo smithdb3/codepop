@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Button, TouchableOpacity, ScrollView, Alert, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import NavBar from '../components/NavBar';
 import RatingCarosel from '../components/RatingCarosel';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getBaseURL } from '../../ip_address';
@@ -10,7 +9,7 @@ import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import { useTheme } from '../theme';
 
-const PostCheckout = () => {
+const PostCheckout = ({ onDone }) => {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const [lockerCombo, setLockerCombo] = useState('');
@@ -249,7 +248,11 @@ const PostCheckout = () => {
   };
 
   const goHomePage = () => {
-    navigation.navigate('GeneralHome');  // Navigate to the login page
+    if (onDone) {
+      onDone();
+    } else {
+      navigation.navigate('GeneralHome', { initialTab: 0 });
+    }
   };
 
   const makeDrink= () => {
@@ -907,7 +910,6 @@ const PostCheckout = () => {
         <View style={{ height: 80 }} />
       </ScrollView>
 
-      <NavBar />
     </View>
   );
 };

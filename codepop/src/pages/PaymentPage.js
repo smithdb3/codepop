@@ -13,16 +13,15 @@ import {
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import NavBar from '../components/NavBar';
 import CheckoutForm from './CheckoutForm';
 import { getBaseURL } from '../../ip_address';
 import { useTheme } from '../theme';
 
-const PaymentPage = () => {
+const PaymentPage = ({ onSuccess, isVisible = true, onClose }) => {
   const navigation = useNavigation();
   const { colors } = useTheme();
 
@@ -71,7 +70,7 @@ const PaymentPage = () => {
     endDate: recurringEndDate,
     occurrences: recurringOccurrences,
   } : null;
-  const { initializePaymentSheet, openPaymentSheet, loading: paymentSheetReady } = CheckoutForm(totalPrice, recurringConfig);
+  const { initializePaymentSheet, openPaymentSheet, loading: paymentSheetReady } = CheckoutForm(totalPrice, recurringConfig, onSuccess);
 
   useEffect(() => {
     const fetchStripeKey = async () => {
@@ -86,43 +85,42 @@ const PaymentPage = () => {
     fetchStripeKey();
   }, []);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchDrinks();
-      setError('');
-      setRetryCount(0);
-      // Set default recurring end date to 3 months from now (in YYYY-MM-DD format)
-      const futureDate = new Date();
-      futureDate.setMonth(futureDate.getMonth() + 3);
-      const year = futureDate.getFullYear();
-      const month = String(futureDate.getMonth() + 1).padStart(2, '0');
-      const day = String(futureDate.getDate()).padStart(2, '0');
-      setRecurringEndDate(`${year}-${month}-${day}`);
+  useEffect(() => {
+    if (!isVisible) return;
+    fetchDrinks();
+    setError('');
+    setRetryCount(0);
+    // Set default recurring end date to 3 months from now (in YYYY-MM-DD format)
+    const futureDate = new Date();
+    futureDate.setMonth(futureDate.getMonth() + 3);
+    const year = futureDate.getFullYear();
+    const month = String(futureDate.getMonth() + 1).padStart(2, '0');
+    const day = String(futureDate.getDate()).padStart(2, '0');
+    setRecurringEndDate(`${year}-${month}-${day}`);
 
-      (async () => {
-        try {
-          const name = await AsyncStorage.getItem('selectedStoreName');
-          const latStr = await AsyncStorage.getItem('selectedStoreLatitude');
-          const lonStr = await AsyncStorage.getItem('selectedStoreLongitude');
-          const perm = await AsyncStorage.getItem('locationPermission');
-          if (name) setCheckoutStoreName(name);
-          const la = latStr != null ? parseFloat(latStr) : NaN;
-          const lo = lonStr != null ? parseFloat(lonStr) : NaN;
-          setStoreMapLat(!Number.isNaN(la) ? la : null);
-          setStoreMapLon(!Number.isNaN(lo) ? lo : null);
-          setCheckoutLocationPref(perm);
-          if (perm === 'granted') {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-              setCheckoutLocationPref('denied');
-            }
+    (async () => {
+      try {
+        const name = await AsyncStorage.getItem('selectedStoreName');
+        const latStr = await AsyncStorage.getItem('selectedStoreLatitude');
+        const lonStr = await AsyncStorage.getItem('selectedStoreLongitude');
+        const perm = await AsyncStorage.getItem('locationPermission');
+        if (name) setCheckoutStoreName(name);
+        const la = latStr != null ? parseFloat(latStr) : NaN;
+        const lo = lonStr != null ? parseFloat(lonStr) : NaN;
+        setStoreMapLat(!Number.isNaN(la) ? la : null);
+        setStoreMapLon(!Number.isNaN(lo) ? lo : null);
+        setCheckoutLocationPref(perm);
+        if (perm === 'granted') {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            setCheckoutLocationPref('denied');
           }
-        } catch (e) {
-          console.warn('Checkout map: failed to load store/location prefs', e);
         }
-      })();
-    }, [])
-  );
+      } catch (e) {
+        console.warn('Checkout map: failed to load store/location prefs', e);
+      }
+    })();
+  }, [isVisible]);
 
   useEffect(() => {
     if (totalPrice > 0) {
@@ -243,6 +241,11 @@ const PaymentPage = () => {
     scrollView: {
       flex: 1,
       paddingHorizontal: 16,
+    },
+    closeButton: {
+      alignSelf: 'flex-end',
+      padding: 12,
+      paddingRight: 16,
     },
 
     // Card styles
@@ -812,6 +815,11 @@ const PaymentPage = () => {
   return (
     <StripeProvider publishableKey={stripePublishableKey}>
       <View style={styles.wholePage}>
+        {onClose && (
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Icon name="close" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+        )}
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* A. Order Review Summary Card */}
@@ -1105,8 +1113,6 @@ const PaymentPage = () => {
 
           <View style={styles.navBarSpace} />
         </ScrollView>
-
-        <NavBar />
 
         {/* Recurring Order Modal */}
         <Modal

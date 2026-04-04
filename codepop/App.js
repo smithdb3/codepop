@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Font from 'expo-font';
@@ -89,6 +90,7 @@ const AppNavigator = () => {
           name="payment"
           component={PaymentPage}
           options={{
+            presentation: 'modal',
             headerTitle: () => <CodePopLogo size={28} />,
             headerTitleAlign: 'center',
           }}
@@ -116,7 +118,12 @@ const AppNavigator = () => {
         <Stack.Screen
           name="PostCheckout"
           component={PostCheckout}
-          options={{ title: 'PostCheckout' , headerBackVisible: false,}}
+          options={{
+            presentation: 'modal',
+            gestureEnabled: false,
+            headerBackVisible: false,
+            title: 'PostCheckout',
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -125,9 +132,11 @@ const AppNavigator = () => {
 
 const App = () => {
   return (
-    <ThemeProvider>
-      <AppNavigator />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <AppNavigator />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 };
 
