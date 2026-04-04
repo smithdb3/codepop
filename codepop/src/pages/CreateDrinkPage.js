@@ -8,6 +8,7 @@ import { useIngredients } from '../components/useIngredients';
 import ingredientMeta from '../components/Ingredients';
 import { getBaseURL } from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/Ionicons';
 import AIAlert from '../components/AIAlert';
 import CodePopLogo from '../components/CodePopLogo';
 import { useTheme } from '../theme';
@@ -137,6 +138,43 @@ const resetDrinkForm = () => {
   setAddIns([]);  // Clear selected add-ins
   setIce(null);  // Clear selected ice amount
   setSize(null);  // Clear selected size
+};
+
+const saveDrink = async () => {
+  if (selectedIce == null || selectedSize == null || SodaUsed.length === 0) {
+    Alert.alert("Don't forget to choose a Soda, Size and Ice Amount!");
+    return;
+  }
+  try {
+    const userId = await AsyncStorage.getItem('userId');
+    const token = await AsyncStorage.getItem('userToken');
+    if (!userId || !token) {
+      Alert.alert('Sign in to save drinks!');
+      return;
+    }
+    const drinkRes = await fetch(`${getBaseURL()}/backend/drinks/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        Name: 'Saved Drink',
+        SodaUsed, SyrupsUsed, AddIns,
+        Price: 2.00, User_Created: true,
+        Size: selectedSize, Ice: selectedIce,
+      }),
+    });
+    if (!drinkRes.ok) throw new Error(`Failed to create drink. Status: ${drinkRes.status}`);
+    const drink = await drinkRes.json();
+    const favRes = await fetch(`${getBaseURL()}/backend/users/${userId}/favorites/${drink.DrinkID}/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
+      body: JSON.stringify({ action: 'add' }),
+    });
+    if (!favRes.ok) throw new Error(`Failed to save drink. Status: ${favRes.status}`);
+    Alert.alert('Drink saved!', 'Find it in your Saved Drinks on the home tab.');
+  } catch (error) {
+    console.error('Error saving drink:', error);
+    Alert.alert('Error', 'Could not save drink. Please try again.');
+  }
 };
 
 const addToCart = async () => {
@@ -579,6 +617,9 @@ return (
       <View style={styles.pinnedButtonRow}>
         <TouchableOpacity onPress={GenerateAI} style={[styles.pinnedButton, styles.secondaryButton]}>
           <Text style={styles.secondaryButtonText}>Ask Tonic</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={saveDrink} style={[styles.pinnedButton, styles.secondaryButton, { flex: 0.5 }]}>
+          <Icon name="heart-outline" size={22} color={colors.secondary} />
         </TouchableOpacity>
         <TouchableOpacity onPress={addToCart} style={[styles.pinnedButton, styles.primaryButton]}>
           <Text style={styles.primaryButtonText}>
