@@ -341,7 +341,43 @@ class CheckEmailView(APIView):
             Q(email__iexact=email) | Q(username__iexact=email)
         ).exists()
         return Response({'exists': exists}, status=status.HTTP_200_OK)
-    
+
+
+class UserSelfUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+        })
+
+    def post(self, request):
+        user = request.user
+        data = request.data
+
+        new_email = data.get('email', '').strip()
+        if new_email:
+            if User.objects.filter(email__iexact=new_email).exclude(pk=user.pk).exists():
+                return Response({'error': 'Email already in use.'}, status=status.HTTP_400_BAD_REQUEST)
+            user.email = new_email
+            user.save()
+            return Response({'success': True, 'email': user.email})
+
+        current_password = data.get('current_password', '')
+        new_password = data.get('new_password', '')
+        if current_password and new_password:
+            if not user.check_password(current_password):
+                return Response({'error': 'Current password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+            user.set_password(new_password)
+            user.save()
+            return Response({'success': True})
+
+        return Response({'error': 'No valid update data provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class PreferencesOperations(viewsets.ModelViewSet):
     queryset = Preference.objects.all()
     serializer_class = PreferenceSerializer

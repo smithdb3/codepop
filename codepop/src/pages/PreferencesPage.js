@@ -30,6 +30,7 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
   const [userEmail, setUserEmail] = useState('');
   const [userId, setUserId] = useState('');
   const [userToken, setUserToken] = useState('');
+  const [username, setUsername] = useState('');
 
   // Tab State
   const [activeTab, setActiveTab] = useState('location');
@@ -37,9 +38,9 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
   const [selectedStoreName, setSelectedStoreName] = useState('');
 
   // Account Settings Form States
-  const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [showChangeUsername, setShowChangeUsername] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
+  const [newUsername, setNewUsername] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -80,6 +81,20 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
         setUserId(id);
         setUserToken(token);
         setSelectedStoreName(storeName || 'Unknown Store');
+
+        // Fetch current username from API
+        try {
+          const response = await fetch(`${getBaseURL()}/backend/users/me/`, {
+            method: 'GET',
+            headers: { 'Authorization': `Token ${token}` },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setUsername(data.email || '');
+          }
+        } catch (err) {
+          console.error('Error fetching username:', err);
+        }
       } else {
         setIsLoggedIn(false);
       }
@@ -101,15 +116,40 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
   };
 
   // Account Settings Handlers
-  const handleSendVerification = () => {
-    if (!newEmail.includes('@')) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address');
+  const handleUpdateUsername = async () => {
+    if (!newUsername.trim()) {
+      Alert.alert('Required', 'Please enter a new email');
       return;
     }
-    Alert.alert('Verification Email', 'Backend integration in progress');
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${getBaseURL()}/backend/users/me/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
+        },
+        body: JSON.stringify({ email: newUsername.trim() }),
+      });
+      let data = {};
+      try { data = await response.json(); } catch (_) {}
+      if (!response.ok) {
+        Alert.alert('Error', data.error || `Failed to update email (${response.status})`);
+        return;
+      }
+      setUsername(data.email);
+      setUserEmail(data.email);
+      await AsyncStorage.setItem('userEmail', data.email);
+      setNewUsername('');
+      setShowChangeUsername(false);
+      Alert.alert('Success', 'Email updated');
+    } catch (e) {
+      console.error('Update email error:', e);
+      Alert.alert('Error', 'Could not update email');
+    }
   };
 
-  const handleUpdatePassword = () => {
+  const handleUpdatePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       Alert.alert('Required Fields', 'All password fields are required');
       return;
@@ -123,12 +163,31 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
       Alert.alert('Weak Password', 'Password must be at least 8 characters');
       return;
     }
-    Alert.alert('Update Password', 'Backend integration in progress');
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${getBaseURL()}/backend/users/me/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
+        },
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Alert.alert('Error', data.error || 'Failed to update password');
+        return;
+      }
+      handleCancelPasswordForm();
+      Alert.alert('Success', 'Password updated');
+    } catch (e) {
+      Alert.alert('Error', 'Could not update password');
+    }
   };
 
-  const handleCancelEmailForm = () => {
-    setNewEmail('');
-    setShowChangeEmail(false);
+  const handleCancelUsernameForm = () => {
+    setNewUsername('');
+    setShowChangeUsername(false);
   };
 
   const handleCancelPasswordForm = () => {
@@ -647,45 +706,45 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
 
   const renderAccountTab = () => (
     <View style={styles.card}>
-      {/* Email Subsection */}
+      {/* Username Subsection */}
       <View style={styles.settingRow}>
         <View>
           <Text style={styles.settingLabel}>Email</Text>
-          <Text style={styles.settingValue}>{userEmail || 'Not available'}</Text>
+          <Text style={styles.settingValue}>{username || userEmail || 'Not available'}</Text>
         </View>
         <TouchableOpacity
           onPress={() => {
             handleCancelPasswordForm(); // close password form if open
-            setShowChangeEmail(!showChangeEmail);
+            setShowChangeUsername(!showChangeUsername);
           }}
         >
           <Text style={styles.changeButtonText}>
-            {showChangeEmail ? 'Cancel' : 'Change Email'}
+            {showChangeUsername ? 'Cancel' : 'Change Email'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {showChangeEmail && (
+      {showChangeUsername && (
         <View style={styles.inlineForm}>
           <TextInput
             style={styles.textInput}
-            placeholder="New email address"
+            placeholder="New email"
             placeholderTextColor={colors.textPlaceholder}
-            value={newEmail}
-            onChangeText={setNewEmail}
-            keyboardType="email-address"
+            value={newUsername}
+            onChangeText={setNewUsername}
             autoCapitalize="none"
+            keyboardType="email-address"
           />
           <View style={styles.formButtonRow}>
             <TouchableOpacity
               style={[styles.primaryButton, { flex: 1 }]}
-              onPress={handleSendVerification}
+              onPress={handleUpdateUsername}
             >
-              <Text style={styles.primaryButtonText}>Send Verification</Text>
+              <Text style={styles.primaryButtonText}>Update Email</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.cancelButton, { flex: 1 }]}
-              onPress={handleCancelEmailForm}
+              onPress={handleCancelUsernameForm}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
@@ -699,7 +758,7 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
       <TouchableOpacity
         style={styles.settingRow}
         onPress={() => {
-          handleCancelEmailForm(); // close email form if open
+          handleCancelUsernameForm(); // close username form if open
           setShowChangePassword(!showChangePassword);
         }}
       >
