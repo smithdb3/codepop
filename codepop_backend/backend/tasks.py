@@ -42,7 +42,13 @@ def send_heartbeat():
             headers=_node_headers(),
             timeout=5,
         )
-        if resp.status_code != 200:
+        if resp.status_code == 200:
+            return
+        if resp.status_code == 404:
+            logger.warning('Heartbeat got 404 — store not registered; triggering re-registration')
+            from .node_utils import register_with_hub
+            register_with_hub()
+        else:
             logger.warning('Heartbeat rejected by hub: %s', resp.text)
     except requests.RequestException as e:
         logger.error('Heartbeat failed (hub unreachable): %s', e)
