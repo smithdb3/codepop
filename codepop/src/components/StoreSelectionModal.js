@@ -129,7 +129,7 @@ async function fetchStoreRegistry() {
  *
  * - Reads checkoutList from AsyncStorage (array of DrinkIDs, repeats = quantity).
  * - GETs each unique DrinkID from oldBaseURL.
- * - For User_Created: false drinks: ID is stable across stores; keep as-is.
+ * - For User_Created: false drinks: matches by name in new store's catalog.
  * - For User_Created: true drinks: POST the drink fields to newBaseURL and use
  *   the returned DrinkID.
  * - Writes the remapped checkoutList back to AsyncStorage.
@@ -179,6 +179,24 @@ async function transferCart(oldBaseURL, newBaseURL) {
     })
   );
 
+  // Fetch all catalog drinks from NEW store to build name -> ID mapping
+  let catalogNameToId = {};
+  try {
+    const res = await fetch(`${newBaseURL}/backend/drinks/`);
+    if (res.ok) {
+      const catalogDrinks = await res.json();
+      if (Array.isArray(catalogDrinks)) {
+        catalogDrinks.forEach((drink) => {
+          if (!drink.User_Created && drink.Name) {
+            catalogNameToId[drink.Name] = drink.DrinkID;
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('transferCart: failed to fetch catalog from new store', e);
+  }
+
   // Build a remapping: oldId -> newId
   const idRemap = {};
   await Promise.all(
@@ -187,10 +205,20 @@ async function transferCart(oldBaseURL, newBaseURL) {
       if (!detail) return;
 
       if (!detail.User_Created) {
-        idRemap[id] = id;
+        // Catalog drink: match by name in new store's catalog
+        const newId = catalogNameToId[detail.Name];
+        if (newId !== undefined) {
+          idRemap[id] = newId;
+          console.log(`transferCart: mapped catalog drink '${detail.Name}' ${id} -> ${newId}`);
+        } else {
+          console.warn(
+            `transferCart: catalog drink '${detail.Name}' not found in new store — skipping`
+          );
+        }
         return;
       }
 
+      // Custom drink: recreate at new store
       const payload = {
         Name: detail.Name,
         SodaUsed: detail.SodaUsed || [],
