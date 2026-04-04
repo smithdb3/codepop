@@ -266,30 +266,40 @@ export default function StoreSelectionModal({
       const homeToken = await AsyncStorage.getItem('homeToken');
       const homeStoreEndpoint = await AsyncStorage.getItem('homeStoreEndpoint');
       const homeStoreId = await AsyncStorage.getItem('homeStoreId');
-      const currentEndpoint = /* we need to read this before writing the new one */ null;
 
-      // Only exchange if: we have a home token, the home store endpoint exists, and we're switching stores
-      if (homeToken && homeStoreEndpoint && store.api_endpoint !== homeStoreEndpoint) {
-        try {
-          const exchangeRes = await fetch(`${store.api_endpoint}/backend/auth/exchange/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              token: homeToken,
-              home_store_endpoint: homeStoreEndpoint,
-              home_store_id: parseInt(homeStoreId || '0'),
-            }),
-          });
-          if (exchangeRes.ok) {
-            const exchangeData = await exchangeRes.json();
-            await AsyncStorage.setItem('userToken', exchangeData.token);
-            // user_id, first_name, userRole remain the same
+      // Token handling based on whether we're switching to home or visiting store
+      if (homeToken && homeStoreEndpoint) {
+        if (store.api_endpoint === homeStoreEndpoint) {
+          // Switching back to home store — restore the home token directly
+          await AsyncStorage.setItem('userToken', homeToken);
+          console.log('Restored home token for home store');
+        } else {
+          // Switching to a different (visiting) store — exchange the home token
+          try {
+            console.log('Exchanging token with visiting store:', store.api_endpoint);
+            const exchangeRes = await fetch(`${store.api_endpoint}/backend/auth/exchange/`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                token: homeToken,
+                home_store_endpoint: homeStoreEndpoint,
+                home_store_id: parseInt(homeStoreId || '0'),
+              }),
+            });
+            if (exchangeRes.ok) {
+              const exchangeData = await exchangeRes.json();
+              await AsyncStorage.setItem('userToken', exchangeData.token);
+              console.log('Token exchange successful, got new shadow token');
+              // user_id, first_name, userRole remain the same
+            } else {
+              console.warn('Token exchange returned status:', exchangeRes.status);
+              // On 503 (degraded) or network error: silently continue with graceful degradation
+            }
+          } catch (e) {
+            // Network error or other issue - continue with graceful degradation
+            // The home token will be used for API calls, returning 403 if unavailable
+            console.error('Token exchange network error, using home token:', e);
           }
-          // On 503 (degraded) or network error: silently continue with graceful degradation
-        } catch (e) {
-          // Network error or other issue - continue with graceful degradation
-          // The home token will be used for API calls, returning 403 if unavailable
-          console.warn('Token exchange failed, using home token:', e);
         }
       }
 
