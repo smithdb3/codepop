@@ -94,11 +94,6 @@ const AppNavigator = () => {
           }}
         />
         <Stack.Screen
-          name="UpdateDrink"
-          component={UpdateDrink}
-          options={{ title: 'UpdateDrink' }}
-        />
-        <Stack.Screen
           name="ManagerDash"
           component={ManagerDash}
           options={{ title: 'ManagerDash', headerRight: () => (<LogoutButton />) }}
