@@ -338,6 +338,81 @@ These screens set `headerShown: false` and must render the logo themselves in th
 - Do not alter colors, remove elements, or add effects
 - Do not use `icon.png` or other raster images as a substitute for the component in app UI
 - Do not use on backgrounds that reduce contrast
+- Do not hardcode `#222831` as the "code" text color — always use `colors.textPrimary` from the theme context
+
+### Dark Mode
+
+In dark mode, the logo automatically adapts to remain readable:
+- **"code" wordmark** switches from dark `#222831` to light `#EAEDF5` (via `colors.textPrimary`)
+- **"pop" text, straw, and bubbles** remain cyan `#08D9D6` in both light and dark modes
+
+The `<CodePopLogo>` component handles this automatically by consuming `useTheme()`. **No extra props or conditional rendering is needed** — the component renders correctly in all theme modes.
+
+**Updated component code:**
+
+```jsx
+import React from "react";
+import { View, Text } from "react-native";
+import Svg, { Path } from "react-native-svg";
+import { useTheme } from "../theme";
+
+export function CodePopLogo({ size = 64 }) {
+  const { colors } = useTheme();
+  const s = size / 64; // scale factor
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      {/* "code" with straw */}
+      <View style={{ position: "relative" }}>
+        <Text style={{
+          fontSize: size,
+          color: colors.textPrimary,
+          fontWeight: "600",
+          letterSpacing: -1,
+        }}>code</Text>
+        <Svg
+          width={50 * s}
+          height={90 * s}
+          style={{ position: "absolute", left: 30 * s, top: -15 * s }}
+        >
+          <Path
+            d={`M ${20*s} ${85*s} L ${28*s} ${28*s} L ${18*s} ${34*s}`}
+            stroke="#08D9D6"
+            strokeWidth={4 * s}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      </View>
+
+      {/* "pop" with bubbles */}
+      <View style={{ position: "relative" }}>
+        <Text style={{
+          fontSize: size,
+          color: "#08D9D6",
+          fontWeight: "600",
+          fontStyle: "italic",
+          letterSpacing: -1,
+        }}>pop</Text>
+        <View style={{
+          position: "absolute",
+          width: 14 * s, height: 14 * s,
+          borderRadius: 7 * s,
+          borderWidth: 3, borderColor: "#08D9D6",
+          top: 5 * s, left: 52 * s,
+        }} />
+        <View style={{
+          position: "absolute",
+          width: 10 * s, height: 10 * s,
+          borderRadius: 5 * s,
+          borderWidth: 2, borderColor: "#08D9D6",
+          top: -8 * s, left: 62 * s,
+        }} />
+      </View>
+    </View>
+  );
+}
+```
 
 ---
 
