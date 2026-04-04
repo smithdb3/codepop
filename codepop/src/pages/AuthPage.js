@@ -52,11 +52,11 @@ const AuthPage = ({ navigation, route }) => {
 
           // If this is a home login (not visiting), store the home token and endpoint for future exchanges
           if (!data.visiting) {
-            const homeEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint');
+            const homeEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint') || getBaseURL();
             const homeStoreId = await AsyncStorage.getItem('selectedStoreId');
             console.log('Home login detected. Saving homeToken. Endpoint:', homeEndpoint, 'StoreId:', homeStoreId);
             await AsyncStorage.setItem('homeToken', data.token);
-            await AsyncStorage.setItem('homeStoreEndpoint', homeEndpoint || '');
+            await AsyncStorage.setItem('homeStoreEndpoint', homeEndpoint);
             await AsyncStorage.setItem('homeStoreId', homeStoreId || '');
           } else {
             console.log('Visiting login detected. NOT saving homeToken.');

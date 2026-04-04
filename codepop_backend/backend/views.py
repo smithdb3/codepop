@@ -32,7 +32,7 @@ from rest_framework.decorators import action
 
 logger = logging.getLogger(__name__)
 from django.utils.dateparse import parse_datetime
-from .drinkAI import generate_soda
+from .drinkAI import generate_soda, generate_drink_name
 from rest_framework.permissions import BasePermission
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -1256,10 +1256,28 @@ class GenerateAIDrink(APIView):
             'SyrupsUsed': result["syrups"],
             'SodaUsed': result["soda"][0],
             'AddIns': result["addins"],
+            'Name': result.get("name", ""),
             'Size': "24oz",
             'Ice': "regular",
             "UserCreated": user_created,
         }
+
+
+class NameDrinkView(APIView):
+    """
+    POST /backend/name-drink/
+    Generates a fun drink name based on user-selected ingredients.
+    Body: { "sodas": [...], "syrups": [...], "addins": [...] }
+    Returns: { "name": "Creative Drink Name" }
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        sodas = request.data.get("sodas", [])
+        syrups = request.data.get("syrups", [])
+        addins = request.data.get("addins", [])
+        name = generate_drink_name(sodas, syrups, addins)
+        return Response({"name": name})
 
 
 class RevenueViewSet(viewsets.ModelViewSet):

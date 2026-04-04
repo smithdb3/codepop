@@ -35,23 +35,32 @@ A couple other fixes:
 
 
 -=-=-=-=-=-=-
-Add a backbutton for the 'sign in' page after clicking 'sign in' in the home page.
+Have drinks in cart have names:
+Usermade- better options than "Drink in user cart"?
+When the AI creates a drink, it should also name the drink something fun based on the ingredients. Right now it just says "Your AI drink". The cart should also show this name.
+When you click 'like' button in design page, the user should be prompted to name the drink before it gets saved to the home screen. The saved drinks section should show the name with an option to change it.
 
-"Drink in user cart" cart page
+"Rate Your Drink" section looks bad in post checkout. Make it show what drinks were ordered in a carousel that matches the UI design of the rest of the app. Each drink should show the name, an option to add it to the favorites in the home page (if signed in- if not it will tell the user to sign in), and five stars. Once the stars are clicked, a message will come back with "thank you for your feedback", and the stars will stay like that and nothing will happen with storing that information or anything yet.
 
--=-=-=-=-=-=-
+Add a backbutton for the 'sign in' page to go back to the home page after clicking 'sign in' in the home page.
 
-Now let's work on the recurring order feature (in checkout page) and Recurring Orders section in the Profile page. We do not need to work on hooking stripe up yet. Just having the checkout page save the data and the recurring orders section pull the data and show/modify it.
+The tax is not shown in the confirmation message when recurring order is toggled on in the checkout page.
 
-Checkout page: After setting the recurrence and clicking 'done' there should be a database table that saves all of that information for each user (or is there a better way to save that info than with the database?).
+The tax is not shown with stripe.
 
-Also after clicking 'done' this should happen:
-  * (M) Recurring Order Confirmation Screen
-    * If this option is selected the user will receive a text box that says, 
-      "By selecting this option, your order will be automatically placed and your saved payment method will be charged $___ 30 minutes before your scheduled time. You can modify or cancel recurring orders at any time in your account settings."
+Get rid of the 'edit' pencil icon in profile page on the tab at the top that shows name, email, and points. It is not hooked up to anything and I do not think we need it
 
-Recurring Orders section: This section should pull from the database (or wherever) and show all recurring orders that the user has set in a visually pleasing way. The user should then be able to cancel or edit those recurring orders. A graphic similar to that in the checkout page should appear when editing a recurring order.
+Create a 'menu'? Right now we just have seasonals and 'make your own'.
 
+"Rate your drink" redesign:
+~/.claude/plans/serene-fluttering-bachman.md
 
+Minor fixes:
+~/.claude/plans/spicy-dancing-fog.md
 
-"Rate Your Drink" section is horrible post checkout
+-=-=-=-=-=-=-=--=-=---=-=-
+
+After I change a name of a drink after clicking add to favorites in the drink design page, I get the error:
+Error saving drink: Error: Failed to save drink. Status: 403.
+
+When I click Ask Tonic it generates a name for the drink which is amazing. when I make my own drink the name of the drink is just the name of the previously made AI drink's name or it is 'My Drink' if no AI drinks have been made yet. Have the AI generate a name for a custom made drink after the user clicks 'add to cart' so that the name shows up in the cart.

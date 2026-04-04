@@ -6,6 +6,7 @@ import NavBar from '../components/NavBar';
 import SeasonalCarousel from '../components/SeasonalCarousel';
 import { CodePopLogo } from '../components/CodePopLogo';
 import StoreSelectionModal from '../components/StoreSelectionModal';
+import DrinkNameModal from '../components/DrinkNameModal';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../theme';
 import TabNavigationContext from '../context/TabNavigationContext';
@@ -30,6 +31,9 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
   const [savedDrinksLoading, setSavedDrinksLoading] = useState(false);
   const [userId, setUserId] = useState(null);
   const [addingDrinkId, setAddingDrinkId] = useState(null);
+
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [drinkToRename, setDrinkToRename] = useState(null);
 
   const makeStyles = (colors) => StyleSheet.create({
     container: {
@@ -343,14 +347,14 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
         } else {
           setIsLoggedIn(false);
         }
-        if (userRole == 'admin'){
+        if (userRole == 'admin') {
           setIsAdmin(true);
-        }else if(userRole == 'manager'){
-            setIsManager(true);
-          }else{
-            setIsAdmin(false);
-            setIsManager(false);
-          }
+        } else if (userRole == 'manager') {
+          setIsManager(true);
+        } else {
+          setIsAdmin(false);
+          setIsManager(false);
+        }
       } catch (error) {
         console.error('Error checking login status:', error);
       }
@@ -381,7 +385,7 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
     if (tabNav && tabNav.navigateToTab) {
       tabNav.navigateToTab(1, { generateDrink: true }); // Navigate to Design tab and trigger generation
     } else {
-      navigation.navigate('CreateDrink', {fromGenerateButton: true} );
+      navigation.navigate('CreateDrink', { fromGenerateButton: true });
     }
   }
 
@@ -414,6 +418,29 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
       Alert.alert('Error', 'Could not remove drink. Please try again.');
       fetchSavedDrinks(userId); // restore on failure
     }
+  };
+
+  const handleRenameConfirm = async (name) => {
+    setRenameModalVisible(false);
+    if (!drinkToRename || !name.trim()) return;
+    // Optimistic update
+    setSavedDrinks(prev => prev.map(d =>
+      d.DrinkID === drinkToRename.DrinkID ? { ...d, Name: name.trim() } : d
+    ));
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const res = await fetch(`${getBaseURL()}/backend/drinks/${drinkToRename.DrinkID}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
+        body: JSON.stringify({ Name: name.trim() }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+    } catch (e) {
+      console.error('handleRenameConfirm:', e);
+      Alert.alert('Error', 'Could not rename drink. Please try again.');
+      fetchSavedDrinks(userId); // revert on failure
+    }
+    setDrinkToRename(null);
   };
 
   const handleAddSavedDrinkToCart = async (drink, size) => {
@@ -469,6 +496,12 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
         <View style={styles.drinkActions}>
           <TouchableOpacity style={styles.deleteButton} onPress={() => handleUnfavorite(drink.DrinkID)}>
             <Icon name="heart-dislike-outline" size={16} color="#FFFFFF" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => { setDrinkToRename(drink); setRenameModalVisible(true); }}
+            style={[styles.secondaryButton, { flex: 0, paddingHorizontal: 10 }]}
+          >
+            <Icon name="pencil-outline" size={16} color={colors.textPrimary} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.primaryButton}
@@ -532,6 +565,13 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
         visible={showStoreModal}
         onClose={handleStoreModalClose}
         requireSelection={storePickerRequired}
+      />
+      <DrinkNameModal
+        visible={renameModalVisible}
+        initialName={drinkToRename?.Name || ''}
+        title="Rename Drink"
+        onConfirm={handleRenameConfirm}
+        onDismiss={() => { setRenameModalVisible(false); setDrinkToRename(null); }}
       />
       {isLoggedIn ? (
         <>
