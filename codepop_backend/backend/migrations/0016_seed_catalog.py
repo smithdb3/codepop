@@ -90,7 +90,7 @@ def noop(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('backend', '0014_visitingusercache_favorite_drinks'),
+        ('backend', '0015_remove_userprofile_store_alter_seasonaldrink_id_and_more'),
     ]
 
     operations = [
