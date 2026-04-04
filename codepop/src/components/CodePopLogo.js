@@ -1,8 +1,10 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useTheme } from '../theme';
 
 export function CodePopLogo({ size = 64 }) {
+  const { colors } = useTheme();
   const s = size / 64; // scale factor
   return (
     <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -10,7 +12,7 @@ export function CodePopLogo({ size = 64 }) {
       <View style={{ position: "relative" }}>
         <Text style={{
           fontSize: size,
-          color: "#222831",
+          color: colors.textPrimary,
           fontWeight: "600",
           letterSpacing: -1,
         }}>code</Text>
