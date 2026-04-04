@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
 import { useNavigation } from '@react-navigation/native';
@@ -80,6 +80,7 @@ const [AddIns, setAddIns] = useState([]);
 const [selectedSize, setSize] = useState(null);
 const [selectedIce, setIce] = useState(null);
 const [isAdding, setIsAdding] = useState(false);
+const [isGenerating, setIsGenerating] = useState(false);
 
 useEffect(() => {
   if (!isFocused) {
@@ -308,6 +309,7 @@ const handleSearch = (text) => {
 // function for generate drink button which generates a drink with AI
 
 const GenerateAI = async () => {
+  setIsGenerating(true);
   try {
     const user_id = await AsyncStorage.getItem('userId');
     let url = `${getBaseURL()}/backend/generate/`;
@@ -344,6 +346,8 @@ const GenerateAI = async () => {
   }
   catch (error) {
     console.error('Error when trying to generate AI drink:', error);
+  } finally {
+    setIsGenerating(false);
   }
 };
 
@@ -622,8 +626,12 @@ return (
 
       {/* Action buttons — always visible in pinned area */}
       <View style={styles.pinnedButtonRow}>
-        <TouchableOpacity onPress={GenerateAI} style={[styles.pinnedButton, styles.secondaryButton]}>
-          <Text style={styles.secondaryButtonText}>Ask Tonic</Text>
+        <TouchableOpacity onPress={GenerateAI} disabled={isGenerating} style={[styles.pinnedButton, styles.secondaryButton, isGenerating && { opacity: 0.5 }]}>
+          {isGenerating ? (
+            <ActivityIndicator size="small" color={colors.secondary} />
+          ) : (
+            <Text style={styles.secondaryButtonText}>Ask Tonic</Text>
+          )}
         </TouchableOpacity>
         <TouchableOpacity onPress={saveDrink} style={[styles.pinnedButton, styles.secondaryButton, { flex: 0.5 }]}>
           <Icon name="heart-outline" size={22} color={colors.secondary} />

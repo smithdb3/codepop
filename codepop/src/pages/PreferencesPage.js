@@ -1389,7 +1389,7 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
     if (recurringLoading) {
       return (
         <View style={styles.centerContent}>
-          <Text style={styles.loadingText}>Loading recurring orders...</Text>
+          <ActivityIndicator size="large" color="#FF2E63" />
         </View>
       );
     }
