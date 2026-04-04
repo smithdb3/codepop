@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 // todo
   // test the removeAllDrinks function
 
-export default function CheckoutForm(totalPrice) {
+export default function CheckoutForm(totalPrice, recurringConfig = null) {
   const navigation = useNavigation();
   const [drinks, setDrinks] = useState([]);
   const [stripeNum, setStripeNum] = useState(null);
@@ -110,7 +110,7 @@ export default function CheckoutForm(totalPrice) {
   const addRevenue = async () => {
     try {
       const orderNum = await AsyncStorage.getItem("orderNum");
-    
+
       const response = await fetch(`${getBaseURL()}/backend/revenues/`, {
         method: 'POST',
         headers: {
@@ -121,7 +121,7 @@ export default function CheckoutForm(totalPrice) {
           TotalAmount: totalPrice,
         }),
       });
-    
+
       if (response.ok) {
         // Revenue recorded successfully
       } else {
@@ -131,7 +131,49 @@ export default function CheckoutForm(totalPrice) {
     } catch (error) {
       console.error("Error occurred while recording revenue:", error);
     }
-  }
+  };
+
+  const saveRecurringOrder = async () => {
+    if (!recurringConfig) return; // Skip if no recurring config provided
+
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      const cartList = await AsyncStorage.getItem('checkoutList');
+      const currentList = cartList ? JSON.parse(cartList) : [];
+
+      // Date should already be in YYYY-MM-DD format from PaymentPage
+      const formatDateForBackend = (dateStr) => {
+        if (!dateStr || dateStr === '') return null;
+        return dateStr; // Already in correct YYYY-MM-DD format
+      };
+
+      const response = await fetch(`${getBaseURL()}/backend/recurring-orders/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user: userId,
+          drinks: currentList,
+          interval: recurringConfig.interval,
+          unit: recurringConfig.unit,
+          days: recurringConfig.days,
+          end_type: recurringConfig.endType,
+          end_date: formatDateForBackend(recurringConfig.endDate),
+          occurrences: recurringConfig.occurrences,
+          total_price: totalPrice,
+          status: 'active',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Failed to save recurring order:', response.status, errorData);
+      }
+    } catch (error) {
+      console.error('Error saving recurring order:', error);
+    }
+  };
 
   const openPaymentSheet = async () => {
     try {
@@ -147,6 +189,7 @@ export default function CheckoutForm(totalPrice) {
             onPress: async () => {
               await removeAllDrinks();
               await addRevenue();
+              await saveRecurringOrder();
               const response = await fetch(`${getBaseURL()}/backend/email/${orderNum}/`, {
                 method: 'GET',
                 headers: {

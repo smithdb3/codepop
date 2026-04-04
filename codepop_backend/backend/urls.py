@@ -21,6 +21,7 @@ from .views import (
 from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdateAPIView
 from .views import NotificationOperations, UserNotificationLookup
 from .views import OrderOperations, UserOrdersLookup
+from .views import RecurringOrderOperations, UserRecurringOrdersLookup
 from .customerAI import Chatbot
 from .views import GenerateAIDrink
 from .views import RevenueViewSet, NationalRevenueView
@@ -93,6 +94,18 @@ order_list = OrderOperations.as_view({
 order_detail = OrderOperations.as_view({
     'get': 'retrieve',
     'put': 'update',
+    'delete': 'destroy'
+})
+
+recurring_order_list = RecurringOrderOperations.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+
+recurring_order_detail = RecurringOrderOperations.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'patch': 'partial_update',
     'delete': 'destroy'
 })
 
@@ -242,6 +255,11 @@ urlpatterns = [
     # - GET: Retrieve details of a specific order belonging to the specified user.
     # - DELETE: Remove the specific order from the database for the specified user.
     path('users/<int:user_id>/orders/<int:pk>/', order_detail, name='user_order_detail'),
+
+    # Recurring Order URLs
+    path('recurring-orders/', recurring_order_list, name='recurring_order_list_create'),
+    path('recurring-orders/<int:pk>/', recurring_order_detail, name='recurring_order_detail'),
+    path('users/<int:user_id>/recurring-orders/', UserRecurringOrdersLookup.as_view(), name='user_recurring_orders_list'),
 
     # Customer Service Chatbot
     # - POST: Send the User response and get back what the chatbot says

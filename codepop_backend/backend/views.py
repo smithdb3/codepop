@@ -11,8 +11,8 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, ManagerProfile, Delivery, SeasonalDrink, VisitingUserCache
-from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer, SupplyRequestSerializer, DeliverySerializer, DriverSerializer, SeasonalDrinkSerializer
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue, RecurringOrder, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, ManagerProfile, Delivery, SeasonalDrink, VisitingUserCache
+from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, RecurringOrderSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer, SupplyRequestSerializer, DeliverySerializer, DriverSerializer, SeasonalDrinkSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.authentication import BaseAuthentication
@@ -900,6 +900,25 @@ class UserOrdersLookup(ListCreateAPIView):
         user_id = self.kwargs['user_id']
         user = get_object_or_404(User, pk=user_id)
         serializer.save(UserID=user)
+
+class RecurringOrderOperations(viewsets.ModelViewSet):
+    queryset = RecurringOrder.objects.all()
+    serializer_class = RecurringOrderSerializer
+    permission_classes = [AllowAny]
+
+class UserRecurringOrdersLookup(ListCreateAPIView):
+    serializer_class = RecurringOrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']
+        user = get_object_or_404(User, pk=user_id)
+        return RecurringOrder.objects.filter(user=user)
+
+    def perform_create(self, serializer):
+        user_id = self.kwargs['user_id']
+        user = get_object_or_404(User, pk=user_id)
+        serializer.save(user=user)
 
 class StripeConfigView(APIView):
     permission_classes = [AllowAny]

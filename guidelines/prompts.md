@@ -54,3 +54,4 @@ Recurring Orders section: This section should pull from the database (or whereve
 
 
 
+"Rate Your Drink" section is horrible post checkout

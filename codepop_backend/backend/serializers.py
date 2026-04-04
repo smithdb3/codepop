@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from .models import Preference, Drink, Inventory, Order, Notification, Revenue, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, Delivery, SeasonalDrink
+from .models import Preference, Drink, Inventory, Order, Notification, Revenue, RecurringOrder, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, Delivery, SeasonalDrink
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -150,7 +150,21 @@ class RevenueSerializer(serializers.ModelSerializer):
             revenue_instance.calculate_total_amount()
         revenue_instance.save()
         return revenue_instance
-    
+
+class RecurringOrderSerializer(serializers.ModelSerializer):
+    drinks = serializers.PrimaryKeyRelatedField(many=True, queryset=Drink.objects.all())
+
+    class Meta:
+        model = RecurringOrder
+        fields = ['id', 'user', 'drinks', 'interval', 'unit', 'days',
+                  'end_type', 'end_date', 'occurrences', 'total_price', 'status', 'created_at']
+
+    def create(self, validated_data):
+        drinks = validated_data.pop('drinks')
+        order = RecurringOrder.objects.create(**validated_data)
+        order.drinks.set(drinks)
+        return order
+
 class MachineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Machine

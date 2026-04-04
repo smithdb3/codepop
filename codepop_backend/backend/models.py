@@ -147,6 +147,34 @@ class Revenue(models.Model):
             return f"Revenue {self.RevenueID} for unknown Order {self.OrderID}: ${self.TotalAmount:.2f}"
 
 
+class RecurringOrder(models.Model):
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('paused', 'Paused'),
+        ('cancelled', 'Cancelled'),
+    ]
+    END_TYPE_CHOICES = [
+        ('never', 'Never'),
+        ('on', 'On Date'),
+        ('after', 'After N'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='recurring_orders')
+    drinks = models.ManyToManyField(Drink)
+    interval = models.PositiveIntegerField(default=1)
+    unit = models.CharField(max_length=10, default='week')
+    days = models.JSONField(default=dict)
+    end_type = models.CharField(max_length=10, choices=END_TYPE_CHOICES, default='never')
+    end_date = models.DateField(null=True, blank=True)
+    occurrences = models.PositiveIntegerField(null=True, blank=True)
+    total_price = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"RecurringOrder {self.id} for User {self.user.username}"
+
+
 class SeasonalDrink(models.Model):
     """
     Represents a seasonal drink available for a specific time of year.
