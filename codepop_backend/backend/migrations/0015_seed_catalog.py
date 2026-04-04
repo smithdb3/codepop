@@ -35,12 +35,22 @@ REGIONS = [
 
 def remove_fake_stores(apps, schema_editor):
     """Delete StoreRegistry rows seeded by populate_db (identified by .codepop.local endpoints)."""
+    from django.conf import settings
+    # Skip during test runs
+    if getattr(settings, 'TESTING', False):
+        return
+
     StoreRegistry = apps.get_model('backend', 'StoreRegistry')
     StoreRegistry.objects.filter(api_endpoint__contains='.codepop.local').delete()
 
 
 def seed_catalog(apps, schema_editor):
     """Seed Inventory (sodas, syrups, add-ins, physical items) and Region data."""
+    from django.conf import settings
+    # Skip during test runs
+    if getattr(settings, 'TESTING', False):
+        return
+
     Inventory = apps.get_model('backend', 'Inventory')
     Region = apps.get_model('backend', 'Region')
 
