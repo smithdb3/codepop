@@ -210,6 +210,36 @@ class InterNodeProfileUpdateView(APIView):
         return Response(_build_user_payload(user))
 
 
+class InterNodeTokenVerifyView(APIView):
+    """
+    POST /api/inter-node/token-verify/
+    Verifies a DRF token and returns the user payload (for cross-store token exchange).
+    Called by visiting stores to verify the home-store token of a switching user.
+
+    Request: {"token": "abc123", "requesting_store_id": 2}
+    Response (200): Full user payload (same as user-sync)
+    Response (401): {"error": "Invalid token"}
+    """
+    permission_classes = [IsNodeAuthenticated]
+
+    def post(self, request):
+        from rest_framework.authtoken.models import Token
+
+        token_key = request.data.get('token')
+        if not token_key:
+            return Response({'error': 'Missing token'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            token_obj = Token.objects.get(key=token_key)
+        except Token.DoesNotExist:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user = token_obj.user
+        _log('token_verify', f'store-{request.data.get("requesting_store_id")}',
+             f'store-{settings.STORE_ID}', True, user_email=user.email)
+        return Response(_build_user_payload(user))
+
+
 class InterNodeHealthCheckView(APIView):
     """
     POST /api/inter-node/health-check/

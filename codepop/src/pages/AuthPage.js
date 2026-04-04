@@ -47,6 +47,16 @@ const AuthPage = ({ navigation, route }) => {
           await AsyncStorage.setItem('userId', data.user_id.toString());
           await AsyncStorage.setItem('first_name', data.first_name);
           await AsyncStorage.setItem('userEmail', trimmed);
+
+          // If this is a home login (not visiting), store the home token and endpoint for future exchanges
+          if (!data.visiting) {
+            const homeEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint');
+            const homeStoreId = await AsyncStorage.getItem('selectedStoreId');
+            await AsyncStorage.setItem('homeToken', data.token);
+            await AsyncStorage.setItem('homeStoreEndpoint', homeEndpoint || '');
+            await AsyncStorage.setItem('homeStoreId', homeStoreId || '');
+          }
+
           if(data.userRole === 'admin'){
             await AsyncStorage.setItem('userRole', 'admin');
             navigation.navigate('AdminDash');
