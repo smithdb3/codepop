@@ -79,6 +79,7 @@ const [SyrupsUsed, setSyrups] = useState([]);
 const [AddIns, setAddIns] = useState([]);
 const [selectedSize, setSize] = useState(null);
 const [selectedIce, setIce] = useState(null);
+const [isAdding, setIsAdding] = useState(false);
 
 useEffect(() => {
   if (!isFocused) {
@@ -120,7 +121,7 @@ useEffect(() => {
     if (tabNav && tabNav.shouldGenerateDrink) {
       const timer = setTimeout(() => {
         GenerateAI();
-      }, 100);
+      }, 220);
       return () => clearTimeout(timer);
     }
   }
@@ -178,20 +179,24 @@ const saveDrink = async () => {
 };
 
 const addToCart = async () => {
+  if (isAdding) return;
+
   if (selectedIce == null || selectedSize == null || SodaUsed.length === 0) {
     Alert.alert("Don't forget to choose a Soda, Size and Ice Amount!");
     return;
   }
 
-  const drinkToEdit = currentDrinkToEdit;
-  const body = JSON.stringify({
-    Name: drinkToEdit ? "Updated Drink" : "Drink in User Cart",
-    SodaUsed, SyrupsUsed, AddIns,
-    Price: 2.00, User_Created: true,
-    Size: selectedSize, Ice: selectedIce,
-  });
+  setIsAdding(true);
 
   try {
+    const drinkToEdit = currentDrinkToEdit;
+    const body = JSON.stringify({
+      Name: drinkToEdit ? "Updated Drink" : "Drink in User Cart",
+      SodaUsed, SyrupsUsed, AddIns,
+      Price: 2.00, User_Created: true,
+      Size: selectedSize, Ice: selectedIce,
+    });
+
     if (drinkToEdit) {
       // PUT — update existing drink, no cart list change needed
       const response = await fetch(`${getBaseURL()}/backend/drinks/${drinkToEdit.DrinkID}/`, {
@@ -233,6 +238,8 @@ const addToCart = async () => {
     }
   } catch (error) {
     console.error('Error saving drink:', error);
+  } finally {
+    setIsAdding(false);
   }
 };
 
@@ -621,9 +628,9 @@ return (
         <TouchableOpacity onPress={saveDrink} style={[styles.pinnedButton, styles.secondaryButton, { flex: 0.5 }]}>
           <Icon name="heart-outline" size={22} color={colors.secondary} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={addToCart} style={[styles.pinnedButton, styles.primaryButton]}>
+        <TouchableOpacity onPress={addToCart} disabled={isAdding} style={[styles.pinnedButton, styles.primaryButton, isAdding && { opacity: 0.5 }]}>
           <Text style={styles.primaryButtonText}>
-            {currentDrinkToEdit ? 'Save Changes' : 'Add to My Order'}
+            {isAdding ? 'Adding...' : (currentDrinkToEdit ? 'Save Changes' : 'Add to My Order')}
           </Text>
         </TouchableOpacity>
       </View>

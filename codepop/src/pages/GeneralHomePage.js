@@ -29,6 +29,7 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
   const [savedDrinks, setSavedDrinks] = useState([]);
   const [savedDrinksLoading, setSavedDrinksLoading] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [addingDrinkId, setAddingDrinkId] = useState(null);
 
   const makeStyles = (colors) => StyleSheet.create({
     container: {
@@ -416,6 +417,9 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
   };
 
   const handleAddSavedDrinkToCart = async (drink, size) => {
+    if (addingDrinkId === drink.DrinkID) return;
+
+    setAddingDrinkId(drink.DrinkID);
     try {
       const res = await fetch(`${getBaseURL()}/backend/drinks/`, {
         method: 'POST',
@@ -443,6 +447,8 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
     } catch (e) {
       console.error('handleAddSavedDrinkToCart:', e);
       Alert.alert('Error', 'Could not add to cart. Please try again.');
+    } finally {
+      setAddingDrinkId(null);
     }
   };
 
@@ -496,10 +502,13 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
 
         {sizeOpen && sizeChosen && (
           <TouchableOpacity
-            style={[styles.primaryButton, { marginTop: 8 }]}
+            style={[styles.primaryButton, { marginTop: 8 }, addingDrinkId === drink.DrinkID && { opacity: 0.5 }]}
+            disabled={addingDrinkId === drink.DrinkID}
             onPress={() => handleAddSavedDrinkToCart(drink, sizeChosen)}
           >
-            <Text style={styles.primaryButtonText}>Confirm — {sizeChosen}</Text>
+            <Text style={styles.primaryButtonText}>
+              {addingDrinkId === drink.DrinkID ? 'Adding...' : `Confirm — ${sizeChosen}`}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
