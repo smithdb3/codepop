@@ -686,7 +686,7 @@ const CartPage = ({ insideTabContainer = false, isFocused = true, navigation: na
 
             {/* Checkout Button */}
             <TouchableOpacity
-              onPress={() => navigation.navigate('payment')}
+              onPress={() => tabNav.showCheckout ? tabNav.showCheckout() : navigation.navigate('payment')}
               style={styles.checkoutButton}
             >
               <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>

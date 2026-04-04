@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 // todo
   // test the removeAllDrinks function
 
-export default function CheckoutForm(totalPrice, recurringConfig = null) {
+export default function CheckoutForm(totalPrice, recurringConfig = null, onPaymentSuccess = null) {
   const navigation = useNavigation();
   const [drinks, setDrinks] = useState([]);
   const [stripeNum, setStripeNum] = useState(null);
@@ -89,8 +89,8 @@ export default function CheckoutForm(totalPrice, recurringConfig = null) {
 
       // Check if the request was successful
       if (response.ok) {
-        const data = await response.json(); // Parse JSON if returned
-        orderNum = data.OrderID;
+        const data = await response.json();
+        const orderNum = data.OrderID;
         await AsyncStorage.setItem("orderNum", orderNum.toString());
       } else {
         console.error('Failed to create order:', response.status, await response.text());
@@ -133,13 +133,12 @@ export default function CheckoutForm(totalPrice, recurringConfig = null) {
     }
   };
 
-  const saveRecurringOrder = async () => {
+  const saveRecurringOrder = async (drinks) => {
     if (!recurringConfig) return; // Skip if no recurring config provided
 
     try {
       const userId = await AsyncStorage.getItem('userId');
-      const cartList = await AsyncStorage.getItem('checkoutList');
-      const currentList = cartList ? JSON.parse(cartList) : [];
+      const currentList = drinks || [];
 
       // Date should already be in YYYY-MM-DD format from PaymentPage
       const formatDateForBackend = (dateStr) => {
@@ -187,16 +186,23 @@ export default function CheckoutForm(totalPrice, recurringConfig = null) {
           {
             text: 'OK',
             onPress: async () => {
+              const cartList = await AsyncStorage.getItem('checkoutList');
+              const cartDrinks = cartList ? JSON.parse(cartList) : [];
               await removeAllDrinks();
               await addRevenue();
-              await saveRecurringOrder();
-              const response = await fetch(`${getBaseURL()}/backend/email/${orderNum}/`, {
-                method: 'GET',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              });
-              navigation.navigate('PostCheckout');
+              await saveRecurringOrder(cartDrinks);
+              const confirmedOrderNum = await AsyncStorage.getItem('orderNum');
+              if (confirmedOrderNum) {
+                await fetch(`${getBaseURL()}/backend/email/${confirmedOrderNum}/`, {
+                  method: 'GET',
+                  headers: { 'Content-Type': 'application/json' },
+                });
+              }
+              if (onPaymentSuccess) {
+                onPaymentSuccess();
+              } else {
+                navigation.navigate('PostCheckout');
+              }
             },
           },
         ]);

@@ -49,7 +49,7 @@ const NavBar = () => {
     if (tabNav && tabNav.navigateToTab) {
       tabNav.navigateToTab(index);
     } else {
-      navigation.navigate(item.route);
+      navigation.navigate('GeneralHome', { initialTab: index });
     }
   };
 
