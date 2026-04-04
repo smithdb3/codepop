@@ -86,6 +86,14 @@ const CreateAccountPage = ({ navigation, route }) => {
         await AsyncStorage.setItem('first_name', data.first_name);
         await AsyncStorage.setItem('userEmail', trimmedEmail);
         await AsyncStorage.setItem('userRole', data.userRole ?? 'user');
+
+        // This is a home login — store the home token and endpoint for future exchanges
+        const homeEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint');
+        const homeStoreId = await AsyncStorage.getItem('selectedStoreId');
+        await AsyncStorage.setItem('homeToken', data.token);
+        await AsyncStorage.setItem('homeStoreEndpoint', homeEndpoint || '');
+        await AsyncStorage.setItem('homeStoreId', homeStoreId || '');
+
         navigation.navigate('GeneralHome');
       } else {
         // Login failed unexpectedly — fall back to sign-in page

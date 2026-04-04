@@ -317,6 +317,11 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
         const userRole = await AsyncStorage.getItem('userRole');
         const selectedEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint');
         const storeName = await AsyncStorage.getItem('selectedStoreName');
+        const homeToken = await AsyncStorage.getItem('homeToken');
+        const homeStoreEndpoint = await AsyncStorage.getItem('homeStoreEndpoint');
+        const homeStoreId = await AsyncStorage.getItem('homeStoreId');
+
+        console.log('DEBUG: Auth state:', { storedName, token, userRole, selectedEndpoint, homeToken, homeStoreEndpoint, homeStoreId });
 
         if (cancelled) return;
 
