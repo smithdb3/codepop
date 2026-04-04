@@ -260,6 +260,39 @@ export default function StoreSelectionModal({
         await AsyncStorage.multiRemove(['selectedStoreLatitude', 'selectedStoreLongitude']);
       }
       await setBaseURL(store.api_endpoint);
+
+      // Proactive token exchange: if switching stores while logged in, exchange the home token
+      // for a visiting shadow token at the new store
+      const homeToken = await AsyncStorage.getItem('homeToken');
+      const homeStoreEndpoint = await AsyncStorage.getItem('homeStoreEndpoint');
+      const homeStoreId = await AsyncStorage.getItem('homeStoreId');
+      const currentEndpoint = /* we need to read this before writing the new one */ null;
+
+      // Only exchange if: we have a home token, the home store endpoint exists, and we're switching stores
+      if (homeToken && homeStoreEndpoint && store.api_endpoint !== homeStoreEndpoint) {
+        try {
+          const exchangeRes = await fetch(`${store.api_endpoint}/backend/auth/exchange/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              token: homeToken,
+              home_store_endpoint: homeStoreEndpoint,
+              home_store_id: parseInt(homeStoreId || '0'),
+            }),
+          });
+          if (exchangeRes.ok) {
+            const exchangeData = await exchangeRes.json();
+            await AsyncStorage.setItem('userToken', exchangeData.token);
+            // user_id, first_name, userRole remain the same
+          }
+          // On 503 (degraded) or network error: silently continue with graceful degradation
+        } catch (e) {
+          // Network error or other issue - continue with graceful degradation
+          // The home token will be used for API calls, returning 403 if unavailable
+          console.warn('Token exchange failed, using home token:', e);
+        }
+      }
+
       setSelectedStore(store);
     } catch (error) {
       console.error('Failed to save store selection:', error);

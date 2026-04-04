@@ -26,8 +26,11 @@ from django.utils.decorators import method_decorator
 import json
 import requests
 import uuid
+import logging
 from datetime import timedelta
 from rest_framework.decorators import action
+
+logger = logging.getLogger(__name__)
 from django.utils.dateparse import parse_datetime
 from .drinkAI import generate_soda
 from rest_framework.permissions import BasePermission
@@ -378,6 +381,133 @@ class LogoutUserAPIView(APIView):
             import sys
             print(f"Logout token deletion error: {e}", file=sys.stderr)
         return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+
+
+class AuthTokenExchangeView(APIView):
+    """
+    POST /backend/auth/exchange/
+    Proactive token exchange for users switching stores.
+    Exchanges a home-store DRF token for a visiting shadow DRF token at the new store.
+
+    Request: {"token": "home_token", "home_store_endpoint": "http://...", "home_store_id": N}
+    Response (200): {"token": "shadow_token", "user_id": 42, "first_name": "John", "userRole": "user", "visiting": True}
+    Response (503): {"error": "home_store_unreachable", "degraded": True} — graceful degradation
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        from rest_framework.authtoken.models import Token
+        from .internode_views import _build_user_payload
+
+        token_key = request.data.get('token')
+        home_store_endpoint = request.data.get('home_store_endpoint')
+        home_store_id = request.data.get('home_store_id')
+
+        if not token_key or not home_store_endpoint:
+            return Response(
+                {'error': 'Missing token or home_store_endpoint'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Extract user_id from token (if it's a valid token in this DB, use it to create cache key)
+        # Or: try to verify via home store first
+        try:
+            token_obj = Token.objects.get(key=token_key)
+            # Token exists locally — must have been created here before (shouldn't happen on first exchange)
+            user = token_obj.user
+        except Token.DoesNotExist:
+            # Token doesn't exist locally — need to verify with home store
+            user = None
+
+        if user:
+            # Token is a local home token (this is a home user, not actually exchanging)
+            # Return the same token (they're already at their home store or returning to it)
+            return Response({
+                'token':      token_key,
+                'user_id':    user.pk,
+                'first_name': user.first_name,
+                'userRole':   'admin' if user.is_superuser else ('manager' if user.is_staff else 'user'),
+                'visiting':   False,
+            })
+
+        # Try to verify token with home store
+        try:
+            verify_url = f"{home_store_endpoint}/backend/api/inter-node/token-verify/"
+            verify_resp = requests.post(
+                verify_url,
+                json={'token': token_key, 'requesting_store_id': settings.STORE_ID},
+                headers={'Authorization': f'NodeToken {settings.INTER_NODE_SECRET}'},
+                timeout=5,
+            )
+            if not verify_resp.ok:
+                raise requests.RequestException(f"Home store returned {verify_resp.status_code}")
+            user_data = verify_resp.json()
+        except requests.RequestException as e:
+            # Home store unreachable — try graceful degradation with cached session
+            logger.warning('Token verification failed, attempting graceful degradation: %s', e)
+            cache = VisitingUserCache.objects.filter(
+                home_store_id=home_store_id,
+                expires_at__gt=timezone.now()
+            ).first()
+            if not cache:
+                return Response(
+                    {'error': 'home_store_unreachable', 'degraded': True},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
+                )
+            user_data = {
+                'user_id':    cache.user_id,
+                'username':   cache.username,
+                'email':      cache.email,
+                'hashed_password': cache.hashed_password,
+                'first_name': cache.username.split()[0] if cache.username else 'User',
+                'role':       cache.role,
+                'home_store_endpoint': cache.home_store_endpoint,
+                'home_store_id': cache.home_store_id,
+                'preferences': cache.preferences,
+                'favorite_drinks': cache.favorite_drinks,
+            }
+
+        # Create or update VisitingUserCache (reuse logic from VisitingLoginView)
+        cache_kwargs = {
+            'username': user_data['username'],
+            'email': user_data['email'],
+            'hashed_password': user_data['hashed_password'],
+            'role': user_data['role'],
+            'home_store_endpoint': user_data['home_store_endpoint'],
+            'preferences': user_data.get('preferences', []),
+            'favorite_drinks': [
+                {**d, 'cache_drink_id': str(uuid.uuid4())}
+                for d in user_data.get('favorite_drinks', [])
+            ],
+            'expires_at': timezone.now() + timedelta(hours=24),
+        }
+        cache, _ = VisitingUserCache.objects.update_or_create(
+            user_id=user_data['user_id'],
+            home_store_id=user_data['home_store_id'],
+            defaults=cache_kwargs
+        )
+
+        # Create shadow user and token (reuse logic from VisitingLoginView)
+        shadow_username = f"visiting_{user_data['user_id']}_{user_data['home_store_id']}"
+        shadow_user, _ = User.objects.update_or_create(
+            username=shadow_username,
+            defaults={
+                'email': user_data['email'],
+                'first_name': user_data.get('first_name', 'User'),
+                'is_active': True,
+            }
+        )
+        shadow_token, _ = Token.objects.get_or_create(user=shadow_user)
+
+        return Response({
+            'token':      shadow_token.key,
+            'user_id':    user_data['user_id'],
+            'first_name': user_data.get('first_name', 'User'),
+            'userRole':   user_data['role'],
+            'visiting':   True,
+            'home_store': user_data['home_store_endpoint'],
+        })
+
 
 class CheckEmailView(APIView):
     permission_classes = [AllowAny]

@@ -7,8 +7,9 @@ from .hub_views import (
 from .internode_views import (
     InterNodeUserExistsView, InterNodeUserSyncView,
     InterNodeProfileUpdateView, InterNodeHealthCheckView,
+    InterNodeTokenVerifyView,
 )
-from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken, CheckEmailView, UserSelfUpdateView
+from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken, CheckEmailView, UserSelfUpdateView, AuthTokenExchangeView
 from .views import StripePaymentIntentView, StripeConfigView
 from .views import UserPreferenceLookup, PreferencesOperations
 from .views import (
@@ -132,6 +133,10 @@ urlpatterns = [
     # Endpoint for user logout
     # - POST: Logs out the user by invalidating the auth token.
     path('auth/logout/', LogoutUserAPIView.as_view(), name='auth_user_logout'),
+
+    # Endpoint for token exchange (cross-store switching)
+    # - POST: Exchanges a home-store token for a visiting shadow token at a new store
+    path('auth/exchange/', AuthTokenExchangeView.as_view(), name='auth_token_exchange'),
 
     # Endpoint to check if email exists
     # - POST: Checks if an email is already registered.
@@ -405,5 +410,6 @@ urlpatterns = [
     path('api/inter-node/user-exists/',    InterNodeUserExistsView.as_view(),    name='internode_user_exists'),
     path('api/inter-node/user-sync/',      InterNodeUserSyncView.as_view(),      name='internode_user_sync'),
     path('api/inter-node/profile-update/', InterNodeProfileUpdateView.as_view(), name='internode_profile_update'),
+    path('api/inter-node/token-verify/',   InterNodeTokenVerifyView.as_view(),   name='internode_token_verify'),
     path('api/inter-node/health-check/',   InterNodeHealthCheckView.as_view(),   name='internode_health_check'),
 ]
