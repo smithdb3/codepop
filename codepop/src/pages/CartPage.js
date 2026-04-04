@@ -7,6 +7,7 @@ import {
   ScrollView,
   TextInput,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -20,6 +21,7 @@ const CartPage = ({ insideTabContainer = false, isFocused = true, navigation: na
   const navigation = navProp || useNavigation();
   const { colors } = useTheme();
   const tabNav = useContext(TabNavigationContext);
+  const [loading, setLoading] = useState(false);
   const [groupedDrinks, setGroupedDrinks] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [subtotal, setSubtotal] = useState(0);
@@ -57,6 +59,7 @@ const CartPage = ({ insideTabContainer = false, isFocused = true, navigation: na
   };
 
   const fetchDrinks = async () => {
+    setLoading(true);
     try {
       const cartList = await AsyncStorage.getItem('checkoutList');
       const currentList = cartList ? JSON.parse(cartList) : [];
@@ -92,6 +95,8 @@ const CartPage = ({ insideTabContainer = false, isFocused = true, navigation: na
       await AsyncStorage.setItem('purchasedDrinks', JSON.stringify(fetchedDrinks));
     } catch (error) {
       console.error('Failed to get drinks:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -612,7 +617,9 @@ const CartPage = ({ insideTabContainer = false, isFocused = true, navigation: na
           <Text style={styles.pageTitle}>Your Cart</Text>
         </View>
 
-        {groupedDrinks.length === 0 ? (
+        {loading ? (
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 60 }} />
+        ) : groupedDrinks.length === 0 ? (
           renderEmptyState()
         ) : (
           <>

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import React, { useState, useEffect, useContext } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert } from 'react-native';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import NavBar from '../components/NavBar';
 import SeasonalCarousel from '../components/SeasonalCarousel';
 import { CodePopLogo } from '../components/CodePopLogo';
@@ -593,7 +593,7 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <Text style={styles.savedDrinksSectionTitle}>Saved Drinks</Text>
                 {savedDrinksLoading && (
-                  <Text style={{ fontSize: 12, color: colors.textMuted }}>Loading…</Text>
+                  <ActivityIndicator size="small" color={colors.primary} />
                 )}
               </View>
 

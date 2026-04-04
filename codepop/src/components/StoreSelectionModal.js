@@ -281,6 +281,7 @@ export default function StoreSelectionModal({
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [selectedStore, setSelectedStore] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [locationPermission, setLocationPermission] = useState(null);
@@ -477,8 +478,13 @@ export default function StoreSelectionModal({
         : locationPermission === 'denied'
           ? 'denied'
           : 'manual';
-    await selectAndSave(selectedStore, perm);
-    onClose?.({ cancelled: false });
+    setSaving(true);
+    try {
+      await selectAndSave(selectedStore, perm);
+      onClose?.({ cancelled: false });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const dismissWithoutConfirm = () => {
@@ -696,12 +702,16 @@ export default function StoreSelectionModal({
             style={[
               dynamicStyles.primaryButton,
               { width: '100%' },
-              !selectedStore && dynamicStyles.primaryButtonDisabled,
+              (!selectedStore || saving) && dynamicStyles.primaryButtonDisabled,
             ]}
             onPress={handleConfirmSelection}
-            disabled={!selectedStore}
+            disabled={!selectedStore || saving}
           >
-            <Text style={dynamicStyles.primaryButtonText}>Confirm Selection</Text>
+            {saving ? (
+              <ActivityIndicator size="small" color={colors.surface} />
+            ) : (
+              <Text style={dynamicStyles.primaryButtonText}>Confirm Selection</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>
