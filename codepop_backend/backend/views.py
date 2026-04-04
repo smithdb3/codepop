@@ -15,6 +15,8 @@ from .models import Preference, Drink, Inventory, Notification, Order, Revenue, 
 from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer, SupplyRequestSerializer, DeliverySerializer, DriverSerializer, SeasonalDrinkSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 import stripe
 from django.conf import settings
 from django.http import JsonResponse
@@ -37,6 +39,53 @@ class IsSuperUser(BasePermission):
     """Permission class to check if user is a superuser."""
     def has_permission(self, request, view):
         return request.user and request.user.is_superuser
+
+
+class VisitingTokenAuthentication(BaseAuthentication):
+    """
+    Accepts real DRF tokens AND synthetic visiting tokens.
+    Synthetic format: visiting_<user_id>_<home_store_id>
+    Validates synthetic tokens against VisitingUserCache (checks expiry).
+    Used only on endpoints that visiting users must reach.
+    """
+    def authenticate(self, request):
+        auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+        if not auth_header.startswith('Token '):
+            return None
+        token = auth_header[6:].strip()
+
+        # Try real DRF token first
+        try:
+            token_obj = Token.objects.get(key=token)
+            return (token_obj.user, token_obj)
+        except Token.DoesNotExist:
+            pass
+
+        # Try synthetic visiting token: visiting_<user_id>_<home_store_id>
+        parts = token.split('_')
+        if len(parts) == 3 and parts[0] == 'visiting':
+            try:
+                user_id = int(parts[1])
+                home_store_id = int(parts[2])
+            except ValueError:
+                raise AuthenticationFailed('Invalid visiting token format.')
+
+            cache = VisitingUserCache.objects.filter(
+                user_id=user_id,
+                home_store_id=home_store_id,
+                expires_at__gt=timezone.now()
+            ).first()
+            if not cache:
+                raise AuthenticationFailed('Visiting session expired or not found.')
+
+            # Return the shadow user created during visiting login
+            try:
+                shadow = User.objects.get(username=f'visiting_{user_id}_{home_store_id}')
+                return (shadow, None)
+            except User.DoesNotExist:
+                raise AuthenticationFailed('Visiting shadow user not found.')
+
+        raise AuthenticationFailed('Invalid token.')
 
 
 def _propagate_to_home_store(user_id: int):
@@ -439,7 +488,8 @@ class DrinkOperations(viewsets.ModelViewSet):
 
 class UserDrinksLookup(ListAPIView):
     serializer_class = DrinkSerializer
-    permission_classes = [AllowAny]
+    authentication_classes = [VisitingTokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """
@@ -474,7 +524,8 @@ class UserFavoriteToggleView(APIView):
     Handles both home users (int drink_id) and visiting users (UUID cache_drink_id).
     Body: { "action": "add" } or { "action": "remove" }
     """
-    permission_classes = [AllowAny]
+    authentication_classes = [VisitingTokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
     def patch(self, request, user_id, drink_id):
         action = request.data.get("action")
@@ -952,7 +1003,18 @@ class GenerateAIDrink(APIView):
     
     def generate_account_user(self, user_id):
         """Generate AI drink for a registered user using their preferences and order history."""
-        user = get_object_or_404(User, pk=user_id)
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            # Visiting user — shadow pk ≠ home user_id; no local User row.
+            # Use cached preferences if available, otherwise fall back to generic generation.
+            cache = VisitingUserCache.objects.filter(
+                user_id=user_id, expires_at__gt=timezone.now()
+            ).first()
+            if cache and cache.preferences:
+                return self.generate_response_data(cache.preferences, user_created=True)
+            return self.generate_general_user()
+
         preferences = Preference.objects.filter(UserID=user)
         preferences_list = []
 
