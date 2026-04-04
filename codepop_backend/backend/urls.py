@@ -8,7 +8,7 @@ from .internode_views import (
     InterNodeUserExistsView, InterNodeUserSyncView,
     InterNodeProfileUpdateView, InterNodeHealthCheckView,
 )
-from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken, CheckEmailView
+from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken, CheckEmailView, UserSelfUpdateView
 from .views import StripePaymentIntentView, StripeConfigView
 from .views import UserPreferenceLookup, PreferencesOperations
 from .views import (
@@ -297,6 +297,11 @@ urlpatterns = [
 
     # - GET: Returns the schedules associated with a user
     path('schedules/get_user_schedules/', get_schedules, name='get_schedules'),
+
+    # Self-service user profile endpoint
+    # - GET: Retrieve current user profile (username, email, first_name)
+    # - POST: Update current user's username or password
+    path('users/me/', UserSelfUpdateView.as_view(), name='user_self_update'),
 
     # Endpoint to do operations on user accounts for the Admin Dashboard
     # - GET: Retrieve a list of all users

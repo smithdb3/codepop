@@ -263,7 +263,6 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
         user.first_name = validated_data.get('first_name', user.first_name)
         user.last_name = validated_data.get('last_name', user.last_name)
         user.email = validated_data.get('email', user.email)
-        user.username = validated_data.get('email', user.username)
         if 'password' in validated_data:
             user.set_password(validated_data['password'])
         user.save()
