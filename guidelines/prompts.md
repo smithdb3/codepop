@@ -60,7 +60,4 @@ Minor fixes:
 
 -=-=-=-=-=-=-=--=-=---=-=-
 
-After I change a name of a drink after clicking add to favorites in the drink design page, I get the error:
-Error saving drink: Error: Failed to save drink. Status: 403.
-
-When I click Ask Tonic it generates a name for the drink which is amazing. when I make my own drink the name of the drink is just the name of the previously made AI drink's name or it is 'My Drink' if no AI drinks have been made yet. Have the AI generate a name for a custom made drink after the user clicks 'add to cart' so that the name shows up in the cart.
+When the cart page has no drinks "Browse Drinks" does not take you anywhere. Make it take me to the design page.
