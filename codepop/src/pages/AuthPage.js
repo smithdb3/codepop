@@ -91,6 +91,18 @@ const AuthPage = ({ navigation, route }) => {
       padding: 20,
       backgroundColor: colors.surface,
     },
+    backButton: {
+      position: 'absolute',
+      top: 16,
+      left: 16,
+      padding: 8,
+      zIndex: 10,
+    },
+    backButtonText: {
+      fontSize: 24,
+      color: colors.textPrimary,
+      fontWeight: '600',
+    },
     title: {
       fontSize: 28,
       fontWeight: '700',
@@ -161,6 +173,9 @@ const AuthPage = ({ navigation, route }) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Text style={styles.backButtonText}>‹</Text>
+      </TouchableOpacity>
       <View style={{ marginBottom: 32 }}>
         <CodePopLogo size={64} />
       </View>

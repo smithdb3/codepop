@@ -62,6 +62,11 @@ const PaymentPage = ({ onSuccess, isVisible = true, onClose }) => {
 
   // Stripe
   const [stripePublishableKey, setStripePublishableKey] = useState(null);
+
+  // Calculate tax and total upfront
+  const tax = subtotal * 0.08;
+  const total = totalPrice + tax;
+
   const recurringConfig = isRecurring && recurringConfirmed ? {
     interval: recurringInterval,
     unit: recurringUnit,
@@ -70,7 +75,7 @@ const PaymentPage = ({ onSuccess, isVisible = true, onClose }) => {
     endDate: recurringEndDate,
     occurrences: recurringOccurrences,
   } : null;
-  const { initializePaymentSheet, openPaymentSheet, loading: paymentSheetReady } = CheckoutForm(totalPrice, recurringConfig, onSuccess);
+  const { initializePaymentSheet, openPaymentSheet, loading: paymentSheetReady } = CheckoutForm(total, recurringConfig, onSuccess);
 
   useEffect(() => {
     const fetchStripeKey = async () => {
@@ -229,9 +234,6 @@ const PaymentPage = ({ onSuccess, isVisible = true, onClose }) => {
       setLoading(false);
     }
   };
-
-  const tax = subtotal * 0.08;
-  const total = totalPrice + tax;
 
   const makeStyles = (colors) => StyleSheet.create({
     wholePage: {
@@ -1069,7 +1071,7 @@ const PaymentPage = ({ onSuccess, isVisible = true, onClose }) => {
           {isRecurring && recurringConfirmed && (
             <View style={styles.confirmationCard}>
               <Text style={styles.confirmationText}>
-                By selecting this option, your order will be automatically placed and your saved payment method will be charged ${totalPrice.toFixed(2)} 30 minutes before your scheduled time. You can modify or cancel recurring orders at any time in your account settings.
+                By selecting this option, your order will be automatically placed and your saved payment method will be charged ${total.toFixed(2)} 30 minutes before your scheduled time. You can modify or cancel recurring orders at any time in your account settings.
               </Text>
             </View>
           )}

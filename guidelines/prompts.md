@@ -61,3 +61,5 @@ Minor fixes:
 -=-=-=-=-=-=-=--=-=---=-=-
 
 When the cart page has no drinks "Browse Drinks" does not take you anywhere. Make it take me to the design page.
+
+The Recurring Orders section in the profile page does not show names associated with each recurring order. When someone clicks 'recurring order' toggle in the checkout page, it should save the drink info with the recurring order info so that each recurring order card in the recurring orders section of the profile page can show which drinks are associated with it.

@@ -1624,9 +1624,6 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
               <Text style={styles.profileName}>{firstName}</Text>
               <Text style={styles.profileEmail}>{userEmail || 'Not available'}</Text>
             </View>
-            <TouchableOpacity style={styles.editButton}>
-              <Icon name="pencil-outline" size={20} color="#FF2E63" />
-            </TouchableOpacity>
           </View>
 
           {/* Loyalty Points */}
