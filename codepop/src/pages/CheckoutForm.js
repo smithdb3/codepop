@@ -22,7 +22,7 @@ export default function CheckoutForm(totalPrice, recurringConfig = null, onPayme
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: totalPrice }), // amount in dollars, backend converts to cents
+        body: JSON.stringify({ amount: Math.round(totalPrice * 100) / 100 }), // amount in dollars, backend converts to cents
       });
 
       if (!response.ok) {
@@ -118,7 +118,7 @@ export default function CheckoutForm(totalPrice, recurringConfig = null, onPayme
         },
         body: JSON.stringify({
           OrderID: orderNum,
-          TotalAmount: totalPrice,
+          TotalAmount: Math.round(totalPrice * 100) / 100,
         }),
       });
 
@@ -160,7 +160,7 @@ export default function CheckoutForm(totalPrice, recurringConfig = null, onPayme
           end_type: recurringConfig.endType,
           end_date: formatDateForBackend(recurringConfig.endDate),
           occurrences: recurringConfig.occurrences,
-          total_price: totalPrice,
+          total_price: Math.round(totalPrice * 100) / 100,
           status: 'active',
         }),
       });

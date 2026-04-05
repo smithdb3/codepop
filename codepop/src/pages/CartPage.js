@@ -122,6 +122,9 @@ const CartPage = ({ insideTabContainer = false, isFocused = true, navigation: na
     if (promoApplied) {
       final = sub * 0.9; // 10% discount
     }
+    // Add 8% tax (calculated on original subtotal)
+    const tax = sub * 0.08;
+    final = final + tax;
     setTotalPrice(final);
   };
 
