@@ -732,6 +732,12 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
       color: colors.primary,
       marginBottom: 12,
     },
+    recurringDrinkNames: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginBottom: 12,
+      fontStyle: 'italic',
+    },
     recurringButtonRow: {
       flexDirection: 'row',
       gap: 8,
@@ -1429,6 +1435,11 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
             </View>
             <Text style={styles.recurringCardSchedule}>{formatSchedule(order)}</Text>
             <Text style={styles.recurringCardPrice}>${parseFloat(order.total_price || 0).toFixed(2)}</Text>
+            {order.drink_names?.length > 0 && (
+              <Text style={styles.recurringDrinkNames}>
+                {order.drink_names.join(', ')}
+              </Text>
+            )}
             <View style={styles.recurringButtonRow}>
               <TouchableOpacity
                 style={styles.recurringActionButton}

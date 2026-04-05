@@ -273,7 +273,7 @@ const CartPage = ({ insideTabContainer = false, isFocused = true, navigation: na
       <Text style={styles.emptyTitle}>Your cart is empty</Text>
       <Text style={styles.emptySubtitle}>Add a drink to get started</Text>
       <TouchableOpacity
-        onPress={() => navigation.navigate('GeneralHome')}
+        onPress={() => tabNav.navigateToTab(1)}
         style={styles.primaryButton}
       >
         <Text style={styles.primaryButtonText}>Browse Drinks</Text>

@@ -153,11 +153,15 @@ class RevenueSerializer(serializers.ModelSerializer):
 
 class RecurringOrderSerializer(serializers.ModelSerializer):
     drinks = serializers.PrimaryKeyRelatedField(many=True, queryset=Drink.objects.all())
+    drink_names = serializers.SerializerMethodField()
 
     class Meta:
         model = RecurringOrder
-        fields = ['id', 'user', 'drinks', 'interval', 'unit', 'days',
+        fields = ['id', 'user', 'drinks', 'drink_names', 'interval', 'unit', 'days',
                   'end_type', 'end_date', 'occurrences', 'total_price', 'status', 'created_at']
+
+    def get_drink_names(self, obj):
+        return list(obj.drinks.values_list('Name', flat=True))
 
     def create(self, validated_data):
         drinks = validated_data.pop('drinks')
