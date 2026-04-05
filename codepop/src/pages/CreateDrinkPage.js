@@ -220,21 +220,13 @@ const CreateDrinkPage = ({ insideTabContainer = false, isFocused = true, navigat
 
     const drinkToEdit = currentDrinkToEdit;
     const body = JSON.stringify({
-      Name: resolvedName,
+      Name: drinkToEdit ? "Updated Drink" : resolvedName,
       SodaUsed, SyrupsUsed, AddIns,
       Price: 2.00, User_Created: true,
       Size: selectedSize, Ice: selectedIce,
     });
 
     try {
-      const drinkToEdit = currentDrinkToEdit;
-      const body = JSON.stringify({
-        Name: drinkToEdit ? "Updated Drink" : "Drink in User Cart",
-        SodaUsed, SyrupsUsed, AddIns,
-        Price: 2.00, User_Created: true,
-        Size: selectedSize, Ice: selectedIce,
-      });
-
       if (drinkToEdit) {
         // PUT — update existing drink, no cart list change needed
         const response = await fetch(`${getBaseURL()}/backend/drinks/${drinkToEdit.DrinkID}/`, {
