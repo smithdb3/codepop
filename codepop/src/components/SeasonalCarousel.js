@@ -10,6 +10,7 @@ import TabNavigationContext from '../context/TabNavigationContext';
 const { width: windowWidth } = Dimensions.get('window');
 const CARD_HEIGHT = 290;
 const CARD_HEIGHT_EXPANDED = 360;
+const CARD_HEIGHT_FULL = 470;
 
 const SeasonalCarousel = ({ readOnly = false }) => {
     const navigation = useNavigation();
@@ -24,6 +25,12 @@ const SeasonalCarousel = ({ readOnly = false }) => {
     const [selectedSizes, setSelectedSizes] = useState({});
     const [addingId, setAddingId] = useState(null);
     const [successId, setSuccessId] = useState(null);
+
+    const getCardHeight = () => {
+        if (isExpanded && showSizePicker) return CARD_HEIGHT_FULL;
+        if (isExpanded || showSizePicker) return CARD_HEIGHT_EXPANDED;
+        return CARD_HEIGHT;
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -231,7 +238,7 @@ const SeasonalCarousel = ({ readOnly = false }) => {
     };
 
     return (
-        <View style={[styles.wrapper, { height: (isExpanded || showSizePicker) ? CARD_HEIGHT_EXPANDED : CARD_HEIGHT }]} onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
+        <View style={[styles.wrapper, { height: getCardHeight() }]} onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>
             {isLoading ? (
                 <Text style={styles.emptyText}>Loading seasonal drinks...</Text>
             ) : data.length === 0 ? (
@@ -239,7 +246,7 @@ const SeasonalCarousel = ({ readOnly = false }) => {
             ) : (
                 <Carousel
                     width={containerWidth}
-                    height={(isExpanded || showSizePicker) ? CARD_HEIGHT_EXPANDED : CARD_HEIGHT}
+                    height={getCardHeight()}
                     autoPlay={true}
                     autoPlayInterval={4000}
                     scrollAnimationDuration={800}

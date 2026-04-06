@@ -619,8 +619,9 @@ class DrinkOperations(viewsets.ModelViewSet):
         # Retrieve the drink object to be updated
         drink = self.get_object()
 
-        # Use the serializer to validate and update the data
-        serializer = self.get_serializer(drink, data=request.data)
+        # Use the serializer to validate and update the data (with partial=True for PATCH)
+        partial = kwargs.pop('partial', False)
+        serializer = self.get_serializer(drink, data=request.data, partial=partial)
 
         # Validate the data (including Ice and Size field checks)
         if serializer.is_valid():
@@ -633,7 +634,7 @@ class DrinkOperations(viewsets.ModelViewSet):
             # Handle adding/removing favorites
             favorite_to_add = request.data.get("addFavorite", [])
             favorite_to_remove = request.data.get("removeFavorite", [])
-            
+
             if favorite_to_add:
                 drink.addFavorite(favorite_to_add)
             if favorite_to_remove:
@@ -647,6 +648,13 @@ class DrinkOperations(viewsets.ModelViewSet):
         else:
             # Return a 400 Bad Request if validation fails
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        Handle PATCH requests for partial updates.
+        """
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         # Custom logic for deleting a drink (optional for customization)
