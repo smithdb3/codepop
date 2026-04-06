@@ -326,8 +326,6 @@ const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigat
         const homeStoreEndpoint = await AsyncStorage.getItem('homeStoreEndpoint');
         const homeStoreId = await AsyncStorage.getItem('homeStoreId');
 
-        console.log('DEBUG: Auth state:', { storedName, token, userRole, selectedEndpoint, homeToken, homeStoreEndpoint, homeStoreId });
-
         if (cancelled) return;
 
         if (!selectedEndpoint) {

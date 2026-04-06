@@ -43,8 +43,6 @@ const AuthPage = ({ navigation, route }) => {
       if (response.status === 200) {
           const data = await response.json();
 
-          console.log('Login response:', JSON.stringify(data));
-          console.log('data.visiting:', data.visiting, 'typeof:', typeof data.visiting);
           await AsyncStorage.setItem('userToken', data.token);
           await AsyncStorage.setItem('userId', data.user_id.toString());
           await AsyncStorage.setItem('first_name', data.first_name);
@@ -54,12 +52,9 @@ const AuthPage = ({ navigation, route }) => {
           if (!data.visiting) {
             const homeEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint') || getBaseURL();
             const homeStoreId = await AsyncStorage.getItem('selectedStoreId');
-            console.log('Home login detected. Saving homeToken. Endpoint:', homeEndpoint, 'StoreId:', homeStoreId);
             await AsyncStorage.setItem('homeToken', data.token);
             await AsyncStorage.setItem('homeStoreEndpoint', homeEndpoint);
             await AsyncStorage.setItem('homeStoreId', homeStoreId || '');
-          } else {
-            console.log('Visiting login detected. NOT saving homeToken.');
           }
 
           if(data.userRole === 'admin'){
@@ -77,7 +72,6 @@ const AuthPage = ({ navigation, route }) => {
           setIsLoading(false);
       }
     } catch (error) {
-      console.error(error);
       Alert.alert('Login failed. Please try again later.');
       setIsLoading(false);
     }
