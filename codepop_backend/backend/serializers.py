@@ -177,7 +177,7 @@ class MachineSerializer(serializers.ModelSerializer):
 class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedule
-        fields = ['machine','assigned_to', 'scheduled_at', 'completed_at', 'description']
+        fields = ['id', 'machine','assigned_to', 'scheduled_at', 'completed_at', 'description']
 
 
 # ─────────────────────────────────────────────

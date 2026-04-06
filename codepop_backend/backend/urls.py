@@ -124,7 +124,7 @@ get_schedules = ScheduleOperations.as_view({'get': 'get_user_schedules'})
 
 schedule_list = ScheduleOperations.as_view({'get': 'list', 'post': 'create'})
 
-schedule_detail = ScheduleOperations.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
+schedule_detail = ScheduleOperations.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy', 'patch': 'partial_update'})
 
 user_operations = UserOperations.as_view({
     'get': 'get',

@@ -1423,7 +1423,7 @@ class MachineOperations(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def update_status(self, request, pk=None):
-        machine = self.get_object()
+        machine = Machine.objects.get(machine_id=pk)
         new_status = request.data.get('status')
 
         if new_status not in dict(Machine.STATUS_CHOICES):
@@ -1456,9 +1456,10 @@ class ScheduleOperations(viewsets.ModelViewSet):
     
     # Returns all the schedules associated with a user
     def get_user_schedules(self, request):
-        user_schedules = Schedule.objects.filter(assigned_to=request.user)
+        user_schedules = Schedule.objects.filter(assigned_to=request.user, completed_at__isnull=True)
         serializer = self.get_serializer(user_schedules, many=True)
         return Response(serializer.data)
+
 
 # ─────────────────────────────────────────────
 # ADMIN DASHBOARD VIEWS

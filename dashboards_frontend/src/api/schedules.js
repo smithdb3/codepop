@@ -30,7 +30,6 @@ export async function getSchedules() {
 export async function createSchedule(scheduleData) {
     try {
       const url = `${BASE_URL}/backend/schedules/`;
-      console.log(TOKEN);
       const response = await fetch(url, {
           method: 'POST',
           headers: {
@@ -52,7 +51,26 @@ export async function createSchedule(scheduleData) {
     }
 }
 
-export async function updateSchedule(scheduleId, updates) {
-  console.warn('Update schedule endpoint not yet implemented');
-  return null;
+export async function setCompletion(scheduleId) {
+    try {
+      const url = `${BASE_URL}/backend/schedules/${scheduleId}/`;
+      const response = await fetch(url, {
+          method: 'PATCH',
+          headers: {
+              'Authorization': `Token ${TOKEN}`,
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({'completed_at': new Date().toISOString()}),
+      });
+
+      if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      throw error;
+    }
 }

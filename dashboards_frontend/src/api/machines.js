@@ -4,10 +4,10 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Stub: Phase 5 - endpoint not yet implemented in backend
 // Gets a machine using an id
-export async function getMachine(machine_id) {
+export async function getMachine(machineId) {
   try {
       const token = localStorage.getItem('cp_token');
-      const url = `${BASE_URL}/backend/machines/${machine_id}`;
+      const url = `${BASE_URL}/backend/machines/${machineId}`;
 
       const response = await fetch(url, {
           method: 'GET',
@@ -29,10 +29,10 @@ export async function getMachine(machine_id) {
     }
 }
 
-export async function getMachinePair(machine_id) {
+export async function getMachinePair(machineId) {
   try {
       const token = localStorage.getItem('cp_token');
-      const url = `${BASE_URL}/backend/machines/${machine_id}/special-operations/`;
+      const url = `${BASE_URL}/backend/machines/${machineId}/special-operations/`;
 
       const response = await fetch(url, {
           method: 'GET',
@@ -86,6 +86,27 @@ export async function getMachineDetail(machineId) {
 }
 
 export async function updateMachineStatus(machineId, status) {
-  console.warn('Update machine status endpoint not yet implemented');
-  return null;
+  try {
+      const token = localStorage.getItem('cp_token');
+      const url = `${BASE_URL}/backend/machines/${machineId}/special-operations/`;
+
+      const response = await fetch(url, {
+          method: 'PATCH',
+          headers: {
+              'Authorization': `Token ${token}`,
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({'status':status}),
+      });
+
+      if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      throw error;
+        }
 }
