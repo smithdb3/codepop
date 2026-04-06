@@ -1,23 +1,23 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { getBaseURL } from '../../ip_address';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
+import React, { useState, useEffect, useContext } from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import NavBar from '../components/NavBar';
 import SeasonalCarousel from '../components/SeasonalCarousel';
 import { CodePopLogo } from '../components/CodePopLogo';
 import StoreSelectionModal from '../components/StoreSelectionModal';
+import DrinkNameModal from '../components/DrinkNameModal';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../theme';
+import TabNavigationContext from '../context/TabNavigationContext';
+import { getBaseURL } from '../../ip_address';
 
-const SAVED_DRINKS = [
-  { id: 1, name: 'Cherry Fizz', description: 'Cherry syrup + lemon-lime soda', price: 4.99 },
-  { id: 2, name: 'Mango Sunrise', description: 'Mango syrup + coconut water + cream soda', price: 5.49 },
-  { id: 3, name: 'Mint Glacier', description: 'Mint syrup + club soda + blue raspberry', price: 4.75 },
-];
-
-const GeneralHomePage = () => {
+const GeneralHomePage = ({ insideTabContainer = false, isFocused = true, navigation: navProp }) => {
   const { colors } = useTheme();
+  const hookNavigation = useNavigation();
+  const isNavFocused = useIsFocused();
+  const navigation = navProp ?? hookNavigation;
+  const tabNav = useContext(TabNavigationContext);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isManager, setIsManager] = useState(false);
@@ -27,7 +27,13 @@ const GeneralHomePage = () => {
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [selectedStoreName, setSelectedStoreName] = useState(null);
   const [storePickerRequired, setStorePickerRequired] = useState(false);
-  const navigation = useNavigation();
+  const [savedDrinks, setSavedDrinks] = useState([]);
+  const [savedDrinksLoading, setSavedDrinksLoading] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [addingDrinkId, setAddingDrinkId] = useState(null);
+
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [drinkToRename, setDrinkToRename] = useState(null);
 
   const makeStyles = (colors) => StyleSheet.create({
     container: {
@@ -274,105 +280,91 @@ const GeneralHomePage = () => {
       fontSize: 14,
       fontWeight: '600',
     },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 12,
+    },
+    buttonContainer: {
+      gap: 12,
+    },
   });
 
   const styles = makeStyles(colors);
 
-  // Check login status and store selection when the screen gains focus
-  useFocusEffect(
-    React.useCallback(() => {
-      let cancelled = false;
-
-      const checkLoginStatus = async () => {
-        try {
-          const storedName = await AsyncStorage.getItem('first_name');
-          const token = await AsyncStorage.getItem('userToken');
-          const userRole = await AsyncStorage.getItem('userRole');
-          const selectedEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint');
-          const storeName = await AsyncStorage.getItem('selectedStoreName');
-
-          if (cancelled) return;
-
-          if (!selectedEndpoint) {
-            setStorePickerRequired(true);
-            setShowStoreModal(true);
-          } else {
-            setStorePickerRequired(false);
-            setSelectedStoreName(storeName);
-          }
-
-          if (token && storedName) {
-            setIsLoggedIn(true);
-            setName(storedName);
-          } else {
-            setIsLoggedIn(false);
-          }
-          if (userRole == 'admin'){
-            setIsAdmin(true);
-          }else if(userRole == 'manager'){
-            setIsManager(true);
-          }else{
-            setIsAdmin(false);
-            setIsManager(false);
-          }
-        } catch (error) {
-          console.error('Error checking login status:', error);
-        }
-      };
-
-      checkLoginStatus();
-      return () => {
-        cancelled = true;
-      };
-    }, [])
-  );
-
-  // Logout function
-  const handleLogout = async () => {
+  // Fetch saved drinks for the user
+  const fetchSavedDrinks = async (uid) => {
+    setSavedDrinksLoading(true);
     try {
-      // Send logout request to the backend
       const token = await AsyncStorage.getItem('userToken');
-      console.log('Token for logout:', token ? token.substring(0, 10) + '...' : 'null');
-      console.log('Base URL:', getBaseURL());
-
-      const response = await fetch(`${getBaseURL()}/backend/auth/logout/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
+      const res = await fetch(`${getBaseURL()}/backend/users/${uid}/drinks/`, {
+        headers: { 'Authorization': `Token ${token}` },
       });
-
-      console.log('Logout response status:', response.status);
-      const responseData = await response.json().catch(() => null);
-      console.log('Logout response:', responseData);
-
-      // Clear AsyncStorage on success (200) or if token is already invalid (401)
-      if (response.status === 200 || response.status === 401) {
-        await AsyncStorage.removeItem('userToken');
-        await AsyncStorage.removeItem('userId');
-        await AsyncStorage.removeItem('first_name');
-        await AsyncStorage.removeItem('userRole');
-
-        setIsLoggedIn(false);
-        setName(null);
-        setIsAdmin(false);
-        setIsManager(false);
-
-        Alert.alert(
-          'Logout successful!',
-          '',
-          [{ text: 'OK', onPress: () => navigation.navigate('GeneralHome') }],
-          { cancelable: false }
-        );
-      } else {
-        Alert.alert('Logout failed, please try again.');
-      }
-    } catch (error) {
-      console.error('Error during logout:', error);
-      Alert.alert('Logout failed, please try again later.');
+      if (!res.ok) throw new Error(`${res.status}`);
+      setSavedDrinks(await res.json());
+    } catch (e) {
+      console.error('fetchSavedDrinks:', e);
+    } finally {
+      setSavedDrinksLoading(false);
     }
   };
+
+  // Check login status and store selection when the screen gains focus
+  useEffect(() => {
+    if (!isFocused || !isNavFocused) return;
+    let cancelled = false;
+
+    const checkLoginStatus = async () => {
+      try {
+        const storedName = await AsyncStorage.getItem('first_name');
+        const token = await AsyncStorage.getItem('userToken');
+        const userRole = await AsyncStorage.getItem('userRole');
+        const selectedEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint');
+        const storeName = await AsyncStorage.getItem('selectedStoreName');
+        const homeToken = await AsyncStorage.getItem('homeToken');
+        const homeStoreEndpoint = await AsyncStorage.getItem('homeStoreEndpoint');
+        const homeStoreId = await AsyncStorage.getItem('homeStoreId');
+
+        console.log('DEBUG: Auth state:', { storedName, token, userRole, selectedEndpoint, homeToken, homeStoreEndpoint, homeStoreId });
+
+        if (cancelled) return;
+
+        if (!selectedEndpoint) {
+          setStorePickerRequired(true);
+          setShowStoreModal(true);
+        } else {
+          setStorePickerRequired(false);
+          setSelectedStoreName(storeName);
+        }
+
+        if (token && storedName) {
+          setIsLoggedIn(true);
+          setName(storedName);
+          const uid = await AsyncStorage.getItem('userId');
+          setUserId(uid);
+          if (uid) fetchSavedDrinks(uid);
+        } else {
+          setIsLoggedIn(false);
+        }
+        if (userRole == 'admin') {
+          setIsAdmin(true);
+        } else if (userRole == 'manager') {
+          setIsManager(true);
+        } else {
+          setIsAdmin(false);
+          setIsManager(false);
+        }
+      } catch (error) {
+        console.error('Error checking login status:', error);
+      }
+    };
+
+    checkLoginStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, [isFocused, isNavFocused]);
 
   // Login button press
   const goToLoginPage = () => {
@@ -390,7 +382,11 @@ const GeneralHomePage = () => {
   // Generate drinks button press
   const generateDrinks = () => {
     console.log('generating drinks...');
-    navigation.navigate('CreateDrink', {fromGenerateButton: true} );
+    if (tabNav && tabNav.navigateToTab) {
+      tabNav.navigateToTab(1, { generateDrink: true }); // Navigate to Design tab and trigger generation
+    } else {
+      navigation.navigate('CreateDrink', { fromGenerateButton: true });
+    }
   }
 
   const handleToggleSizeSelector = (drinkId) => {
@@ -407,47 +403,150 @@ const GeneralHomePage = () => {
     }));
   };
 
-  const renderDrinkCard = (drink) => (
-    <View key={drink.id} style={styles.drinkCard}>
-      <Text style={styles.drinkName}>{drink.name}</Text>
-      <Text style={styles.drinkDescription}>{drink.description}</Text>
-      <Text style={styles.drinkPrice}>${drink.price}</Text>
+  const handleUnfavorite = async (drinkId) => {
+    setSavedDrinks(prev => prev.filter(d => d.DrinkID !== drinkId)); // optimistic update
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const res = await fetch(`${getBaseURL()}/backend/users/${userId}/favorites/${drinkId}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
+        body: JSON.stringify({ action: 'remove' }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+    } catch (e) {
+      console.error('handleUnfavorite:', e);
+      Alert.alert('Error', 'Could not remove drink. Please try again.');
+      fetchSavedDrinks(userId); // restore on failure
+    }
+  };
 
-      <View style={styles.drinkActions}>
-        <TouchableOpacity style={styles.deleteButton}>
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => handleToggleSizeSelector(drink.id)}
-        >
-          <Text style={styles.primaryButtonText}>Add to Cart</Text>
-        </TouchableOpacity>
-      </View>
+  const handleRenameConfirm = async (name) => {
+    setRenameModalVisible(false);
+    if (!drinkToRename || !name.trim()) return;
+    // Optimistic update
+    setSavedDrinks(prev => prev.map(d =>
+      d.DrinkID === drinkToRename.DrinkID ? { ...d, Name: name.trim() } : d
+    ));
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const res = await fetch(`${getBaseURL()}/backend/drinks/${drinkToRename.DrinkID}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
+        body: JSON.stringify({ Name: name.trim() }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+    } catch (e) {
+      console.error('handleRenameConfirm:', e);
+      Alert.alert('Error', 'Could not rename drink. Please try again.');
+      fetchSavedDrinks(userId); // revert on failure
+    }
+    setDrinkToRename(null);
+  };
 
-      {showSizeSelector[drink.id] && (
-        <View style={styles.sizeSelector}>
-          {['S', 'M', 'L'].map(size => (
-            <TouchableOpacity
-              key={size}
-              style={[
-                styles.sizeOption,
-                selectedSize[drink.id] === size && styles.sizeOptionSelected
-              ]}
-              onPress={() => handleSelectSize(drink.id, size)}
-            >
-              <Text style={[
-                styles.sizeOptionText,
-                selectedSize[drink.id] === size && styles.sizeOptionSelectedText
-              ]}>
-                {size}
-              </Text>
-            </TouchableOpacity>
-          ))}
+  const handleAddSavedDrinkToCart = async (drink, size) => {
+    if (addingDrinkId === drink.DrinkID) return;
+
+    setAddingDrinkId(drink.DrinkID);
+    try {
+      const res = await fetch(`${getBaseURL()}/backend/drinks/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          Name: drink.Name || 'Saved Drink',
+          SodaUsed: drink.SodaUsed,
+          SyrupsUsed: drink.SyrupsUsed || [],
+          AddIns: drink.AddIns || [],
+          Price: 2.00,
+          User_Created: true,
+          Size: size,
+          Ice: drink.Ice || 'regular',
+        }),
+      });
+      if (!res.ok) throw new Error(`${res.status}`);
+      const data = await res.json();
+      const cartRaw = await AsyncStorage.getItem('checkoutList');
+      const cart = cartRaw ? JSON.parse(cartRaw) : [];
+      await AsyncStorage.setItem('checkoutList', JSON.stringify([...cart, data.DrinkID]));
+      // Close size selector and navigate to cart
+      setShowSizeSelector({});
+      if (tabNav?.navigateToTab) tabNav.navigateToTab(2);
+      else navigation.navigate('Cart');
+    } catch (e) {
+      console.error('handleAddSavedDrinkToCart:', e);
+      Alert.alert('Error', 'Could not add to cart. Please try again.');
+    } finally {
+      setAddingDrinkId(null);
+    }
+  };
+
+  const renderDrinkCard = (drink) => {
+    const sizeChosen = selectedSize[drink.DrinkID];
+    const sizeOpen = showSizeSelector[drink.DrinkID];
+    const description = [
+      ...(drink.SodaUsed || []),
+      ...(drink.SyrupsUsed || []),
+      ...(drink.AddIns || []),
+    ].join(' + ');
+
+    return (
+      <View key={drink.DrinkID} style={styles.drinkCard}>
+        <Text style={styles.drinkName}>{drink.Name || 'Custom Drink'}</Text>
+        <Text style={styles.drinkDescription}>{description}</Text>
+
+        <View style={styles.drinkActions}>
+          <TouchableOpacity style={styles.deleteButton} onPress={() => handleUnfavorite(drink.DrinkID)}>
+            <Icon name="heart-dislike-outline" size={16} color="#FFFFFF" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => { setDrinkToRename(drink); setRenameModalVisible(true); }}
+            style={[styles.secondaryButton, { flex: 0, paddingHorizontal: 10 }]}
+          >
+            <Icon name="pencil-outline" size={16} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() => handleToggleSizeSelector(drink.DrinkID)}
+          >
+            <Text style={styles.primaryButtonText}>{sizeOpen ? 'Cancel' : 'Add to Cart'}</Text>
+          </TouchableOpacity>
         </View>
-      )}
-    </View>
-  );
+
+        {sizeOpen && (
+          <View style={styles.sizeSelector}>
+            {['16oz', '24oz', '32oz'].map(size => (
+              <TouchableOpacity
+                key={size}
+                style={[
+                  styles.sizeOption,
+                  sizeChosen === size && styles.sizeOptionSelected
+                ]}
+                onPress={() => handleSelectSize(drink.DrinkID, size)}
+              >
+                <Text style={[
+                  styles.sizeOptionText,
+                  sizeChosen === size && styles.sizeOptionSelectedText
+                ]}>
+                  {size}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {sizeOpen && sizeChosen && (
+          <TouchableOpacity
+            style={[styles.primaryButton, { marginTop: 8 }, addingDrinkId === drink.DrinkID && { opacity: 0.5 }]}
+            disabled={addingDrinkId === drink.DrinkID}
+            onPress={() => handleAddSavedDrinkToCart(drink, sizeChosen)}
+          >
+            <Text style={styles.primaryButtonText}>
+              {addingDrinkId === drink.DrinkID ? 'Adding...' : `Confirm — ${sizeChosen}`}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   const handleStoreModalClose = async (meta) => {
     if (meta && meta.cancelled === false) {
@@ -458,19 +557,30 @@ const GeneralHomePage = () => {
     setSelectedStoreName(storeName);
   };
 
+  const Root = insideTabContainer ? View : SafeAreaView;
+
   return (
-    <SafeAreaView style={styles.container}>
+    <Root style={styles.container}>
       <StoreSelectionModal
         visible={showStoreModal}
         onClose={handleStoreModalClose}
         requireSelection={storePickerRequired}
       />
+      <DrinkNameModal
+        visible={renameModalVisible}
+        initialName={drinkToRename?.Name || ''}
+        title="Rename Drink"
+        onConfirm={handleRenameConfirm}
+        onDismiss={() => { setRenameModalVisible(false); setDrinkToRename(null); }}
+      />
       {isLoggedIn ? (
         <>
-          <View style={styles.customHeader}>
-            <CodePopLogo size={32} />
-          </View>
-          <ScrollView contentContainerStyle={styles.contentContainer}>
+          {!insideTabContainer && (
+            <View style={styles.customHeader}>
+              <CodePopLogo size={32} />
+            </View>
+          )}
+          <ScrollView contentContainerStyle={[styles.contentContainer, insideTabContainer && { paddingBottom: 50 }]}>
             {selectedStoreName && (
               <TouchableOpacity
                 style={{
@@ -520,14 +630,25 @@ const GeneralHomePage = () => {
             </View>
 
             <View style={styles.savedDrinksSection}>
-              <Text style={styles.sectionTitle}>Saved Drinks</Text>
-              {SAVED_DRINKS.map(drink => renderDrinkCard(drink))}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text style={styles.savedDrinksSectionTitle}>Saved Drinks</Text>
+                {savedDrinksLoading && (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                )}
+              </View>
+
+              {!savedDrinksLoading && savedDrinks.length === 0 && (
+                <View style={{ padding: 16, backgroundColor: colors.surface2, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center' }}>
+                    No saved drinks yet. Create a drink and tap "Save" to add it here.
+                  </Text>
+                </View>
+              )}
+
+              {savedDrinks.map(drink => renderDrinkCard(drink))}
             </View>
 
             <View style={styles.buttonContainer}>
-              <TouchableOpacity onPress={handleLogout} style={styles.secondaryButton}>
-                <Text style={styles.secondaryButtonText}>Logout</Text>
-              </TouchableOpacity>
               {isAdmin && (
                 <TouchableOpacity onPress={goToAdminDash} style={styles.secondaryButton}>
                   <Text style={styles.secondaryButtonText}>Admin Dash</Text>
@@ -542,7 +663,7 @@ const GeneralHomePage = () => {
           </ScrollView>
         </>
       ) : (
-        <ScrollView contentContainerStyle={styles.notSignedInContainer}>
+        <ScrollView contentContainerStyle={[styles.notSignedInContainer, insideTabContainer && { paddingBottom: 80 }]}>
           {/* Logo at top */}
           <View style={styles.logoBlock}>
             <CodePopLogo size={64} />
@@ -569,8 +690,8 @@ const GeneralHomePage = () => {
           </View>
         </ScrollView>
       )}
-      <NavBar />
-    </SafeAreaView>
+      {!insideTabContainer && <NavBar />}
+    </Root>
   );
 };
 

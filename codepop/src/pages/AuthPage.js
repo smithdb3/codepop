@@ -43,9 +43,25 @@ const AuthPage = ({ navigation, route }) => {
       if (response.status === 200) {
           const data = await response.json();
 
+          console.log('Login response:', JSON.stringify(data));
+          console.log('data.visiting:', data.visiting, 'typeof:', typeof data.visiting);
           await AsyncStorage.setItem('userToken', data.token);
           await AsyncStorage.setItem('userId', data.user_id.toString());
           await AsyncStorage.setItem('first_name', data.first_name);
+          await AsyncStorage.setItem('userEmail', trimmed);
+
+          // If this is a home login (not visiting), store the home token and endpoint for future exchanges
+          if (!data.visiting) {
+            const homeEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint') || getBaseURL();
+            const homeStoreId = await AsyncStorage.getItem('selectedStoreId');
+            console.log('Home login detected. Saving homeToken. Endpoint:', homeEndpoint, 'StoreId:', homeStoreId);
+            await AsyncStorage.setItem('homeToken', data.token);
+            await AsyncStorage.setItem('homeStoreEndpoint', homeEndpoint);
+            await AsyncStorage.setItem('homeStoreId', homeStoreId || '');
+          } else {
+            console.log('Visiting login detected. NOT saving homeToken.');
+          }
+
           if(data.userRole === 'admin'){
             await AsyncStorage.setItem('userRole', 'admin');
             navigation.navigate('AdminDash');
@@ -74,6 +90,18 @@ const AuthPage = ({ navigation, route }) => {
       alignItems: 'center',
       padding: 20,
       backgroundColor: colors.surface,
+    },
+    backButton: {
+      position: 'absolute',
+      top: 16,
+      left: 16,
+      padding: 8,
+      zIndex: 10,
+    },
+    backButtonText: {
+      fontSize: 24,
+      color: colors.textPrimary,
+      fontWeight: '600',
     },
     title: {
       fontSize: 28,
@@ -145,6 +173,9 @@ const AuthPage = ({ navigation, route }) => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Text style={styles.backButtonText}>‹</Text>
+      </TouchableOpacity>
       <View style={{ marginBottom: 32 }}>
         <CodePopLogo size={64} />
       </View>

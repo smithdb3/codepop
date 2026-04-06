@@ -7,16 +7,24 @@ from .hub_views import (
 from .internode_views import (
     InterNodeUserExistsView, InterNodeUserSyncView,
     InterNodeProfileUpdateView, InterNodeHealthCheckView,
+    InterNodeTokenVerifyView,
 )
-from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken, CheckEmailView
+from .views import CreateUserAPIView, LogoutUserAPIView, CustomAuthToken, CheckEmailView, UserSelfUpdateView, AuthTokenExchangeView
 from .views import StripePaymentIntentView, StripeConfigView
 from .views import UserPreferenceLookup, PreferencesOperations
-from .views import DrinkOperations, UserDrinksLookup
+from .views import (
+    DrinkOperations,
+    UserDrinksLookup,
+    UserFavoriteToggleView,
+    SeasonalDrinkListView,
+    IngredientsListView
+)
 from .views import InventoryListAPIView, InventoryReportAPIView, InventoryUpdateAPIView
 from .views import NotificationOperations, UserNotificationLookup
 from .views import OrderOperations, UserOrdersLookup
+from .views import RecurringOrderOperations, UserRecurringOrdersLookup
 from .customerAI import Chatbot
-from .views import GenerateAIDrink
+from .views import GenerateAIDrink, NameDrinkView
 from .views import RevenueViewSet, NationalRevenueView
 from .views import UserOperations
 from .views import emailAPI
@@ -90,6 +98,18 @@ order_detail = OrderOperations.as_view({
     'delete': 'destroy'
 })
 
+recurring_order_list = RecurringOrderOperations.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+
+recurring_order_detail = RecurringOrderOperations.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'patch': 'partial_update',
+    'delete': 'destroy'
+})
+
 revenue_list = RevenueViewSet.as_view({'get': 'list', 'post': 'create'})
 
 revenue_details = RevenueViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
@@ -127,6 +147,10 @@ urlpatterns = [
     # - POST: Logs out the user by invalidating the auth token.
     path('auth/logout/', LogoutUserAPIView.as_view(), name='auth_user_logout'),
 
+    # Endpoint for token exchange (cross-store switching)
+    # - POST: Exchanges a home-store token for a visiting shadow token at a new store
+    path('auth/exchange/', AuthTokenExchangeView.as_view(), name='auth_token_exchange'),
+
     # Endpoint to check if email exists
     # - POST: Checks if an email is already registered.
     path('auth/check-email/', CheckEmailView.as_view(), name='auth_check_email'),
@@ -162,6 +186,17 @@ urlpatterns = [
 
     # Retrieve Drinks by UserID
     path('users/<int:user_id>/drinks/', UserDrinksLookup.as_view(), name='user drink list'),
+
+    # Toggle favorite for a drink (int for home users, UUID for visiting users)
+    path('users/<int:user_id>/favorites/<str:drink_id>/', UserFavoriteToggleView.as_view(), name='user_favorite_toggle'),
+
+    # Seasonal Drinks
+    # - GET: Retrieve all active seasonal drinks for the carousel
+    path('seasonal-drinks/', SeasonalDrinkListView.as_view(), name='seasonal_drinks_list'),
+
+    # Ingredients
+    # - GET: Retrieve all ingredient names grouped by type (sodas, syrups, add_ins)
+    path('ingredients/', IngredientsListView.as_view(), name='ingredients_list'),
 
     #inventory related URLs
     # Endpoint to list all drinks created by a specific user identified by their user ID.
@@ -226,6 +261,11 @@ urlpatterns = [
     # - DELETE: Remove the specific order from the database for the specified user.
     path('users/<int:user_id>/orders/<int:pk>/', order_detail, name='user_order_detail'),
 
+    # Recurring Order URLs
+    path('recurring-orders/', recurring_order_list, name='recurring_order_list_create'),
+    path('recurring-orders/<int:pk>/', recurring_order_detail, name='recurring_order_detail'),
+    path('users/<int:user_id>/recurring-orders/', UserRecurringOrdersLookup.as_view(), name='user_recurring_orders_list'),
+
     # Customer Service Chatbot
     # - POST: Send the User response and get back what the chatbot says
     path('chatbot/', Chatbot.as_view(), name='chatbot'),
@@ -237,6 +277,10 @@ urlpatterns = [
     
     # For general users: no user_id provided
     path('generate/', GenerateAIDrink.as_view(), name='general_ai_drink'),
+
+    # Endpoint to generate a drink name from ingredients
+    # - POST: Body { "sodas": [...], "syrups": [...], "addins": [...] }
+    path('name-drink/', NameDrinkView.as_view(), name='name_drink'),
 
     # Revenue related URLs
     # Endpoint to list all revenues or create a new revenue.
@@ -281,6 +325,11 @@ urlpatterns = [
 
     # - GET: Returns the schedules associated with a user
     path('schedules/get_user_schedules/', get_schedules, name='get_schedules'),
+
+    # Self-service user profile endpoint
+    # - GET: Retrieve current user profile (username, email, first_name)
+    # - POST: Update current user's username or password
+    path('users/me/', UserSelfUpdateView.as_view(), name='user_self_update'),
 
     # Endpoint to do operations on user accounts for the Admin Dashboard
     # - GET: Retrieve a list of all users
@@ -384,5 +433,6 @@ urlpatterns = [
     path('api/inter-node/user-exists/',    InterNodeUserExistsView.as_view(),    name='internode_user_exists'),
     path('api/inter-node/user-sync/',      InterNodeUserSyncView.as_view(),      name='internode_user_sync'),
     path('api/inter-node/profile-update/', InterNodeProfileUpdateView.as_view(), name='internode_profile_update'),
+    path('api/inter-node/token-verify/',   InterNodeTokenVerifyView.as_view(),   name='internode_token_verify'),
     path('api/inter-node/health-check/',   InterNodeHealthCheckView.as_view(),   name='internode_health_check'),
 ]

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -8,17 +8,22 @@ import {
   TextInput,
   Alert,
   Switch,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/NavBar';
 import { getBaseURL } from '../../ip_address';
 import { useTheme } from '../theme';
 import StoreSelectionModal from '../components/StoreSelectionModal';
+import TabNavigationContext from '../context/TabNavigationContext';
 
-const PreferencesPage = () => {
-  const navigation = useNavigation();
+const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigation: navProp }) => {
+  const navigation = navProp || useNavigation();
+  const isNavFocused = useIsFocused();
+  const tabNav = useContext(TabNavigationContext);
   const { colors, themeMode, setThemeMode } = useTheme();
 
   // Auth & User State
@@ -27,6 +32,7 @@ const PreferencesPage = () => {
   const [userEmail, setUserEmail] = useState('');
   const [userId, setUserId] = useState('');
   const [userToken, setUserToken] = useState('');
+  const [username, setUsername] = useState('');
 
   // Tab State
   const [activeTab, setActiveTab] = useState('location');
@@ -34,9 +40,9 @@ const PreferencesPage = () => {
   const [selectedStoreName, setSelectedStoreName] = useState('');
 
   // Account Settings Form States
-  const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [showChangeUsername, setShowChangeUsername] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
+  const [newUsername, setNewUsername] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -47,19 +53,33 @@ const PreferencesPage = () => {
   const [notifNewItems, setNotifNewItems] = useState(false);
   const [notifPush, setNotifPush] = useState(true);
 
+  // Recurring Orders States
+  const [recurringOrders, setRecurringOrders] = useState([]);
+  const [recurringLoading, setRecurringLoading] = useState(false);
+  const [recurringError, setRecurringError] = useState('');
+  const [showEditRecurringModal, setShowEditRecurringModal] = useState(false);
+  const [selectedRecurringOrder, setSelectedRecurringOrder] = useState(null);
+  const [editInterval, setEditInterval] = useState('1');
+  const [editUnit, setEditUnit] = useState('week');
+  const [editDays, setEditDays] = useState({ S: false, M: false, T: false, W: false, Th: false, F: false, Sa: false });
+  const [editEndType, setEditEndType] = useState('never');
+  const [editEndDate, setEditEndDate] = useState('');
+  const [editOccurrences, setEditOccurrences] = useState('13');
+
   // Load data on focus
-  useFocusEffect(
-    React.useCallback(() => {
-      let isMounted = true;
-      const loadData = async () => {
+  useEffect(() => {
+    if (!isFocused || !isNavFocused) return;
+    let isMounted = true;
+    const loadData = async () => {
+      if (isMounted) {
         await checkLoginStatus();
-      };
-      loadData();
-      return () => {
-        isMounted = false;
-      };
-    }, [])
-  );
+      }
+    };
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [isFocused, isNavFocused]);
 
   const checkLoginStatus = async () => {
     try {
@@ -76,6 +96,20 @@ const PreferencesPage = () => {
         setUserId(id);
         setUserToken(token);
         setSelectedStoreName(storeName || 'Unknown Store');
+
+        // Fetch current username from API
+        try {
+          const response = await fetch(`${getBaseURL()}/backend/users/me/`, {
+            method: 'GET',
+            headers: { 'Authorization': `Token ${token}` },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setUsername(data.email || '');
+          }
+        } catch (err) {
+          console.error('Error fetching username:', err);
+        }
       } else {
         setIsLoggedIn(false);
       }
@@ -83,6 +117,36 @@ const PreferencesPage = () => {
       console.error('Error checking login status:', error);
     }
   };
+
+  const fetchRecurringOrders = async () => {
+    if (!userId || !userToken) return;
+    setRecurringLoading(true);
+    try {
+      const response = await fetch(`${getBaseURL()}/backend/users/${userId}/recurring-orders/`, {
+        method: 'GET',
+        headers: { 'Authorization': `Token ${userToken}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRecurringOrders(Array.isArray(data) ? data : data.results || []);
+        setRecurringError('');
+      } else {
+        setRecurringError('Failed to load recurring orders');
+      }
+    } catch (error) {
+      console.error('Error fetching recurring orders:', error);
+      setRecurringError('Error loading recurring orders');
+    } finally {
+      setRecurringLoading(false);
+    }
+  };
+
+  // Fetch recurring orders when tab becomes active
+  useEffect(() => {
+    if (activeTab === 'recurring' && isLoggedIn) {
+      fetchRecurringOrders();
+    }
+  }, [activeTab, isLoggedIn, userId, userToken]);
 
   // Helper function: password strength
   const getPasswordStrength = (password) => {
@@ -97,15 +161,40 @@ const PreferencesPage = () => {
   };
 
   // Account Settings Handlers
-  const handleSendVerification = () => {
-    if (!newEmail.includes('@')) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address');
+  const handleUpdateUsername = async () => {
+    if (!newUsername.trim()) {
+      Alert.alert('Required', 'Please enter a new email');
       return;
     }
-    Alert.alert('Verification Email', 'Backend integration in progress');
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${getBaseURL()}/backend/users/me/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
+        },
+        body: JSON.stringify({ email: newUsername.trim() }),
+      });
+      let data = {};
+      try { data = await response.json(); } catch (_) {}
+      if (!response.ok) {
+        Alert.alert('Error', data.error || `Failed to update email (${response.status})`);
+        return;
+      }
+      setUsername(data.email);
+      setUserEmail(data.email);
+      await AsyncStorage.setItem('userEmail', data.email);
+      setNewUsername('');
+      setShowChangeUsername(false);
+      Alert.alert('Success', 'Email updated');
+    } catch (e) {
+      console.error('Update email error:', e);
+      Alert.alert('Error', 'Could not update email');
+    }
   };
 
-  const handleUpdatePassword = () => {
+  const handleUpdatePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       Alert.alert('Required Fields', 'All password fields are required');
       return;
@@ -119,12 +208,31 @@ const PreferencesPage = () => {
       Alert.alert('Weak Password', 'Password must be at least 8 characters');
       return;
     }
-    Alert.alert('Update Password', 'Backend integration in progress');
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await fetch(`${getBaseURL()}/backend/users/me/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
+        },
+        body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        Alert.alert('Error', data.error || 'Failed to update password');
+        return;
+      }
+      handleCancelPasswordForm();
+      Alert.alert('Success', 'Password updated');
+    } catch (e) {
+      Alert.alert('Error', 'Could not update password');
+    }
   };
 
-  const handleCancelEmailForm = () => {
-    setNewEmail('');
-    setShowChangeEmail(false);
+  const handleCancelUsernameForm = () => {
+    setNewUsername('');
+    setShowChangeUsername(false);
   };
 
   const handleCancelPasswordForm = () => {
@@ -152,17 +260,12 @@ const PreferencesPage = () => {
         await AsyncStorage.removeItem('userRole');
         await AsyncStorage.removeItem('userEmail');
 
-        Alert.alert(
-          'Logout successful!',
-          '',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('GeneralHome'),
-            },
-          ],
-          { cancelable: false }
-        );
+        setIsLoggedIn(false);
+        setFirstName('');
+        setUserEmail('');
+        setUserId('');
+        setUserToken('');
+        tabNav?.navigateToTab(0);
       } else {
         Alert.alert('Logout failed, please try again.');
       }
@@ -595,12 +698,279 @@ const PreferencesPage = () => {
     navBarSpace: {
       height: 80,
     },
+
+    // Recurring Orders Tab Styles
+    centerContent: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 40,
+    },
+    loadingText: {
+      fontSize: 14,
+      color: colors.textMuted,
+    },
+    recurringCardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    recurringCardTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 8,
+    },
+    recurringCardSchedule: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginBottom: 8,
+    },
+    recurringCardPrice: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.primary,
+      marginBottom: 12,
+    },
+    recurringDrinkNames: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginBottom: 12,
+      fontStyle: 'italic',
+    },
+    recurringButtonRow: {
+      flexDirection: 'row',
+      gap: 8,
+      flexWrap: 'wrap',
+    },
+    recurringActionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      backgroundColor: colors.background,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    recurringActionText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: '#08D9D6',
+    },
+    statusBadge: {
+      backgroundColor: '#D1FAE5',
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 6,
+      alignSelf: 'flex-start',
+    },
+    statusBadgeActive: {
+      backgroundColor: '#D1FAE5',
+    },
+    statusBadgePaused: {
+      backgroundColor: '#FEF3C7',
+    },
+    statusBadgeCancelled: {
+      backgroundColor: '#FEE2E2',
+    },
+    statusBadgeText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: '#065F46',
+    },
+
+    // Modal Styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      padding: 20,
+      paddingBottom: 40,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    modalSection: {
+      marginBottom: 20,
+    },
+    modalSectionTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 12,
+    },
+    modalInputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    modalNumberInput: {
+      width: 50,
+      height: 40,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    modalUnitButtons: {
+      flexDirection: 'row',
+      gap: 8,
+      flex: 1,
+    },
+    modalUnitButton: {
+      flex: 1,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    modalUnitButtonActive: {
+      backgroundColor: colors.secondary,
+      borderColor: colors.secondary,
+    },
+    modalUnitButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textMuted,
+    },
+    modalUnitButtonTextActive: {
+      color: '#FFFFFF',
+    },
+    modalDaysGrid: {
+      flexDirection: 'row',
+      gap: 8,
+      flexWrap: 'wrap',
+    },
+    modalDayButton: {
+      width: '14%',
+      aspectRatio: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+    },
+    modalDayButtonActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    modalDayButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textMuted,
+    },
+    modalDayButtonTextActive: {
+      color: '#FFFFFF',
+    },
+    modalRadioOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      gap: 12,
+    },
+    modalRadio: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: colors.border,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalRadioActive: {
+      borderColor: colors.primary,
+    },
+    modalRadioFill: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.primary,
+    },
+    modalRadioLabel: {
+      fontSize: 13,
+      color: colors.textPrimary,
+      fontWeight: '500',
+      flex: 1,
+    },
+    modalDateInput: {
+      width: 120,
+      height: 36,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      fontSize: 13,
+      color: colors.textPrimary,
+    },
+    modalOccurrencesInput: {
+      width: 60,
+      height: 36,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      fontSize: 13,
+      color: colors.textPrimary,
+      textAlign: 'center',
+    },
+    modalButtonRow: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 20,
+    },
+    modalButtonCancel: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalButtonCancelText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.textPrimary,
+    },
+    modalButtonSave: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    modalButtonSaveText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#FFFFFF',
+    },
   });
 
   const styles = makeStyles(colors);
 
   const renderNotLoggedIn = () => (
-    <View style={styles.wholePage}>
+    <View style={[styles.wholePage, insideTabContainer && { paddingBottom: 50 }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.notLoggedInContainer}>
           <Icon name="lock-closed-outline" size={64} color={colors.emptyIcon} />
@@ -613,7 +983,7 @@ const PreferencesPage = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      <NavBar />
+      {!insideTabContainer && <NavBar />}
     </View>
   );
 
@@ -648,45 +1018,45 @@ const PreferencesPage = () => {
 
   const renderAccountTab = () => (
     <View style={styles.card}>
-      {/* Email Subsection */}
+      {/* Username Subsection */}
       <View style={styles.settingRow}>
         <View>
           <Text style={styles.settingLabel}>Email</Text>
-          <Text style={styles.settingValue}>{userEmail || 'Not available'}</Text>
+          <Text style={styles.settingValue}>{username || userEmail || 'Not available'}</Text>
         </View>
         <TouchableOpacity
           onPress={() => {
             handleCancelPasswordForm(); // close password form if open
-            setShowChangeEmail(!showChangeEmail);
+            setShowChangeUsername(!showChangeUsername);
           }}
         >
           <Text style={styles.changeButtonText}>
-            {showChangeEmail ? 'Cancel' : 'Change Email'}
+            {showChangeUsername ? 'Cancel' : 'Change Email'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {showChangeEmail && (
+      {showChangeUsername && (
         <View style={styles.inlineForm}>
           <TextInput
             style={styles.textInput}
-            placeholder="New email address"
+            placeholder="New email"
             placeholderTextColor={colors.textPlaceholder}
-            value={newEmail}
-            onChangeText={setNewEmail}
-            keyboardType="email-address"
+            value={newUsername}
+            onChangeText={setNewUsername}
             autoCapitalize="none"
+            keyboardType="email-address"
           />
           <View style={styles.formButtonRow}>
             <TouchableOpacity
               style={[styles.primaryButton, { flex: 1 }]}
-              onPress={handleSendVerification}
+              onPress={handleUpdateUsername}
             >
-              <Text style={styles.primaryButtonText}>Send Verification</Text>
+              <Text style={styles.primaryButtonText}>Update Email</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.cancelButton, { flex: 1 }]}
-              onPress={handleCancelEmailForm}
+              onPress={handleCancelUsernameForm}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
@@ -700,7 +1070,7 @@ const PreferencesPage = () => {
       <TouchableOpacity
         style={styles.settingRow}
         onPress={() => {
-          handleCancelEmailForm(); // close email form if open
+          handleCancelUsernameForm(); // close username form if open
           setShowChangePassword(!showChangePassword);
         }}
       >
@@ -882,43 +1252,224 @@ const PreferencesPage = () => {
     </View>
   );
 
-  const renderRecurringTab = () => (
-    <>
-      <View style={styles.card}>
-        <View style={styles.emptyStateCard}>
-          <Icon name="time-outline" size={40} color="#D1D5DB" />
-          <Text style={styles.emptyStateTitle}>No recurring orders yet</Text>
-          <Text style={styles.emptyStateSubtitle}>Set up a recurring order at checkout</Text>
-          <View style={styles.comingSoonBadge}>
-            <Text style={styles.comingSoonText}>Coming soon</Text>
-          </View>
-        </View>
-      </View>
+  const toggleEditDay = (day) => {
+    setEditDays((prev) => ({
+      ...prev,
+      [day]: !prev[day],
+    }));
+  };
 
-      <View style={[styles.card, styles.ghostCard]}>
-        <View style={styles.ghostCardHeader}>
-          <Text style={styles.ghostCardLabel}>[EXAMPLE]</Text>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusBadgeText}>Active</Text>
+  const handleOpenEditModal = (order) => {
+    setSelectedRecurringOrder(order);
+    setEditInterval(order.interval.toString());
+    setEditUnit(order.unit);
+    setEditDays(order.days || { S: false, M: false, T: false, W: false, Th: false, F: false, Sa: false });
+    setEditEndType(order.end_type);
+    setEditEndDate(order.end_date || '');
+    setEditOccurrences(order.occurrences?.toString() || '13');
+    setShowEditRecurringModal(true);
+  };
+
+  const formatDateForBackend = (dateStr) => {
+    if (!dateStr || dateStr === '') return null;
+    // Date should be in YYYY-MM-DD format
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateStr;
+    }
+    // If it's not, try to parse and convert
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return null;
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (e) {
+      console.error('Error parsing date:', e);
+      return null;
+    }
+  };
+
+  const handleSaveEditRecurringOrder = async () => {
+    if (!selectedRecurringOrder) return;
+    try {
+      const response = await fetch(
+        `${getBaseURL()}/backend/recurring-orders/${selectedRecurringOrder.id}/`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${userToken}`,
+          },
+          body: JSON.stringify({
+            interval: parseInt(editInterval),
+            unit: editUnit,
+            days: editDays,
+            end_type: editEndType,
+            end_date: formatDateForBackend(editEndDate),
+            occurrences: editOccurrences ? parseInt(editOccurrences) : null,
+          }),
+        }
+      );
+      if (response.ok) {
+        setShowEditRecurringModal(false);
+        fetchRecurringOrders();
+        Alert.alert('Success', 'Recurring order updated');
+      } else {
+        const errorData = await response.json();
+        Alert.alert('Error', errorData.error || 'Failed to update recurring order');
+      }
+    } catch (error) {
+      console.error('Error updating recurring order:', error);
+      Alert.alert('Error', 'Could not update recurring order');
+    }
+  };
+
+  const handleTogglePauseResume = async (order) => {
+    try {
+      const newStatus = order.status === 'active' ? 'paused' : 'active';
+      const response = await fetch(
+        `${getBaseURL()}/backend/recurring-orders/${order.id}/`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Token ${userToken}`,
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
+      if (response.ok) {
+        fetchRecurringOrders();
+      } else {
+        Alert.alert('Error', 'Failed to update status');
+      }
+    } catch (error) {
+      console.error('Error toggling pause:', error);
+      Alert.alert('Error', 'Could not update status');
+    }
+  };
+
+  const handleCancelRecurringOrder = (order) => {
+    Alert.alert(
+      'Cancel Recurring Order',
+      'Are you sure you want to cancel this recurring order?',
+      [
+        { text: 'No', onPress: () => {} },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            try {
+              const response = await fetch(
+                `${getBaseURL()}/backend/recurring-orders/${order.id}/`,
+                {
+                  method: 'DELETE',
+                  headers: { 'Authorization': `Token ${userToken}` },
+                }
+              );
+              if (response.ok) {
+                fetchRecurringOrders();
+                Alert.alert('Success', 'Recurring order cancelled');
+              } else {
+                Alert.alert('Error', 'Failed to cancel recurring order');
+              }
+            } catch (error) {
+              console.error('Error cancelling recurring order:', error);
+              Alert.alert('Error', 'Could not cancel recurring order');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const formatSchedule = (order) => {
+    const days = order.days || {};
+    const selectedDays = Object.keys(days)
+      .filter((day) => days[day])
+      .join(', ');
+    return `Every ${order.interval} ${order.unit}${selectedDays ? ` on ${selectedDays}` : ''}`;
+  };
+
+  const renderRecurringTab = () => {
+    if (recurringLoading) {
+      return (
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color="#FF2E63" />
+        </View>
+      );
+    }
+
+    if (recurringOrders.length === 0) {
+      return (
+        <View style={styles.card}>
+          <View style={styles.emptyStateCard}>
+            <Icon name="time-outline" size={40} color="#D1D5DB" />
+            <Text style={styles.emptyStateTitle}>No recurring orders yet</Text>
+            <Text style={styles.emptyStateSubtitle}>Set up a recurring order at checkout</Text>
           </View>
         </View>
-        <Text style={styles.ghostCardTitle}>Weekly Vanilla Latte</Text>
-        <Text style={styles.ghostCardDetail}>Next charge: --</Text>
-        <Text style={styles.ghostCardDetail}>Every Monday</Text>
-        <View style={styles.ghostButtonRow}>
-          {['View Details', 'Skip Next', 'Edit', 'Pause', 'Cancel'].map((action) => (
-            <TouchableOpacity
-              key={action}
-              style={styles.ghostActionButton}
-              onPress={() => Alert.alert('Coming Soon', 'Recurring orders are not yet available.')}
-            >
-              <Text style={styles.ghostActionButtonText}>{action}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    </>
-  );
+      );
+    }
+
+    return (
+      <>
+        {recurringOrders.map((order) => (
+          <View key={order.id} style={styles.card}>
+            <View style={styles.recurringCardHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.recurringCardTitle}>
+                  {order.drinks?.length > 0 ? `Order #${order.id}` : 'Recurring Order'}
+                </Text>
+                <View style={[
+                  styles.statusBadge,
+                  order.status === 'active' && styles.statusBadgeActive,
+                  order.status === 'paused' && styles.statusBadgePaused,
+                  order.status === 'cancelled' && styles.statusBadgeCancelled,
+                ]}>
+                  <Text style={styles.statusBadgeText}>
+                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <Text style={styles.recurringCardSchedule}>{formatSchedule(order)}</Text>
+            <Text style={styles.recurringCardPrice}>${parseFloat(order.total_price || 0).toFixed(2)}</Text>
+            {order.drink_names?.length > 0 && (
+              <Text style={styles.recurringDrinkNames}>
+                {order.drink_names.join(', ')}
+              </Text>
+            )}
+            <View style={styles.recurringButtonRow}>
+              <TouchableOpacity
+                style={styles.recurringActionButton}
+                onPress={() => handleOpenEditModal(order)}
+              >
+                <Icon name="pencil-outline" size={16} color="#08D9D6" />
+                <Text style={styles.recurringActionText}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.recurringActionButton}
+                onPress={() => handleTogglePauseResume(order)}
+              >
+                <Icon name={order.status === 'active' ? 'pause' : 'play'} size={16} color="#F59E0B" />
+                <Text style={styles.recurringActionText}>
+                  {order.status === 'active' ? 'Pause' : 'Resume'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.recurringActionButton}
+                onPress={() => handleCancelRecurringOrder(order)}
+              >
+                <Icon name="trash-outline" size={16} color="#EF4444" />
+                <Text style={[styles.recurringActionText, { color: '#EF4444' }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+      </>
+    );
+  };
 
   const handleStoreModalClose = async () => {
     setShowStoreModal(false);
@@ -931,8 +1482,146 @@ const PreferencesPage = () => {
   }
 
   return (
-    <View style={styles.wholePage}>
+    <View style={[styles.wholePage, insideTabContainer && { paddingBottom: 50 }]}>
       <StoreSelectionModal visible={showStoreModal} onClose={handleStoreModalClose} />
+
+      {/* Edit Recurring Order Modal */}
+      <Modal
+        visible={showEditRecurringModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowEditRecurringModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setShowEditRecurringModal(false)}>
+                <Icon name="close" size={24} color="#222831" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Edit Recurring Order</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Repeat every</Text>
+              <View style={styles.modalInputRow}>
+                <TextInput
+                  style={styles.modalNumberInput}
+                  value={editInterval}
+                  onChangeText={setEditInterval}
+                  keyboardType="number-pad"
+                  maxLength={2}
+                />
+                <View style={styles.modalUnitButtons}>
+                  {['week', 'month'].map((unit) => (
+                    <TouchableOpacity
+                      key={unit}
+                      style={[
+                        styles.modalUnitButton,
+                        editUnit === unit && styles.modalUnitButtonActive,
+                      ]}
+                      onPress={() => setEditUnit(unit)}
+                    >
+                      <Text
+                        style={[
+                          styles.modalUnitButtonText,
+                          editUnit === unit && styles.modalUnitButtonTextActive,
+                        ]}
+                      >
+                        {unit}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Repeat on</Text>
+              <View style={styles.modalDaysGrid}>
+                {['S', 'M', 'T', 'W', 'Th', 'F', 'Sa'].map((day) => (
+                  <TouchableOpacity
+                    key={day}
+                    style={[
+                      styles.modalDayButton,
+                      editDays[day] && styles.modalDayButtonActive,
+                    ]}
+                    onPress={() => toggleEditDay(day)}
+                  >
+                    <Text
+                      style={[
+                        styles.modalDayButtonText,
+                        editDays[day] && styles.modalDayButtonTextActive,
+                      ]}
+                    >
+                      {day}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.modalSection}>
+              <Text style={styles.modalSectionTitle}>Ends</Text>
+              {['never', 'on', 'after'].map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={styles.modalRadioOption}
+                  onPress={() => setEditEndType(type)}
+                >
+                  <View
+                    style={[
+                      styles.modalRadio,
+                      editEndType === type && styles.modalRadioActive,
+                    ]}
+                  >
+                    {editEndType === type && <View style={styles.modalRadioFill} />}
+                  </View>
+                  <Text style={styles.modalRadioLabel}>
+                    {type === 'never' ? 'Never' : type === 'on' ? 'On date' : 'After N occurrences'}
+                  </Text>
+                  {type === 'on' && editEndType === 'on' && (
+                    <TextInput
+                      style={styles.modalDateInput}
+                      value={editEndDate}
+                      onChangeText={setEditEndDate}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  )}
+                  {type === 'after' && editEndType === 'after' && (
+                    <TextInput
+                      style={styles.modalOccurrencesInput}
+                      value={editOccurrences}
+                      onChangeText={setEditOccurrences}
+                      keyboardType="number-pad"
+                      maxLength={3}
+                      placeholder="13"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={styles.modalButtonCancel}
+                onPress={() => setShowEditRecurringModal(false)}
+              >
+                <Text style={styles.modalButtonCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalButtonSave}
+                onPress={handleSaveEditRecurringOrder}
+              >
+                <Text style={styles.modalButtonSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
+
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Header Card */}
         <View style={styles.profileHeader}>
@@ -946,9 +1635,6 @@ const PreferencesPage = () => {
               <Text style={styles.profileName}>{firstName}</Text>
               <Text style={styles.profileEmail}>{userEmail || 'Not available'}</Text>
             </View>
-            <TouchableOpacity style={styles.editButton}>
-              <Icon name="pencil-outline" size={20} color="#FF2E63" />
-            </TouchableOpacity>
           </View>
 
           {/* Loyalty Points */}
@@ -1004,7 +1690,7 @@ const PreferencesPage = () => {
         <View style={styles.navBarSpace} />
       </ScrollView>
 
-      <NavBar />
+      {!insideTabContainer && <NavBar />}
     </View>
   );
 };

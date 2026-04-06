@@ -23,8 +23,9 @@ const QUICK_REPLIES = [
   'Request a refund',
 ];
 
-const ComplaintsPage = () => {
+const ComplaintsPage = ({ insideTabContainer = false, isFocused = true, navigation: navProp }) => {
   const { colors } = useTheme();
+  const navigation = navProp || useNavigation();
   const [searchText, setSearchText] = useState('');
   const [messages, setMessages] = useState([
     { text: "Hi! I'm tonic. How can I help you?", isBot: true },
@@ -34,7 +35,6 @@ const ComplaintsPage = () => {
   const [order_num, setOrderNum] = useState('none');
   const [drink_nums, setDrinkNums] = useState('none');
   const [loading, setLoading] = useState(false);
-  const navigation = useNavigation();
   const scrollViewRef = useRef();
   const lastUserMessageRef = useRef('');
   const controllerRef = useRef(null);
@@ -441,7 +441,7 @@ const ComplaintsPage = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, insideTabContainer && { paddingBottom: 50 }]}>
       <ScrollView
         style={styles.chatContainer}
         ref={scrollViewRef}
@@ -544,8 +544,8 @@ const ComplaintsPage = () => {
       </View>
 
       {/* NavBar spacing */}
-      <View style={styles.navBarSpace} />
-      <NavBar />
+      {!insideTabContainer && <View style={styles.navBarSpace} />}
+      {!insideTabContainer && <NavBar />}
     </View>
   );
 };

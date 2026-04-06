@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Modal, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Modal, Image, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getBaseURL } from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,6 +10,7 @@ import RNPickerSelect from 'react-native-picker-select';
 const AdminDash = () => {
 
   const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [popupIsOpen, setPopupIsOpen] = useState(false);
   const [editorIsOpen, setEditorIsOpen] = useState(false);
 
@@ -72,6 +73,7 @@ const AdminDash = () => {
 
 
   const getUsers = async () => {
+    setLoadingUsers(true);
     const token = await AsyncStorage.getItem("userToken");
 
     try {
@@ -92,6 +94,8 @@ const AdminDash = () => {
     }
     catch (error) {
       console.error('Error when trying to fetch a list of users:', error);
+    } finally {
+      setLoadingUsers(false);
     }
   }
 
@@ -268,11 +272,15 @@ const AdminDash = () => {
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Admin Dashboard</Text>
       </View>
-      <FlatList
-        data={users}
-        keyExtractor={(user) => user.username}
-        renderItem={renderUser}
-      />
+      {loadingUsers ? (
+        <ActivityIndicator size="large" color="#FF2E63" style={{ marginTop: 40 }} />
+      ) : (
+        <FlatList
+          data={users}
+          keyExtractor={(user) => user.username}
+          renderItem={renderUser}
+        />
+      )}
     </View>
   );
 };

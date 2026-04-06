@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../theme';
+import TabNavigationContext from '../context/TabNavigationContext';
 
 const NavBar = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const tabNav = useContext(TabNavigationContext);
 
   const navItems = [
     { label: 'Home', icon: 'home-outline', route: 'GeneralHome' },
@@ -43,15 +45,31 @@ const NavBar = () => {
     },
   });
 
+  const handlePress = (item, index) => {
+    if (tabNav && tabNav.navigateToTab) {
+      tabNav.navigateToTab(index);
+    } else {
+      navigation.navigate('GeneralHome', { initialTab: index });
+    }
+  };
+
+  const isActive = (index) => {
+    return tabNav && tabNav.activeTabIndex === index;
+  };
+
   return (
     <View style={styles.navbar}>
       {navItems.map((item, index) => (
         <TouchableOpacity
           key={index}
           style={styles.navButton}
-          onPress={() => navigation.navigate(item.route)}
+          onPress={() => handlePress(item, index)}
         >
-          <Icon name={item.icon} size={24} color={colors.textPrimary} />
+          <Icon
+            name={item.icon}
+            size={24}
+            color={isActive(index) ? colors.primary : colors.textPrimary}
+          />
           <Text style={styles.navLabel}>{item.label}</Text>
         </TouchableOpacity>
       ))}

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { getBaseURL } from '../../ip_address';
@@ -71,7 +72,33 @@ const CreateAccountPage = ({ navigation, route }) => {
         return;
       }
 
-      navigation.navigate('Auth', { email: trimmedEmail });
+      // Auto-login after successful registration
+      const loginResponse = await fetch(`${getBaseURL()}/backend/auth/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: trimmedEmail, password }),
+      });
+
+      if (loginResponse.status === 200) {
+        const data = await loginResponse.json();
+        await AsyncStorage.setItem('userToken', data.token);
+        await AsyncStorage.setItem('userId', data.user_id.toString());
+        await AsyncStorage.setItem('first_name', data.first_name);
+        await AsyncStorage.setItem('userEmail', trimmedEmail);
+        await AsyncStorage.setItem('userRole', data.userRole ?? 'user');
+
+        // This is a home login — store the home token and endpoint for future exchanges
+        const homeEndpoint = await AsyncStorage.getItem('selectedStoreEndpoint');
+        const homeStoreId = await AsyncStorage.getItem('selectedStoreId');
+        await AsyncStorage.setItem('homeToken', data.token);
+        await AsyncStorage.setItem('homeStoreEndpoint', homeEndpoint || '');
+        await AsyncStorage.setItem('homeStoreId', homeStoreId || '');
+
+        navigation.navigate('GeneralHome');
+      } else {
+        // Login failed unexpectedly — fall back to sign-in page
+        navigation.navigate('Auth', { email: trimmedEmail });
+      }
     } catch {
       setMessage('Error registering user. Please check your connection.');
       setIsLoading(false);

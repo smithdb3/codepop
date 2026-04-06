@@ -13,7 +13,7 @@ import Modal from 'react-native-modal';
 import MapView, { Marker } from 'react-native-maps';
 import Icon from 'react-native-vector-icons/Ionicons';
 import * as Location from 'expo-location';
-import { setBaseURL, getHubRegistryUrls } from '../../ip_address';
+import { setBaseURL, getBaseURL, getHubRegistryUrls } from '../../ip_address';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../theme';
 
@@ -124,6 +124,154 @@ async function fetchStoreRegistry() {
   return allStores;
 }
 
+/**
+ * Transfers the cart from oldBaseURL to newBaseURL.
+ *
+ * - Reads checkoutList from AsyncStorage (array of DrinkIDs, repeats = quantity).
+ * - GETs each unique DrinkID from oldBaseURL.
+ * - For User_Created: false drinks: matches by name in new store's catalog.
+ * - For User_Created: true drinks: POST the drink fields to newBaseURL and use
+ *   the returned DrinkID.
+ * - Writes the remapped checkoutList back to AsyncStorage.
+ * - Failures for individual drinks are skipped gracefully (no hard throw).
+ *
+ * Returns early (no-op) if the cart is empty.
+ */
+async function transferCart(oldBaseURL, newBaseURL) {
+  let checkoutList;
+  try {
+    const raw = await AsyncStorage.getItem('checkoutList');
+    checkoutList = raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.warn('transferCart: failed to read checkoutList', e);
+    return;
+  }
+
+  if (!checkoutList || checkoutList.length === 0) return;
+
+  // Deduplicate IDs while preserving order and counts
+  const countMap = {};
+  const uniqueIds = [];
+  for (const id of checkoutList) {
+    if (countMap[id] === undefined) {
+      countMap[id] = 0;
+      uniqueIds.push(id);
+    }
+    countMap[id] += 1;
+  }
+
+  // Fetch each unique drink from the OLD store
+  const idToDetail = {};
+  await Promise.all(
+    uniqueIds.map(async (id) => {
+      try {
+        const res = await fetch(`${oldBaseURL}/backend/drinks/${id}/`);
+        if (res.ok) {
+          idToDetail[id] = await res.json();
+        } else {
+          console.warn(`transferCart: GET drink ${id} returned ${res.status} — skipping`);
+          idToDetail[id] = null;
+        }
+      } catch (e) {
+        console.warn(`transferCart: GET drink ${id} failed — skipping`, e);
+        idToDetail[id] = null;
+      }
+    })
+  );
+
+  // Fetch all catalog drinks from NEW store to build name -> ID mapping
+  let catalogNameToId = {};
+  try {
+    const res = await fetch(`${newBaseURL}/backend/drinks/`);
+    if (res.ok) {
+      const catalogDrinks = await res.json();
+      if (Array.isArray(catalogDrinks)) {
+        catalogDrinks.forEach((drink) => {
+          if (!drink.User_Created && drink.Name) {
+            catalogNameToId[drink.Name] = drink.DrinkID;
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('transferCart: failed to fetch catalog from new store', e);
+  }
+
+  // Build a remapping: oldId -> newId
+  const idRemap = {};
+  await Promise.all(
+    uniqueIds.map(async (id) => {
+      const detail = idToDetail[id];
+      if (!detail) return;
+
+      if (!detail.User_Created) {
+        // Catalog drink: match by name in new store's catalog
+        const newId = catalogNameToId[detail.Name];
+        if (newId !== undefined) {
+          idRemap[id] = newId;
+          console.log(`transferCart: mapped catalog drink '${detail.Name}' ${id} -> ${newId}`);
+        } else {
+          console.warn(
+            `transferCart: catalog drink '${detail.Name}' not found in new store — skipping`
+          );
+        }
+        return;
+      }
+
+      // Custom drink: recreate at new store
+      const payload = {
+        Name: detail.Name,
+        SodaUsed: detail.SodaUsed || [],
+        SyrupsUsed: detail.SyrupsUsed || [],
+        AddIns: detail.AddIns || [],
+        Price: detail.Price,
+        Size: detail.Size,
+        Ice: detail.Ice,
+        User_Created: true,
+      };
+
+      try {
+        const res = await fetch(`${newBaseURL}/backend/drinks/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.status === 201) {
+          const created = await res.json();
+          idRemap[id] = created.DrinkID;
+          console.log(
+            `transferCart: recreated custom drink ${id} -> ${created.DrinkID} at new store`
+          );
+        } else {
+          console.warn(
+            `transferCart: POST custom drink ${id} returned ${res.status} — skipping`
+          );
+        }
+      } catch (e) {
+        console.warn(`transferCart: POST custom drink ${id} failed — skipping`, e);
+      }
+    })
+  );
+
+  // Rebuild the checkoutList using the new IDs, preserving quantities
+  const newCheckoutList = [];
+  for (const oldId of uniqueIds) {
+    const newId = idRemap[oldId];
+    if (newId === undefined) continue;
+    const qty = countMap[oldId];
+    for (let i = 0; i < qty; i++) {
+      newCheckoutList.push(newId);
+    }
+  }
+
+  try {
+    await AsyncStorage.setItem('checkoutList', JSON.stringify(newCheckoutList));
+    console.log('transferCart: checkoutList updated', newCheckoutList);
+  } catch (e) {
+    console.warn('transferCart: failed to write updated checkoutList', e);
+  }
+}
+
 export default function StoreSelectionModal({
   visible,
   onClose,
@@ -133,6 +281,7 @@ export default function StoreSelectionModal({
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [selectedStore, setSelectedStore] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [locationPermission, setLocationPermission] = useState(null);
@@ -259,7 +408,58 @@ export default function StoreSelectionModal({
       if (lat == null || lon == null) {
         await AsyncStorage.multiRemove(['selectedStoreLatitude', 'selectedStoreLongitude']);
       }
+
+      const oldBaseURL = getBaseURL();
+      const isSameStore = oldBaseURL === store.api_endpoint;
+
       await setBaseURL(store.api_endpoint);
+
+      // Proactive token exchange: if switching stores while logged in, exchange the home token
+      // for a visiting shadow token at the new store
+      const homeToken = await AsyncStorage.getItem('homeToken');
+      const homeStoreEndpoint = await AsyncStorage.getItem('homeStoreEndpoint');
+      const homeStoreId = await AsyncStorage.getItem('homeStoreId');
+
+      // Token handling based on whether we're switching to home or visiting store
+      if (homeToken && homeStoreEndpoint) {
+        if (store.api_endpoint === homeStoreEndpoint) {
+          // Switching back to home store — restore the home token directly
+          await AsyncStorage.setItem('userToken', homeToken);
+          console.log('Restored home token for home store');
+        } else {
+          // Switching to a different (visiting) store — exchange the home token
+          try {
+            console.log('Exchanging token with visiting store:', store.api_endpoint);
+            const exchangeRes = await fetch(`${store.api_endpoint}/backend/auth/exchange/`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                token: homeToken,
+                home_store_endpoint: homeStoreEndpoint,
+                home_store_id: parseInt(homeStoreId || '0'),
+              }),
+            });
+            if (exchangeRes.ok) {
+              const exchangeData = await exchangeRes.json();
+              await AsyncStorage.setItem('userToken', exchangeData.token);
+              console.log('Token exchange successful, got new shadow token');
+              // user_id, first_name, userRole remain the same
+            } else {
+              console.warn('Token exchange returned status:', exchangeRes.status);
+              // On 503 (degraded) or network error: silently continue with graceful degradation
+            }
+          } catch (e) {
+            // Network error or other issue - continue with graceful degradation
+            // The home token will be used for API calls, returning 403 if unavailable
+            console.error('Token exchange network error, using home token:', e);
+          }
+        }
+      }
+
+      if (!isSameStore) {
+        await transferCart(oldBaseURL, store.api_endpoint);
+      }
+
       setSelectedStore(store);
     } catch (error) {
       console.error('Failed to save store selection:', error);
@@ -278,8 +478,13 @@ export default function StoreSelectionModal({
         : locationPermission === 'denied'
           ? 'denied'
           : 'manual';
-    await selectAndSave(selectedStore, perm);
-    onClose?.({ cancelled: false });
+    setSaving(true);
+    try {
+      await selectAndSave(selectedStore, perm);
+      onClose?.({ cancelled: false });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const dismissWithoutConfirm = () => {
@@ -497,12 +702,16 @@ export default function StoreSelectionModal({
             style={[
               dynamicStyles.primaryButton,
               { width: '100%' },
-              !selectedStore && dynamicStyles.primaryButtonDisabled,
+              (!selectedStore || saving) && dynamicStyles.primaryButtonDisabled,
             ]}
             onPress={handleConfirmSelection}
-            disabled={!selectedStore}
+            disabled={!selectedStore || saving}
           >
-            <Text style={dynamicStyles.primaryButtonText}>Confirm Selection</Text>
+            {saving ? (
+              <ActivityIndicator size="small" color={colors.surface} />
+            ) : (
+              <Text style={dynamicStyles.primaryButtonText}>Confirm Selection</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>

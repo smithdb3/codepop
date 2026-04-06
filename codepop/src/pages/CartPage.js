@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,21 @@ import {
   ScrollView,
   TextInput,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavBar from '../components/NavBar';
 import { getBaseURL } from '../../ip_address';
 import { useTheme } from '../theme';
+import TabNavigationContext from '../context/TabNavigationContext';
 
-const CartPage = () => {
-  const navigation = useNavigation();
+const CartPage = ({ insideTabContainer = false, isFocused = true, navigation: navProp }) => {
+  const navigation = navProp || useNavigation();
   const { colors } = useTheme();
+  const tabNav = useContext(TabNavigationContext);
+  const [loading, setLoading] = useState(false);
   const [groupedDrinks, setGroupedDrinks] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [subtotal, setSubtotal] = useState(0);
@@ -27,12 +31,11 @@ const CartPage = () => {
   const [promoError, setPromoError] = useState('');
   const [savedDrinks, setSavedDrinks] = useState([]);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchDrinks();
-      loadSavedDrinks();
-    }, [])
-  );
+  useEffect(() => {
+    if (!isFocused) return;
+    fetchDrinks();
+    loadSavedDrinks();
+  }, [isFocused]);
 
   const loadSavedDrinks = async () => {
     try {
@@ -56,6 +59,7 @@ const CartPage = () => {
   };
 
   const fetchDrinks = async () => {
+    setLoading(true);
     try {
       const cartList = await AsyncStorage.getItem('checkoutList');
       const currentList = cartList ? JSON.parse(cartList) : [];
@@ -91,6 +95,8 @@ const CartPage = () => {
       await AsyncStorage.setItem('purchasedDrinks', JSON.stringify(fetchedDrinks));
     } catch (error) {
       console.error('Failed to get drinks:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -116,6 +122,9 @@ const CartPage = () => {
     if (promoApplied) {
       final = sub * 0.9; // 10% discount
     }
+    // Add 8% tax (calculated on original subtotal)
+    const tax = sub * 0.08;
+    final = final + tax;
     setTotalPrice(final);
   };
 
@@ -218,7 +227,14 @@ const CartPage = () => {
 
         <View style={styles.drinkActions}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('UpdateDrink', { drink })}
+            onPress={() => {
+              if (tabNav && tabNav.setDrinkToEdit) {
+                tabNav.setDrinkToEdit(drink);
+                tabNav.navigateToTab(1); // Navigate to Create tab (tab index 1)
+              } else {
+                navigation.navigate('CreateDrink', { drinkToEdit: drink });
+              }
+            }}
             style={styles.editButton}
           >
             <Icon name="pencil" size={20} color={colors.textPrimary} />
@@ -257,7 +273,7 @@ const CartPage = () => {
       <Text style={styles.emptyTitle}>Your cart is empty</Text>
       <Text style={styles.emptySubtitle}>Add a drink to get started</Text>
       <TouchableOpacity
-        onPress={() => navigation.navigate('GeneralHome')}
+        onPress={() => tabNav.navigateToTab(1)}
         style={styles.primaryButton}
       >
         <Text style={styles.primaryButtonText}>Browse Drinks</Text>
@@ -598,13 +614,15 @@ const CartPage = () => {
   const styles = makeStyles(colors);
 
   return (
-    <View style={styles.wholePage}>
+    <View style={[styles.wholePage, insideTabContainer && { paddingBottom: 50 }]}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.headerSection}>
           <Text style={styles.pageTitle}>Your Cart</Text>
         </View>
 
-        {groupedDrinks.length === 0 ? (
+        {loading ? (
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 60 }} />
+        ) : groupedDrinks.length === 0 ? (
           renderEmptyState()
         ) : (
           <>
@@ -671,7 +689,7 @@ const CartPage = () => {
 
             {/* Checkout Button */}
             <TouchableOpacity
-              onPress={() => navigation.navigate('payment')}
+              onPress={() => tabNav.showCheckout ? tabNav.showCheckout() : navigation.navigate('payment')}
               style={styles.checkoutButton}
             >
               <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
@@ -682,7 +700,7 @@ const CartPage = () => {
         )}
       </ScrollView>
 
-      <NavBar />
+      {!insideTabContainer && <NavBar />}
     </View>
   );
 };

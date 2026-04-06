@@ -13,16 +13,15 @@ import {
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import NavBar from '../components/NavBar';
 import CheckoutForm from './CheckoutForm';
 import { getBaseURL } from '../../ip_address';
 import { useTheme } from '../theme';
 
-const PaymentPage = () => {
+const PaymentPage = ({ onSuccess, isVisible = true, onClose }) => {
   const navigation = useNavigation();
   const { colors } = useTheme();
 
@@ -42,6 +41,7 @@ const PaymentPage = () => {
   // Recurring order
   const [isRecurring, setIsRecurring] = useState(false);
   const [showRecurringModal, setShowRecurringModal] = useState(false);
+  const [recurringConfirmed, setRecurringConfirmed] = useState(false);
   const [recurringInterval, setRecurringInterval] = useState('1');
   const [recurringUnit, setRecurringUnit] = useState('week');
   const [recurringDays, setRecurringDays] = useState({ S: false, M: false, T: false, W: false, Th: false, F: false, Sa: false });
@@ -62,7 +62,20 @@ const PaymentPage = () => {
 
   // Stripe
   const [stripePublishableKey, setStripePublishableKey] = useState(null);
-  const { initializePaymentSheet, openPaymentSheet, loading: paymentSheetReady } = CheckoutForm(totalPrice);
+
+  // Calculate tax and total upfront
+  const tax = subtotal * 0.08;
+  const total = totalPrice + tax;
+
+  const recurringConfig = isRecurring && recurringConfirmed ? {
+    interval: recurringInterval,
+    unit: recurringUnit,
+    days: recurringDays,
+    endType: recurringEndType,
+    endDate: recurringEndDate,
+    occurrences: recurringOccurrences,
+  } : null;
+  const { initializePaymentSheet, openPaymentSheet, loading: paymentSheetReady } = CheckoutForm(total, recurringConfig, onSuccess);
 
   useEffect(() => {
     const fetchStripeKey = async () => {
@@ -77,40 +90,42 @@ const PaymentPage = () => {
     fetchStripeKey();
   }, []);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchDrinks();
-      setError('');
-      setRetryCount(0);
-      // Set default recurring end date to 3 months from now
-      const futureDate = new Date();
-      futureDate.setMonth(futureDate.getMonth() + 3);
-      setRecurringEndDate(futureDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+  useEffect(() => {
+    if (!isVisible) return;
+    fetchDrinks();
+    setError('');
+    setRetryCount(0);
+    // Set default recurring end date to 3 months from now (in YYYY-MM-DD format)
+    const futureDate = new Date();
+    futureDate.setMonth(futureDate.getMonth() + 3);
+    const year = futureDate.getFullYear();
+    const month = String(futureDate.getMonth() + 1).padStart(2, '0');
+    const day = String(futureDate.getDate()).padStart(2, '0');
+    setRecurringEndDate(`${year}-${month}-${day}`);
 
-      (async () => {
-        try {
-          const name = await AsyncStorage.getItem('selectedStoreName');
-          const latStr = await AsyncStorage.getItem('selectedStoreLatitude');
-          const lonStr = await AsyncStorage.getItem('selectedStoreLongitude');
-          const perm = await AsyncStorage.getItem('locationPermission');
-          if (name) setCheckoutStoreName(name);
-          const la = latStr != null ? parseFloat(latStr) : NaN;
-          const lo = lonStr != null ? parseFloat(lonStr) : NaN;
-          setStoreMapLat(!Number.isNaN(la) ? la : null);
-          setStoreMapLon(!Number.isNaN(lo) ? lo : null);
-          setCheckoutLocationPref(perm);
-          if (perm === 'granted') {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-              setCheckoutLocationPref('denied');
-            }
+    (async () => {
+      try {
+        const name = await AsyncStorage.getItem('selectedStoreName');
+        const latStr = await AsyncStorage.getItem('selectedStoreLatitude');
+        const lonStr = await AsyncStorage.getItem('selectedStoreLongitude');
+        const perm = await AsyncStorage.getItem('locationPermission');
+        if (name) setCheckoutStoreName(name);
+        const la = latStr != null ? parseFloat(latStr) : NaN;
+        const lo = lonStr != null ? parseFloat(lonStr) : NaN;
+        setStoreMapLat(!Number.isNaN(la) ? la : null);
+        setStoreMapLon(!Number.isNaN(lo) ? lo : null);
+        setCheckoutLocationPref(perm);
+        if (perm === 'granted') {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            setCheckoutLocationPref('denied');
           }
-        } catch (e) {
-          console.warn('Checkout map: failed to load store/location prefs', e);
         }
-      })();
-    }, [])
-  );
+      } catch (e) {
+        console.warn('Checkout map: failed to load store/location prefs', e);
+      }
+    })();
+  }, [isVisible]);
 
   useEffect(() => {
     if (totalPrice > 0) {
@@ -194,10 +209,12 @@ const PaymentPage = () => {
 
   const handleRecurringConfirm = () => {
     setShowRecurringModal(false);
+    setRecurringConfirmed(true);
   };
 
   const handleRecurringCancel = () => {
     setIsRecurring(false);
+    setRecurringConfirmed(false);
     setShowRecurringModal(false);
   };
 
@@ -218,9 +235,6 @@ const PaymentPage = () => {
     }
   };
 
-  const tax = subtotal * 0.08;
-  const total = totalPrice + tax;
-
   const makeStyles = (colors) => StyleSheet.create({
     wholePage: {
       flex: 1,
@@ -229,6 +243,11 @@ const PaymentPage = () => {
     scrollView: {
       flex: 1,
       paddingHorizontal: 16,
+    },
+    closeButton: {
+      alignSelf: 'flex-end',
+      padding: 12,
+      paddingRight: 16,
     },
 
     // Card styles
@@ -557,6 +576,21 @@ const PaymentPage = () => {
       fontWeight: '600',
     },
 
+    // Recurring Order Confirmation
+    confirmationCard: {
+      backgroundColor: '#EFF6FF',
+      borderWidth: 1,
+      borderColor: '#BFDBFE',
+      borderRadius: 12,
+      padding: 16,
+      marginTop: 16,
+    },
+    confirmationText: {
+      fontSize: 13,
+      color: '#1E40AF',
+      lineHeight: 18,
+    },
+
     // G. Pay Button
     payButton: {
       backgroundColor: colors.primary,
@@ -783,6 +817,11 @@ const PaymentPage = () => {
   return (
     <StripeProvider publishableKey={stripePublishableKey}>
       <View style={styles.wholePage}>
+        {onClose && (
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Icon name="close" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+        )}
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* A. Order Review Summary Card */}
@@ -1028,6 +1067,15 @@ const PaymentPage = () => {
             )}
           </View>
 
+          {/* Recurring Confirmation Info Box */}
+          {isRecurring && recurringConfirmed && (
+            <View style={styles.confirmationCard}>
+              <Text style={styles.confirmationText}>
+                By selecting this option, your order will be automatically placed and your saved payment method will be charged ${total.toFixed(2)} 30 minutes before your scheduled time. You can modify or cancel recurring orders at any time in your account settings.
+              </Text>
+            </View>
+          )}
+
           {/* F. Error Display (conditional) */}
           {error && (
             <View style={styles.errorCard}>
@@ -1067,8 +1115,6 @@ const PaymentPage = () => {
 
           <View style={styles.navBarSpace} />
         </ScrollView>
-
-        <NavBar />
 
         {/* Recurring Order Modal */}
         <Modal

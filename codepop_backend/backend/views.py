@@ -11,10 +11,12 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order, Revenue, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, ManagerProfile, Delivery
-from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer, SupplyRequestSerializer, DeliverySerializer, DriverSerializer
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue, RecurringOrder, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, ManagerProfile, Delivery, SeasonalDrink, VisitingUserCache
+from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, RecurringOrderSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer, SupplyRequestSerializer, DeliverySerializer, DriverSerializer, SeasonalDrinkSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.authentication import BaseAuthentication
+from rest_framework.exceptions import AuthenticationFailed
 import stripe
 from django.conf import settings
 from django.http import JsonResponse
@@ -23,10 +25,14 @@ from django.views import View #maybe delete these three?
 from django.utils.decorators import method_decorator
 import json
 import requests
+import uuid
+import logging
 from datetime import timedelta
 from rest_framework.decorators import action
+
+logger = logging.getLogger(__name__)
 from django.utils.dateparse import parse_datetime
-from .drinkAI import generate_soda
+from .drinkAI import generate_soda, generate_drink_name
 from rest_framework.permissions import BasePermission
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -38,13 +44,60 @@ class IsSuperUser(BasePermission):
         return request.user and request.user.is_superuser
 
 
+class VisitingTokenAuthentication(BaseAuthentication):
+    """
+    Accepts real DRF tokens AND synthetic visiting tokens.
+    Synthetic format: visiting_<user_id>_<home_store_id>
+    Validates synthetic tokens against VisitingUserCache (checks expiry).
+    Used only on endpoints that visiting users must reach.
+    """
+    def authenticate(self, request):
+        auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+        if not auth_header.startswith('Token '):
+            return None
+        token = auth_header[6:].strip()
+
+        # Try real DRF token first
+        try:
+            token_obj = Token.objects.get(key=token)
+            return (token_obj.user, token_obj)
+        except Token.DoesNotExist:
+            pass
+
+        # Try synthetic visiting token: visiting_<user_id>_<home_store_id>
+        parts = token.split('_')
+        if len(parts) == 3 and parts[0] == 'visiting':
+            try:
+                user_id = int(parts[1])
+                home_store_id = int(parts[2])
+            except ValueError:
+                raise AuthenticationFailed('Invalid visiting token format.')
+
+            cache = VisitingUserCache.objects.filter(
+                user_id=user_id,
+                home_store_id=home_store_id,
+                expires_at__gt=timezone.now()
+            ).first()
+            if not cache:
+                raise AuthenticationFailed('Visiting session expired or not found.')
+
+            # Return the shadow user created during visiting login
+            try:
+                shadow = User.objects.get(username=f'visiting_{user_id}_{home_store_id}')
+                return (shadow, None)
+            except User.DoesNotExist:
+                raise AuthenticationFailed('Visiting shadow user not found.')
+
+        raise AuthenticationFailed('Invalid token.')
+
+
 def _propagate_to_home_store(user_id: int):
     """
     If the user is a visiting user (in VisitingUserCache), push their current
     preferences and favorites back to their home store via P2P.
     If home store unreachable, queue in PendingProfileUpdate.
     """
-    from .models import VisitingUserCache, PendingProfileUpdate
+    from .models import PendingProfileUpdate
 
     cache = VisitingUserCache.objects.filter(
         user_id=user_id, expires_at__gt=timezone.now()
@@ -53,9 +106,9 @@ def _propagate_to_home_store(user_id: int):
         return  # Home user — no propagation needed
 
     changes = {
-        'preferences':        list(Preference.objects.filter(
+        'preferences': list(Preference.objects.filter(
             UserID__pk=user_id).values_list('Preference', flat=True)),
-        'favorite_drink_ids': cache.favorite_drink_ids,
+        'favorite_drinks': cache.favorite_drinks,  # full drink data
     }
 
     # Try immediate delivery to home store
@@ -70,8 +123,16 @@ def _propagate_to_home_store(user_id: int):
         )
         if resp.status_code == 200:
             confirmed = resp.json()
+            update_fields = ['preferences']
             cache.preferences = confirmed.get('preferences', changes['preferences'])
-            cache.save(update_fields=['preferences'])
+            # Update cache: home store fills in home_drink_id for newly created drinks
+            if 'favorite_drinks' in confirmed:
+                cache.favorite_drinks = [
+                    d if d.get('cache_drink_id') else {**d, 'cache_drink_id': str(uuid.uuid4())}
+                    for d in confirmed['favorite_drinks']
+                ]
+                update_fields.append('favorite_drinks')
+            cache.save(update_fields=update_fields)
             return
     except requests.RequestException:
         pass  # Fall through to queueing
@@ -254,7 +315,10 @@ class CustomAuthToken(ObtainAuthToken):
                 'role':               user_data['role'],
                 'home_store_endpoint': home_store_endpoint,
                 'preferences':        user_data.get('preferences', []),
-                'favorite_drink_ids': user_data.get('favorite_drink_ids', []),
+                'favorite_drinks': [
+                    {**d, 'cache_drink_id': str(uuid.uuid4())}
+                    for d in user_data.get('favorite_drinks', [])
+                ],
                 'expires_at':         timezone.now() + timedelta(hours=24),
             }
         )
@@ -318,6 +382,133 @@ class LogoutUserAPIView(APIView):
             print(f"Logout token deletion error: {e}", file=sys.stderr)
         return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
 
+
+class AuthTokenExchangeView(APIView):
+    """
+    POST /backend/auth/exchange/
+    Proactive token exchange for users switching stores.
+    Exchanges a home-store DRF token for a visiting shadow DRF token at the new store.
+
+    Request: {"token": "home_token", "home_store_endpoint": "http://...", "home_store_id": N}
+    Response (200): {"token": "shadow_token", "user_id": 42, "first_name": "John", "userRole": "user", "visiting": True}
+    Response (503): {"error": "home_store_unreachable", "degraded": True} — graceful degradation
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        from rest_framework.authtoken.models import Token
+        from .internode_views import _build_user_payload
+
+        token_key = request.data.get('token')
+        home_store_endpoint = request.data.get('home_store_endpoint')
+        home_store_id = request.data.get('home_store_id')
+
+        if not token_key or not home_store_endpoint:
+            return Response(
+                {'error': 'Missing token or home_store_endpoint'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Extract user_id from token (if it's a valid token in this DB, use it to create cache key)
+        # Or: try to verify via home store first
+        try:
+            token_obj = Token.objects.get(key=token_key)
+            # Token exists locally — must have been created here before (shouldn't happen on first exchange)
+            user = token_obj.user
+        except Token.DoesNotExist:
+            # Token doesn't exist locally — need to verify with home store
+            user = None
+
+        if user:
+            # Token is a local home token (this is a home user, not actually exchanging)
+            # Return the same token (they're already at their home store or returning to it)
+            return Response({
+                'token':      token_key,
+                'user_id':    user.pk,
+                'first_name': user.first_name,
+                'userRole':   'admin' if user.is_superuser else ('manager' if user.is_staff else 'user'),
+                'visiting':   False,
+            })
+
+        # Try to verify token with home store
+        try:
+            verify_url = f"{home_store_endpoint}/backend/api/inter-node/token-verify/"
+            verify_resp = requests.post(
+                verify_url,
+                json={'token': token_key, 'requesting_store_id': settings.STORE_ID},
+                headers={'Authorization': f'NodeToken {settings.INTER_NODE_SECRET}'},
+                timeout=5,
+            )
+            if not verify_resp.ok:
+                raise requests.RequestException(f"Home store returned {verify_resp.status_code}")
+            user_data = verify_resp.json()
+        except requests.RequestException as e:
+            # Home store unreachable — try graceful degradation with cached session
+            logger.warning('Token verification failed, attempting graceful degradation: %s', e)
+            cache = VisitingUserCache.objects.filter(
+                home_store_id=home_store_id,
+                expires_at__gt=timezone.now()
+            ).first()
+            if not cache:
+                return Response(
+                    {'error': 'home_store_unreachable', 'degraded': True},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
+                )
+            user_data = {
+                'user_id':    cache.user_id,
+                'username':   cache.username,
+                'email':      cache.email,
+                'hashed_password': cache.hashed_password,
+                'first_name': cache.username.split()[0] if cache.username else 'User',
+                'role':       cache.role,
+                'home_store_endpoint': cache.home_store_endpoint,
+                'home_store_id': cache.home_store_id,
+                'preferences': cache.preferences,
+                'favorite_drinks': cache.favorite_drinks,
+            }
+
+        # Create or update VisitingUserCache (reuse logic from VisitingLoginView)
+        cache_kwargs = {
+            'username': user_data['username'],
+            'email': user_data['email'],
+            'hashed_password': user_data['hashed_password'],
+            'role': user_data['role'],
+            'home_store_endpoint': user_data['home_store_endpoint'],
+            'preferences': user_data.get('preferences', []),
+            'favorite_drinks': [
+                {**d, 'cache_drink_id': str(uuid.uuid4())}
+                for d in user_data.get('favorite_drinks', [])
+            ],
+            'expires_at': timezone.now() + timedelta(hours=24),
+        }
+        cache, _ = VisitingUserCache.objects.update_or_create(
+            user_id=user_data['user_id'],
+            home_store_id=user_data['home_store_id'],
+            defaults=cache_kwargs
+        )
+
+        # Create shadow user and token (reuse logic from VisitingLoginView)
+        shadow_username = f"visiting_{user_data['user_id']}_{user_data['home_store_id']}"
+        shadow_user, _ = User.objects.update_or_create(
+            username=shadow_username,
+            defaults={
+                'email': user_data['email'],
+                'first_name': user_data.get('first_name', 'User'),
+                'is_active': True,
+            }
+        )
+        shadow_token, _ = Token.objects.get_or_create(user=shadow_user)
+
+        return Response({
+            'token':      shadow_token.key,
+            'user_id':    user_data['user_id'],
+            'first_name': user_data.get('first_name', 'User'),
+            'userRole':   user_data['role'],
+            'visiting':   True,
+            'home_store': user_data['home_store_endpoint'],
+        })
+
+
 class CheckEmailView(APIView):
     permission_classes = [AllowAny]
 
@@ -329,7 +520,43 @@ class CheckEmailView(APIView):
             Q(email__iexact=email) | Q(username__iexact=email)
         ).exists()
         return Response({'exists': exists}, status=status.HTTP_200_OK)
-    
+
+
+class UserSelfUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+        })
+
+    def post(self, request):
+        user = request.user
+        data = request.data
+
+        new_email = data.get('email', '').strip()
+        if new_email:
+            if User.objects.filter(email__iexact=new_email).exclude(pk=user.pk).exists():
+                return Response({'error': 'Email already in use.'}, status=status.HTTP_400_BAD_REQUEST)
+            user.email = new_email
+            user.save()
+            return Response({'success': True, 'email': user.email})
+
+        current_password = data.get('current_password', '')
+        new_password = data.get('new_password', '')
+        if current_password and new_password:
+            if not user.check_password(current_password):
+                return Response({'error': 'Current password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+            user.set_password(new_password)
+            user.save()
+            return Response({'success': True})
+
+        return Response({'error': 'No valid update data provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class PreferencesOperations(viewsets.ModelViewSet):
     queryset = Preference.objects.all()
     serializer_class = PreferenceSerializer
@@ -427,15 +654,135 @@ class DrinkOperations(viewsets.ModelViewSet):
 
 class UserDrinksLookup(ListAPIView):
     serializer_class = DrinkSerializer
+    authentication_classes = [VisitingTokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """
         Retrieve drinks that are marked as favorites by the provided user ID.
+        For home users: returns real Drink records from M2M.
+        For visiting users: returns cached drink data.
         """
-        user_id = self.kwargs['user_id']  # Retrieve the 'user_id' from the URL
+        user_id = self.kwargs['user_id']
         user = get_object_or_404(User, pk=user_id)
         return Drink.objects.filter(Favorite=user_id)
+
+    def list(self, request, *args, **kwargs):
+        user_id = self.kwargs['user_id']
+        # Check if this is a visiting user
+        cache = VisitingUserCache.objects.filter(
+            user_id=user_id, expires_at__gt=timezone.now()
+        ).first()
+        if cache:
+            drinks = [
+                {**d, "DrinkID": d.get("cache_drink_id", d.get("home_drink_id"))}
+                for d in cache.favorite_drinks
+            ]
+            return Response(drinks)
+        # Home user: use normal queryset
+        return super().list(request, *args, **kwargs)
+
+
+class UserFavoriteToggleView(APIView):
+    """
+    PATCH /backend/users/<user_id>/favorites/<drink_id>/
+    Toggles a drink's favorite status for a user.
+    Handles both home users (int drink_id) and visiting users (UUID cache_drink_id).
+    Body: { "action": "add" } or { "action": "remove" }
+    """
+    authentication_classes = [VisitingTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, user_id, drink_id):
+        action = request.data.get("action")
+        if action not in ("add", "remove"):
+            return Response(
+                {"error": "action must be 'add' or 'remove'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if this is a visiting user (has cache entry)
+        cache = VisitingUserCache.objects.filter(
+            user_id=user_id, expires_at__gt=timezone.now()
+        ).first()
+        if cache:
+            return self._toggle_visiting(request, cache, drink_id, action)
+
+        # Home user — use Drink.Favorite M2M
+        user = get_object_or_404(User, pk=user_id)
+        try:
+            drink = Drink.objects.get(pk=int(drink_id))
+        except (Drink.DoesNotExist, ValueError):
+            return Response({"error": "Drink not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if action == "add":
+            drink.Favorite.add(user)
+        else:
+            drink.Favorite.remove(user)
+        _propagate_to_home_store(user_id)
+        return Response({"favorited": action == "add", "drink_id": drink_id})
+
+    def _toggle_visiting(self, request, cache, drink_id, action):
+        if action == "add":
+            # drink_id is the local DrinkID (int) created just before this call
+            try:
+                local_drink = Drink.objects.get(pk=int(drink_id))
+            except (Drink.DoesNotExist, ValueError):
+                return Response({"error": "Drink not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            cache_drink_id = str(uuid.uuid4())
+            entry = {
+                "cache_drink_id": cache_drink_id,
+                "home_drink_id": None,
+                "Name": local_drink.Name,
+                "SodaUsed": local_drink.SodaUsed or [],
+                "SyrupsUsed": local_drink.SyrupsUsed or [],
+                "AddIns": local_drink.AddIns or [],
+                "Ice": local_drink.Ice,
+                "Price": float(local_drink.Price),
+                "Size": local_drink.Size,
+            }
+            cache.favorite_drinks = cache.favorite_drinks + [entry]
+            cache.save(update_fields=["favorite_drinks"])
+            _propagate_to_home_store(cache.user_id)
+            return Response({"favorited": True, "drink_id": cache_drink_id})
+        else:
+            # drink_id is cache_drink_id (UUID string) for visiting users
+            cache.favorite_drinks = [
+                d for d in cache.favorite_drinks
+                if d.get("cache_drink_id") != drink_id
+            ]
+            cache.save(update_fields=["favorite_drinks"])
+            _propagate_to_home_store(cache.user_id)
+            return Response({"favorited": False, "drink_id": drink_id})
+
+
+class SeasonalDrinkListView(ListAPIView):
+    """
+    GET /backend/seasonal-drinks/
+    Public endpoint — no auth required.
+    Returns only is_active=True seasonal drinks for the carousel.
+    """
+    serializer_class = SeasonalDrinkSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return SeasonalDrink.objects.filter(is_active=True)
+
+
+class IngredientsListView(APIView):
+    """
+    GET /backend/ingredients/
+    Public endpoint — returns all ingredient names from Inventory, grouped by type.
+    Used by the frontend to populate drink builder dropdowns.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        sodas = list(Inventory.objects.filter(ItemType='Soda').values_list('ItemName', flat=True).order_by('ItemName'))
+        syrups = list(Inventory.objects.filter(ItemType='Syrup').values_list('ItemName', flat=True).order_by('ItemName'))
+        add_ins = list(Inventory.objects.filter(ItemType='Add In').values_list('ItemName', flat=True).order_by('ItemName'))
+        return Response({'sodas': sodas, 'syrups': syrups, 'add_ins': add_ins})
 
 
 class InventoryListAPIView(ListAPIView):
@@ -684,6 +1031,25 @@ class UserOrdersLookup(ListCreateAPIView):
         user = get_object_or_404(User, pk=user_id)
         serializer.save(UserID=user)
 
+class RecurringOrderOperations(viewsets.ModelViewSet):
+    queryset = RecurringOrder.objects.all()
+    serializer_class = RecurringOrderSerializer
+    permission_classes = [AllowAny]
+
+class UserRecurringOrdersLookup(ListCreateAPIView):
+    serializer_class = RecurringOrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']
+        user = get_object_or_404(User, pk=user_id)
+        return RecurringOrder.objects.filter(user=user)
+
+    def perform_create(self, serializer):
+        user_id = self.kwargs['user_id']
+        user = get_object_or_404(User, pk=user_id)
+        serializer.save(user=user)
+
 class StripeConfigView(APIView):
     permission_classes = [AllowAny]
 
@@ -837,7 +1203,18 @@ class GenerateAIDrink(APIView):
     
     def generate_account_user(self, user_id):
         """Generate AI drink for a registered user using their preferences and order history."""
-        user = get_object_or_404(User, pk=user_id)
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            # Visiting user — shadow pk ≠ home user_id; no local User row.
+            # Use cached preferences if available, otherwise fall back to generic generation.
+            cache = VisitingUserCache.objects.filter(
+                user_id=user_id, expires_at__gt=timezone.now()
+            ).first()
+            if cache and cache.preferences:
+                return self.generate_response_data(cache.preferences, user_created=True)
+            return self.generate_general_user()
+
         preferences = Preference.objects.filter(UserID=user)
         preferences_list = []
 
@@ -879,10 +1256,28 @@ class GenerateAIDrink(APIView):
             'SyrupsUsed': result["syrups"],
             'SodaUsed': result["soda"][0],
             'AddIns': result["addins"],
+            'Name': result.get("name", ""),
             'Size': "24oz",
             'Ice': "regular",
             "UserCreated": user_created,
         }
+
+
+class NameDrinkView(APIView):
+    """
+    POST /backend/name-drink/
+    Generates a fun drink name based on user-selected ingredients.
+    Body: { "sodas": [...], "syrups": [...], "addins": [...] }
+    Returns: { "name": "Creative Drink Name" }
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        sodas = request.data.get("sodas", [])
+        syrups = request.data.get("syrups", [])
+        addins = request.data.get("addins", [])
+        name = generate_drink_name(sodas, syrups, addins)
+        return Response({"name": name})
 
 
 class RevenueViewSet(viewsets.ModelViewSet):

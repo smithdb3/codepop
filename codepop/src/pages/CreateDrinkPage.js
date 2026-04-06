@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import NavBar from '../components/NavBar';
 import DropDown from '../components/DropDown';
-import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import Gif from '../components/Gif';
-import { sodaOptions, syrupOptions, AddInOptions } from '../components/Ingredients';
+import { useIngredients } from '../components/useIngredients';
+import ingredientMeta from '../components/Ingredients';
 import { getBaseURL } from '../../ip_address'
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/Ionicons';
 import AIAlert from '../components/AIAlert';
+import DrinkNameModal from '../components/DrinkNameModal';
 import CodePopLogo from '../components/CodePopLogo';
 import { useTheme } from '../theme';
+import TabNavigationContext from '../context/TabNavigationContext';
 
 const flavorMap = {
   // Sodas
@@ -52,36 +56,88 @@ const getDrinkTags = (sodas, syrups, addins) => {
   return tags;
 };
 
-
-const CreateDrinkPage = () => {
-  const route = useRoute();
-  const navigation = useNavigation();
+const CreateDrinkPage = ({ insideTabContainer = false, isFocused = true, navigation: navProp, route = {} }) => {
+  const navigation = navProp || useNavigation();
   const { colors } = useTheme();
+
+  const tabNav = useContext(TabNavigationContext);
+  const { sodaOptions, syrupOptions, addInOptions } = useIngredients();
+
   const [drinkDict, setDrinkDict] = useState([]);
   const [isModalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [currentDrinkToEdit, setCurrentDrinkToEdit] = useState(null);
+  const didPopulateFromEdit = React.useRef(false);
   const [openDropdown, setOpenDropdown] = useState({
     sodas: false,
     syrups: false,
     addins: false,
   });
 
-  // variables to add to drink object
   const [SodaUsed, setSoda] = useState([]);
   const [SyrupsUsed, setSyrups] = useState([]);
   const [AddIns, setAddIns] = useState([]);
   const [selectedSize, setSize] = useState(null);
   const [selectedIce, setIce] = useState(null);
 
-  useFocusEffect(
-    React.useCallback(() => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const [drinkName, setDrinkName] = useState('');
+  const [isNameModalVisible, setNameModalVisible] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      didPopulateFromEdit.current = false;
+      return;
+    }
+
+    // Check both route params (for stack navigation) and tabNav (for tab navigation)
+    const drinkToEdit = route.params?.drinkToEdit || tabNav?.drinkToEdit;
+
+    if (drinkToEdit) {
+      const iceNorm = {
+        'none': 'No Ice', 'no ice': 'No Ice',
+        'light': 'Light', 'regular': 'Regular', 'extra': 'Extra',
+      };
+
+      setSoda((drinkToEdit.SodaUsed || []).map(s => s.toLowerCase()));
+      setSyrups((drinkToEdit.SyrupsUsed || []).map(s => s.toLowerCase()));
+      setAddIns((drinkToEdit.AddIns || []).map(s => s.toLowerCase()));
+      setSize(drinkToEdit.Size || null);
+      setIce(iceNorm[drinkToEdit.Ice?.toLowerCase()] || drinkToEdit.Ice || null);
+      setDrinkName(drinkToEdit.Name || '');
+      setCurrentDrinkToEdit(drinkToEdit);
+      didPopulateFromEdit.current = true;
+
+      // Clear the drinkToEdit from tabNav after using it
+      if (tabNav?.setDrinkToEdit) {
+        tabNav.setDrinkToEdit(null);
+      }
+
+    } else if (!didPopulateFromEdit.current) {
       resetDrinkForm();
+      setCurrentDrinkToEdit(null);
+
       if (route.params?.fromGenerateButton) {
         console.log("Generating drinks activated from home page button");
         GenerateAI();
       }
-    }, [route.params?.fromGenerateButton, route.params?.fromCartPage])
-  );
+
+      if (tabNav && tabNav.shouldGenerateDrink) {
+        const timer = setTimeout(() => {
+          GenerateAI();
+        }, 220);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [
+    isFocused,
+    route.params?.drinkToEdit,
+    route.params?.fromGenerateButton,
+    tabNav?.shouldGenerateDrink,
+    tabNav?.drinkToEdit
+  ]);
 
   const resetDrinkForm = () => {
     setSoda([]);  // Clear selected sodas
@@ -89,66 +145,139 @@ const CreateDrinkPage = () => {
     setAddIns([]);  // Clear selected add-ins
     setIce(null);  // Clear selected ice amount
     setSize(null);  // Clear selected size
+    setDrinkName('');  // Clear drink name
   };
-  
-  const addToCart = async () => {
+
+  const saveDrink = async () => {
+    if (selectedIce == null || selectedSize == null || SodaUsed.length === 0) {
+      Alert.alert("Don't forget to choose a Soda, Size and Ice Amount!");
+      return;
+    }
+    setNameModalVisible(true);
+  };
+
+  const executeSave = async (confirmedName) => {
+    setNameModalVisible(false);
+    setDrinkName(confirmedName);
     try {
-      // check if ice and size have been selected
-      if(selectedIce == null || selectedSize == null || SodaUsed.length == 0){
+      const userId = await AsyncStorage.getItem('userId');
+      const token = await AsyncStorage.getItem('userToken');
+      if (!userId || !token) {
+        Alert.alert('Sign in to save drinks!');
+        return;
+      }
+      const drinkRes = await fetch(`${getBaseURL()}/backend/drinks/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          Name: confirmedName || 'My Drink',
+          SodaUsed, SyrupsUsed, AddIns,
+          Price: 2.00, User_Created: true,
+          Size: selectedSize, Ice: selectedIce,
+        }),
+      });
+      if (!drinkRes.ok) throw new Error(`Failed to create drink. Status: ${drinkRes.status}`);
+      const drink = await drinkRes.json();
+      const favRes = await fetch(`${getBaseURL()}/backend/users/${userId}/favorites/${drink.DrinkID}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
+        body: JSON.stringify({ action: 'add' }),
+      });
+      if (!favRes.ok) throw new Error(`Failed to save drink. Status: ${favRes.status}`);
+      Alert.alert('Drink saved!', 'Find it in your Saved Drinks on the home tab.');
+    } catch (error) {
+      console.error('Error saving drink:', error);
+      Alert.alert('Error', 'Could not save drink. Please try again.');
+    }
+  };
 
-        Alert.alert("Dont forget to choose a Soda, Size and, Ice Ammount!")
+  const addToCart = async () => {
+    if (isAdding) return;
 
-      }else{
-        const token = await AsyncStorage.getItem('userToken');
-    
+    if (selectedIce == null || selectedSize == null || SodaUsed.length === 0) {
+      Alert.alert("Don't forget to choose a Soda, Size and Ice Amount!");
+      return;
+    }
+
+    setIsAdding(true);
+
+    // Resolve drink name — generate one via AI if user hasn't named it
+    let resolvedName = drinkName.trim();
+    if (!resolvedName) {
+      try {
+        const res = await fetch(`${getBaseURL()}/backend/name-drink/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sodas: SodaUsed, syrups: SyrupsUsed, addins: AddIns }),
+        });
+        if (res.ok) {
+          const nameData = await res.json();
+          resolvedName = nameData.name || 'My Drink';
+        }
+      } catch (_) { }
+      resolvedName = resolvedName || 'My Drink';
+    }
+
+    const drinkToEdit = currentDrinkToEdit;
+    const body = JSON.stringify({
+      Name: drinkToEdit ? "Updated Drink" : resolvedName,
+      SodaUsed, SyrupsUsed, AddIns,
+      Price: 2.00, User_Created: true,
+      Size: selectedSize, Ice: selectedIce,
+    });
+
+    try {
+      if (drinkToEdit) {
+        // PUT — update existing drink, no cart list change needed
+        const response = await fetch(`${getBaseURL()}/backend/drinks/${drinkToEdit.DrinkID}/`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        });
+        if (!response.ok) throw new Error(`Failed to update drink. Status: ${response.status}`);
+      } else {
+        // POST — create new drink and append to cart
         const response = await fetch(`${getBaseURL()}/backend/drinks/`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            Name: "Drink in User Cart",  // Example name for the drink
-            SodaUsed: SodaUsed,  // Default value if SodaUsed is null
-            SyrupsUsed: SyrupsUsed,
-            AddIns: AddIns,
-            Price: 2.00,
-            User_Created: true,    // Assuming the user is creating the drink
-            Size: selectedSize,
-            Ice: selectedIce,
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body,
         });
-    
         if (!response.ok) {
           throw new Error(`Failed to add drink. Status: ${response.status}`);
         }
-        // add drink item (the drinks ID) to the checkout list from App.js
-        try{
-          // gets list of out of storage on your phone
-          cartList = await AsyncStorage.getItem("checkoutList");
-          const currentList = cartList ? JSON.parse(cartList) : [];
-          // takes the response (what we get after we create a drink) and extracts the drinkID
-          const data = await response.json();
-          const drinkID = data.DrinkID;
-          // add the drinkID to the checkoutList
-          const updatedList = [...currentList, drinkID]
-          // Saves the checkoutlist back into the storage on the phone
-          await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
-        }catch (error){
-          console.log(error)
-        }
 
+        const data = await response.json();
+
+        try {
+          const cartList = await AsyncStorage.getItem("checkoutList");
+          const currentList = cartList ? JSON.parse(cartList) : [];
+
+          const updatedList = [...currentList, data.DrinkID];
+          await AsyncStorage.setItem('checkoutList', JSON.stringify(updatedList));
+
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      // Navigate to cart after either creating or updating
+      if (tabNav && tabNav.navigateToTab) {
+        tabNav.navigateToTab(2); // Cart tab
+      } else {
         navigation.navigate('Cart');
       }
     } catch (error) {
-      console.error('Error adding drink to cart:', error);
+      console.error('Error saving drink:', error);
+    } finally {
+      setIsAdding(false);
     }
-  };  
-  
+  };
+
 
   const handleSizeSelection = (size) => {
     setSize(size);
   };
-  
+
   const handleIceSelection = (ice) => {
     setIce(ice);
   };
@@ -164,8 +293,8 @@ const CreateDrinkPage = () => {
       }
     });
   };
-  
-  
+
+
   const handleSyrupSelection = (syrup) => {
     setSyrups((prevSyrups) => {
       if (prevSyrups.includes(syrup)) {
@@ -189,7 +318,7 @@ const CreateDrinkPage = () => {
       }
     });
   };
-  
+
   // search and list stiff
   const filterOptions = (options = []) => {
     return options.filter((option) =>
@@ -205,10 +334,11 @@ const CreateDrinkPage = () => {
       addins: !!text,
     });
   };
-  
+
   // function for generate drink button which generates a drink with AI
 
   const GenerateAI = async () => {
+    setIsGenerating(true);
     try {
       const user_id = await AsyncStorage.getItem('userId');
       let url = `${getBaseURL()}/backend/generate/`;
@@ -240,11 +370,14 @@ const CreateDrinkPage = () => {
       setIce('Regular');
 
       setDrinkDict(drink);
+      setDrinkName(drink.Name || '');
       setModalVisible(true);
       console.log(drink);
     }
     catch (error) {
       console.error('Error when trying to generate AI drink:', error);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -252,33 +385,22 @@ const CreateDrinkPage = () => {
   const getLayers = (soda, syrups, addins) => {
     const layers = [];
     const totalItems = soda.length + syrups.length + addins.length;
-  
-    soda.forEach((sodaName) => {
-      const sodaOption = sodaOptions.find((opt) => opt.label === sodaName);
-      if (sodaOption) {
-        layers.push({ color: sodaOption.color, height: 100 / totalItems });
-      } else {
+    if (totalItems === 0) return layers;
+
+    const addLayer = (name) => {
+      if (!name) return;
+      const meta = ingredientMeta[name.toLowerCase()];
+      if (meta?.color) {
+        layers.push({ color: meta.color, height: 100 / totalItems });
       }
-    });
-  
-    syrups.forEach((syrupName) => {
-      const syrupOption = syrupOptions.find((opt) => opt.label === syrupName);
-      if (syrupOption) {
-        layers.push({ color: syrupOption.color, height: 100 / totalItems });
-      } else {
-      }
-    });
-  
-    addins.forEach((addinName) => {
-      const addInOption = AddInOptions.find((opt) => opt.label === addinName); // Assuming AddIns use syrupOptions
-      if (addInOption) {
-        layers.push({ color: addInOption.color, height: 100 / totalItems });
-      } else {
-      }
-    });
+    };
+
+    soda.forEach(addLayer);
+    syrups.forEach(addLayer);
+    addins.forEach(addLayer);
     return layers;
-  };  
-  
+  };
+
   const layers = getLayers(SodaUsed, SyrupsUsed, AddIns);
 
   const makeStyles = (colors) => StyleSheet.create({
@@ -474,7 +596,7 @@ const CreateDrinkPage = () => {
   const styles = makeStyles(colors);
 
   return (
-    <View style={styles.wholePage}>
+    <View style={[styles.wholePage, insideTabContainer && { paddingBottom: 50 }]}>
       {/* ── PINNED TOP SECTION ── */}
       <View style={styles.pinnedTop}>
         <View style={styles.reviewCard}>
@@ -534,11 +656,20 @@ const CreateDrinkPage = () => {
 
         {/* Action buttons — always visible in pinned area */}
         <View style={styles.pinnedButtonRow}>
-          <TouchableOpacity onPress={GenerateAI} style={[styles.pinnedButton, styles.secondaryButton]}>
-            <Text style={styles.secondaryButtonText}>Ask Tonic</Text>
+          <TouchableOpacity onPress={GenerateAI} disabled={isGenerating} style={[styles.pinnedButton, styles.secondaryButton, isGenerating && { opacity: 0.5 }]}>
+            {isGenerating ? (
+              <ActivityIndicator size="small" color={colors.secondary} />
+            ) : (
+              <Text style={styles.secondaryButtonText}>Ask Tonic</Text>
+            )}
           </TouchableOpacity>
-          <TouchableOpacity onPress={addToCart} style={[styles.pinnedButton, styles.primaryButton]}>
-            <Text style={styles.primaryButtonText}>Add to My Order</Text>
+          <TouchableOpacity onPress={saveDrink} style={[styles.pinnedButton, styles.secondaryButton, { flex: 0.5 }]}>
+            <Icon name="heart-outline" size={22} color={colors.secondary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={addToCart} disabled={isAdding} style={[styles.pinnedButton, styles.primaryButton, isAdding && { opacity: 0.5 }]}>
+            <Text style={styles.primaryButtonText}>
+              {isAdding ? 'Adding...' : (currentDrinkToEdit ? 'Save Changes' : 'Add to My Order')}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -550,12 +681,23 @@ const CreateDrinkPage = () => {
             drinkDict={drinkDict}
           />
         )}
+
+        {/* Drink Name Modal */}
+        <DrinkNameModal
+          visible={isNameModalVisible}
+          initialName={drinkName}
+          title="Name Your Drink"
+          onConfirm={executeSave}
+          onDismiss={() => setNameModalVisible(false)}
+        />
       </View>
 
       {/* ── SCROLLABLE INGREDIENT SECTION ── */}
       <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
         {/* Page Title */}
-        <Text style={styles.pageTitle}>Design Your Drink</Text>
+        <Text style={styles.pageTitle}>
+          {currentDrinkToEdit ? 'Edit Your Drink' : 'Design Your Drink'}
+        </Text>
 
         {/* Size and Ice Selector Row */}
         {/* Size Selector */}
@@ -629,7 +771,7 @@ const CreateDrinkPage = () => {
         />
         <DropDown
           title="✨ Add-Ins"
-          options={filterOptions(AddInOptions)}
+          options={filterOptions(addInOptions)}
           onSelect={handleAddInSelection}
           isOpen={openDropdown.addins}
           setOpen={() => setOpenDropdown(prev => ({ ...prev, addins: !prev.addins }))}
@@ -637,10 +779,10 @@ const CreateDrinkPage = () => {
         />
 
         {/* Bottom spacing for NavBar */}
-        <View style={styles.navBarSpace} />
+        {!insideTabContainer && <View style={styles.navBarSpace} />}
       </ScrollView>
 
-      <NavBar />
+      {!insideTabContainer && <NavBar />}
     </View>
   );
 };
