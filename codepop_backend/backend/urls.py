@@ -71,6 +71,7 @@ drink_list = DrinkOperations.as_view({
 drink_detail = DrinkOperations.as_view({
     'get': 'retrieve',
     'put': 'update',
+    'patch': 'partial_update',
     'delete': 'destroy'
 })
 

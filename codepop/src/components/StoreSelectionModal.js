@@ -425,11 +425,9 @@ export default function StoreSelectionModal({
         if (store.api_endpoint === homeStoreEndpoint) {
           // Switching back to home store — restore the home token directly
           await AsyncStorage.setItem('userToken', homeToken);
-          console.log('Restored home token for home store');
         } else {
           // Switching to a different (visiting) store — exchange the home token
           try {
-            console.log('Exchanging token with visiting store:', store.api_endpoint);
             const exchangeRes = await fetch(`${store.api_endpoint}/backend/auth/exchange/`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -442,7 +440,6 @@ export default function StoreSelectionModal({
             if (exchangeRes.ok) {
               const exchangeData = await exchangeRes.json();
               await AsyncStorage.setItem('userToken', exchangeData.token);
-              console.log('Token exchange successful, got new shadow token');
               // user_id, first_name, userRole remain the same
             } else {
               console.warn('Token exchange returned status:', exchangeRes.status);

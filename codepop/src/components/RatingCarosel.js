@@ -38,7 +38,7 @@ const RatingCarosel = ({ purchasedDrinks }) => {
                     setUserId(storedUserId);
                 }
             } catch (error) {
-                console.error('Error loading auth state:', error);
+                // Silently fail
             }
         })();
     }, []);
