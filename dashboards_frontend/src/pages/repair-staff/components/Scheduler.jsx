@@ -2,10 +2,12 @@ import { useState } from "react";
 import { createSchedule } from "../../../api/schedules";
 import styles from './Scheduler.module.css';
 
-export function Scheduler() {
+export function Scheduler(props) {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [fileContents, setFileContents] = useState([]);
+
+    const fetchSchedules = props.fetchSchedules;
 
     const handleUpload = async (event) => {
         event.preventDefault();
@@ -18,7 +20,7 @@ export function Scheduler() {
 
             const reader = new FileReader();
 
-            reader.onload = (f) =>{ //Breaks up CSV by line
+            reader.onload = async (f) =>{ //Breaks up CSV by line
                 const contents = f.target.result.trim().split("\n");
 
                 //For each line in the csv it makes a javascript schedule object to be sent to the data base.
@@ -31,7 +33,8 @@ export function Scheduler() {
                         completed_at: null,
                         description: components[1],
                     };
-                    createSchedule(Schedule);
+                    await createSchedule(Schedule);
+                    fetchSchedules(); 
                 }
             };
 
@@ -40,7 +43,6 @@ export function Scheduler() {
                 };
 
             reader.readAsText(file);
-
             
         } catch (error) {
             console.error('File upload error:', error);

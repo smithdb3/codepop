@@ -1,31 +1,24 @@
-import { useState, useEffect } from "react";
-import { getSchedules, setCompletion } from "../../../api/schedules";
-import { updateMachineStatus, getMachinePair, getMachine } from "../../../api/machines";
-// import styles from './Schedule.module.css';
+import { setCompletion } from "../../../api/schedules";
+import { updateMachineStatus } from "../../../api/machines";
+import styles from './Schedule.module.css';
 
-export function Schedule(){
-    const [repairSchedule, setRepairSchedule] = useState([]);
+const statusStyles = {
+    'REPAIR_START': '#c4bd08',
+    'WARNING': '#F97316',        
+    'ERROR': '#EF4444',          
+    'OUT_OF_ORDER': '#F97316',   
+    'SCHEDULE_SERVICE': '#c4bd08', 
+}
 
-    useEffect(() => {
-    const fetchData = async () => {
-        const schedules = await getSchedules();
-        const schedulePair = await Promise.all( //Gets the machine associated with a schedule and pairs them
-            schedules.map(async (s) => { //Gets the store and machine and parses the data
-                const pair = await getMachinePair(s.machine);
-                return [s, pair.machine, pair.store];
-            })
-        ); 
-
-        setRepairSchedule(schedulePair);
-      };
-      fetchData();
-    }, []);
+export function Schedule(props){
+    const repairSchedule = props.repairSchedule;
+    const setRepairSchedule = props.setRepairSchedule;
 
     return (
         <div>
-            <table>
+            <table id={styles.scheduleTable}>
                 <thead>
-                    <tr>
+                    <tr id={styles.scheduleHead}>
                         <th>Location</th>
                         <th>Status</th>
                         <th>Name</th>
@@ -36,7 +29,7 @@ export function Schedule(){
                 </thead>
                 <tbody>
                     {repairSchedule.map(([schedule, machine, store]) =>
-                    <tr key={machine.machine_id}>
+                    <tr className={styles.scheduleRow} key={machine.machine_id}>
                         <td>
                           <a
                             href={`https://www.google.com/maps?q=${store.latitude},${store.longitude}`}
@@ -46,19 +39,22 @@ export function Schedule(){
                             {store.store_name}
                           </a>
                         </td>
-                        <td>{machine.status}</td>
+                        <td style={{ color: statusStyles[machine.status]}}>{machine.status}</td>
                         <td>{machine.name}</td>
                         <td>{schedule.scheduled_at}</td>
                         <td>{machine.notes}</td>
                         <td>{schedule.description}</td>
-                        <td>
-                            <button onClick={() => {
+                        <td>TEST</td>
+                        <td className={styles.buttonElement}>
+                            <button className={styles.statusButton} onClick={() => {
                                 const newStatus = machine.status == 'REPAIR_START'? 'NORMAL': 'REPAIR_START';
-                                const schedules = [...repairSchedule];
+                                const schedules = [...repairSchedule].map(([s, m]) =>
+                                    m.machine_id === machine.machine_id ? [s, {...m, status: newStatus}] : [s, m] //updates the machines status on the frontend
+                                );
                                 updateMachineStatus(machine.machine_id, newStatus);
 
                                 if(newStatus == 'NORMAL'){
-                                    const index = schedules.indexOf(schedule);
+                                    const index = schedules.findIndex(([s]) => s.id === schedule.id);
                                     setCompletion(schedule.id);
 
                                     if(index > -1){

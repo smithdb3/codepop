@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SCHEDULE_JOBS } from '../mockData';
 import styles from './Schedule.module.css';
 import { Scheduler } from '../components/Scheduler';
+import { getSchedules } from "../../../api/schedules";
+import { getMachinePair } from "../../../api/machines";
 import { Schedule as ScheduleComponent } from '../components/Schedule';
 
 export function Schedule({ onNavigate }) {
   const [view, setView] = useState('timeline');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [repairSchedule, setRepairSchedule] = useState([]); //Hoisted state
   const [expandedSections, setExpandedSections] = useState({
     today: true,
     overdue: false,
@@ -39,6 +42,18 @@ export function Schedule({ onNavigate }) {
   const overdueJobs = SCHEDULE_JOBS.filter((j) => j.category === 'overdue');
   const upcomingJobs = SCHEDULE_JOBS.filter((j) => j.category === 'upcoming');
   const waitingJobs = SCHEDULE_JOBS.filter((j) => j.category === 'waiting_on_parts');
+  const fetchSchedules = async () => { //Hoisted function
+    const schedules = await getSchedules();
+    const schedulePair = await Promise.all( //Gets the machine associated with a schedule and pairs them
+      schedules.map(async (s) => { //Gets the store and machine and parses the data
+        const pair = await getMachinePair(s.machine);
+        return [s, pair];
+      })
+    ); 
+    setRepairSchedule(schedulePair);
+  };
+
+  useEffect(()=>{fetchSchedules();}, []);
 
   return (
     <div className={styles.page}>
@@ -70,245 +85,8 @@ export function Schedule({ onNavigate }) {
           </div>
         </div>
       </div>
-      <Scheduler></Scheduler>
-      <ScheduleComponent></ScheduleComponent>
-      {/* Calendar/Gantt View */}
-      {view === 'timeline' && (
-        <div className={styles.ganttContainer}>
-          <div className={styles.ganttLabelCol}>
-            {SCHEDULE_JOBS.map((job) => (
-              <div key={job.id} className={styles.ganttRow} style={{ minHeight: '52px' }}>
-                <span className={styles.machineLabel}>
-                  {job.machineId}
-                  <br />
-                  <span style={{ fontSize: '10px', color: '#9CA3AF' }}>
-                    {job.machineStatus}
-                  </span>
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className={styles.ganttBody}>
-            <div className={styles.ganttTimeline}>
-              {/* Time headers 8am-6pm */}
-              <div className={styles.timeHeaders}>
-                {Array.from({ length: 11 }).map((_, i) => {
-                  const hour = 8 + i;
-                  return (
-                    <div key={hour} className={styles.timeHeader} style={{ minWidth: '60px' }}>
-                      {hour}:00
-                    </div>
-                  );
-                })}
-              </div>
-              {/* Job bars */}
-              {SCHEDULE_JOBS.map((job) => (
-                <div key={job.id} className={styles.ganttRow} style={{ minHeight: '52px' }}>
-                  <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-                    <div
-                      className={`${styles.ganttBar} ${styles[`ganttBar${job.category === 'today' ? 'Scheduled' : job.category === 'overdue' ? 'Overdue' : job.category === 'waiting_on_parts' ? 'InProgress' : 'Completed'}`]}`}
-                      style={{
-                        left: `${((job.startMinutes - 480) / 600) * 100}%`,
-                        width: `${((job.endMinutes - job.startMinutes) / 600) * 100}%`,
-                      }}
-                      title={`${job.machineId}: ${job.startTime}-${job.endTime}`}
-                    >
-                      {job.machineId}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {view === 'week' && (
-        <div className={styles.weekGrid}>
-          <div className={styles.weekHeader}>
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
-              <div key={day} className={styles.weekDayHeader}>
-                <div className={styles.dayName}>{day}</div>
-              </div>
-            ))}
-          </div>
-          <div className={styles.weekBody}>
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-              <div key={day} className={styles.weekDay}>
-                {SCHEDULE_JOBS.filter((j) => j.startTime.includes(day.charAt(0))).map((job) => (
-                  <div key={job.id} className={styles.weekJob}>
-                    {job.machineId}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {view === 'month' && (
-        <div className={styles.monthGrid}>
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-            <div key={day} className={styles.monthDayHeader}>
-              {day}
-            </div>
-          ))}
-          {Array.from({ length: 35 }).map((_, i) => (
-            <div key={i} className={styles.monthCell}>
-              <div className={styles.monthCellDate}>{i + 1}</div>
-              <div className={styles.monthCellJobs}>
-                {SCHEDULE_JOBS.slice(0, 2).map((job) => (
-                  <div key={job.id} className={styles.monthJob}>
-                    {job.machineId}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Categorized Sections */}
-      <div className={styles.sectionsContainer}>
-        <AccordionSection
-          title="Today's Schedule"
-          isExpanded={expandedSections.today}
-          onToggle={() => toggleSection('today')}
-          itemCount={todayJobs.length}
-          badgeColor="none"
-        >
-          {todayJobs.length > 0 ? (
-            todayJobs.map((job) => (
-              <div key={job.id} className={styles.scheduleItem}>
-                <span className={styles.scheduleTime}>
-                  {job.startTime}–{job.endTime}
-                </span>
-                <div className={styles.scheduleInfo}>
-                  <strong>{job.machineId}</strong> • {job.storeName}
-                </div>
-                <span className={styles.scheduleStatus}>{job.machineStatus}</span>
-                <button className={styles.scheduleBtn}>Start Repair</button>
-              </div>
-            ))
-          ) : (
-            <div className={styles.emptySection}>No jobs scheduled for today</div>
-          )}
-        </AccordionSection>
-
-        <AccordionSection
-          title="Overdue Maintenance"
-          isExpanded={expandedSections.overdue}
-          onToggle={() => toggleSection('overdue')}
-          itemCount={overdueJobs.length}
-          badgeColor="error"
-        >
-          {overdueJobs.length > 0 ? (
-            overdueJobs.map((job) => (
-              <div key={job.id} className={styles.scheduleItem}>
-                <span className={styles.scheduleTime}>
-                  {job.startTime}–{job.endTime}
-                </span>
-                <div className={styles.scheduleInfo}>
-                  <strong>{job.machineId}</strong> • {job.storeName}
-                </div>
-                <span className={styles.scheduleStatus}>{job.machineStatus}</span>
-                <button className={styles.scheduleBtn}>Schedule Now</button>
-              </div>
-            ))
-          ) : (
-            <div className={styles.emptySection}>No overdue maintenance</div>
-          )}
-        </AccordionSection>
-
-        <AccordionSection
-          title="Upcoming This Week"
-          isExpanded={expandedSections.upcoming}
-          onToggle={() => toggleSection('upcoming')}
-          itemCount={upcomingJobs.length}
-          badgeColor="none"
-        >
-          {upcomingJobs.length > 0 ? (
-            upcomingJobs.map((job) => (
-              <div key={job.id} className={styles.scheduleItem}>
-                <span className={styles.scheduleTime}>
-                  {job.startTime}–{job.endTime} on {job.date}
-                </span>
-                <div className={styles.scheduleInfo}>
-                  <strong>{job.machineId}</strong> • {job.storeName}
-                </div>
-                <span className={styles.scheduleStatus}>{job.machineStatus}</span>
-              </div>
-            ))
-          ) : (
-            <div className={styles.emptySection}>No upcoming jobs this week</div>
-          )}
-        </AccordionSection>
-
-        <AccordionSection
-          title="Waiting on Parts"
-          isExpanded={expandedSections.waiting}
-          onToggle={() => toggleSection('waiting')}
-          itemCount={waitingJobs.length}
-          badgeColor="warning"
-        >
-          {waitingJobs.length > 0 ? (
-            waitingJobs.map((job) => (
-              <div key={job.id} className={styles.scheduleItem}>
-                <span className={styles.scheduleTime}>
-                  Scheduled {job.date}
-                </span>
-                <div className={styles.scheduleInfo}>
-                  <strong>{job.machineId}</strong> • {job.storeName}
-                </div>
-                {job.partsEta && (
-                  <span className={styles.scheduleEta}>Parts ETA: {job.partsEta}</span>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className={styles.emptySection}>No jobs waiting on parts</div>
-          )}
-        </AccordionSection>
-      </div>
-    </div>
-  );
-}
-
-function AccordionSection({ title, isExpanded, onToggle, itemCount, badgeColor, children }) {
-  return (
-    <div className={styles.accordionCard}>
-      <button className={styles.accordionHeader} onClick={onToggle}>
-        <div>
-          <h3 className={styles.accordionTitle}>{title}</h3>
-          {itemCount > 0 && (
-            <span
-              className={styles.accordionBadge}
-              style={{
-                background:
-                  badgeColor === 'error'
-                    ? '#FEE2E2'
-                    : badgeColor === 'warning'
-                      ? '#FEF3C7'
-                      : 'var(--color-background)',
-                color:
-                  badgeColor === 'error'
-                    ? '#DC2626'
-                    : badgeColor === 'warning'
-                      ? '#D97706'
-                      : 'var(--color-text-secondary)',
-              }}
-            >
-              {itemCount}
-            </span>
-          )}
-        </div>
-        <span
-          className={`${styles.accordionChevron} ${isExpanded ? styles.open : ''}`}
-        >
-          ▶
-        </span>
-      </button>
-      {isExpanded && <div className={styles.accordionBody}>{children}</div>}
+      <Scheduler fetchSchedules={fetchSchedules}></Scheduler>
+      <ScheduleComponent repairSchedule={repairSchedule} setRepairSchedule={setRepairSchedule}></ScheduleComponent>
     </div>
   );
 }

@@ -1,0 +1,46 @@
+.statusButton {
+width: 100%;
+  padding: 12px var(--spacing-m);
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  min-height: 44px;
+}
+
+.statusButton:hover {
+  background-color: #e01a52;
+}
+
+.statusButton:active {
+  background-color: #cc1547;
+}
+
+.scheduleRow > td {
+    padding: 5px;
+    margin: 0;
+}
+
+#scheduleTable{
+    border-collapse: collapse;
+    width: 90%;
+}
+
+.scheduleRow:nth-child(odd){
+    background-color: var(--color-secondary);
+}
+
+.buttonElement{
+    background: var(--color-background);
+    width: 150px;
+}
+
+/* Status colors */
+.status-service{ color:#c4bd08}
+.status-out{ color:#F97316}
+.status-status-error{ color:var(--color-error)}
+.status-warning{ color:#b00611}
+.status-repair{ color:#97d408}
