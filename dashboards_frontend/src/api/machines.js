@@ -2,111 +2,39 @@ import { apiFetch } from './client.js';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
-// Stub: Phase 5 - endpoint not yet implemented in backend
+// Get all machines
+export async function getMachines() {
+  return apiFetch('/backend/machines/', { method: 'GET' });
+}
+
 // Gets a machine using an id
 export async function getMachine(machineId) {
-  try {
-      const token = localStorage.getItem('cp_token');
-      const url = `${BASE_URL}/backend/machines/${machineId}`;
-
-      const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-              'Authorization': `Token ${token}`,
-              'Content-Type': 'application/json',
-          },
-      });
-
-      if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      throw error;
-    }
+  return apiFetch(`/backend/machines/${machineId}/`, { method: 'GET' });
 }
 
 export async function getMachinePair(machineId) {
-  try {
-      const token = localStorage.getItem('cp_token');
-      const url = `${BASE_URL}/backend/machines/${machineId}/special-operations/`;
-
-      const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-              'Authorization': `Token ${token}`,
-              'Content-Type': 'application/json',
-          },
-      });
-
-      if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      throw error;
-    }
+  return apiFetch(`/backend/machines/${machineId}/special-operations/`, { method: 'GET' });
 }
 
 export async function createMachine(machineData) {
-  try {
-      const token = localStorage.getItem('cp_token');
-      const url = `${BASE_URL}/backend/machines/`;
+  return apiFetch('/backend/machines/', {
+    method: 'POST',
+    body: JSON.stringify(machineData),
+  });
+}
 
-      const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-              'Authorization': `Token ${token}`,
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(machineData),
-      });
-
-      if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      throw error;
-        }
+// Get machine repair logs
+export async function getMachineRepairLogs(machineId) {
+  return apiFetch(`/backend/machines/${machineId}/repair-logs/`, { method: 'GET' });
 }
 
 export async function getMachineDetail(machineId) {
-  console.warn('Machine detail endpoint not yet implemented');
-  return null;
+  return apiFetch(`/backend/machines/${machineId}/`, { method: 'GET' });
 }
 
 export async function updateMachineStatus(machineId, status) {
-  try {
-      const token = localStorage.getItem('cp_token');
-      const url = `${BASE_URL}/backend/machines/${machineId}/special-operations/`;
-
-      const response = await fetch(url, {
-          method: 'PATCH',
-          headers: {
-              'Authorization': `Token ${token}`,
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({'status':status}),
-      });
-
-      if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      throw error;
-        }
+  return apiFetch(`/backend/machines/${machineId}/special-operations/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
 }

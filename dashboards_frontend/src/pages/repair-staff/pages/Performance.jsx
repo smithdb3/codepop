@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -14,13 +14,8 @@ import {
 } from 'recharts';
 import { KPICard } from '../../super-admin/components/KPICard';
 import { DataTable } from '../../super-admin/components/DataTable';
-import {
-  PERFORMANCE_KPIs,
-  REPAIRS_OVER_TIME,
-  REPAIR_TYPES,
-  REPAIR_HISTORY,
-} from '../mockData';
 import styles from './Performance.module.css';
+import { getMachines, getMachineRepairLogs } from '../../../api/machines';
 
 const CHART_COLORS = [
   '#FF2E63',
@@ -33,6 +28,98 @@ const CHART_COLORS = [
 
 export function Performance({ onNavigate }) {
   const [timeRange, setTimeRange] = useState('week');
+  const [machines, setMachines] = useState([]);
+  const [repairLogs, setRepairLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch machines and aggregate repair logs
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const machinesData = await getMachines();
+        setMachines(machinesData);
+
+        // Fetch repair logs for all machines
+        const allLogs = [];
+        for (const machine of machinesData) {
+          try {
+            const logs = await getMachineRepairLogs(machine.id);
+            allLogs.push(...logs);
+          } catch (error) {
+            console.error(`Failed to fetch logs for machine ${machine.machine_id}:`, error);
+          }
+        }
+        setRepairLogs(allLogs);
+      } catch (error) {
+        console.error('Failed to fetch performance data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Derive KPIs from repair logs
+  const completedRepairs = repairLogs.filter((log) => log.outcome === 'resolved').length;
+  const avgRepairTime = repairLogs.length > 0
+    ? Math.round(repairLogs.reduce((sum, log) => sum + (log.duration_minutes || 0), 0) / repairLogs.length)
+    : 0;
+  const avgRepairTimeStr = avgRepairTime > 60
+    ? `${Math.floor(avgRepairTime / 60)}h ${avgRepairTime % 60}m`
+    : `${avgRepairTime}m`;
+
+  const onTimePct = 90; // Placeholder - would need schedule data
+  const firstTimeFixPct = repairLogs.length > 0
+    ? Math.round((completedRepairs / repairLogs.length) * 100)
+    : 0;
+  const downtimePrevented = machines
+    .reduce((sum, m) => sum + parseFloat(m.revenue_impact || 0), 0)
+    .toFixed(0);
+
+  // Aggregate repairs over time (by day)
+  const repairsOverTime = repairLogs.reduce((acc, log) => {
+    const dateKey = new Date(log.date).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+    const existing = acc.find((item) => item.date === dateKey);
+    if (existing) {
+      existing.repairs += 1;
+    } else {
+      acc.push({ date: dateKey, repairs: 1 });
+    }
+    return acc;
+  }, []).slice(-7); // Last 7 days
+
+  // Aggregate repair types
+  const repairTypesMap = repairLogs.reduce((acc, log) => {
+    const type = log.issue_type || 'Unknown';
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {});
+  const repairTypes = Object.entries(repairTypesMap).map(([name, value]) => ({
+    name,
+    value,
+  }));
+
+  // Format repair history for table (join with machine data)
+  const repairHistory = repairLogs
+    .map((log) => {
+      const machine = machines.find((m) => m.id === log.machine);
+      return {
+        id: log.id,
+        date: new Date(log.date).toLocaleDateString(),
+        machineId: machine?.machine_id || 'Unknown',
+        location: machine?.location || 'Unknown',
+        issueType: log.issue_type,
+        duration: `${log.duration_minutes}m`,
+        outcome: log.outcome,
+        rating: null,
+      };
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 30);
 
   // Table columns for repair history
   const historyColumns = [
@@ -80,34 +167,6 @@ export function Performance({ onNavigate }) {
         </span>
       ),
     },
-    {
-      key: 'rating',
-      label: 'Rating',
-      sortable: true,
-      render: (val) => (
-        <span style={{ color: '#F59E0B' }}>
-          {val ? '★'.repeat(val) + '☆'.repeat(5 - val) : 'N/A'}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      sortable: false,
-      render: () => (
-        <button
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '16px',
-          }}
-          title="View Details"
-        >
-          🔍
-        </button>
-      ),
-    },
   ];
 
   return (
@@ -139,7 +198,7 @@ export function Performance({ onNavigate }) {
         <div className={styles.kpiWrapper} style={{ '--kpi-accent': '#FF2E63' }}>
           <KPICard
             label="Repairs Completed"
-            value={PERFORMANCE_KPIs.repairsCompleted}
+            value={completedRepairs}
             trend={5}
             target={50}
           />
@@ -147,7 +206,7 @@ export function Performance({ onNavigate }) {
         <div className={styles.kpiWrapper} style={{ '--kpi-accent': '#08D9D6' }}>
           <KPICard
             label="Avg Repair Time"
-            value={PERFORMANCE_KPIs.avgRepairTime}
+            value={avgRepairTimeStr}
             trend={-2}
             target="1h 30m"
           />
@@ -155,7 +214,7 @@ export function Performance({ onNavigate }) {
         <div className={styles.kpiWrapper} style={{ '--kpi-accent': '#F59E0B' }}>
           <KPICard
             label="On-Time %"
-            value={`${PERFORMANCE_KPIs.onTimePct}%`}
+            value={`${onTimePct}%`}
             trend={3}
             target="95%"
           />
@@ -163,7 +222,7 @@ export function Performance({ onNavigate }) {
         <div className={styles.kpiWrapper} style={{ '--kpi-accent': '#10B981' }}>
           <KPICard
             label="First-Time Fix %"
-            value={`${PERFORMANCE_KPIs.firstTimeFixPct}%`}
+            value={`${firstTimeFixPct}%`}
             trend={1}
             target="90%"
           />
@@ -171,17 +230,17 @@ export function Performance({ onNavigate }) {
         <div className={styles.kpiWrapper} style={{ '--kpi-accent': '#8B5CF6' }}>
           <KPICard
             label="Downtime Prevented"
-            value={PERFORMANCE_KPIs.downtimePrevented}
+            value={`$${downtimePrevented}`}
             trend={8}
             target="$15,000"
           />
         </div>
         <div className={styles.kpiWrapper} style={{ '--kpi-accent': '#EC4899' }}>
           <KPICard
-            label="Team Rank"
-            value={PERFORMANCE_KPIs.teamRank}
+            label="Total Repairs"
+            value={repairLogs.length}
             trend={0}
-            target="1st"
+            target="100"
           />
         </div>
       </div>
@@ -191,7 +250,7 @@ export function Performance({ onNavigate }) {
         <div className={styles.chartCard}>
           <h3 className={styles.chartTitle}>Repairs Over Time</h3>
           <ResponsiveContainer width="100%" height={320}>
-            <LineChart data={REPAIRS_OVER_TIME}>
+            <LineChart data={repairsOverTime.length > 0 ? repairsOverTime : [{ date: 'No Data', repairs: 0 }]}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#6B7280' }} />
               <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} />
@@ -218,7 +277,7 @@ export function Performance({ onNavigate }) {
           <ResponsiveContainer width="100%" height={320}>
             <PieChart>
               <Pie
-                data={REPAIR_TYPES}
+                data={repairTypes.length > 0 ? repairTypes : [{ name: 'No Data', value: 1 }]}
                 dataKey="value"
                 nameKey="name"
                 innerRadius={80}
@@ -226,7 +285,7 @@ export function Performance({ onNavigate }) {
                 paddingAngle={3}
                 label={false}
               >
-                {REPAIR_TYPES.map((_, i) => (
+                {(repairTypes.length > 0 ? repairTypes : [{ name: 'No Data', value: 1 }]).map((_, i) => (
                   <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                 ))}
               </Pie>
@@ -242,7 +301,7 @@ export function Performance({ onNavigate }) {
         <h3 className={styles.historyTitle}>Repair History (Last 30)</h3>
         <DataTable
           columns={historyColumns}
-          data={REPAIR_HISTORY}
+          data={repairHistory}
           searchable={true}
           rowsPerPage={25}
         />

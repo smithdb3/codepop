@@ -47,9 +47,9 @@ export function Schedule({ onNavigate }) {
     const schedulePair = await Promise.all( //Gets the machine associated with a schedule and pairs them
       schedules.map(async (s) => { //Gets the store and machine and parses the data
         const pair = await getMachinePair(s.machine);
-        return [s, pair];
+        return [s, pair.machine, pair.store]; // Return 3-tuple: schedule, machine, store
       })
-    ); 
+    );
     setRepairSchedule(schedulePair);
   };
 

@@ -1,7 +1,8 @@
 from django.core.management.base import BaseCommand
 from backend.models import (
     Inventory, Drink, Preference, Region, StoreRegistry,
-    Machine, Schedule, RepairStaffProfile, LogisticsManagerProfile
+    Machine, Schedule, RepairStaffProfile, LogisticsManagerProfile,
+    MachineRepairLog, RepairPart, PartOrder
 )
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -299,27 +300,44 @@ class Command(BaseCommand):
 
         # Seeding Machines (one per status)
         machines_data = [
-            {'machine_id': 'M001', 'name': 'Dispenser Alpha', 'location': 'Bay 1', 'status': 'NORMAL', 'store_id': 1},
-            {'machine_id': 'M002', 'name': 'Dispenser Beta', 'location': 'Bay 2', 'status': 'WARNING', 'store_id': 1},
-            {'machine_id': 'M003', 'name': 'Dispenser Gamma', 'location': 'Bay 3', 'status': 'ERROR', 'store_id': 1},
-            {'machine_id': 'M004', 'name': 'Dispenser Delta', 'location': 'Bay 4', 'status': 'OUT_OF_ORDER', 'store_id': 1},
-            {'machine_id': 'M005', 'name': 'Dispenser Epsilon', 'location': 'Bay 5', 'status': 'SCHEDULE_SERVICE', 'store_id': 1},
-            {'machine_id': 'M006', 'name': 'Dispenser Zeta', 'location': 'Bay 6', 'status': 'REPAIR_START', 'store_id': 1},
-            {'machine_id': 'M007', 'name': 'Dispenser Eta', 'location': 'Bay 7', 'status': 'REPAIR_END', 'store_id': 1},
+            {'machine_id': 'M001', 'name': 'Dispenser Alpha', 'location': 'Bay 1', 'status': 'NORMAL', 'store_id': 1,
+             'serial_number': 'SN-001-A1', 'model': 'CP-3000', 'priority_score': 0, 'revenue_impact': 0,
+             'repair_state': 'Healthy', 'last_note': 'Operational and ready'},
+            {'machine_id': 'M002', 'name': 'Dispenser Beta', 'location': 'Bay 2', 'status': 'WARNING', 'store_id': 1,
+             'serial_number': 'SN-002-B2', 'model': 'CP-3500', 'priority_score': 35, 'revenue_impact': 45.50,
+             'repair_state': 'Scheduled', 'last_note': 'Warning light detected'},
+            {'machine_id': 'M003', 'name': 'Dispenser Gamma', 'location': 'Bay 3', 'status': 'ERROR', 'store_id': 1,
+             'serial_number': 'SN-003-C3', 'model': 'CP-4000', 'priority_score': 85, 'revenue_impact': 125.75,
+             'repair_state': 'In Progress', 'last_note': 'Critical error - technician assigned'},
+            {'machine_id': 'M004', 'name': 'Dispenser Delta', 'location': 'Bay 4', 'status': 'OUT_OF_ORDER', 'store_id': 1,
+             'serial_number': 'SN-004-D4', 'model': 'CP-2500', 'priority_score': 90, 'revenue_impact': 150.00,
+             'repair_state': 'Awaiting Parts', 'last_note': 'Parts on order - ETA 3 days'},
+            {'machine_id': 'M005', 'name': 'Dispenser Epsilon', 'location': 'Bay 5', 'status': 'SCHEDULE_SERVICE', 'store_id': 1,
+             'serial_number': 'SN-005-E5', 'model': 'CP-3000', 'priority_score': 20, 'revenue_impact': 20.00,
+             'repair_state': 'Scheduled', 'last_note': 'Preventive maintenance due'},
+            {'machine_id': 'M006', 'name': 'Dispenser Zeta', 'location': 'Bay 6', 'status': 'REPAIR_START', 'store_id': 1,
+             'serial_number': 'SN-006-F6', 'model': 'CP-3500', 'priority_score': 75, 'revenue_impact': 100.00,
+             'repair_state': 'In Progress', 'last_note': 'Repair started this morning'},
+            {'machine_id': 'M007', 'name': 'Dispenser Eta', 'location': 'Bay 7', 'status': 'REPAIR_END', 'store_id': 1,
+             'serial_number': 'SN-007-G7', 'model': 'CP-4000', 'priority_score': 10, 'revenue_impact': 0,
+             'repair_state': 'Testing', 'last_note': 'Repair complete - undergoing testing'},
         ]
         machines_dict = {}
         for m in machines_data:
             machine, _ = Machine.objects.get_or_create(
                 machine_id=m['machine_id'],
-                defaults={'name': m['name'], 'location': m['location'], 'status': m['status'], 'store_id': m['store_id']}
+                defaults={k: v for k, v in m.items() if k != 'machine_id'}
             )
             machines_dict[m['machine_id']] = machine
 
         # Seeding RepairStaffProfile
-        RepairStaffProfile.objects.get_or_create(
+        repair_profile, _ = RepairStaffProfile.objects.get_or_create(
             user=repair_user,
-            defaults={'region': regions_dict['chicago'], 'assigned_store_id': 1}
+            defaults={'region': regions_dict['chicago']}
         )
+        # Assign repair staff to stores 1 and 2
+        chicago_stores = StoreRegistry.objects.filter(region=regions_dict['chicago'])[:2]
+        repair_profile.assigned_stores.set(chicago_stores)
 
         # Seeding LogisticsManagerProfile
         LogisticsManagerProfile.objects.get_or_create(
@@ -354,5 +372,98 @@ class Command(BaseCommand):
         ]
         for s in schedules_data:
             Schedule.objects.create(**s)
+
+        # Seeding MachineRepairLog (repair history)
+        repair_logs_data = [
+            {
+                'machine': machines_dict['M001'],
+                'technician': repair_user,
+                'date': now.date() - datetime.timedelta(days=30),
+                'issue_type': 'Preventive Maintenance',
+                'duration_minutes': 45,
+                'outcome': 'resolved',
+                'diagnosis': 'Routine check and fluid level adjustment',
+                'steps_text': '1. Inspect dispensers 2. Check fluid levels 3. Clean filters 4. Test operation',
+                'parts_replaced': []
+            },
+            {
+                'machine': machines_dict['M002'],
+                'technician': repair_user,
+                'date': now.date() - datetime.timedelta(days=15),
+                'issue_type': 'Warning Light',
+                'duration_minutes': 60,
+                'outcome': 'resolved',
+                'diagnosis': 'Faulty pressure sensor',
+                'steps_text': '1. Diagnose warning code 22 2. Identify pressure sensor issue 3. Replace sensor 4. Calibrate',
+                'parts_replaced': ['SENSOR-PRE-001']
+            },
+            {
+                'machine': machines_dict['M003'],
+                'technician': repair_user,
+                'date': now.date() - datetime.timedelta(days=8),
+                'issue_type': 'Dispenser Error',
+                'duration_minutes': 90,
+                'outcome': 'escalated',
+                'diagnosis': 'Multiple valve failures, parts on order',
+                'steps_text': '1. Diagnose error code 42 2. Identify multiple valve failures 3. Order replacement parts',
+                'parts_replaced': []
+            },
+        ]
+        for log in repair_logs_data:
+            MachineRepairLog.objects.get_or_create(
+                machine=log['machine'],
+                date=log['date'],
+                defaults={k: v for k, v in log.items() if k not in ['machine', 'date']}
+            )
+
+        # Seeding RepairPart (spare parts inventory)
+        parts_data = [
+            {'part_number': 'SENSOR-PRE-001', 'part_name': 'Pressure Sensor', 'machine_model': 'CP-3500',
+             'stock_status': 'in_stock', 'qty_available': 5, 'hub_location': 'Hub Alpha - Chicago'},
+            {'part_number': 'VALVE-MAIN-002', 'part_name': 'Main Dispenser Valve', 'machine_model': 'CP-4000',
+             'stock_status': 'order_pending', 'qty_available': 0, 'hub_location': 'Hub Beta - Chicago', 'eta': now.date() + datetime.timedelta(days=3)},
+            {'part_number': 'PUMP-DIE-001', 'part_name': 'Dielectric Pump', 'machine_model': 'CP-3000',
+             'stock_status': 'in_stock', 'qty_available': 3, 'hub_location': 'Hub Alpha - Chicago'},
+            {'part_number': 'SEAL-KIT-001', 'part_name': 'Seal Kit (Assorted)', 'machine_model': 'CP-3500',
+             'stock_status': 'back_order', 'qty_available': 0, 'hub_location': '', 'eta': now.date() + datetime.timedelta(days=7)},
+            {'part_number': 'MOTOR-COMP-001', 'part_name': 'Motor Compressor Unit', 'machine_model': 'CP-4000',
+             'stock_status': 'in_stock', 'qty_available': 2, 'hub_location': 'Hub Beta - Chicago'},
+        ]
+        for part in parts_data:
+            eta = part.pop('eta', None)
+            RepairPart.objects.get_or_create(
+                part_number=part['part_number'],
+                defaults={**part, 'eta': eta}
+            )
+
+        # Seeding PartOrder (repair staff's part requests)
+        parts_dict = {p['part_number']: p for p in parts_data}
+        part_orders_data = [
+            {
+                'part': RepairPart.objects.get(part_number='SENSOR-PRE-001'),
+                'requested_by': repair_user,
+                'status': 'delivered',
+                'eta': now.date() - datetime.timedelta(days=5)
+            },
+            {
+                'part': RepairPart.objects.get(part_number='VALVE-MAIN-002'),
+                'requested_by': repair_user,
+                'status': 'in_transit',
+                'eta': now.date() + datetime.timedelta(days=2)
+            },
+            {
+                'part': RepairPart.objects.get(part_number='PUMP-DIE-001'),
+                'requested_by': repair_user,
+                'status': 'pending',
+                'eta': now.date() + datetime.timedelta(days=1)
+            },
+        ]
+        for order in part_orders_data:
+            PartOrder.objects.get_or_create(
+                part=order['part'],
+                requested_by=order['requested_by'],
+                status=order['status'],
+                defaults={'eta': order['eta']}
+            )
 
         self.stdout.write(self.style.SUCCESS('Successfully populated the database.'))

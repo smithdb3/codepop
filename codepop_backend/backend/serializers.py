@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
-from .models import Preference, Drink, Inventory, Order, Notification, Revenue, RecurringOrder, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, Delivery, SeasonalDrink
+from .models import Preference, Drink, Inventory, Order, Notification, Revenue, RecurringOrder, Permission, Role, UserProfile, AuditLog, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, Delivery, SeasonalDrink, MachineRepairLog, RepairPart, PartOrder, RepairStaffProfile
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -172,12 +172,59 @@ class RecurringOrderSerializer(serializers.ModelSerializer):
 class MachineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Machine
-        fields = ['machine_id', 'name', 'location', 'status', 'notes', 'store_id']
+        fields = ['id', 'machine_id', 'name', 'location', 'status', 'notes', 'store_id',
+                  'serial_number', 'model', 'priority_score', 'revenue_impact',
+                  'repair_state', 'estimated_completion', 'last_note', 'last_status_change']
 
 class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedule
         fields = ['id', 'machine','assigned_to', 'scheduled_at', 'completed_at', 'description']
+
+
+class MachineRepairLogSerializer(serializers.ModelSerializer):
+    technician_name = serializers.CharField(source='technician.get_full_name', read_only=True)
+
+    class Meta:
+        model = MachineRepairLog
+        fields = ['id', 'machine', 'technician', 'technician_name', 'date', 'issue_type',
+                  'duration_minutes', 'outcome', 'diagnosis', 'steps_text', 'parts_replaced']
+
+
+class RepairPartSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RepairPart
+        fields = ['id', 'part_number', 'part_name', 'machine_model', 'stock_status',
+                  'qty_available', 'hub_location', 'eta']
+
+
+class PartOrderSerializer(serializers.ModelSerializer):
+    part_name = serializers.CharField(source='part.part_name', read_only=True)
+    part_number = serializers.CharField(source='part.part_number', read_only=True)
+    requested_by_name = serializers.CharField(source='requested_by.get_full_name', read_only=True)
+
+    class Meta:
+        model = PartOrder
+        fields = ['id', 'part', 'part_name', 'part_number', 'requested_by', 'requested_by_name',
+                  'requested_date', 'status', 'eta']
+
+
+class RepairStaffProfileSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+    first_name = serializers.CharField(source='user.first_name', read_only=True)
+    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    region_name = serializers.CharField(source='region.display_name', read_only=True)
+    assigned_stores = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RepairStaffProfile
+        fields = ['user_id', 'username', 'first_name', 'last_name', 'region', 'region_name', 'assigned_stores']
+
+    def get_assigned_stores(self, obj):
+        stores = obj.assigned_stores.all()
+        return [{'store_id': s.store_id, 'store_name': s.store_name, 'machine_count': s.machine_count}
+                for s in stores]
 
 
 # ─────────────────────────────────────────────

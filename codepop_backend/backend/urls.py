@@ -33,7 +33,7 @@ from .views import (
     UserListView, UserCreateView, UserDetailView,
     UserDisableView, UserEnableView, AuditLogListView, AdminKPIView
 )
-from .views import MachineOperations
+from .views import MachineOperations, MachineRepairLogOperations, RepairPartOperations, PartOrderOperations, repair_profile_view
 from .views import ScheduleOperations
 from .views import (
     RegionListView, AdminStoreListCreateView, AdminStoreDetailView,
@@ -126,6 +126,18 @@ get_schedules = ScheduleOperations.as_view({'get': 'get_user_schedules'})
 schedule_list = ScheduleOperations.as_view({'get': 'list', 'post': 'create'})
 
 schedule_detail = ScheduleOperations.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy', 'patch': 'partial_update'})
+
+machine_repair_log_list = MachineRepairLogOperations.as_view({'get': 'list', 'post': 'create'})
+
+machine_repair_log_detail = MachineRepairLogOperations.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
+
+repair_part_list = RepairPartOperations.as_view({'get': 'list', 'post': 'create'})
+
+repair_part_detail = RepairPartOperations.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
+
+part_order_list = PartOrderOperations.as_view({'get': 'list', 'post': 'create'})
+
+part_order_detail = PartOrderOperations.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
 
 user_operations = UserOperations.as_view({
     'get': 'get',
@@ -326,6 +338,46 @@ urlpatterns = [
 
     # - GET: Returns the schedules associated with a user
     path('schedules/get_user_schedules/', get_schedules, name='get_schedules'),
+
+    # Machine Repair Log related URLs
+    # Endpoint to list all machine repair logs or create a new log
+    # - GET: Retrieve a list of all repair logs
+    # - POST: Create a new repair log
+    path('machines/<int:machine_pk>/repair-logs/', machine_repair_log_list, name='machine_repair_log_list_create'),
+
+    # Endpoint to retrieve, update, or delete a specific repair log
+    # - GET: Retrieve details of a specific repair log
+    # - PUT: Update the specific repair log
+    # - DELETE: Remove the specific repair log from the database
+    path('machines/<int:machine_pk>/repair-logs/<int:pk>/', machine_repair_log_detail, name='machine_repair_log_detail'),
+
+    # Repair Part related URLs
+    # Endpoint to list all repair parts or create a new part
+    # - GET: Retrieve a list of all repair parts
+    # - POST: Create a new repair part
+    path('repair-parts/', repair_part_list, name='repair_part_list_create'),
+
+    # Endpoint to retrieve, update, or delete a specific repair part
+    # - GET: Retrieve details of a specific repair part
+    # - PUT: Update the specific repair part
+    # - DELETE: Remove the specific repair part from the database
+    path('repair-parts/<int:pk>/', repair_part_detail, name='repair_part_detail'),
+
+    # Part Order related URLs
+    # Endpoint to list all part orders or create a new order
+    # - GET: Retrieve a list of all part orders
+    # - POST: Create a new part order
+    path('part-orders/', part_order_list, name='part_order_list_create'),
+
+    # Endpoint to retrieve, update, or delete a specific part order
+    # - GET: Retrieve details of a specific part order
+    # - PUT: Update the specific part order
+    # - DELETE: Remove the specific part order from the database
+    path('part-orders/<int:pk>/', part_order_detail, name='part_order_detail'),
+
+    # Repair Staff Profile endpoint
+    # - GET: Retrieve the authenticated user's repair staff profile
+    path('repair-profile/', repair_profile_view, name='repair_profile'),
 
     # Self-service user profile endpoint
     # - GET: Retrieve current user profile (username, email, first_name)

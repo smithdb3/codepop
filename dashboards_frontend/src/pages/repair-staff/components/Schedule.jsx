@@ -48,8 +48,8 @@ export function Schedule(props){
                         <td className={styles.buttonElement}>
                             <button className={styles.statusButton} onClick={() => {
                                 const newStatus = machine.status == 'REPAIR_START'? 'NORMAL': 'REPAIR_START';
-                                const schedules = [...repairSchedule].map(([s, m]) =>
-                                    m.machine_id === machine.machine_id ? [s, {...m, status: newStatus}] : [s, m] //updates the machines status on the frontend
+                                const schedules = [...repairSchedule].map(([s, m, st]) =>
+                                    m.machine_id === machine.machine_id ? [s, {...m, status: newStatus}, st] : [s, m, st] //updates the machines status on the frontend
                                 );
                                 updateMachineStatus(machine.machine_id, newStatus);
 

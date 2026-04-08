@@ -1,23 +1,106 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../auth/AuthContext';
 import { KPICard } from '../../super-admin/components/KPICard';
-import {
-  TECHNICIAN,
-  KPI_OVERVIEW,
-  SCHEDULE_JOBS,
-  REGIONAL_SUMMARY,
-  ALERTS_ACTIVITY,
-} from '../mockData';
 import styles from './Overview.module.css';
+import { getMachines } from '../../../api/machines';
+import { getSchedules } from '../../../api/schedules';
+import { getRepairProfile } from '../../../api/repairProfile';
 
 export function Overview({ onNavigate }) {
   const { user } = useAuth();
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [dismissedAlertIds, setDismissedAlertIds] = useState(new Set());
+  const [machines, setMachines] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const firstName = user?.firstName || TECHNICIAN.firstName;
-  const todayJobs = SCHEDULE_JOBS.filter((j) => j.category === 'today').slice(0, 5);
-  const activeAlerts = ALERTS_ACTIVITY.filter((a) => !dismissedAlertIds.has(a.id));
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [machinesData, schedulesData, profileData] = await Promise.all([
+          getMachines(),
+          getSchedules(),
+          getRepairProfile(),
+        ]);
+        setMachines(machinesData);
+        setSchedules(schedulesData);
+        setProfile(profileData);
+      } catch (error) {
+        console.error('Failed to fetch overview data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Map backend status to frontend status
+  const statusMap = {
+    NORMAL: 'operational',
+    WARNING: 'degraded',
+    ERROR: 'critical',
+    OUT_OF_ORDER: 'critical',
+    SCHEDULE_SERVICE: 'degraded',
+    REPAIR_START: 'degraded',
+    REPAIR_END: 'operational',
+  };
+
+  // Derive KPIs from real data
+  const machinesDown = machines.filter((m) => ['ERROR', 'OUT_OF_ORDER'].includes(m.status)).length;
+  const totalRevenueImpact = machines
+    .filter((m) => ['ERROR', 'OUT_OF_ORDER'].includes(m.status))
+    .reduce((sum, m) => sum + parseFloat(m.revenue_impact || 0), 0);
+  const revenueImpactStr = `$${totalRevenueImpact.toFixed(0)}/hr`;
+
+  // Today's jobs: filter schedules by today's date
+  const today = new Date().toISOString().split('T')[0];
+  const todayJobs = schedules
+    .filter((s) => s.scheduled_at && s.scheduled_at.startsWith(today))
+    .slice(0, 5)
+    .map((s) => {
+      // s.machine is an FK integer (Machine PK), but we need to find by id
+      const machine = machines.find((m) => m.id === s.machine) || {};
+      return {
+        id: s.id,
+        storeName: machine.machine_id ? `${machine.machine_id}` : 'Unknown',
+        storeAddress: machine.location || 'Unknown',
+        machineStatus: statusMap[machine.status] || 'operational',
+        startTime: new Date(s.scheduled_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        endTime: new Date(new Date(s.scheduled_at).getTime() + 60 * 60000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        durationLabel: '1h',
+      };
+    });
+
+  // Regional Summary
+  const regionalData = profile ? {
+    region: profile.region_name || 'Unknown',
+    storeCount: profile.assigned_stores?.length || 0,
+    machineCount: machines.length,
+    operational: machines.filter((m) => m.status === 'NORMAL' || m.status === 'REPAIR_END').length,
+    degraded: machines.filter((m) => ['WARNING', 'SCHEDULE_SERVICE', 'REPAIR_START'].includes(m.status)).length,
+    critical: machines.filter((m) => ['ERROR', 'OUT_OF_ORDER'].includes(m.status)).length,
+  } : {
+    region: 'Unknown',
+    storeCount: 0,
+    machineCount: 0,
+    operational: 0,
+    degraded: 0,
+    critical: 0,
+  };
+
+  // Alerts derived from machines down
+  const alerts = machines
+    .filter((m) => ['ERROR', 'OUT_OF_ORDER'].includes(m.status))
+    .map((m, idx) => ({
+      id: idx,
+      severity: 'critical',
+      message: `Machine ${m.machine_id} at ${m.location} is ${m.status.toLowerCase()}`,
+      timestamp: 'Now',
+    }));
+
+  const activeAlerts = alerts.filter((a) => !dismissedAlertIds.has(a.id));
+  const firstName = user?.firstName || 'Technician';
 
   const handleDismissAlert = (id) => {
     setDismissedAlertIds((prev) => new Set([...prev, id]));
@@ -47,12 +130,12 @@ export function Overview({ onNavigate }) {
       </div>
 
       {/* Critical Alert Banner */}
-      {!alertDismissed && (
+      {!alertDismissed && machinesDown > 0 && (
         <div className={styles.alertBanner}>
           <div className={styles.alertContent}>
             <span className={styles.alertIcon}>⚠️</span>
             <span className={styles.alertText}>
-              2 machines offline for 3h 15m — estimated revenue impact $660/hr.{' '}
+              {machinesDown} machine{machinesDown !== 1 ? 's' : ''} offline — estimated revenue impact {revenueImpactStr}.{' '}
               <button
                 className={styles.alertLink}
                 onClick={() => {
@@ -75,7 +158,7 @@ export function Overview({ onNavigate }) {
         <div className={styles.kpiWrapper} style={{ '--kpi-accent': '#EF4444' }}>
           <KPICard
             label="Machines Down"
-            value={KPI_OVERVIEW.machinesDown}
+            value={machinesDown}
             trend={-1}
             target={0}
           />
@@ -83,15 +166,15 @@ export function Overview({ onNavigate }) {
         <div className={styles.kpiWrapper} style={{ '--kpi-accent': '#FF2E63' }}>
           <KPICard
             label="Repairs Today"
-            value={KPI_OVERVIEW.repairsToday}
+            value={todayJobs.length}
             trend={2}
             target={5}
           />
         </div>
         <div className={styles.kpiWrapper} style={{ '--kpi-accent': '#F59E0B' }}>
           <KPICard
-            label="Parts Pending"
-            value={KPI_OVERVIEW.partsPending}
+            label="Alerts Active"
+            value={alerts.length}
             trend={-1}
             target={0}
           />
@@ -99,7 +182,7 @@ export function Overview({ onNavigate }) {
         <div className={styles.kpiWrapper} style={{ '--kpi-accent': '#10B981' }}>
           <KPICard
             label="Revenue Impact"
-            value={KPI_OVERVIEW.revenueImpact}
+            value={revenueImpactStr}
             trend={-3}
             target="$0"
           />
@@ -184,57 +267,57 @@ export function Overview({ onNavigate }) {
           <div className={styles.regionalContent}>
             <div className={styles.regionalRow}>
               <span className={styles.regionalLabel}>Assigned to:</span>
-              <strong>{REGIONAL_SUMMARY.region}</strong>
+              <strong>{regionalData.region}</strong>
             </div>
             <div className={styles.regionalRow}>
               <span className={styles.regionalLabel}>Stores:</span>
-              <strong>{REGIONAL_SUMMARY.storeCount} stores</strong>
+              <strong>{regionalData.storeCount} stores</strong>
             </div>
             <div className={styles.regionalRow}>
               <span className={styles.regionalLabel}>Machines:</span>
-              <strong>{REGIONAL_SUMMARY.machineCount} machines</strong>
+              <strong>{regionalData.machineCount} machines</strong>
             </div>
             <div className={styles.stackedBarContainer}>
               <div className={styles.stackedBar}>
                 <div
                   className={styles.stackedSegment}
                   style={{
-                    flex: REGIONAL_SUMMARY.operational,
+                    flex: regionalData.operational,
                     backgroundColor: '#10B981',
                   }}
-                  title={`${REGIONAL_SUMMARY.operational} Operational`}
+                  title={`${regionalData.operational} Operational`}
                 >
-                  {REGIONAL_SUMMARY.operational > 5 && (
+                  {regionalData.operational > 5 && (
                     <span className={styles.segmentLabel}>
-                      {REGIONAL_SUMMARY.operational}
+                      {regionalData.operational}
                     </span>
                   )}
                 </div>
                 <div
                   className={styles.stackedSegment}
                   style={{
-                    flex: REGIONAL_SUMMARY.degraded,
+                    flex: regionalData.degraded,
                     backgroundColor: '#F59E0B',
                   }}
-                  title={`${REGIONAL_SUMMARY.degraded} Degraded`}
+                  title={`${regionalData.degraded} Degraded`}
                 >
-                  {REGIONAL_SUMMARY.degraded > 0 && (
+                  {regionalData.degraded > 0 && (
                     <span className={styles.segmentLabel}>
-                      {REGIONAL_SUMMARY.degraded}
+                      {regionalData.degraded}
                     </span>
                   )}
                 </div>
                 <div
                   className={styles.stackedSegment}
                   style={{
-                    flex: REGIONAL_SUMMARY.critical,
+                    flex: regionalData.critical,
                     backgroundColor: '#EF4444',
                   }}
-                  title={`${REGIONAL_SUMMARY.critical} Critical`}
+                  title={`${regionalData.critical} Critical`}
                 >
-                  {REGIONAL_SUMMARY.critical > 0 && (
+                  {regionalData.critical > 0 && (
                     <span className={styles.segmentLabel}>
-                      {REGIONAL_SUMMARY.critical}
+                      {regionalData.critical}
                     </span>
                   )}
                 </div>
@@ -246,21 +329,21 @@ export function Overview({ onNavigate }) {
                   className={styles.legendDot}
                   style={{ backgroundColor: '#10B981' }}
                 />
-                <span>{REGIONAL_SUMMARY.operational} Operational</span>
+                <span>{regionalData.operational} Operational</span>
               </div>
               <div className={styles.legendItem}>
                 <span
                   className={styles.legendDot}
                   style={{ backgroundColor: '#F59E0B' }}
                 />
-                <span>{REGIONAL_SUMMARY.degraded} Degraded</span>
+                <span>{regionalData.degraded} Degraded</span>
               </div>
               <div className={styles.legendItem}>
                 <span
                   className={styles.legendDot}
                   style={{ backgroundColor: '#EF4444' }}
                 />
-                <span>{REGIONAL_SUMMARY.critical} Critical</span>
+                <span>{regionalData.critical} Critical</span>
               </div>
             </div>
             <button

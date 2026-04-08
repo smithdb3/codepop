@@ -582,6 +582,13 @@ class Machine(models.Model):
     last_status_change = models.DateTimeField(auto_now=True)
     notes        = models.TextField(blank=True)
     store_id     = models.IntegerField()  # which store this machine belongs to
+    serial_number = models.CharField(max_length=100, blank=True)
+    model        = models.CharField(max_length=100, blank=True)
+    priority_score = models.IntegerField(default=0)
+    revenue_impact = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    repair_state = models.CharField(max_length=50, blank=True)
+    estimated_completion = models.DateTimeField(null=True, blank=True)
+    last_note    = models.TextField(blank=True)
 
     def __str__(self):
         return f"Machine {self.machine_id} ({self.name}) — {self.status}"
@@ -602,6 +609,74 @@ class Schedule(models.Model):
     def __str__(self):
         return f"Schedule for {self.machine} at {self.scheduled_at}"
 
+
+class MachineRepairLog(models.Model):
+    """
+    Historical record of repairs performed on a machine.
+    Repair staff entries are created when a repair is completed.
+    """
+    OUTCOME_CHOICES = [
+        ('resolved', 'Resolved'),
+        ('escalated', 'Escalated'),
+    ]
+
+    machine       = models.ForeignKey(Machine, on_delete=models.CASCADE, related_name='repair_logs')
+    technician    = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    date          = models.DateField()
+    issue_type    = models.CharField(max_length=100)
+    duration_minutes = models.IntegerField(default=0)
+    outcome       = models.CharField(max_length=20, choices=OUTCOME_CHOICES)
+    diagnosis     = models.TextField(blank=True)
+    steps_text    = models.TextField(blank=True)
+    parts_replaced = models.JSONField(default=list)  # list of part numbers
+
+    def __str__(self):
+        return f"Repair Log: {self.machine} on {self.date} — {self.outcome}"
+
+
+class RepairPart(models.Model):
+    """
+    Spare parts available for machine repairs.
+    Tracks stock levels and ETA for back-ordered items.
+    """
+    STOCK_STATUS_CHOICES = [
+        ('in_stock', 'In Stock'),
+        ('order_pending', 'Order Pending'),
+        ('back_order', 'Back Order'),
+    ]
+
+    part_number   = models.CharField(max_length=100, unique=True)
+    part_name     = models.CharField(max_length=200)
+    machine_model = models.CharField(max_length=100)
+    stock_status  = models.CharField(max_length=20, choices=STOCK_STATUS_CHOICES)
+    qty_available = models.IntegerField(default=0)
+    hub_location  = models.CharField(max_length=200, blank=True)
+    eta           = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.part_name} ({self.part_number}) — {self.stock_status}"
+
+
+class PartOrder(models.Model):
+    """
+    A repair staff request for parts.
+    Tracks order status and ETA.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_transit', 'In Transit'),
+        ('delivered', 'Delivered'),
+    ]
+
+    part          = models.ForeignKey(RepairPart, on_delete=models.CASCADE, related_name='orders')
+    requested_by  = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    requested_date = models.DateField(auto_now_add=True)
+    status        = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    eta           = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"PartOrder #{self.id}: {self.part.part_name} — {self.status}"
+
 # should repair staff be over multiple stores?
 
 class RepairStaffProfile(models.Model):
@@ -612,7 +687,7 @@ class RepairStaffProfile(models.Model):
     user = models.OneToOneField('auth.User', on_delete=models.CASCADE,
                                             related_name='repair_profile')
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True)
-    assigned_store_id = models.IntegerField(null=True, blank=True)
+    assigned_stores = models.ManyToManyField(StoreRegistry, blank=True, related_name='repair_staff')
 
     def __str__(self):
         return f"RepairStaff: {self.user.username} (region: {self.region})"

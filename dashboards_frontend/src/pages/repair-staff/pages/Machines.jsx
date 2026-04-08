@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DataTable } from '../../super-admin/components/DataTable';
-import { MACHINES, MACHINE_HISTORY, MACHINE_PARTS } from '../mockData';
 import styles from './Machines.module.css';
+import { getMachines, getMachineRepairLogs } from '../../../api/machines';
+import { getRepairParts } from '../../../api/repairParts';
 
 export function Machines({ onNavigate }) {
   const [statusFilter, setStatusFilter] = useState('all');
@@ -16,29 +17,99 @@ export function Machines({ onNavigate }) {
   const [drawerTab, setDrawerTab] = useState('details');
   const [noteText, setNoteText] = useState('');
   const [expandedHistoryRow, setExpandedHistoryRow] = useState(null);
+  const [machines, setMachines] = useState([]);
+  const [repairLogs, setRepairLogs] = useState({});
+  const [repairParts, setRepairParts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Status mapping from backend to frontend
+  const statusMap = {
+    NORMAL: 'operational',
+    WARNING: 'degraded',
+    ERROR: 'critical',
+    OUT_OF_ORDER: 'critical',
+    SCHEDULE_SERVICE: 'degraded',
+    REPAIR_START: 'degraded',
+    REPAIR_END: 'operational',
+  };
+
+  // Fetch all machines on component mount
+  useEffect(() => {
+    const fetchMachines = async () => {
+      try {
+        const data = await getMachines();
+        setMachines(data);
+      } catch (error) {
+        console.error('Failed to fetch machines:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMachines();
+  }, []);
+
+  // Fetch repair logs when drawer opens
+  useEffect(() => {
+    if (drawerMachine && drawerTab === 'history' && !repairLogs[drawerMachine.id]) {
+      const fetchLogs = async () => {
+        try {
+          const logs = await getMachineRepairLogs(drawerMachine.id);
+          setRepairLogs((prev) => ({ ...prev, [drawerMachine.id]: logs }));
+        } catch (error) {
+          console.error('Failed to fetch repair logs:', error);
+        }
+      };
+      fetchLogs();
+    }
+  }, [drawerMachine, drawerTab, repairLogs]);
+
+  // Fetch repair parts when drawer opens
+  useEffect(() => {
+    if (drawerMachine && drawerTab === 'parts' && repairParts.length === 0) {
+      const fetchParts = async () => {
+        try {
+          const parts = await getRepairParts();
+          setRepairParts(parts);
+        } catch (error) {
+          console.error('Failed to fetch repair parts:', error);
+        }
+      };
+      fetchParts();
+    }
+  }, [drawerMachine, drawerTab, repairParts]);
+
+  // Transform machines data for display
+  const displayMachines = machines.map((m) => ({
+    ...m,
+    storeName: `Store ${m.store_id}`,
+    status: statusMap[m.status] || 'operational',
+    downtimeDuration: null, // Can be calculated from last_status_change if needed
+    lastService: m.last_status_change ? new Date(m.last_status_change).toLocaleDateString() : 'Unknown',
+    serial: m.serial_number || 'N/A',
+  }));
 
   // Get unique stores and models for filter dropdowns
-  const stores = [...new Map(MACHINES.map((m) => [m.storeId, m])).values()];
-  const models = [...new Set(MACHINES.map((m) => m.model))].sort();
+  const stores = [...new Map(displayMachines.map((m) => [m.store_id, m])).values()];
+  const models = [...new Set(displayMachines.map((m) => m.model))].filter(Boolean).sort();
 
   // Filter logic
   const filteredMachines = useMemo(() => {
-    return MACHINES.filter((m) => {
+    return displayMachines.filter((m) => {
       const matchesPill = statusFilter === 'all' || m.status === statusFilter;
       const matchesSearch =
         !searchTerm ||
-        m.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.machine_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         m.storeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.model.toLowerCase().includes(searchTerm.toLowerCase());
+        (m.model && m.model.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesStatus = !filterStatus || m.status === filterStatus;
-      const matchesStore = !filterStore || m.storeId === Number(filterStore);
+      const matchesStore = !filterStore || m.store_id === Number(filterStore);
       const matchesType = !filterType || m.model === filterType;
-      const matchesParts = !filterParts || (filterParts === 'pending' ? m.status === 'parts_pending' : !m.status === 'parts_pending');
+      const matchesParts = !filterParts || (filterParts === 'pending' ? m.status === 'parts_pending' : m.status !== 'parts_pending');
       return (
         matchesPill && matchesSearch && matchesStatus && matchesStore && matchesType && matchesParts
       );
     });
-  }, [statusFilter, searchTerm, filterStatus, filterStore, filterType, filterParts]);
+  }, [statusFilter, searchTerm, filterStatus, filterStore, filterType, filterParts, displayMachines]);
 
   // Handle checkbox selection
   const toggleRowSelect = (machineId) => {
@@ -55,7 +126,7 @@ export function Machines({ onNavigate }) {
     if (selectedRows.size === filteredMachines.length) {
       setSelectedRows(new Set());
     } else {
-      setSelectedRows(new Set(filteredMachines.map((m) => m.id)));
+      setSelectedRows(new Set(filteredMachines.map((m) => m.machine_id)));
     }
   };
 
@@ -68,8 +139,8 @@ export function Machines({ onNavigate }) {
       render: (_, row) => (
         <input
           type="checkbox"
-          checked={selectedRows.has(row.id)}
-          onChange={() => toggleRowSelect(row.id)}
+          checked={selectedRows.has(row.machine_id)}
+          onChange={() => toggleRowSelect(row.machine_id)}
           style={{ cursor: 'pointer' }}
         />
       ),
@@ -80,7 +151,7 @@ export function Machines({ onNavigate }) {
       sortable: true,
       render: (_, row) => (
         <>
-          <strong>{row.id}</strong>
+          <strong>{row.machine_id}</strong>
           <br />
           <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
             {row.storeName}
@@ -212,14 +283,14 @@ export function Machines({ onNavigate }) {
           className={`${styles.pill} ${statusFilter === 'all' ? styles.active : ''}`}
           onClick={() => setStatusFilter('all')}
         >
-          All ({MACHINES.length})
+          All ({displayMachines.length})
         </button>
         <button
           className={`${styles.pill} ${statusFilter === 'critical' ? styles.active : ''}`}
           onClick={() => setStatusFilter('critical')}
         >
           <span className={styles.pillBadge} style={{ background: '#FEE2E2' }}>
-            {MACHINES.filter((m) => m.status === 'critical').length}
+            {displayMachines.filter((m) => m.status === 'critical').length}
           </span>{' '}
           Critical
         </button>
@@ -228,7 +299,7 @@ export function Machines({ onNavigate }) {
           onClick={() => setStatusFilter('degraded')}
         >
           <span className={styles.pillBadge} style={{ background: '#FEF3C7' }}>
-            {MACHINES.filter((m) => m.status === 'degraded').length}
+            {displayMachines.filter((m) => m.status === 'degraded').length}
           </span>{' '}
           Degraded
         </button>
@@ -237,7 +308,7 @@ export function Machines({ onNavigate }) {
           onClick={() => setStatusFilter('operational')}
         >
           <span className={styles.pillBadge} style={{ background: '#DCFCE7' }}>
-            {MACHINES.filter((m) => m.status === 'operational').length}
+            {displayMachines.filter((m) => m.status === 'operational').length}
           </span>{' '}
           Operational
         </button>
@@ -246,7 +317,7 @@ export function Machines({ onNavigate }) {
           onClick={() => setStatusFilter('parts_pending')}
         >
           <span className={styles.pillBadge} style={{ background: '#E0E7FF' }}>
-            {MACHINES.filter((m) => m.status === 'parts_pending').length}
+            {displayMachines.filter((m) => m.status === 'parts_pending').length}
           </span>{' '}
           Parts Pending
         </button>
@@ -281,7 +352,7 @@ export function Machines({ onNavigate }) {
           >
             <option value="">Store</option>
             {stores.map((s) => (
-              <option key={s.storeId} value={s.storeId}>
+              <option key={s.store_id} value={s.store_id}>
                 {s.storeName}
               </option>
             ))}
@@ -375,8 +446,8 @@ export function Machines({ onNavigate }) {
             {/* Drawer Header */}
             <div className={styles.drawerHeader}>
               <div>
-                <div className={styles.machineId}>{drawerMachine.id}</div>
-                <div className={styles.machineModel}>{drawerMachine.model}</div>
+                <div className={styles.machineId}>{drawerMachine.machine_id}</div>
+                <div className={styles.machineModel}>{drawerMachine.model || 'Unknown Model'}</div>
               </div>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 <RepairStatusBadge status={drawerMachine.status} />
@@ -417,34 +488,42 @@ export function Machines({ onNavigate }) {
                   <h4 className={styles.sectionHeading}>Machine Info</h4>
                   <div className={styles.infoSection}>
                     <div className={styles.infoPair}>
-                      <span className={styles.infoLabel}>Install Date:</span>
-                      <span>{drawerMachine.installDate}</span>
+                      <span className={styles.infoLabel}>Serial Number:</span>
+                      <span>{drawerMachine.serial_number || 'N/A'}</span>
                     </div>
                     <div className={styles.infoPair}>
-                      <span className={styles.infoLabel}>Warranty:</span>
-                      <span>{drawerMachine.warrantyStatus}</span>
+                      <span className={styles.infoLabel}>Model:</span>
+                      <span>{drawerMachine.model || 'N/A'}</span>
                     </div>
                     <div className={styles.infoPair}>
-                      <span className={styles.infoLabel}>Assigned Tech:</span>
-                      <span>{drawerMachine.assignedTech || 'Unassigned'}</span>
+                      <span className={styles.infoLabel}>Location:</span>
+                      <span>{drawerMachine.location || 'N/A'}</span>
                     </div>
                     <div className={styles.infoPair}>
                       <span className={styles.infoLabel}>Repair State:</span>
-                      <span>{drawerMachine.repairState}</span>
+                      <span>{drawerMachine.repair_state || 'N/A'}</span>
                     </div>
-                    {drawerMachine.estimatedCompletion && (
+                    {drawerMachine.estimated_completion && (
                       <div className={styles.infoPair}>
                         <span className={styles.infoLabel}>Est. Completion:</span>
                         <span>
                           {new Date(
-                            drawerMachine.estimatedCompletion
+                            drawerMachine.estimated_completion
                           ).toLocaleString()}
                         </span>
                       </div>
                     )}
                     <div className={styles.infoPair}>
-                      <span className={styles.infoLabel}>Last Update:</span>
-                      <span>{drawerMachine.lastUpdateTime}</span>
+                      <span className={styles.infoLabel}>Priority Score:</span>
+                      <span>{drawerMachine.priority_score || 0}</span>
+                    </div>
+                    <div className={styles.infoPair}>
+                      <span className={styles.infoLabel}>Revenue Impact:</span>
+                      <span>${drawerMachine.revenue_impact || 0}/hr</span>
+                    </div>
+                    <div className={styles.infoPair}>
+                      <span className={styles.infoLabel}>Last Updated:</span>
+                      <span>{drawerMachine.last_status_change ? new Date(drawerMachine.last_status_change).toLocaleString() : 'Unknown'}</span>
                     </div>
                   </div>
                 </div>
@@ -453,8 +532,8 @@ export function Machines({ onNavigate }) {
               {drawerTab === 'history' && (
                 <div>
                   <h4 className={styles.sectionHeading}>Repair History</h4>
-                  {MACHINE_HISTORY[drawerMachine.id] ? (
-                    MACHINE_HISTORY[drawerMachine.id].map((entry, idx) => (
+                  {repairLogs[drawerMachine.id]?.length > 0 ? (
+                    repairLogs[drawerMachine.id].map((entry, idx) => (
                       <div
                         key={idx}
                         className={styles.historyEntry}
@@ -466,9 +545,9 @@ export function Machines({ onNavigate }) {
                       >
                         <div className={styles.historyHeader}>
                           <div>
-                            <strong>{entry.issueType}</strong>
+                            <strong>{entry.issue_type}</strong>
                             <div className={styles.historyMeta}>
-                              {entry.date} • {entry.technician} • {entry.duration}
+                              {new Date(entry.date).toLocaleDateString()} • {entry.technician_name || 'Unknown'} • {entry.duration_minutes}m
                             </div>
                           </div>
                           <span
@@ -485,15 +564,15 @@ export function Machines({ onNavigate }) {
                         {expandedHistoryRow === idx && (
                           <div className={styles.historyDetails}>
                             <div className={styles.historyDetail}>
-                              <strong>Diagnosis:</strong> {entry.diagnosis}
+                              <strong>Diagnosis:</strong> {entry.diagnosis || 'N/A'}
                             </div>
                             <div className={styles.historyDetail}>
-                              <strong>Steps:</strong> {entry.stepsText}
+                              <strong>Steps:</strong> {entry.steps_text || 'N/A'}
                             </div>
-                            {entry.partsReplaced.length > 0 && (
+                            {entry.parts_replaced?.length > 0 && (
                               <div className={styles.historyDetail}>
                                 <strong>Parts Replaced:</strong>{' '}
-                                {entry.partsReplaced.join(', ')}
+                                {entry.parts_replaced.join(', ')}
                               </div>
                             )}
                           </div>
@@ -509,34 +588,36 @@ export function Machines({ onNavigate }) {
               {drawerTab === 'parts' && (
                 <div>
                   <h4 className={styles.sectionHeading}>Common Parts</h4>
-                  {MACHINE_PARTS[drawerMachine.model] ? (
+                  {repairParts.filter((p) => p.machine_model === drawerMachine.model).length > 0 ? (
                     <div>
-                      {MACHINE_PARTS[drawerMachine.model].map((part) => (
-                        <div key={part.id} className={styles.partItem}>
-                          <div>
-                            <strong>{part.partName}</strong>
-                            <div className={styles.partMeta}>{part.partNumber}</div>
+                      {repairParts
+                        .filter((p) => p.machine_model === drawerMachine.model)
+                        .map((part) => (
+                          <div key={part.id} className={styles.partItem}>
+                            <div>
+                              <strong>{part.part_name}</strong>
+                              <div className={styles.partMeta}>{part.part_number}</div>
+                            </div>
+                            <div className={styles.partStatus}>
+                              <StockBadge status={part.stock_status} />
+                              {part.qty_available > 0 && (
+                                <span className={styles.qty}>
+                                  Qty: {part.qty_available}
+                                </span>
+                              )}
+                              {part.eta && (
+                                <span className={styles.eta}>ETA: {new Date(part.eta).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                            <button className={styles.partRequestBtn}>
+                              Request
+                            </button>
                           </div>
-                          <div className={styles.partStatus}>
-                            <StockBadge status={part.stockStatus} />
-                            {part.qtyAvailable > 0 && (
-                              <span className={styles.qty}>
-                                Qty: {part.qtyAvailable}
-                              </span>
-                            )}
-                            {part.eta && (
-                              <span className={styles.eta}>ETA: {part.eta}</span>
-                            )}
-                          </div>
-                          <button className={styles.partRequestBtn}>
-                            Request
-                          </button>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   ) : (
                     <p className={styles.emptyMessage}>
-                      No parts information available
+                      No parts information available for this machine model
                     </p>
                   )}
                 </div>
@@ -556,7 +637,7 @@ export function Machines({ onNavigate }) {
                     onClick={() => {
                       console.log(
                         'Note saved for',
-                        drawerMachine.id,
+                        drawerMachine.machine_id,
                         ':',
                         noteText
                       );
@@ -568,13 +649,13 @@ export function Machines({ onNavigate }) {
                   <h4 className={styles.sectionHeading} style={{ marginTop: '20px' }}>
                     Previous Notes
                   </h4>
-                  {drawerMachine.lastNote && (
+                  {drawerMachine.last_note && (
                     <div className={styles.noteItem}>
                       <div className={styles.noteContent}>
-                        {drawerMachine.lastNote}
+                        {drawerMachine.last_note}
                       </div>
                       <div className={styles.noteTime}>
-                        {drawerMachine.lastUpdateTime}
+                        {drawerMachine.last_status_change ? new Date(drawerMachine.last_status_change).toLocaleString() : 'Unknown'}
                       </div>
                     </div>
                   )}

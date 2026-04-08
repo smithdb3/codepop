@@ -11,8 +11,9 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Preference, Drink, Inventory, Notification, Order, Revenue, RecurringOrder, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, ManagerProfile, Delivery, SeasonalDrink, VisitingUserCache
-from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, RecurringOrderSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer, SupplyRequestSerializer, DeliverySerializer, DriverSerializer, SeasonalDrinkSerializer
+from rest_framework.decorators import api_view, permission_classes
+from .models import Preference, Drink, Inventory, Notification, Order, Revenue, RecurringOrder, Machine, Schedule, Region, StoreRegistry, SupplyHub, HubInventoryItem, StoreInventoryItem, SupplyRequest, ManagerProfile, Delivery, SeasonalDrink, VisitingUserCache, MachineRepairLog, RepairPart, PartOrder, RepairStaffProfile
+from .serializers import CreateUserSerializer, GetUserSerializer, PreferenceSerializer, DrinkSerializer, InventorySerializer, NotificationSerializer, OrderSerializer, RevenueSerializer, RecurringOrderSerializer, MachineSerializer, ScheduleSerializer, RegionSerializer, StoreRegistrySerializer, SupplyHubSerializer, HubInventoryItemSerializer, StoreInventoryItemSerializer, SupplyRequestSerializer, DeliverySerializer, DriverSerializer, SeasonalDrinkSerializer, MachineRepairLogSerializer, RepairPartSerializer, PartOrderSerializer, RepairStaffProfileSerializer
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.authentication import BaseAuthentication
@@ -1461,12 +1462,45 @@ class ScheduleOperations(viewsets.ModelViewSet):
     queryset = Schedule.objects.all()
     serializer_class = ScheduleSerializer
     permission_classes = [IsAuthenticated]
-    
+
     # Returns all the schedules associated with a user
     def get_user_schedules(self, request):
         user_schedules = Schedule.objects.filter(assigned_to=request.user, completed_at__isnull=True)
         serializer = self.get_serializer(user_schedules, many=True)
         return Response(serializer.data)
+
+
+class MachineRepairLogOperations(viewsets.ModelViewSet):
+    queryset = MachineRepairLog.objects.all()
+    serializer_class = MachineRepairLogSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class RepairPartOperations(viewsets.ModelViewSet):
+    queryset = RepairPart.objects.all()
+    serializer_class = RepairPartSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class PartOrderOperations(viewsets.ModelViewSet):
+    queryset = PartOrder.objects.all()
+    serializer_class = PartOrderSerializer
+    permission_classes = [IsAuthenticated]
+
+
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def repair_profile_view(request):
+    """Get the authenticated user's repair staff profile."""
+    try:
+        profile = RepairStaffProfile.objects.get(user=request.user)
+        serializer = RepairStaffProfileSerializer(profile)
+        return Response(serializer.data)
+    except RepairStaffProfile.DoesNotExist:
+        return Response({'error': 'Repair staff profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 # ─────────────────────────────────────────────

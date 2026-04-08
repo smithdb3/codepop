@@ -1,76 +1,100 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DataTable } from '../../super-admin/components/DataTable';
-import { PARTS, OPEN_ORDERS } from '../mockData';
 import styles from './Parts.module.css';
+import { getRepairParts, getPartOrders, updatePartOrder } from '../../../api/repairParts';
 
 export function Parts({ onNavigate }) {
   const [search, setSearch] = useState('');
-  const [orders, setOrders] = useState(OPEN_ORDERS);
+  const [parts, setParts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch parts and orders on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [partsData, ordersData] = await Promise.all([
+          getRepairParts(),
+          getPartOrders(),
+        ]);
+        setParts(partsData);
+        setOrders(ordersData);
+      } catch (error) {
+        console.error('Failed to fetch parts data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Filter parts by search
   const filteredParts = useMemo(() => {
-    if (!search) return PARTS;
+    if (!search) return parts;
     const term = search.toLowerCase();
-    return PARTS.filter(
+    return parts.filter(
       (p) =>
-        p.partName.toLowerCase().includes(term) ||
-        p.partNumber.toLowerCase().includes(term) ||
-        p.machineId.toLowerCase().includes(term)
+        p.part_name.toLowerCase().includes(term) ||
+        p.part_number.toLowerCase().includes(term) ||
+        p.machine_model.toLowerCase().includes(term)
     );
-  }, [search]);
+  }, [search, parts]);
 
   // Handle Mark Received
-  const handleMarkReceived = (orderId) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: 'delivered' } : o))
-    );
+  const handleMarkReceived = async (orderId) => {
+    try {
+      await updatePartOrder(orderId, { status: 'delivered' });
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: 'delivered' } : o))
+      );
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+    }
   };
 
   // Table columns for parts
   const partsColumns = [
     {
-      key: 'partName',
+      key: 'part_name',
       label: 'Part Name / Number',
       sortable: true,
       render: (_, row) => (
         <>
-          <strong>{row.partName}</strong>
+          <strong>{row.part_name}</strong>
           <br />
           <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-            {row.partNumber}
+            {row.part_number}
           </span>
         </>
       ),
     },
     {
-      key: 'machineModel',
-      label: 'Machine / Model',
+      key: 'machine_model',
+      label: 'Machine Model',
       sortable: true,
-      render: (_, row) => (
-        <>
-          {row.machineId}
-          <br />
-          <span style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-            {row.machineModel}
-          </span>
-        </>
-      ),
     },
     {
-      key: 'stockStatus',
+      key: 'stock_status',
       label: 'Stock Status',
       sortable: true,
       render: (val) => <StockBadge status={val} />,
     },
     {
-      key: 'qtyAvailable',
+      key: 'qty_available',
       label: 'Qty',
       sortable: true,
     },
     {
-      key: 'hubLocation',
+      key: 'hub_location',
       label: 'Hub Location',
       sortable: true,
+      render: (val) => val || '—',
+    },
+    {
+      key: 'eta',
+      label: 'ETA',
+      sortable: true,
+      render: (val) => val ? new Date(val).toLocaleDateString() : '—',
     },
     {
       key: 'actions',
@@ -79,7 +103,7 @@ export function Parts({ onNavigate }) {
       render: (_, row) => (
         <button
           className={styles.requestBtn}
-          onClick={() => console.log('Request part:', row.partNumber)}
+          onClick={() => console.log('Request part:', row.part_number)}
         >
           Request
         </button>
@@ -124,34 +148,36 @@ export function Parts({ onNavigate }) {
         <div className={styles.ordersCard}>
           <h3 className={styles.cardTitle}>Open Orders</h3>
           <div className={styles.ordersContent}>
-            {orders.length > 0 ? (
-              orders.map((order) => (
-                <div key={order.id} className={styles.orderCard}>
-                  <div className={styles.orderHeader}>
-                    <div>
-                      <div className={styles.orderPartName}>
-                        {order.partName}
-                      </div>
-                      <div className={styles.orderRequestDate}>
-                        Requested: {order.requestedDate}
+            {orders.filter((o) => o.status !== 'delivered').length > 0 ? (
+              orders
+                .filter((o) => o.status !== 'delivered')
+                .map((order) => (
+                  <div key={order.id} className={styles.orderCard}>
+                    <div className={styles.orderHeader}>
+                      <div>
+                        <div className={styles.orderPartName}>
+                          {order.part_name}
+                        </div>
+                        <div className={styles.orderRequestDate}>
+                          Requested: {new Date(order.requested_date).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
+                    <div className={styles.orderStatus}>
+                      <StockBadge status={order.status} />
+                    </div>
+                    <div className={styles.orderEta}>
+                      Expected: {order.eta ? new Date(order.eta).toLocaleDateString() : 'TBD'}
+                    </div>
+                    <button
+                      className={styles.markReceivedBtn}
+                      onClick={() => handleMarkReceived(order.id)}
+                      disabled={order.status === 'delivered'}
+                    >
+                      {order.status === 'delivered' ? 'Received' : 'Mark Received'}
+                    </button>
                   </div>
-                  <div className={styles.orderStatus}>
-                    <StockBadge status={order.status} />
-                  </div>
-                  <div className={styles.orderEta}>
-                    Expected: {order.eta}
-                  </div>
-                  <button
-                    className={styles.markReceivedBtn}
-                    onClick={() => handleMarkReceived(order.id)}
-                    disabled={order.status === 'delivered'}
-                  >
-                    {order.status === 'delivered' ? 'Received' : 'Mark Received'}
-                  </button>
-                </div>
-              ))
+                ))
             ) : (
               <div className={styles.emptyState}>
                 No pending orders — all parts in stock.

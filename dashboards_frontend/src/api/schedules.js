@@ -1,76 +1,22 @@
 import { apiFetch } from './client.js';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
-const TOKEN = localStorage.getItem('cp_token');
-// Stub: Phase 5 - endpoint not yet implemented in backend
+// Get user's pending schedules
 export async function getSchedules() {
-   try {
-      const url = `${BASE_URL}/backend/schedules/get_user_schedules/`;
-
-      const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-              'Authorization': `Token ${TOKEN}`,
-              'Content-Type': 'application/json',
-          },
-      });
-
-      if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      throw error;
-    }
+  return apiFetch('/backend/schedules/get_user_schedules/', { method: 'GET' });
 }
 
+// Create a new schedule
 export async function createSchedule(scheduleData) {
-    try {
-      const url = `${BASE_URL}/backend/schedules/`;
-      const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-              'Authorization': `Token ${TOKEN}`,
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(scheduleData),
-      });
-
-      if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      throw error;
-    }
+  return apiFetch('/backend/schedules/', {
+    method: 'POST',
+    body: JSON.stringify(scheduleData),
+  });
 }
 
+// Mark a schedule as complete
 export async function setCompletion(scheduleId) {
-    try {
-      const url = `${BASE_URL}/backend/schedules/${scheduleId}/`;
-      const response = await fetch(url, {
-          method: 'PATCH',
-          headers: {
-              'Authorization': `Token ${TOKEN}`,
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({'completed_at': new Date().toISOString()}),
-      });
-
-      if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      throw error;
-    }
+  return apiFetch(`/backend/schedules/${scheduleId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ completed_at: new Date().toISOString() }),
+  });
 }
