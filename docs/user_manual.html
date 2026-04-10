@@ -1,0 +1,2531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodePop User Manual</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #FF2E63;
+            --secondary: #08D9D6;
+            --bg: #F9FAFB;
+            --surface: #FFFFFF;
+            --text: #222831;
+            --text-muted: #6B7280;
+            --border: #E5E7EB;
+            --error: #EF4444;
+            --warning: #F59E0B;
+            --success: #10B981;
+            --info: #3B82F6;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text);
+            background-color: var(--bg);
+            line-height: 1.6;
+        }
+
+        /* Top Navigation Bar */
+        .top-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            height: 56px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .top-bar-logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text);
+            margin-left: auto;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 56px;
+            width: 260px;
+            height: calc(100vh - 56px);
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 24px 0;
+        }
+
+        .nav-group {
+            margin-bottom: 12px;
+        }
+
+        .nav-group-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 10px 16px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.9375rem;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            background-color: var(--bg);
+            border-left-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            background-color: rgba(255, 46, 99, 0.08);
+            border-left-color: var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        main {
+            margin-left: 260px;
+            margin-top: 56px;
+            padding: 40px;
+            max-width: 1200px;
+        }
+
+        section {
+            margin-bottom: 60px;
+            scroll-margin-top: 80px;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 60px 40px;
+            border-radius: 12px;
+            margin-bottom: 60px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .hero-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .hero-wordmark {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .hero-tagline {
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+            opacity: 0.95;
+        }
+
+        .hero-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.85;
+            margin-bottom: 24px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            font-size: 0.9375rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #E6284B;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 46, 99, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            background-color: #06C3BA;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(8, 217, 214, 0.3);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .hero-image {
+            width: 280px;
+            height: 280px;
+            flex-shrink: 0;
+        }
+
+        .hero-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--text);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        p {
+            margin-bottom: 16px;
+            color: #444;
+            line-height: 1.7;
+        }
+
+        /* Role Badges */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .badge-customer { background-color: rgba(255, 46, 99, 0.15); color: #FF2E63; }
+        .badge-manager { background-color: rgba(8, 217, 214, 0.15); color: #08D9D6; }
+        .badge-admin { background-color: rgba(245, 158, 11, 0.15); color: #F59E0B; }
+        .badge-super-admin { background-color: rgba(139, 92, 246, 0.15); color: #8B5CF6; }
+        .badge-logistics { background-color: rgba(59, 130, 246, 0.15); color: #3B82F6; }
+        .badge-repair { background-color: rgba(16, 185, 129, 0.15); color: #10B981; }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: var(--secondary);
+        }
+
+        /* Two Column Grid */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        /* Callout Boxes */
+        .callout {
+            border-left: 4px solid;
+            padding: 16px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+        }
+
+        .callout-info {
+            border-left-color: var(--secondary);
+            background-color: #EFF9FB;
+        }
+
+        .callout-warning {
+            border-left-color: var(--warning);
+            background-color: #FFFBEB;
+        }
+
+        .callout-success {
+            border-left-color: var(--success);
+            background-color: #F0FDF4;
+        }
+
+        .callout-error {
+            border-left-color: var(--error);
+            background-color: #FEF2F2;
+        }
+
+        /* Step Cards */
+        .step-card {
+            display: grid;
+            grid-template-columns: 40px 1fr;
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .step-content h3 {
+            margin-top: 0;
+        }
+
+        /* Code Blocks */
+        pre {
+            background-color: #F3F4F6;
+            border-left: 4px solid var(--secondary);
+            padding: 12px 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+
+        code {
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            color: var(--text);
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 0.9375rem;
+        }
+
+        thead {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: var(--bg);
+        }
+
+        tbody tr:hover {
+            background-color: rgba(255, 46, 99, 0.03);
+        }
+
+        /* Images */
+        img {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin: 20px 0;
+        }
+
+        .figure {
+            text-align: center;
+            margin: 24px 0;
+        }
+
+        figcaption {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 0;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-muted);
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--text);
+            border-bottom-color: var(--secondary);
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* Accordion / FAQ */
+        .faq-item {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            padding: 16px;
+            background-color: var(--bg);
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s ease;
+            user-select: none;
+        }
+
+        .faq-question:hover {
+            background-color: #F3F4F6;
+        }
+
+        .faq-question.open {
+            background-color: rgba(255, 46, 99, 0.08);
+            color: var(--primary);
+        }
+
+        .faq-toggle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            transition: transform 0.2s ease;
+        }
+
+        .faq-question.open .faq-toggle {
+            transform: rotate(180deg);
+            color: var(--primary);
+        }
+
+        .faq-answer {
+            padding: 0 16px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .faq-question.open + .faq-answer {
+            max-height: 500px;
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 44px;
+            height: 44px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 12px rgba(255, 46, 99, 0.3);
+            transition: all 0.2s ease;
+            z-index: 50;
+        }
+
+        .back-to-top:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 46, 99, 0.4);
+        }
+
+        .back-to-top.show {
+            display: flex;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--text);
+            color: white;
+            padding: 40px;
+            margin-left: 260px;
+            margin-top: 60px;
+            text-align: center;
+        }
+
+        footer p {
+            color: #D1D5DB;
+            margin-bottom: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .hamburger {
+                display: block;
+            }
+
+            .sidebar {
+                position: fixed;
+                width: 100%;
+                height: 100%;
+                left: -100%;
+                transition: left 0.3s ease;
+                z-index: 200;
+                overflow-y: auto;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            main {
+                margin-left: 0;
+                padding: 24px;
+            }
+
+            footer {
+                margin-left: 0;
+                padding: 24px;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                flex-direction: column;
+                padding: 40px 24px;
+            }
+
+            .hero-image {
+                width: 100%;
+                height: 240px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            h2 {
+                font-size: 1.25rem;
+            }
+
+            main {
+                max-width: 100%;
+            }
+
+            /* Hero positioning */
+            .hero-image {
+                display: none;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .tabs {
+                gap: 4px;
+            }
+
+            .tab-btn {
+                padding: 10px 12px;
+                font-size: 0.875rem;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .sidebar,
+            .hamburger,
+            .top-bar,
+            .back-to-top,
+            footer {
+                display: none;
+            }
+
+            main {
+                margin-left: 0;
+            }
+        }
+
+        /* Utility */
+        .text-center {
+            text-align: center;
+        }
+
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        .mb-24 {
+            margin-bottom: 24px;
+        }
+
+        .mt-24 {
+            margin-top: 24px;
+        }
+
+        .flex-gap {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <div class="top-bar">
+        <div class="top-bar-logo">CodePop</div>
+        <button class="hamburger" aria-label="Menu">☰</button>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="nav-group">
+            <div class="nav-group-title">Documentation</div>
+            <a href="#overview" class="nav-link">Overview</a>
+            <a href="#getting-started" class="nav-link">Getting Started</a>
+            <a href="#installation" class="nav-link">Installation</a>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-group-title">Features</div>
+            <a href="#customer" class="nav-link">Customer App</a>
+            <a href="#manager" class="nav-link">Manager Dashboard</a>
+            <a href="#admin" class="nav-link">Admin Dashboard</a>
+            <a href="#super-admin" class="nav-link">Super Admin Dashboard</a>
+            <a href="#logistics" class="nav-link">Logistics Manager</a>
+            <a href="#repair" class="nav-link">Repair Staff</a>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-group-title">Support</div>
+            <a href="#troubleshooting" class="nav-link">Troubleshooting</a>
+            <a href="#faq" class="nav-link">FAQs</a>
+            <a href="#contact" class="nav-link">Contact</a>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section class="hero" id="hero">
+            <div class="hero-content">
+                <div class="hero-wordmark">CodePop</div>
+                <div class="hero-tagline">AI-powered robotic soda, built for everyone.</div>
+                <div class="hero-subtitle">User Manual — v1.0</div>
+                <div class="hero-buttons">
+                    <a href="#customer" class="btn btn-outline">Jump to Customer App</a>
+                    <a href="#manager" class="btn btn-outline">Jump to Staff Dashboards</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="misc/SodaRobotResized.jpg" alt="CodePop robotic soda dispenser">
+            </div>
+        </section>
+
+        <!-- Overview Section -->
+        <section id="overview">
+            <h1>Overview of the Software</h1>
+
+            <h2>What is CodePop?</h2>
+            <p>
+                CodePop is an AI-powered, robotic soda dispensing platform that reimagines how customers create,
+                order, and enjoy custom drinks. Using a mobile app, customers design their perfect drink by selecting
+                a base soda, adding syrups and mix-ins, and letting AI suggest creative combinations. Orders are placed
+                through secure Stripe payments and fulfilled by robotic dispensers at physical CodePop store locations.
+                Drinks are made fresh just before pickup, ensuring maximum quality.
+            </p>
+            <p>
+                Behind the scenes, staff members across five distinct roles use web-based dashboards to manage
+                inventory, coordinate supply chains, schedule machine repairs, track revenue, and maintain system health
+                across a nationwide network of stores and regional supply hubs.
+            </p>
+
+            <h2>Who is this Manual For?</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Role</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Customer</strong></td>
+                        <td>End users who create and order custom drinks via the mobile app</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Manager</strong></td>
+                        <td>Store managers who oversee inventory, revenue, and daily operations</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Admin</strong></td>
+                        <td>Store administrators who manage user accounts, roles, and permissions</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Super Admin</strong></td>
+                        <td>System-wide administrators with global access across all stores and regions</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Logistics Manager</strong></td>
+                        <td>Regional coordinators who manage supply delivery and inventory distribution</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Repair Staff</strong></td>
+                        <td>Technicians who schedule and log machine maintenance and repairs</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>How the System Works</h2>
+            <div class="figure">
+                <img src="misc/UserFlow.png" alt="CodePop customer ordering flow diagram">
+                <figcaption>The CodePop ordering flow: browse, customize, order, pay, and pickup</figcaption>
+            </div>
+
+            <p>
+                <strong>The Customer Journey:</strong> Customers open the mobile app, browse pre-made or seasonal drinks,
+                or build their own custom creation. The AI engine suggests ingredient combinations based on preferences
+                or order history. After adding items to the cart, customers proceed to checkout and pay securely via Stripe.
+                Once payment is confirmed, the app tracks the customer's location (with permission) and notifies the robot
+                at precisely the right moment—the "Golden Window"—to begin drink preparation. When the customer arrives at
+                the store, they enter a locker code to retrieve their fresh drink.
+            </p>
+            <p>
+                <strong>Behind the Scenes:</strong> Staff members log into their role-specific dashboards to manage their
+                responsibilities: Managers track store inventory and revenue, Logistics Managers coordinate regional supply delivery,
+                Repair Staff schedule machine maintenance, and Super Admins oversee the entire system across seven regions and dozens
+                of stores.
+            </p>
+        </section>
+
+        <!-- Getting Started Section -->
+        <section id="getting-started">
+            <h1>Getting Started</h1>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h2>👤 I'm a Customer</h2>
+                    <p><strong>Quick Start:</strong></p>
+                    <ol>
+                        <li>Download the CodePop app from the App Store, Google Play, or visit the web version</li>
+                        <li>Create an account (optional—you can order as a guest)</li>
+                        <li>Browse drinks or use AI to generate a suggestion</li>
+                        <li>Add your drink to the cart and proceed to checkout</li>
+                        <li>Pay via Stripe with your credit or debit card</li>
+                        <li>Allow location access or tap "Start" when you leave for the store</li>
+                        <li>Arrive at the store and enter the locker code to pick up your drink</li>
+                    </ol>
+                </div>
+
+                <div class="card">
+                    <h2>👔 I'm a Staff Member</h2>
+                    <p><strong>Quick Start:</strong></p>
+                    <ol>
+                        <li>Receive login credentials from your Admin</li>
+                        <li>Open <code>http://localhost:5173</code> in your browser</li>
+                        <li>Log in with your email and password</li>
+                        <li>You'll be automatically redirected to your role's dashboard</li>
+                        <li>Start managing your responsibilities</li>
+                    </ol>
+                </div>
+            </div>
+
+            <h2>Test Accounts (For Development)</h2>
+            <p>These accounts are pre-seeded in the system during development and testing:</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Role</th>
+                        <th>Username</th>
+                        <th>Password</th>
+                        <th>Dashboard URL</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Super Admin</td>
+                        <td>superadmin</td>
+                        <td>superadmin123</td>
+                        <td>http://localhost:5173/super-admin</td>
+                    </tr>
+                    <tr>
+                        <td>Admin</td>
+                        <td>admin</td>
+                        <td>admin123</td>
+                        <td>http://localhost:5173/admin</td>
+                    </tr>
+                    <tr>
+                        <td>Manager</td>
+                        <td>manager</td>
+                        <td>manager123</td>
+                        <td>http://localhost:5173/manager</td>
+                    </tr>
+                    <tr>
+                        <td>Logistics Manager</td>
+                        <td>logistics</td>
+                        <td>logistics123</td>
+                        <td>http://localhost:5173/logistics</td>
+                    </tr>
+                    <tr>
+                        <td>Repair Staff</td>
+                        <td>repairstaff</td>
+                        <td>repair123</td>
+                        <td>http://localhost:5173/repair</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Installation Section -->
+        <section id="installation">
+            <h1>Installation Instructions</h1>
+
+            <div class="callout callout-info">
+                <strong>👨‍💻 For Developers & IT Staff</strong><br>
+                This section contains setup instructions for installing CodePop on your local machine.
+                If you're a customer or staff member using the already-deployed system, skip to the Getting Started section.
+            </div>
+
+            <h2>Prerequisites</h2>
+            <ul>
+                <li>Git</li>
+                <li>Node.js 18+ (for frontend apps)</li>
+                <li>Docker & Docker Compose (for backend)</li>
+                <li>A Stripe account (for payment keys)</li>
+                <li>A Mapbox account (for location services)</li>
+            </ul>
+
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Clone the Repository</h3>
+                    <pre><code>git clone &lt;repo-url&gt;
+cd codepop</code></pre>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Configure Environment Variables</h3>
+                    <pre><code>cp codepop_backend/.env.example codepop_backend/.env</code></pre>
+                    <p>Edit the <code>.env</code> file and fill in the following keys:</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Environment Variable</th>
+                                <th>Description</th>
+                                <th>Where to Get It</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>STRIPE_SECRET_KEY</code></td>
+                                <td>Stripe API secret key (starts with <code>sk_</code>)</td>
+                                <td>Stripe Dashboard → API Keys</td>
+                            </tr>
+                            <tr>
+                                <td><code>STRIPE_PUBLISHABLE_KEY</code></td>
+                                <td>Stripe publishable key (starts with <code>pk_</code>)</td>
+                                <td>Stripe Dashboard → API Keys</td>
+                            </tr>
+                            <tr>
+                                <td><code>MAPBOX_ACCESS_TOKEN</code></td>
+                                <td>Mapbox API token for maps and location</td>
+                                <td>Mapbox Account → Tokens</td>
+                            </tr>
+                            <tr>
+                                <td><code>SECRET_KEY</code></td>
+                                <td>Django secret key (any long random string)</td>
+                                <td>Generate yourself (e.g., <code>python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'</code>)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Start the Backend (Django + PostgreSQL)</h3>
+                    <pre><code>cd codepop_backend
+docker compose up</code></pre>
+                    <div class="callout callout-success">
+                        ✓ Backend API runs at <code>http://localhost:8000</code><br>
+                        ✓ PostgreSQL database and Redis cache start automatically<br>
+                        ✓ Test user accounts are seeded automatically<br>
+                        ✓ Celery task queue is ready for async jobs
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Start the Mobile App (React Native + Expo)</h3>
+                    <pre><code>cd codepop
+npm install
+npm start</code></pre>
+                    <p>The Expo CLI will prompt you with platform options:</p>
+                    <ul>
+                        <li>Press <code>i</code> for iOS Simulator</li>
+                        <li>Press <code>a</code> for Android Emulator</li>
+                        <li>Press <code>w</code> for Web Browser</li>
+                    </ul>
+                    <div class="callout callout-info">
+                        <strong>Note:</strong> Make sure the backend (Docker) is running before starting the mobile app,
+                        as it needs to communicate with the API at <code>http://localhost:8000</code>.
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h3>Start the Staff Dashboards (React + Vite)</h3>
+                    <pre><code>cd dashboards_frontend
+npm install
+npm run dev</code></pre>
+                    <div class="callout callout-success">
+                        ✓ Staff dashboards run at <code>http://localhost:5173</code><br>
+                        ✓ The app will auto-redirect logged-in staff to their role's dashboard
+                    </div>
+                </div>
+            </div>
+
+            <h2>Verification</h2>
+            <p>To verify everything is working:</p>
+            <ul>
+                <li>✓ Backend: Navigate to <code>http://localhost:8000/api/</code> (should show API root)</li>
+                <li>✓ Mobile App: See the Expo terminal for platform launch confirmation</li>
+                <li>✓ Dashboards: Navigate to <code>http://localhost:5173</code> and log in with test credentials</li>
+            </ul>
+        </section>
+
+        <!-- Customer App Section -->
+        <section id="customer">
+            <span class="badge badge-customer">Customer</span>
+            <h1>Customer App Features</h1>
+
+            <p>
+                The CodePop mobile app is your gateway to creating and ordering custom drinks. Whether you're a registered
+                user or ordering as a guest, the app guides you through the entire experience from drink selection to pickup.
+            </p>
+
+            <h2>Creating an Account</h2>
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p>Open the CodePop app and tap <strong>"Sign Up"</strong> on the login screen.</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p>Enter your <strong>email address</strong> and create a <strong>password</strong>.</p>
+                    <div class="callout callout-info">
+                        <strong>Password Requirements:</strong> At least 8 characters, including uppercase, lowercase, number, and special character.
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <p>Check your email for a verification link and click it to activate your account.</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <p>Log in with your new credentials and complete the optional first-time tutorial.</p>
+                </div>
+            </div>
+
+            <h2>Building a Custom Drink</h2>
+            <p>
+                The drink builder is where creativity meets technology. Choose your base, add flavors and mix-ins,
+                and let AI suggest unexpected combinations.
+            </p>
+
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p>Tap the <strong>"Create Drink"</strong> tab at the bottom of the screen.</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p>Select a <strong>base soda</strong> from the dropdown (Coke, Sprite, Dr Pepper, etc.)</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <p>Add <strong>syrups</strong> (vanilla, coconut, mango, etc.) and <strong>add-ins</strong> (cream, purees, whipped topping, etc.)</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <p>Adjust <strong>ice level</strong> and <strong>size</strong> to your preference.</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <p>Tap <strong>"AI Surprise Me"</strong> for an AI-generated combination, or <strong>"Add to Cart"</strong> to save your creation.</p>
+                </div>
+            </div>
+
+            <h2>Cart & Checkout</h2>
+
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p>Tap the <strong>"Cart"</strong> tab to review your items. You can:</p>
+                    <ul>
+                        <li>Adjust quantities with the + and − buttons</li>
+                        <li>Remove items you don't want</li>
+                        <li>See the running total</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p>If you have a promo code, enter it in the <strong>"Promo Code"</strong> field and tap <strong>"Apply"</strong>.</p>
+                    <div class="callout callout-info">
+                        Valid promo codes will show the discount immediately.
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <p>Tap <strong>"Checkout"</strong> to proceed to the payment screen.</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <p>Review your <strong>delivery/pickup location</strong> and enter your <strong>payment details</strong>.</p>
+                    <p>CodePop accepts all major credit and debit cards via Stripe. You can save your card for future orders.</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <p>Tap <strong>"Pay"</strong> to confirm your order.</p>
+                </div>
+            </div>
+
+            <h2>Order Pickup (The "Golden Window")</h2>
+            <p>
+                After you place your order, CodePop uses advanced timing to start drink preparation at exactly the right moment.
+                This ensures your drink is made fresh and arrives at peak quality.
+            </p>
+
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p>After payment, you'll see a confirmation screen with your <strong>locker code</strong>.</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p>The app asks for <strong>location permission</strong>. Allow it so CodePop can track your arrival.</p>
+                    <div class="callout callout-info">
+                        Don't have location enabled? No problem. Tap the <strong>"Start"</strong> button when you're leaving for the store.
+                    </div>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <p>A live map shows your distance to the store. When you're close, the robot begins preparing your drink.</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <p>Arrive at the store and find the CodePop locker. Enter the code shown in your app to unlock your drink.</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <p>Enjoy your fresh drink! You'll be prompted to rate it (1–5 stars) after pickup.</p>
+                </div>
+            </div>
+
+            <h2>Saving Favorites</h2>
+            <p>Save your favorite drinks for one-tap reordering.</p>
+            <ul>
+                <li>From any drink screen, tap the <strong>heart icon</strong> to add it to your favorites</li>
+                <li>Your saved drinks appear on the <strong>"Preferences"</strong> tab</li>
+                <li>Tap a favorite to reorder it instantly (if all ingredients are in stock)</li>
+                <li>Long-press to rename or delete a saved drink</li>
+            </ul>
+
+            <h2>Preferences & Account Settings</h2>
+            <p>Customize your CodePop experience in the <strong>"Preferences"</strong> tab.</p>
+            <ul>
+                <li><strong>Liked/Disliked Ingredients:</strong> Tell CodePop what flavors you love or hate for smarter AI recommendations</li>
+                <li><strong>Store Location:</strong> Set your preferred CodePop location</li>
+                <li><strong>Theme:</strong> Toggle between light mode, dark mode, or system default</li>
+                <li><strong>Notifications:</strong> Control alerts for order status, promotions, and new items</li>
+                <li><strong>Account Settings:</strong> Change your username or password</li>
+            </ul>
+
+            <h2>Seasonal & AI-Recommended Drinks</h2>
+            <p>
+                The <strong>"Home"</strong> tab showcases CodePop's best offerings:
+            </p>
+            <ul>
+                <li><strong>Seasonal Carousel:</strong> Limited-edition drinks that rotate throughout the year</li>
+                <li><strong>"For You" Section:</strong> AI-powered recommendations based on your order history and preferences</li>
+                <li><strong>Popular Drinks:</strong> Trending community favorites</li>
+            </ul>
+
+            <h2>Getting Help & Support</h2>
+            <p>
+                Need assistance? Tap the <strong>"Help"</strong> tab to access our AI-powered customer support bot, <strong>Tonic</strong>.
+            </p>
+            <ul>
+                <li><strong>Report an Issue:</strong> Tell Tonic about problems with your drink or order</li>
+                <li><strong>Track Your Delivery:</strong> Get real-time updates on your order</li>
+                <li><strong>Request a Refund:</strong> Start the refund process for a drink you didn't enjoy</li>
+                <li><strong>General Questions:</strong> Ask Tonic anything about CodePop</li>
+            </ul>
+
+            <div class="callout callout-info">
+                <strong>Tonic is available 24/7</strong> and responds to natural language. If you need escalation to a human representative,
+                Tonic will connect you with the nearest store manager.
+            </div>
+        </section>
+
+        <!-- Manager Dashboard Section -->
+        <section id="manager">
+            <span class="badge badge-manager">Manager</span>
+            <h1>Manager Dashboard</h1>
+
+            <p>
+                Managers oversee a single CodePop store location. Your dashboard provides visibility into daily operations,
+                inventory levels, revenue performance, and supply needs.
+            </p>
+
+            <div class="callout callout-info">
+                <strong>Access:</strong> Navigate to <code>http://localhost:5173/manager</code> and log in with your credentials.
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="manager-overview">Overview</button>
+                <button class="tab-btn" data-tab="manager-revenue">Revenue</button>
+                <button class="tab-btn" data-tab="manager-inventory">Inventory</button>
+                <button class="tab-btn" data-tab="manager-orders">Order Stats</button>
+                <button class="tab-btn" data-tab="manager-supply">Supply Requests</button>
+            </div>
+
+            <div class="tab-pane active" id="manager-overview">
+                <h2>Overview</h2>
+                <p>Get a quick snapshot of your store's health and performance.</p>
+                <ul>
+                    <li><strong>KPI Cards:</strong> Daily revenue, orders today, active users, low inventory count</li>
+                    <li><strong>Alerts Panel:</strong> Urgent notices (low stock, pending orders, machine issues)</li>
+                    <li><strong>Quick Links:</strong> Jump directly to inventory, supply requests, or revenue reports</li>
+                </ul>
+            </div>
+
+            <div class="tab-pane" id="manager-revenue">
+                <h2>Revenue</h2>
+                <p>Track your store's financial performance over time.</p>
+                <ul>
+                    <li><strong>Revenue Trend Chart:</strong> 7-day, 30-day, or custom date range view</li>
+                    <li><strong>Category Breakdown:</strong> See which drink categories generate the most revenue</li>
+                    <li><strong>Top Items:</strong> Identify your best-selling drinks</li>
+                    <li><strong>Peak Hours/Days:</strong> Understand when customers are most active</li>
+                </ul>
+            </div>
+
+            <div class="tab-pane" id="manager-inventory">
+                <h2>Inventory</h2>
+                <p>Monitor stock levels and manage your supply chain.</p>
+                <ul>
+                    <li><strong>Three Categories:</strong> Syrups, Sodas, and Add-Ins</li>
+                    <li><strong>Stock Status:</strong> Critical (order now), Low (reorder soon), Healthy (in stock)</li>
+                    <li><strong>Days Remaining:</strong> Estimated days until stockout based on usage patterns</li>
+                    <li><strong>AI Recommendations:</strong> Suggested order quantities based on demand forecasting</li>
+                    <li><strong>Filters & Sort:</strong> Organize by status, category, or consumption rate</li>
+                </ul>
+            </div>
+
+            <div class="tab-pane" id="manager-orders">
+                <h2>Order Stats</h2>
+                <p>Understand your customer demand and fulfillment performance.</p>
+                <ul>
+                    <li><strong>Order Volume KPIs:</strong> Daily/weekly/monthly order counts</li>
+                    <li><strong>Fulfillment Time:</strong> Average time from order to pickup</li>
+                    <li><strong>Satisfaction Score:</strong> Aggregate rating of customer drinks</li>
+                    <li><strong>Order History Table:</strong> Browse individual orders with timestamps and amounts</li>
+                </ul>
+            </div>
+
+            <div class="tab-pane" id="manager-supply">
+                <h2>Supply Requests</h2>
+                <p>Request inventory from your regional supply hub.</p>
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <p>Click <strong>"Create Supply Request"</strong> button</p>
+                    </div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <p>Select your <strong>regional hub</strong> and the <strong>items</strong> you need (syrups, sodas, add-ins)</p>
+                    </div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <p>Enter <strong>quantities</strong> and set <strong>urgency</strong> (normal, high, critical)</p>
+                    </div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <p>Submit the request. Your logistics manager will review and approve it.</p>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>View Requests:</strong> See all pending, approved, and fulfilled requests with status filters</li>
+                    <li><strong>Supply Movement History:</strong> Track when supplies were delivered and when they were consumed</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Admin Dashboard Section -->
+        <section id="admin">
+            <span class="badge badge-admin">Admin</span>
+            <h1>Admin Dashboard</h1>
+
+            <p>
+                Admins manage user accounts, roles, and system settings for their store. You have responsibility for
+                user provisioning, access control, and audit trail monitoring.
+            </p>
+
+            <div class="callout callout-info">
+                <strong>Access:</strong> Navigate to <code>http://localhost:5173/admin</code> and log in with your credentials.
+            </div>
+
+            <h2>Dashboard Home</h2>
+            <p>Quick overview of your store's user population.</p>
+            <ul>
+                <li><strong>Total Users:</strong> All accounts ever created</li>
+                <li><strong>Active Users:</strong> Users who logged in this month</li>
+                <li><strong>Disabled Users:</strong> Accounts currently deactivated</li>
+                <li><strong>Manager Count:</strong> Staff members with manager privileges</li>
+            </ul>
+
+            <h2>User Management</h2>
+            <p>Create, edit, and manage user accounts.</p>
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p>Click <strong>"Create User"</strong> to add a new account. Enter email, first name, and last name.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p>Assign a role (customer, manager, admin, logistics, repair staff) and click <strong>"Create"</strong>.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <p>The user will receive an email with a password reset link. They can set their own password.</p>
+                </div>
+            </div>
+            <ul>
+                <li><strong>Search & Filter:</strong> Find users by email, name, role, or status</li>
+                <li><strong>Edit Users:</strong> Change name, email, or role assignment</li>
+                <li><strong>Disable/Enable:</strong> Temporarily restrict or restore account access</li>
+                <li><strong>Delete Users:</strong> Soft-delete accounts (data is preserved for audit purposes)</li>
+            </ul>
+
+            <h2>Manager Accounts</h2>
+            <p>Promote staff members to manager status.</p>
+            <ul>
+                <li>View all users with manager privileges</li>
+                <li>Promote a customer or staff account to manager (grants access to Manager Dashboard)</li>
+                <li>Revoke manager status</li>
+            </ul>
+
+            <h2>Roles & Permissions</h2>
+            <p>Create custom roles and assign granular permissions.</p>
+            <ul>
+                <li><strong>View Roles:</strong> List all system roles (built-in and custom)</li>
+                <li><strong>Create Role:</strong> Define a new role with specific permissions</li>
+                <li><strong>Edit Role:</strong> Modify role name and permission grants</li>
+                <li><strong>Permission Categories:</strong> User Management, Roles & Permissions, System Audit</li>
+            </ul>
+
+            <h2>Audit Trail</h2>
+            <p>Review all administrative actions taken by admins and managers.</p>
+            <ul>
+                <li><strong>Paginated Log:</strong> Browse historical actions (newest first)</li>
+                <li><strong>Filter:</strong> Search by user, action type, date range, or outcome (success/failure)</li>
+                <li><strong>Action Details:</strong> See who did what, when, and the result (what changed)</li>
+            </ul>
+            <div class="callout callout-info">
+                Audit logs are immutable and created automatically for every admin action. Use this to investigate incidents or track system changes.
+            </div>
+        </section>
+
+        <!-- Super Admin Dashboard Section -->
+        <section id="super-admin">
+            <span class="badge badge-super-admin">Super Admin</span>
+            <h1>Super Admin Dashboard</h1>
+
+            <p>
+                Super Admins have global, system-wide access across all CodePop stores, regions, and supply hubs.
+                You are responsible for the entire platform's health, configuration, and long-term strategy.
+            </p>
+
+            <div class="callout callout-info">
+                <strong>Access:</strong> Navigate to <code>http://localhost:5173/super-admin</code> and log in with your credentials.
+                <br><strong>Note:</strong> Only super admin accounts can access this dashboard.
+            </div>
+
+            <h2>Dashboard Home</h2>
+            <p>System-wide health and performance at a glance.</p>
+            <ul>
+                <li><strong>Regional Status Grid:</strong> Quick health check of all 7 regions (Chicago, NJ, Logan UT, Dallas, Atlanta, Phoenix, Boise)</li>
+                <li><strong>System KPIs:</strong> Active orders, national revenue today, inventory health, machine uptime, API response time, network latency</li>
+                <li><strong>Alerts Panel:</strong> Critical issues across the system</li>
+                <li><strong>Network Health:</strong> Status of database, cache (Redis), task queue (Celery), and external integrations (Stripe, Mapbox, AI services)</li>
+                <li><strong>7-Day Order Volume Chart:</strong> Trend across the entire network</li>
+            </ul>
+
+            <h2>Regions & Stores</h2>
+            <p>Manage the physical CodePop store network.</p>
+            <ul>
+                <li><strong>List All Stores:</strong> Browse stores across all 7 regions with operational status</li>
+                <li><strong>Create Store:</strong> Register a new location (requires region, address, manager assignment)</li>
+                <li><strong>Edit Store:</strong> Update location details, manager, or regional assignment</li>
+                <li><strong>Regional Map View:</strong> Visual representation of store locations by region</li>
+                <li><strong>7 Regions:</strong> A (Chicago), B (NJ), C (Logan UT), D (Dallas), E (Atlanta), F (Phoenix), G (Seattle)</li>
+            </ul>
+
+            <h2>Supply Hubs</h2>
+            <p>Oversee the 7 regional supply hubs that distribute inventory to stores.</p>
+            <ul>
+                <li><strong>List Hubs:</strong> View all 7 supply hubs with current inventory levels</li>
+                <li><strong>Create/Edit Hub:</strong> Add a new hub or update hub details (region, manager, address)</li>
+                <li><strong>Hub Inventory:</strong> Monitor syrup, soda, and add-in stock at each hub</li>
+                <li><strong>Supply Requests:</strong> Review and approve major requests from hubs or regions</li>
+            </ul>
+
+            <h2>User Management</h2>
+            <p>Manage all users across the entire system.</p>
+            <ul>
+                <li><strong>Search All Users:</strong> Find any user by email, name, role, or region</li>
+                <li><strong>Bulk Role Assignment:</strong> Assign multiple users to a new role at once</li>
+                <li><strong>Bulk Region Assignment:</strong> Assign users to a region (for logistics and repair roles)</li>
+                <li><strong>Enable/Disable Accounts:</strong> Toggle access for any user</li>
+                <li><strong>Delete Users:</strong> Remove accounts from the system</li>
+            </ul>
+
+            <h2>AI Configuration</h2>
+            <p>Tune the machine learning models that power CodePop's recommendations and automation.</p>
+            <ul>
+                <li><strong>Recommendation Engine:</strong> Adjust parameters for drink suggestions (frequency, similarity threshold, seasonality weight)</li>
+                <li><strong>Chatbot (Tonic):</strong> Configure response style, escalation rules, and knowledge base</li>
+                <li><strong>Forecasting AI:</strong> Tune supply demand prediction, inventory optimization, machine uptime forecasting</li>
+                <li><strong>Reset to Defaults:</strong> Revert any configuration to factory settings</li>
+            </ul>
+
+            <h2>Reports & Analytics</h2>
+            <p>Generate comprehensive reports across the entire network.</p>
+            <ul>
+                <li><strong>Revenue Report:</strong> National revenue by date range, store, region, or category</li>
+                <li><strong>Orders Report:</strong> Order volume, average order value, fulfillment time statistics</li>
+                <li><strong>Inventory Report:</strong> Stock levels by region, hub, store, and category</li>
+                <li><strong>Machine Uptime Report:</strong> Repair frequency, downtime duration, maintenance trends</li>
+                <li><strong>Export:</strong> Download reports as CSV or PDF for external analysis</li>
+            </ul>
+
+            <h2>Audit Logs</h2>
+            <p>Full system audit trail with advanced filtering.</p>
+            <ul>
+                <li><strong>All Actions:</strong> Every admin action across all regions and stores</li>
+                <li><strong>Date Range Filter:</strong> Search actions within a specific time period</li>
+                <li><strong>User Filter:</strong> Find all actions by a specific admin</li>
+                <li><strong>Action Type Filter:</strong> Search by category (user management, config changes, deletions, etc.)</li>
+                <li><strong>Export Logs:</strong> Download audit logs for compliance or investigation</li>
+            </ul>
+
+            <h2>System Settings</h2>
+            <p>Global configuration and operational toggles.</p>
+            <ul>
+                <li><strong>Maintenance Mode:</strong> Put the system in maintenance to prevent new orders (staff dashboards remain accessible)</li>
+                <li><strong>System Overrides:</strong> Force-enable features or disable problematic integrations</li>
+                <li><strong>Notification Thresholds:</strong> Set alerts for latency, inventory depletion, machine downtime</li>
+                <li><strong>Backup & Recovery:</strong> Configure automated database backups and restore points</li>
+            </ul>
+
+            <h2>Help Docs</h2>
+            <p>Internal documentation and runbooks.</p>
+            <ul>
+                <li>Links to operational guides for each role</li>
+                <li>Incident response procedures</li>
+                <li>API documentation for integrations</li>
+                <li>Troubleshooting guides for common issues</li>
+            </ul>
+        </section>
+
+        <!-- Logistics Manager Dashboard Section -->
+        <section id="logistics">
+            <span class="badge badge-logistics">Logistics</span>
+            <h1>Logistics Manager Dashboard</h1>
+
+            <p>
+                Logistics Managers coordinate supply delivery from regional hubs to stores. You're responsible for
+                ensuring stores never run out of ingredients and that deliveries happen efficiently.
+            </p>
+
+            <div class="callout callout-info">
+                <strong>Access:</strong> Navigate to <code>http://localhost:5173/logistics</code> and log in with your credentials.
+                <br><strong>Scope:</strong> You can only view and manage your assigned regional hub.
+            </div>
+
+            <h2>Overview</h2>
+            <p>Dashboard summary of your hub's current state.</p>
+            <ul>
+                <li><strong>KPI Cards:</strong> Stores at critical inventory level, deliveries in transit, pending requests, trending ingredient, forecast accuracy</li>
+                <li><strong>Hub Status Section:</strong> Current inventory levels and hub health</li>
+                <li><strong>Critical Stores List:</strong> Top 5 stores with 3 days or less of supply remaining (requires immediate attention)</li>
+                <li><strong>Alerts Panel:</strong> Urgent notices</li>
+            </ul>
+
+            <h2>Stores</h2>
+            <p>Monitor inventory health at each store in your region.</p>
+            <ul>
+                <li><strong>Store Health Grid:</strong> Filter by status (Critical, Low, Good)</li>
+                <li><strong>Store Detail View:</strong> Click any store to see:
+                    <ul>
+                        <li>Current inventory levels (syrups, sodas, add-ins)</li>
+                        <li>Days remaining at current consumption rate</li>
+                        <li>Supply requests and status</li>
+                        <li>Forecast chart (predicted inventory over next 30 days)</li>
+                        <li>Movement history (when supplies were delivered/consumed)</li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h2>Inventory</h2>
+            <p>Hub-level inventory overview and trends.</p>
+            <ul>
+                <li><strong>Hub Inventory Levels:</strong> Current stock of all items by category</li>
+                <li><strong>Usage Trends Chart:</strong> Consumption rates (weekly, monthly, 30-day views)</li>
+                <li><strong>AI Insights Panel:</strong> Recommendations on reordering and optimal stock levels</li>
+                <li><strong>Regional Consumption Patterns:</strong> Which items are most consumed across your region</li>
+                <li><strong>Seasonal Patterns Chart:</strong> How demand shifts throughout the year</li>
+            </ul>
+
+            <h2>Deliveries</h2>
+            <p>Create and manage supply delivery routes.</p>
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p>Click <strong>"Create Delivery Route"</strong></p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p>Select stores to include in the route (grouped by proximity)</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <p>Assign a driver and set the date/time</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <p>View the optimized route map and make adjustments if needed</p>
+                </div>
+            </div>
+            <ul>
+                <li><strong>Delivery List:</strong> View all deliveries with status (scheduled, in-transit, completed)</li>
+                <li><strong>Filters:</strong> Search by date, driver, or store</li>
+                <li><strong>Delivery Detail View:</strong> Route map, driver contact, ETA, items being delivered</li>
+                <li><strong>Recurring Routes:</strong> Set up weekly or monthly delivery schedules</li>
+                <li><strong>CSV Upload:</strong> Import historical delivery data
+                    <div class="callout callout-info">
+                        <strong>CSV Format:</strong> Columns must include <code>store_location, machine_type, operational_date, machine_status, status_date</code>
+                    </div>
+                </li>
+            </ul>
+
+            <h2>Supply Requests</h2>
+            <p>Review and approve requests from store managers.</p>
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p>Navigate to the <strong>"Supply Requests"</strong> tab. Pending requests appear at the top.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p>Click a request to view details: requested items, quantities, urgency level, and store location.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <p>Click <strong>"Approve"</strong> to authorize the delivery, or <strong>"Deny"</strong> if quantities are unavailable.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <p>The store manager is notified automatically. Approved requests are queued for the next available delivery.</p>
+                </div>
+            </div>
+            <ul>
+                <li><strong>Filters:</strong> Search by status (pending, approved, denied), store, or item type</li>
+                <li><strong>AI-Suggested Quantities:</strong> The system recommends order quantities based on forecasting</li>
+                <li><strong>Approval Timeline:</strong> View the history of request status changes</li>
+            </ul>
+        </section>
+
+        <!-- Repair Staff Dashboard Section -->
+        <section id="repair">
+            <span class="badge badge-repair">Repair Staff</span>
+            <h1>Repair Staff Dashboard</h1>
+
+            <p>
+                Repair Staff manage machine maintenance and repairs across your assigned region. You're responsible for
+                keeping all machines operational, tracking repairs, and managing parts inventory.
+            </p>
+
+            <div class="callout callout-info">
+                <strong>Access:</strong> Navigate to <code>http://localhost:5173/repair</code> and log in with your credentials.
+                <br><strong>Scope:</strong> You can only manage machines in your assigned region.
+            </div>
+
+            <h2>Overview</h2>
+            <p>Quick snapshot of your regional repair workload.</p>
+            <ul>
+                <li><strong>KPI Cards:</strong> Machines currently down, repairs scheduled for today, parts pending delivery, estimated revenue impact of downtime</li>
+                <li><strong>Today's Schedule:</strong> Jobs due today with start times and estimated duration</li>
+                <li><strong>Region Summary:</strong> Total stores in region, machines by status, parts on order</li>
+                <li><strong>Alerts Panel:</strong> Urgent repairs needed, overdue jobs, critical parts shortages</li>
+            </ul>
+
+            <h2>Machines</h2>
+            <p>Track the status and history of all machines in your region.</p>
+            <ul>
+                <li><strong>Machine List:</strong> All machines with current status</li>
+                <li><strong>Status Filter:</strong> Filter by operational state (see Machine Status Reference below)</li>
+                <li><strong>Machine Detail View:</strong> Click any machine to see:
+                    <ul>
+                        <li>Installation date, warranty expiration, serial number</li>
+                        <li>Current repair state and estimated completion date</li>
+                        <li><strong>Repair History Tab:</strong> Last 10 repairs with dates, technician, and work notes</li>
+                        <li><strong>Compatible Parts Tab:</strong> List of parts that fit this machine, current stock status, ETAs</li>
+                        <li><strong>Notes Tab:</strong> Add repair notes and view history</li>
+                    </ul>
+                </li>
+                <li><strong>Update Repair Status:</strong> Mark a repair as started, completed, or waiting on parts</li>
+                <li><strong>Request Parts:</strong> Order needed parts from inventory</li>
+                <li><strong>Photo Upload/Delete:</strong> Attach photos of damage or repairs</li>
+            </ul>
+
+            <h2>Machine Status Reference</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Meaning</th>
+                        <th>Action Required</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>NORMAL</code></td>
+                        <td>Operating normally</td>
+                        <td>None</td>
+                    </tr>
+                    <tr>
+                        <td><code>WARNING</code></td>
+                        <td>Non-critical issue detected</td>
+                        <td>Schedule repair within 1 month</td>
+                    </tr>
+                    <tr>
+                        <td><code>ERROR</code></td>
+                        <td>Critical issue, operational but degraded</td>
+                        <td>Repair within 1 week</td>
+                    </tr>
+                    <tr>
+                        <td><code>OUT_OF_ORDER</code></td>
+                        <td>Machine not operational</td>
+                        <td>Immediate repair required</td>
+                    </tr>
+                    <tr>
+                        <td><code>SCHEDULE_SERVICE</code></td>
+                        <td>Routine maintenance needed</td>
+                        <td>Schedule within 1 month</td>
+                    </tr>
+                    <tr>
+                        <td><code>REPAIR_START</code></td>
+                        <td>Repair/servicing in progress</td>
+                        <td>Machine is offline — complete repair</td>
+                    </tr>
+                    <tr>
+                        <td><code>REPAIR_END</code></td>
+                        <td>Servicing complete, in testing</td>
+                        <td>Verify operation and mark as NORMAL</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Schedule</h2>
+            <p>View and manage your repair jobs.</p>
+            <ul>
+                <li><strong>Timeline View:</strong> Chronological list of all upcoming jobs</li>
+                <li><strong>Calendar View:</strong> Month view with jobs highlighted</li>
+                <li><strong>Job Categories:</strong>
+                    <ul>
+                        <li><strong>Today:</strong> Jobs due now (start immediately)</li>
+                        <li><strong>Upcoming:</strong> Scheduled repairs with future dates</li>
+                        <li><strong>Overdue:</strong> Jobs past their scheduled date (requires priority)</li>
+                        <li><strong>Waiting on Parts:</strong> Jobs halted until parts arrive</li>
+                    </ul>
+                </li>
+                <li><strong>Drag to Reschedule:</strong> Click and drag a job to a new time slot (for timeline view)</li>
+                <li><strong>Start/Cancel Job:</strong> Begin work or cancel a scheduled repair</li>
+                <li><strong>Optimize Schedule:</strong> AI-generated optimal route for today's jobs (by geography and priority)</li>
+            </ul>
+
+            <h2>Parts</h2>
+            <p>Manage spare parts inventory.</p>
+            <ul>
+                <li><strong>Parts Inventory:</strong> All parts currently in stock with compatibility info</li>
+                <li><strong>Filters:</strong> Search by machine type, part name, part number, or status</li>
+                <li><strong>Open Part Orders:</strong> Parts on order with expected arrival dates</li>
+                <li><strong>Mark as Received:</strong> Confirm when a part order arrives and update inventory</li>
+                <li><strong>Low Stock Alerts:</strong> Automatically flag parts below minimum threshold</li>
+            </ul>
+
+            <h2>Performance</h2>
+            <p>Track your team's repair efficiency and quality metrics.</p>
+            <ul>
+                <li><strong>KPI Cards:</strong> Repairs completed (this month), average repair time, on-time percentage, team ranking</li>
+                <li><strong>Repairs Over Time Chart:</strong> Line chart of completed repairs per week (trend analysis)</li>
+                <li><strong>Repair Types Donut Chart:</strong> Breakdown of repairs by category (preventive vs. emergency)</li>
+                <li><strong>Repair History Table:</strong> Detailed log of all completed repairs with dates and technicians</li>
+                <li><strong>Team Ranking Section:</strong> Compare your team's performance to other regional teams</li>
+            </ul>
+
+            <h2>Uploading a Repair Schedule (CSV Import)</h2>
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p>Navigate to the <strong>"Schedule"</strong> tab and click <strong>"Import CSV"</strong></p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p>Prepare a CSV file with these columns (exactly):</p>
+                    <pre><code>store_location,machine_type,operational_date,machine_status,status_date</code></pre>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <p>Upload the file. The system validates format and data before importing.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <p>Review the import summary. The system will highlight any validation errors.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <p>Click <strong>"Confirm Import"</strong> to add the repairs to your schedule.</p>
+                    <div class="callout callout-info">
+                        After importing, use the <strong>"Optimize Schedule"</strong> tool to reorganize jobs by geography and priority.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Troubleshooting Section -->
+        <section id="troubleshooting">
+            <h1>Troubleshooting</h1>
+
+            <p>
+                Encounter an issue? Check common problems and solutions below. If your problem isn't listed,
+                contact support via the in-app chat or escalate to your administrator.
+            </p>
+
+            <h2>Customer App Issues</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🔗 "Connection timed out" when logging in</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> No internet connection or backend API is offline.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Verify you're connected to Wi-Fi or cellular data</li>
+                        <li>Try turning off Wi-Fi and using cellular (or vice versa)</li>
+                        <li>Ask your IT team to confirm the backend is running</li>
+                        <li>Retry after a few minutes (might be temporary outage)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🔐 "Invalid email or password"</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> You typed your email or password incorrectly.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Double-check your email address (case doesn't matter)</li>
+                        <li>Verify password character-by-character (spaces, capitals, special chars)</li>
+                        <li>Tap <strong>"Forgot Password"</strong> to reset via email</li>
+                        <li>Wait a minute after resetting before attempting login again</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>📍 Location not working / "Start" button not working</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> Location permission denied or GPS not enabled.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Check phone Settings → Location to ensure GPS is <strong>On</strong></li>
+                        <li>Grant CodePop permission to access location (allow "While Using App" or "Always")</li>
+                        <li>No GPS? Tap the blue <strong>"Start"</strong> button manually when leaving for the store</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>⏳ Order stuck on "Preparing" for more than 30 minutes</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> Machine is temporarily offline or having issues.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Wait up to 30 minutes. The machine may be rebooting or restocking</li>
+                        <li>Check the in-app chat (Help tab) for status updates</li>
+                        <li>If still stuck after 30 minutes, contact support via chat → <strong>"Report an issue"</strong></li>
+                        <li>The store will issue a refund or remake if the order fails</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>💳 Payment declined</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> Card expired, insufficient funds, or incorrect details.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Verify your card is not expired (check the expiration date on the card)</li>
+                        <li>Confirm you have sufficient funds available</li>
+                        <li>Check for typos in card number, expiration, or CVV</li>
+                        <li>Try a different card</li>
+                        <li>Contact your bank—they may be blocking Stripe transactions</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🏪 Store showing as "Offline"</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> The nearest CodePop node is temporarily unavailable.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>The app automatically routes your order to the nearest available store</li>
+                        <li>Your order will be fulfilled at that location instead</li>
+                        <li>Allow location access so the app can find the best alternative store</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h2>Staff Dashboard Issues</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🚫 "Your account doesn't have dashboard access"</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> Your account lacks the necessary role/permissions.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Contact your <strong>Admin</strong> (or Super Admin) to assign you a staff role</li>
+                        <li>Confirm you need access to a dashboard (Manager, Admin, Logistics, or Repair)</li>
+                        <li>Once assigned, you may need to log out and log back in</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>📊 Dashboard shows no data</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> Backend API is not running.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Verify the backend is running: <code>cd codepop_backend && docker compose up</code></li>
+                        <li>Confirm you're accessing <code>http://localhost:5173</code> (not a different URL)</li>
+                        <li>Wait 10 seconds, then refresh your browser</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>⚠️ "Failed to load inventory data" error</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> API error or session expired.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Refresh the page (Ctrl+R or Cmd+R)</li>
+                        <li>Log out and log back in</li>
+                        <li>Clear browser cache (or open in an incognito window)</li>
+                        <li>Check if backend is still running</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🔍 Supply request not appearing in the list</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> Status filter is hiding the request.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Check the <strong>"Status"</strong> filter dropdown at the top of the request list</li>
+                        <li>Change from "Pending" to <strong>"All"</strong> to see all requests</li>
+                        <li>Search by request date or ID if you remember it</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>📁 CSV upload fails with "Invalid format"</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> CSV file is missing required columns or has formatting errors.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Verify your file has exactly these column headers (no extra spaces):
+                            <pre><code>store_location,machine_type,operational_date,machine_status,status_date</code></pre>
+                        </li>
+                        <li>Ensure the file is saved as <code>.csv</code> (not .xlsx)</li>
+                        <li>Check that all required fields are filled (no empty cells)</li>
+                        <li>Try opening the file in a text editor to inspect for hidden characters</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>📱 Machines list is empty on Repair Staff dashboard</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> You're not assigned to a region.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Contact your <strong>Super Admin</strong> or Admin to assign you to a region</li>
+                        <li>Regions are: Chicago, NJ, Logan UT, Dallas, Atlanta, Phoenix, Seattle</li>
+                        <li>Once assigned, refresh your dashboard</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h2>Installation / Development Issues</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🐳 <code>docker compose up</code> fails immediately</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> Missing <code>.env</code> file.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Ensure you're in the <code>codepop_backend/</code> directory</li>
+                        <li>Create the <code>.env</code> file:
+                            <pre><code>cp .env.example .env</code></pre>
+                        </li>
+                        <li>Fill in required keys (STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, MAPBOX_ACCESS_TOKEN, SECRET_KEY)</li>
+                        <li>Try again: <code>docker compose up</code></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>📡 Expo can't connect to backend ("Network request failed")</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> Wrong IP address configured in the app.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Find your machine's local IP address:
+                            <pre><code>ifconfig | grep "inet " | grep -v 127.0.0.1</code></pre>
+                        </li>
+                        <li>Edit <code>codepop/ip_address.js</code> and set the correct IP</li>
+                        <li>Restart Expo: Press <code>r</code> in the terminal</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>📦 <code>npm install</code> fails with "Node version mismatch"</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> Node.js version is too old.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Check your Node version:
+                            <pre><code>node --version</code></pre>
+                        </li>
+                        <li>Update to Node 18+ (recommended: Node 20 LTS)</li>
+                        <li>Download from <a href="https://nodejs.org" target="_blank">nodejs.org</a></li>
+                        <li>Retry: <code>npm install</code></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🌐 Dashboards show blank page at <code>localhost:5173</code></span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> Backend not running or build failed.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Ensure backend is running: <code>cd codepop_backend && docker compose up</code></li>
+                        <li>Clear browser cache: Ctrl+Shift+Delete (or Cmd+Shift+Delete on Mac)</li>
+                        <li>Refresh: Ctrl+Shift+R (hard refresh)</li>
+                        <li>Check the browser console (F12) for error messages</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>💳 Stripe payments fail in dev ("Invalid API key")</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p><strong>Likely Cause:</strong> Using production Stripe keys instead of test keys.</p>
+                    <p><strong>Fix:</strong></p>
+                    <ul>
+                        <li>Open <code>codepop_backend/.env</code></li>
+                        <li>Verify STRIPE_SECRET_KEY starts with <code>sk_test_</code> (not <code>sk_live_</code>)</li>
+                        <li>Verify STRIPE_PUBLISHABLE_KEY starts with <code>pk_test_</code> (not <code>pk_live_</code>)</li>
+                        <li>Get test keys from <a href="https://dashboard.stripe.com/test/apikeys" target="_blank">Stripe Dashboard</a></li>
+                        <li>Restart the backend: <code>docker compose down && docker compose up</code></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQs Section -->
+        <section id="faq">
+            <h1>Frequently Asked Questions</h1>
+
+            <h2>Customer FAQs</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>👥 Do I need an account to order?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        No! You can order as a guest without creating an account. However, guest ordering has a limitation:
+                        you won't have access to saved favorites, preferences, or order history. We recommend creating an account
+                        to unlock the full CodePop experience.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🤖 How does the "Golden Window" work?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        The Golden Window is the perfect moment to start making your drink—when you're close enough to
+                        arrive shortly after it's finished. After you pay, we track your location (with your permission)
+                        and notify the robot to begin preparation at precisely the right time. This ensures your drink is
+                        made fresh and is ready the moment you arrive. If you don't allow location access, just tap "Start"
+                        when you're heading to the store.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>❌ Can I cancel my order?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        Yes, you can cancel anytime before the drink is finished being made. Cancellations result in a
+                        full refund processed back to your original payment method within 3-5 business days. Once the robot
+                        starts making your drink, cancellation is no longer available.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🎟️ How do I use a promo code?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        On the cart screen, look for the <strong>"Promo Code"</strong> field. Enter your code and tap <strong>"Apply"</strong>.
+                        If the code is valid, the discount will be shown immediately. You can remove the code by tapping <strong>"Remove"</strong>
+                        next to the discount.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>💳 What payment methods do you accept?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        CodePop accepts all major credit and debit cards (Visa, Mastercard, American Express, Discover)
+                        through Stripe. You can save your card to your account for faster checkout on future orders.
+                        We do not accept cash, checks, or digital wallets (Apple Pay, Google Pay) at this time.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🌟 Are there seasonal drinks?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        Yes! A seasonal carousel appears on the home screen and rotates regularly throughout the year.
+                        These limited-edition drinks feature unique flavor combinations that highlight fresh ingredients
+                        and seasonal trends. Check back often to try new creations before they rotate out.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>📱 Can I share my drink on social media?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        Absolutely! Each drink screen has a share button. Tap it to send your drink creation to friends
+                        via text, email, or social media. Your friends can tap the link to view your recipe and order the
+                        same drink.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>⭐ How do I earn loyalty points?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        Earn 1 point for every dollar you spend. Points are awarded automatically after your order is picked up.
+                        Accumulated points can be redeemed for discounts or free drinks—keep an eye on your account for redemption offers.
+                        Note: Points expire 1 year after being earned.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🏪 What if my local CodePop store is offline?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        The app automatically routes your order to the nearest available CodePop location. Your drink will
+                        be made at that store instead. Allow location access so the app can find the best alternative.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🔞 Must I be 18+ to order?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        Yes. CodePop requires all users to be 18 years or older. This requirement is stated in our
+                        <strong><a href="docs/misc/TERMS_AND_CONDITIONS.md" target="_blank">Terms & Conditions</a></strong>
+                        (effective February 22, 2026). You may be asked to provide proof of age during account creation.
+                    </p>
+                </div>
+            </div>
+
+            <h2>Staff FAQs</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🔑 I forgot my dashboard password. What do I do?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        <strong>For Manager, Logistics, or Repair Staff:</strong> Contact your <strong>Admin</strong> to request a password reset.
+                        They can issue you a reset link.
+                    </p>
+                    <p>
+                        <strong>For Admin users:</strong> Contact your <strong>Super Admin</strong> to request a password reset.
+                    </p>
+                    <p>
+                        <strong>For Super Admin:</strong> Contact your system administrator or IT department.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🔄 How often does the dashboard refresh data?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        The dashboard pulls live data from the API whenever you load a page or tab. For real-time updates,
+                        refresh your browser (F5 or Cmd+R). Most dashboards auto-refresh inventory and KPI data every 30 seconds
+                        while the page is open.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🔒 Can a Manager see another store's data?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        No. Managers are scoped to their assigned store only. You can only view inventory, revenue, and
+                        orders for your store. To access another store's dashboard, contact your Admin to be assigned there.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>🔐 What's the difference between Admin and Super Admin?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        <strong>Admin:</strong> Manages user accounts and roles for a single store. No visibility into regional
+                        or system-wide data.
+                    </p>
+                    <p>
+                        <strong>Super Admin:</strong> Has global, system-wide access. Can manage all users, stores, regions, hubs,
+                        and system settings across the entire CodePop network.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>📁 What's the correct CSV format for repair schedule import?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        Your CSV file must have exactly these column headers (no extra spaces, exact order):
+                    </p>
+                    <pre><code>store_location,machine_type,operational_date,machine_status,status_date</code></pre>
+                    <p>
+                        Example row:
+                    </p>
+                    <pre><code>Chicago Store 1,SodaBot 3000,2026-04-10,WARNING,2026-04-10</code></pre>
+                    <p>
+                        Dates must be in YYYY-MM-DD format. The system validates all rows before importing.
+                    </p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">
+                    <span>✅ How do I approve a supply request as a Logistics Manager?</span>
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    <p>
+                        Follow these steps:
+                    </p>
+                    <ol>
+                        <li>Navigate to the <strong>"Supply Requests"</strong> tab on your dashboard</li>
+                        <li>Pending requests appear at the top of the list</li>
+                        <li>Click a request to view details: items, quantities, store, and urgency</li>
+                        <li>Click <strong>"Approve"</strong> to authorize the delivery, or <strong>"Deny"</strong> if quantities are unavailable</li>
+                        <li>The store manager is notified automatically via the app</li>
+                        <li>Approved requests are queued for the next available delivery route</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact">
+            <h1>Contact & Support</h1>
+
+            <p>
+                Need help? CodePop offers multiple support channels to assist you.
+            </p>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h2>💬 Customer Support</h2>
+                    <p><strong>Available 24/7 via in-app chat</strong></p>
+                    <p>
+                        Tap the <strong>"Help"</strong> tab in the CodePop mobile app to access <strong>Tonic</strong>,
+                        our AI customer support bot.
+                    </p>
+                    <p>Quick-reply options include:</p>
+                    <ul>
+                        <li>Report a drink quality issue</li>
+                        <li>Track your order</li>
+                        <li>Request a refund</li>
+                        <li>Ask a general question</li>
+                    </ul>
+                    <p>
+                        If Tonic can't resolve your issue, you can escalate to a human representative (store manager)
+                        directly through the chat.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h2>🐛 Technical Support</h2>
+                    <p><strong>Report software bugs via in-app chat</strong></p>
+                    <p>
+                        Encountered a bug? Use the same <strong>Help</strong> tab in the app and select
+                        <strong>"Report a software bug"</strong>.
+                    </p>
+                    <p>Provide:</p>
+                    <ul>
+                        <li>A clear description of the issue</li>
+                        <li>Steps to reproduce (if applicable)</li>
+                        <li>Screenshots (optional but helpful)</li>
+                    </ul>
+                    <p>
+                        Your report is automatically routed to the CodePop development team for investigation and fixing.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h2>🏢 Store Manager Escalation</h2>
+                    <p><strong>For in-person help</strong></p>
+                    <p>
+                        If you need immediate assistance at a CodePop location, speak with a staff member.
+                        Use the in-app chat to request your nearest store manager's contact information.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h2>⚖️ Legal</h2>
+                    <p><strong>Terms & Conditions</strong></p>
+                    <p>
+                        CodePop Terms & Conditions are available at:
+                    </p>
+                    <pre><code>/docs/misc/TERMS_AND_CONDITIONS.md</code></pre>
+                    <p>
+                        <strong>Effective Date:</strong> February 22, 2026<br>
+                        <strong>Age Requirement:</strong> 18+
+                    </p>
+                </div>
+            </div>
+
+            <div class="callout callout-info">
+                <strong>Do NOT include personal phone numbers or direct email addresses in support requests.</strong>
+                Use the in-app chat or contact your administrator instead.
+            </div>
+        </section>
+    </main>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" aria-label="Back to top">↑</button>
+
+    <!-- Footer -->
+    <footer>
+        <p><strong>CodePop User Manual</strong> — v1.0</p>
+        <p>© 2026 CodePop. All rights reserved.</p>
+        <p>For feedback or corrections, contact your administrator.</p>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const hamburger = document.querySelector('.hamburger');
+        const sidebar = document.querySelector('.sidebar');
+
+        hamburger.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+
+        // Close sidebar when clicking a link on mobile
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+            });
+        });
+
+        // Active nav highlight using IntersectionObserver
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        const observerOptions = {
+            threshold: 0.3
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    navLinks.forEach(link => link.classList.remove('active'));
+                    const activeLink = document.querySelector(`.nav-link[href="#${entry.target.id}"]`);
+                    if (activeLink) activeLink.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => observer.observe(section));
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Back to top button
+        const backToTopBtn = document.querySelector('.back-to-top');
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                backToTopBtn.classList.add('show');
+            } else {
+                backToTopBtn.classList.remove('show');
+            }
+        });
+
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // FAQ accordion
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', () => {
+                question.classList.toggle('open');
+            });
+        });
+
+        // Tab switcher for dashboards
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.getAttribute('data-tab');
+
+                // Remove active from all buttons and panes
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+                // Add active to clicked button and corresponding pane
+                btn.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
