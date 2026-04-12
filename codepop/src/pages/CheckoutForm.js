@@ -77,6 +77,7 @@ export default function CheckoutForm(totalPrice, recurringConfig = null, onPayme
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
         },
         body: JSON.stringify({
           UserID: userId,

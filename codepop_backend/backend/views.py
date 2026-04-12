@@ -984,8 +984,13 @@ class OrderOperations(viewsets.ModelViewSet):
     #     return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
-        # Extract data from the request
-        user_id = request.data.get("UserID", None)
+        # For visiting users, the shadow token resolves to the shadow user whose
+        # local PK is correct for this store. For home users, request.user.pk is
+        # also their correct PK. Fall back to body UserID only if unauthenticated.
+        if request.user and request.user.is_authenticated:
+            user_id = request.user.pk
+        else:
+            user_id = request.data.get("UserID", None)
         drinks = request.data.get("Drinks", [])
         order_status = request.data.get("OrderStatus", "processing")
         payment_status = request.data.get("PaymentStatus", "pending")

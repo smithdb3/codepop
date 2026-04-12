@@ -92,10 +92,6 @@ const SeasonalCarousel = ({ readOnly = false }) => {
                 headers['Authorization'] = `Token ${token}`;
             }
 
-            console.log('DEBUG: token =', token);
-            console.log('DEBUG: headers =', headers);
-            console.log('DEBUG: baseURL =', getBaseURL());
-
             const response = await fetch(`${getBaseURL()}/backend/drinks/`, {
                 method: 'POST',
                 headers,
