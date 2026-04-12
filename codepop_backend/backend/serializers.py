@@ -319,12 +319,11 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
 
         user = get_user_model().objects.create_user(**user_data)
 
-        profile_data = {
-            'user': user,
-            'role': validated_data.get('role'),
-            'region': validated_data.get('region'),
-        }
-        profile = UserProfile.objects.create(**profile_data)
+        # Signal auto-creates UserProfile, so get it and update with validated data
+        profile = user.admin_profile
+        profile.role = validated_data.get('role')
+        profile.region = validated_data.get('region')
+        profile.save()
         return profile
 
     def update(self, instance, validated_data):
