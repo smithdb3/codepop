@@ -117,7 +117,7 @@ revenue_details = RevenueViewSet.as_view({'get': 'retrieve', 'put': 'update', 'd
 
 machine_list = MachineOperations.as_view({'get': 'list', 'post': 'create'})
 
-machine_detail = MachineOperations.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'})
+machine_detail = MachineOperations.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'})
 
 machine_special_operations = MachineOperations.as_view({'patch': 'update_status', 'get': 'get_machine_pair'})
 
@@ -340,10 +340,15 @@ urlpatterns = [
     path('schedules/get_user_schedules/', get_schedules, name='get_schedules'),
 
     # Machine Repair Log related URLs
-    # Endpoint to list all machine repair logs or create a new log
+    # Flat endpoint to list all machine repair logs or create a new log
     # - GET: Retrieve a list of all repair logs
     # - POST: Create a new repair log
-    path('machines/<int:machine_pk>/repair-logs/', machine_repair_log_list, name='machine_repair_log_list_create'),
+    path('machine-repair-logs/', machine_repair_log_list, name='machine_repair_log_list_create'),
+
+    # Nested endpoint to list repair logs for a specific machine or create a new log
+    # - GET: Retrieve a list of repair logs for the machine
+    # - POST: Create a new repair log for the machine
+    path('machines/<int:machine_pk>/repair-logs/', machine_repair_log_list, name='machine_repair_log_nested_list_create'),
 
     # Endpoint to retrieve, update, or delete a specific repair log
     # - GET: Retrieve details of a specific repair log

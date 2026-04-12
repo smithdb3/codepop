@@ -11,10 +11,13 @@ class BackendConfig(AppConfig):
 
     def ready(self):
         """
-        Called once when Django starts. Triggers store registration with the hub.
-        Skip during migrations (manage.py migrate) or when running management commands
-        to avoid unnecessary network calls.
+        Called once when Django starts. Registers signal handlers and triggers
+        store registration with the hub. Skip network calls during migrations
+        or when running management commands.
         """
+        # Import signals first to register all signal handlers (even during tests)
+        from . import signals  # noqa — registers post_save signal for User -> UserProfile
+
         import sys
         # Don't register during migrations, shell, or other management commands
         if any(cmd in sys.argv for cmd in ['migrate', 'makemigrations', 'shell',

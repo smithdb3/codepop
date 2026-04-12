@@ -289,7 +289,7 @@ class UserListSerializer(serializers.ModelSerializer):
 class UserCreateUpdateSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(required=False, default='')
     last_name = serializers.CharField(required=False, default='')
-    email = serializers.EmailField()
+    email = serializers.EmailField(source='user.email')
     username = serializers.CharField(write_only=True, required=False)
     password = serializers.CharField(write_only=True, required=False)
     is_staff = serializers.BooleanField(write_only=True, required=False)
@@ -310,8 +310,8 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
         user_data = {
             'first_name': validated_data.get('first_name'),
             'last_name': validated_data.get('last_name'),
-            'email': validated_data.get('email'),
-            'username': validated_data.get('username') or validated_data.get('email'),  # use provided username or fallback to email
+            'email': validated_data.get('user', {}).get('email'),
+            'username': validated_data.get('username') or validated_data.get('user', {}).get('email'),  # use provided username or fallback to email
             'is_staff': validated_data.get('is_staff', False),
         }
         if 'password' in validated_data:
@@ -331,7 +331,7 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
         user = instance.user
         user.first_name = validated_data.get('first_name', user.first_name)
         user.last_name = validated_data.get('last_name', user.last_name)
-        user.email = validated_data.get('email', user.email)
+        user.email = validated_data.get('user', {}).get('email', user.email)
         if 'password' in validated_data:
             user.set_password(validated_data['password'])
         user.save()

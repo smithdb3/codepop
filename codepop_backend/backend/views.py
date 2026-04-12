@@ -1957,7 +1957,7 @@ class RegionalStatusView(APIView):
 class LogisticsStoreListView(ListAPIView):
     """List stores with filtering (Logistics Manager)."""
     serializer_class = StoreRegistrySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     def get_queryset(self):
         from backend.models import StoreInventoryItem
@@ -2148,7 +2148,7 @@ class ManagerInventoryListView(ListAPIView):
 
 class LogisticsSupplyRequestListView(ListAPIView):
     """List all supply requests with optional filters (status, store, hub, urgency)"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
     serializer_class = SupplyRequestSerializer
 
     def get_queryset(self):
@@ -2202,7 +2202,7 @@ class ManagerSupplyRequestListCreateView(ListCreateAPIView):
             profile = ManagerProfile.objects.get(user=self.request.user)
             serializer.save(store_id=profile.assigned_store_id, created_by=self.request.user)
         except ManagerProfile.DoesNotExist:
-            raise PermissionDenied("Manager profile not found")
+            raise NotFound("Manager profile not found")
 
 
 class ManagerSupplyRequestDetailView(RetrieveUpdateDestroyAPIView):
@@ -2240,7 +2240,7 @@ class AdminSupplyRequestListView(ListAPIView):
 
 class LogisticsDeliveryListCreateView(ListCreateAPIView):
     """List all deliveries with filters, or create a new one."""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
     serializer_class = DeliverySerializer
 
     def get_queryset(self):
