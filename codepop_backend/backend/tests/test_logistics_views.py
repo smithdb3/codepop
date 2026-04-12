@@ -24,11 +24,10 @@ class LogisticsManagerEndpointTests(APITestCase):
         self.hub = SupplyHub.objects.create(
             name='Logan Hub',
             region=self.region,
-            location='123 Main St',
             inventory_pct=80
         )
         self.store = StoreRegistry.objects.create(
-            store_id='store1',
+            store_id=1,
             store_name='Test Store',
             region=self.region,
             api_endpoint='http://store:8000',

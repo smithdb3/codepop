@@ -1043,7 +1043,13 @@ class UserOrdersLookup(ListCreateAPIView):
 class RecurringOrderOperations(viewsets.ModelViewSet):
     queryset = RecurringOrder.objects.all()
     serializer_class = RecurringOrderSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff or user.is_superuser:
+            return RecurringOrder.objects.all()
+        return RecurringOrder.objects.filter(user=user)
 
 class UserRecurringOrdersLookup(ListCreateAPIView):
     serializer_class = RecurringOrderSerializer
@@ -1672,6 +1678,8 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
     queryset = UserProfile.objects.select_related('user', 'role', 'region')
     serializer_class = UserCreateUpdateSerializer
     permission_classes = [IsAdminUser]
+    lookup_field = 'user__pk'
+    lookup_url_kwarg = 'pk'
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -1722,7 +1730,7 @@ class UserDisableView(APIView):
 
     def post(self, request, pk):
         try:
-            profile = UserProfile.objects.get(pk=pk)
+            profile = UserProfile.objects.get(user__pk=pk)
             profile.user.is_active = False
             profile.user.save()
             AuditLog.objects.create(
@@ -1754,7 +1762,7 @@ class UserEnableView(APIView):
 
     def post(self, request, pk):
         try:
-            profile = UserProfile.objects.get(pk=pk)
+            profile = UserProfile.objects.get(user__pk=pk)
             profile.user.is_active = True
             profile.user.save()
             AuditLog.objects.create(

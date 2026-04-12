@@ -314,6 +314,7 @@ class SupplyHub(models.Model):
     """
     name = models.CharField(max_length=255)
     region = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True, blank=True, related_name='supply_hubs')
+    location = models.CharField(max_length=255, blank=True)
     inventory_pct = models.FloatField(default=0.0)
     active_deliveries_count = models.IntegerField(default=0)
     pending_orders_count = models.IntegerField(default=0)

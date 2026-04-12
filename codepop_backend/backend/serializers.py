@@ -243,7 +243,8 @@ class RoleSerializer(serializers.ModelSerializer):
         queryset=Permission.objects.all(),
         source='permissions',
         many=True,
-        write_only=True
+        write_only=True,
+        required=False
     )
     user_count = serializers.SerializerMethodField()
 
@@ -286,16 +287,18 @@ class UserListSerializer(serializers.ModelSerializer):
 
 
 class UserCreateUpdateSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField()
-    last_name = serializers.CharField()
+    first_name = serializers.CharField(required=False, default='')
+    last_name = serializers.CharField(required=False, default='')
     email = serializers.EmailField()
+    username = serializers.CharField(write_only=True, required=False)
     password = serializers.CharField(write_only=True, required=False)
-    role_id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), source='role')
+    is_staff = serializers.BooleanField(write_only=True, required=False)
+    role_id = serializers.PrimaryKeyRelatedField(queryset=Role.objects.all(), source='role', required=False)
     region_id = serializers.PrimaryKeyRelatedField(queryset=get_user_model().objects.none(), source='region', required=False)
 
     class Meta:
         model = UserProfile
-        fields = ['first_name', 'last_name', 'email', 'password', 'role_id', 'region_id']
+        fields = ['first_name', 'last_name', 'email', 'username', 'password', 'is_staff', 'role_id', 'region_id']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -308,7 +311,8 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
             'first_name': validated_data.get('first_name'),
             'last_name': validated_data.get('last_name'),
             'email': validated_data.get('email'),
-            'username': validated_data.get('email'),  # use email as username
+            'username': validated_data.get('username') or validated_data.get('email'),  # use provided username or fallback to email
+            'is_staff': validated_data.get('is_staff', False),
         }
         if 'password' in validated_data:
             user_data['password'] = validated_data['password']

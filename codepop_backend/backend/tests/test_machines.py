@@ -18,6 +18,8 @@ class MachineStatusTests(APITestCase):
 
         # Create a machine in NORMAL status
         self.machine = Machine.objects.create(
+            machine_id='test-machine-1',
+            store_id=1,
             name='Test Machine 1',
             location='Store A',
             status='NORMAL'

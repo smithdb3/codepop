@@ -100,6 +100,7 @@ class CeleryTaskTests(TestCase):
         # Create a pending update
         update = PendingProfileUpdate.objects.create(
             user_id=1,
+            home_store_id=1,
             changes_encrypted=PendingProfileUpdate.encrypt({'preferences': ['sweet']}),
             home_store_endpoint='http://home:8000',
             status='pending',
@@ -123,6 +124,7 @@ class CeleryTaskTests(TestCase):
         """Non-200 response should schedule retry with exponential backoff."""
         update = PendingProfileUpdate.objects.create(
             user_id=1,
+            home_store_id=1,
             changes_encrypted=PendingProfileUpdate.encrypt({'preferences': ['sweet']}),
             home_store_endpoint='http://home:8000',
             status='pending',
@@ -151,6 +153,7 @@ class CeleryTaskTests(TestCase):
         """Pending update past max_retry_until should be marked 'failed'."""
         update = PendingProfileUpdate.objects.create(
             user_id=1,
+            home_store_id=1,
             changes_encrypted=PendingProfileUpdate.encrypt({'preferences': ['sweet']}),
             home_store_endpoint='http://home:8000',
             status='pending',
@@ -222,7 +225,7 @@ class CeleryTaskTests(TestCase):
     def test_check_missed_heartbeats_marks_unreachable(self):
         """Store with no heartbeat for 90+ seconds should be marked unreachable."""
         store = StoreRegistry.objects.create(
-            store_id='store1',
+            store_id=1,
             store_name='Test Store',
             region=self.region,
             api_endpoint='http://store:8000',
@@ -242,7 +245,7 @@ class CeleryTaskTests(TestCase):
     def test_check_missed_heartbeats_keeps_recent_active(self):
         """Store with recent heartbeat should stay active."""
         store = StoreRegistry.objects.create(
-            store_id='store1',
+            store_id=1,
             store_name='Test Store',
             region=self.region,
             api_endpoint='http://store:8000',
@@ -261,7 +264,7 @@ class CeleryTaskTests(TestCase):
         """Store node should skip checking (return early)."""
         # Create a store with stale heartbeat
         store = StoreRegistry.objects.create(
-            store_id='store1',
+            store_id=1,
             store_name='Test Store',
             region=self.region,
             api_endpoint='http://store:8000',

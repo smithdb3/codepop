@@ -4,6 +4,7 @@ from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
+from .node_utils import register_with_hub
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,6 @@ def send_heartbeat():
             return
         if resp.status_code == 404:
             logger.warning('Heartbeat got 404 — store not registered; triggering re-registration')
-            from .node_utils import register_with_hub
             register_with_hub()
         else:
             logger.warning('Heartbeat rejected by hub: %s', resp.text)
