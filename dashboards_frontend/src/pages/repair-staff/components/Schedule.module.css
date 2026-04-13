@@ -33,6 +33,14 @@ width: 100%;
     background-color: var(--color-secondary);
 }
 
+.scheduleRow:nth-child(odd) > td > a{
+    color: #cc1547;
+}
+
+.scheduleRow:nth-child(odd) > td > a:hover{
+    color: white;
+}
+
 .buttonElement{
     background: var(--color-background);
     width: 150px;
