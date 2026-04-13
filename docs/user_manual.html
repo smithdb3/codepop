@@ -1300,7 +1300,7 @@ npm run dev</code></pre>
                 <div class="step-card">
                     <div class="step-number">1</div>
                     <div class="step-content">
-                        <p>Click <strong>"Create Supply Request"</strong> button</p>
+                        <p>Locate <strong>"New Supply Request"</strong> panel on the left side of the page.</p>
                     </div>
                 </div>
                 <div class="step-card">
@@ -1312,13 +1312,13 @@ npm run dev</code></pre>
                 <div class="step-card">
                     <div class="step-number">3</div>
                     <div class="step-content">
-                        <p>Enter <strong>quantities</strong> and set <strong>urgency</strong> (normal, high, critical)</p>
+                        <p>Enter <strong>quantities</strong>, set <strong>urgency</strong> (normal, high, critical), and make any necessary <strong>notes</strong>.</p>
                     </div>
                 </div>
                 <div class="step-card">
                     <div class="step-number">4</div>
                     <div class="step-content">
-                        <p>Submit the request. Your logistics manager will review and approve it.</p>
+                        <p>Click the <strong>"Submit Request"</strong> button to send the request to your logistics manager.</p>
                     </div>
                 </div>
                 <ul>
@@ -1524,109 +1524,133 @@ npm run dev</code></pre>
                 <br><strong>Scope:</strong> You can only view and manage your assigned regional hub.
             </div>
 
-            <h2>Overview</h2>
-            <p>Dashboard summary of your hub's current state.</p>
-            <ul>
-                <li><strong>KPI Cards:</strong> Stores at critical inventory level, deliveries in transit, pending requests, trending ingredient, forecast accuracy</li>
-                <li><strong>Hub Status Section:</strong> Current inventory levels and hub health</li>
-                <li><strong>Critical Stores List:</strong> Top 5 stores with 3 days or less of supply remaining (requires immediate attention)</li>
-                <li><strong>Alerts Panel:</strong> Urgent notices</li>
-            </ul>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="logistics-overview">Overview</button>
+                <button class="tab-btn" data-tab="logistics-stores">Stores</button>
+                <button class="tab-btn" data-tab="logistics-inventory">Inventory</button>
+                <button class="tab-btn" data-tab="logistics-deliveries">Deliveries</button>
+                <button class="tab-btn" data-tab="logistics-supply">Supply Requests</button>
+            </div>
 
-            <h2>Stores</h2>
-            <p>Monitor inventory health at each store in your region.</p>
-            <ul>
-                <li><strong>Store Health Grid:</strong> Filter by status (Critical, Low, Good)</li>
-                <li><strong>Store Detail View:</strong> Click any store to see:
-                    <ul>
-                        <li>Current inventory levels (syrups, sodas, add-ins)</li>
-                        <li>Days remaining at current consumption rate</li>
-                        <li>Supply requests and status</li>
-                        <li>Forecast chart (predicted inventory over next 30 days)</li>
-                        <li>Movement history (when supplies were delivered/consumed)</li>
-                    </ul>
-                </li>
-            </ul>
+            <div class="tab-pane active" id="logistics-overview">
+                <h2>Overview</h2>
+                <p>Dashboard summary of your hub's current state.</p>
+                <ul>
+                    <li><strong>KPI Cards:</strong> Stores at critical inventory level, deliveries in transit, pending requests, trending ingredient, forecast accuracy</li>
+                    <li><strong>Hub Status Section:</strong> Current inventory levels and hub health</li>
+                    <li><strong>Critical Stores List:</strong> Top 5 stores with 3 days or less of supply remaining (requires immediate attention)</li>
+                    <li><strong>Alerts Panel:</strong> Urgent notices</li>
+                </ul>
+            </div>
 
-            <h2>Inventory</h2>
-            <p>Hub-level inventory overview and trends.</p>
-            <ul>
-                <li><strong>Hub Inventory Levels:</strong> Current stock of all items by category</li>
-                <li><strong>Usage Trends Chart:</strong> Consumption rates (weekly, monthly, 30-day views)</li>
-                <li><strong>AI Insights Panel:</strong> Recommendations on reordering and optimal stock levels</li>
-                <li><strong>Regional Consumption Patterns:</strong> Which items are most consumed across your region</li>
-                <li><strong>Seasonal Patterns Chart:</strong> How demand shifts throughout the year</li>
-            </ul>
+            <div class="tab-pane" id="logistics-stores">
+                <h2>Stores</h2>
+                <p>Monitor inventory health at each store in your region.</p>
+                <ul>
+                    <li><strong>Store Health Grid:</strong> Filter by status (Critical, Low, Good)</li>
+                    <li><strong>Store Detail View:</strong> Click any store to see:
+                        <ul>
+                            <li>Current inventory levels (syrups, sodas, add-ins)</li>
+                            <li>Days remaining at current consumption rate</li>
+                            <li>Supply requests and status</li>
+                            <li>Forecast chart (predicted inventory over next 30 days)</li>
+                            <li>Movement history (when supplies were delivered/consumed)</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
 
-            <h2>Deliveries</h2>
-            <p>Create and manage supply delivery routes.</p>
-            <div class="step-card">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                    <p>Click <strong>"Create Delivery Route"</strong></p>
-                </div>
+            <div class="tab-pane" id="logistics-inventory">
+                <h2>Inventory</h2>
+                <p>Hub-level inventory overview and trends.</p>
+                <ul>
+                    <li><strong>Hub Inventory Levels:</strong> Current stock of all items by category</li>
+                    <li><strong>Usage Trends Chart:</strong> Consumption rates (weekly, monthly, 30-day views)</li>
+                    <li><strong>AI Insights Panel:</strong> Recommendations on reordering and optimal stock levels</li>
+                    <li><strong>Regional Consumption Patterns:</strong> Which items are most consumed across your region</li>
+                    <li><strong>Seasonal Patterns Chart:</strong> How demand shifts throughout the year</li>
+                </ul>
             </div>
-            <div class="step-card">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                    <p>Select stores to include in the route (grouped by proximity)</p>
-                </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                    <p>Assign a driver and set the date/time</p>
-                </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">4</div>
-                <div class="step-content">
-                    <p>View the optimized route map and make adjustments if needed</p>
-                </div>
-            </div>
-            <ul>
-                <li><strong>Delivery List:</strong> View all deliveries with status (scheduled, in-transit, completed)</li>
-                <li><strong>Filters:</strong> Search by date, driver, or store</li>
-                <li><strong>Delivery Detail View:</strong> Route map, driver contact, ETA, items being delivered</li>
-                <li><strong>Recurring Routes:</strong> Set up weekly or monthly delivery schedules</li>
-                <li><strong>CSV Upload:</strong> Import historical delivery data
-                    <div class="callout callout-info">
-                        <strong>CSV Format:</strong> Columns must include <code>store_location, machine_type, operational_date, machine_status, status_date</code>
+
+            <div class="tab-pane" id="logistics-deliveries">
+                <h2>Deliveries</h2>
+                <p>Create and manage supply delivery routes.</p>
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <p>Click <strong>"Create Delivery Route"</strong></p>
                     </div>
-                </li>
-            </ul>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <p>Select stores to include in the route (grouped by proximity)</p>
+                    </div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <p>Assign a driver and set the date/time</p>
+                    </div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <p>View the optimized route map and make adjustments if needed</p>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>Delivery List:</strong> View all deliveries with status (scheduled, in-transit, completed)</li>
+                    <li><strong>Filters:</strong> Search by date, driver, or store</li>
+                    <li><strong>Delivery Detail View:</strong> Route map, driver contact, ETA, items being delivered</li>
+                    <li><strong>Recurring Routes:</strong> Set up weekly or monthly delivery schedules</li>
+                    <li><strong>CSV Upload:</strong> Import historical delivery data
+                        <div class="callout callout-info">
+                            <strong>CSV Format:</strong> Columns must include <code>store_location, machine_type, operational_date, machine_status, status_date</code>
+                        </div>
+                    </li>
+                </ul>
+            </div>
 
-            <h2>Supply Requests</h2>
-            <p>Review and approve requests from store managers.</p>
-            <div class="step-card">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                    <p>Navigate to the <strong>"Supply Requests"</strong> tab. Pending requests appear at the top.</p>
+            <div class="tab-pane" id="logistics-supply">
+                <h2>Supply Requests</h2>
+                <p>Review and approve requests from store managers.</p>
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <p>Navigate to the <strong>"Supply Requests"</strong> tab. Pending requests appear at the top.</p>
+                    </div>
                 </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                    <p>Click a request to view details: requested items, quantities, urgency level, and store location.</p>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <p>Click a request to view details: requested items, quantities, urgency level, and any notes from the store manager.</p>
+                    </div>
                 </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                    <p>Click <strong>"Approve"</strong> to authorize the delivery, or <strong>"Deny"</strong> if quantities are unavailable.</p>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <p>Click <strong>"Approve"</strong> to authorize the delivery, or <strong>"Deny"</strong> if quantities are unavailable or the request is not valid.</p>
+                    </div>
                 </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">4</div>
-                <div class="step-content">
-                    <p>The store manager is notified automatically. Approved requests are queued for the next available delivery.</p>
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <p>If approved, click the <strong>"Fulfill"</strong> button to create a delivery route for the request.</p>
+                    </div>
                 </div>
+                <div class="step-card">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <p>The store manager is notified automatically. Approved requests are queued for the next available delivery.</p>
+                    </div>
+                </div>
+                <ul>
+                    <li><strong>Filters:</strong> Search by status (pending, approved, denied), store, or item type</li>
+                    <li><strong>AI-Suggested Quantities:</strong> The system recommends order quantities based on forecasting</li>
+                    <li><strong>Approval Timeline:</strong> View the history of request status changes</li>
+                </ul>
             </div>
-            <ul>
-                <li><strong>Filters:</strong> Search by status (pending, approved, denied), store, or item type</li>
-                <li><strong>AI-Suggested Quantities:</strong> The system recommends order quantities based on forecasting</li>
-                <li><strong>Approval Timeline:</strong> View the history of request status changes</li>
-            </ul>
         </section>
 
         <!-- Repair Staff Dashboard Section -->
