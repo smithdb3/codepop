@@ -408,7 +408,7 @@ class GenerateAIDrinkViewTest(TestCase):
         # Should have been called with order history
         mock_generate.assert_called_once()
         call_args = mock_generate.call_args
-        self.assertIsNotNone(call_args[0][1])  # order_history parameter
+        self.assertIsNotNone(call_args.kwargs.get('order_history'))  # order_history parameter
 
     @patch('backend.views.generate_soda')
     def test_generate_ai_drink_visiting_user_with_cache(self, mock_generate):
