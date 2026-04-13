@@ -79,7 +79,7 @@ jobs:
 
             git fetch origin master
             git reset --hard origin/master
-            docker compose down -v
+            docker compose down
             docker compose up -d --build
             echo "✓ logan-hub deployed successfully"
 
@@ -108,7 +108,7 @@ jobs:
 
             git fetch origin master
             git reset --hard origin/master
-            docker compose down -v
+            docker compose down
             docker compose up -d --build
             echo "✓ atlanta-hub deployed successfully"
 
@@ -136,7 +136,7 @@ jobs:
 
             git fetch origin master
             git reset --hard origin/master
-            docker compose down -v
+            docker compose down
             docker compose up -d --build
             echo "✓ logan-store-1 deployed successfully"
 
@@ -163,7 +163,7 @@ jobs:
 
             git fetch origin master
             git reset --hard origin/master
-            docker compose down -v
+            docker compose down
             docker compose up -d --build
             echo "✓ logan-store-2 deployed successfully"
 
@@ -217,7 +217,7 @@ jobs:
 
             git fetch origin master
             git reset --hard origin/master
-            docker compose down -v
+            docker compose down
             docker compose up -d --build
             echo "✓ atlanta-store-2 deployed successfully"
 
