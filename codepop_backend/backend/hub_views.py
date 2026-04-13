@@ -316,7 +316,7 @@ class HubRevenueView(APIView):
                     records = resp.json()
                     total = sum(float(r.get('TotalAmount', 0)) for r in records)
                     return (total, True)
-            except requests.RequestException:
+            except Exception:
                 pass
             return (0.0, False)
 

@@ -73,7 +73,7 @@ def _generate_random_drink(catalog):
     syrups = [random.choice(catalog['syrups']) for _ in range(num_syrups)]
 
     num_addins = random.randint(0, 2)
-    addins = [random.choice(catalog['addins']) for _ in range(num_addins)]
+    addins = [random.choice(catalog['addins']) for _ in range(num_addins)] if catalog['addins'] else []
 
     # Generate a simple playful name from adjectives and primary syrup/soda
     adjectives = ['Fizzy', 'Sparkling', 'Chilled', 'Sweet', 'Bold', 'Dreamy', 'Crisp']

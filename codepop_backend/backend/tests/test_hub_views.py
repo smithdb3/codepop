@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.utils import timezone
+from datetime import timedelta
 from rest_framework.test import APIClient
 from rest_framework import status
 from unittest.mock import patch, MagicMock
@@ -160,6 +161,7 @@ class HubHeartbeatViewTest(TestCase):
             api_endpoint='http://store:8000',
             status='inactive',
             missed_heartbeats=5,
+            last_heartbeat=timezone.now() - timedelta(hours=1),
         )
         old_time = store.last_heartbeat
 

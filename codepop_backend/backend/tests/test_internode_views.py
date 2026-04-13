@@ -125,6 +125,7 @@ class InterNodeUserSyncViewTest(TestCase):
             AddIns=['Cream'],
             Price=2.50,
             Size='16oz',
+            User_Created=False,
         )
         drink.Favorite.add(user)
 
@@ -142,7 +143,7 @@ class InterNodeUserSyncViewTest(TestCase):
         """Test that user role is correctly detected (customer/manager/admin)."""
         # Admin user
         admin = User.objects.create_user(
-            username='admin',
+            username='role_test_admin',
             email='admin@example.com',
             password='password123'
         )
@@ -155,7 +156,7 @@ class InterNodeUserSyncViewTest(TestCase):
 
         # Manager user
         manager = User.objects.create_user(
-            username='manager',
+            username='role_test_manager',
             email='manager@example.com',
             password='password123'
         )
@@ -275,6 +276,7 @@ class InterNodeProfileUpdateViewTest(TestCase):
             SodaUsed=['Coke'],
             SyrupsUsed=['Vanilla'],
             Price=2.50,
+            User_Created=False,
         )
         drink.Favorite.add(user)
 

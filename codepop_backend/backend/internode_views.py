@@ -81,7 +81,7 @@ class InterNodeUserExistsView(APIView):
 
     def post(self, request):
         email = request.data.get('email')
-        exists = User.objects.filter(email=email).exists()
+        exists = User.objects.filter(email__iexact=email).exists()
         return Response({'exists': exists})
 
 

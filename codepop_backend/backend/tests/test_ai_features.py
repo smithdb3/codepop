@@ -329,7 +329,7 @@ class GenerateAIDrinkViewTest(TestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.endpoint = '/backend/generate-ai-drink/'
+        self.endpoint = '/backend/generate/'
         self.user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -352,7 +352,7 @@ class GenerateAIDrinkViewTest(TestCase):
         response = self.client.get(f'{self.endpoint}{self.user.pk}/')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['syrups'], ['vanilla'])
+        self.assertEqual(response.data['SyrupsUsed'], ['vanilla'])
 
     @patch('backend.views.generate_soda')
     def test_generate_ai_drink_general_user(self, mock_generate):
@@ -367,7 +367,7 @@ class GenerateAIDrinkViewTest(TestCase):
         response = self.client.get(self.endpoint)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('syrups', response.data)
+        self.assertIn('SyrupsUsed', response.data)
 
     @patch('backend.views.generate_soda')
     def test_generate_ai_drink_api_unavailable(self, mock_generate):
@@ -404,6 +404,7 @@ class GenerateAIDrinkViewTest(TestCase):
         response = self.client.get(f'{self.endpoint}{self.user.pk}/')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # Response uses PascalCase keys (SyrupsUsed, SodaUsed, AddIns)
         # Should have been called with order history
         mock_generate.assert_called_once()
         call_args = mock_generate.call_args
@@ -424,6 +425,10 @@ class GenerateAIDrinkViewTest(TestCase):
         VisitingUserCache.objects.create(
             user_id=visiting_user_id,
             email='visiting@example.com',
+            username='visiting_user',
+            hashed_password='hashed_pwd_123',
+            home_store_id=1,
+            home_store_endpoint='http://store1:8000',
             preferences=['fruity', 'sweet'],
             expires_at=timezone.now() + timezone.timedelta(hours=1)
         )
@@ -432,7 +437,7 @@ class GenerateAIDrinkViewTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # Should use cached preferences
-        self.assertIn('syrups', response.data)
+        self.assertIn('SyrupsUsed', response.data)
 
 
 class NameDrinkViewTest(TestCase):
