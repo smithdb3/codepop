@@ -24,11 +24,6 @@ export function Schedule({ onNavigate }) {
     }));
   };
 
-  const monthLabel = currentDate.toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
-
   const handlePrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
   };
@@ -61,28 +56,6 @@ export function Schedule({ onNavigate }) {
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Repair Schedule</h1>
         <div className={styles.toolbar}>
-          <div className={styles.dateNav}>
-            <button className={styles.dateNavBtn} onClick={handlePrevMonth}>
-              ←
-            </button>
-            <span className={styles.monthLabel}>{monthLabel}</span>
-            <button className={styles.dateNavBtn} onClick={handleNextMonth}>
-              →
-            </button>
-          </div>
-          <div className={styles.viewToggle}>
-            {['Timeline', 'Week', 'Month'].map((label) => (
-              <button
-                key={label.toLowerCase()}
-                className={`${styles.viewBtn} ${
-                  view === label.toLowerCase() ? styles.active : ''
-                }`}
-                onClick={() => setView(label.toLowerCase())}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
       <Scheduler fetchSchedules={fetchSchedules}></Scheduler>
