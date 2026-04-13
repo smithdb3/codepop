@@ -1962,7 +1962,7 @@ class RegionalStatusView(APIView):
 class LogisticsStoreListView(ListAPIView):
     """List stores with filtering (Logistics Manager)."""
     serializer_class = StoreRegistrySerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         from backend.models import StoreInventoryItem
@@ -2153,7 +2153,7 @@ class ManagerInventoryListView(ListAPIView):
 
 class LogisticsSupplyRequestListView(ListAPIView):
     """List all supply requests with optional filters (status, store, hub, urgency)"""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
     serializer_class = SupplyRequestSerializer
 
     def get_queryset(self):
@@ -2245,7 +2245,7 @@ class AdminSupplyRequestListView(ListAPIView):
 
 class LogisticsDeliveryListCreateView(ListCreateAPIView):
     """List all deliveries with filters, or create a new one."""
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
     serializer_class = DeliverySerializer
 
     def get_queryset(self):

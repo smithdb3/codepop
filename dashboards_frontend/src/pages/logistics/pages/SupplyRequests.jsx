@@ -351,7 +351,9 @@ export function SupplyRequests({ onNavigate }) {
                                 e.stopPropagation();
                                 handleUpdateStatus(request.id, 'approved');
                               }}
+                              title="Approve this supply request"
                             >
+                              <span>✓</span>
                               Approve
                             </button>
                             <button
@@ -360,7 +362,9 @@ export function SupplyRequests({ onNavigate }) {
                                 e.stopPropagation();
                                 handleUpdateStatus(request.id, 'denied');
                               }}
+                              title="Deny this supply request"
                             >
+                              <span>✕</span>
                               Deny
                             </button>
                           </div>
@@ -372,7 +376,9 @@ export function SupplyRequests({ onNavigate }) {
                               e.stopPropagation();
                               handleUpdateStatus(request.id, 'fulfilled');
                             }}
+                            title="Fulfill this supply request"
                           >
+                            <span>📦</span>
                             Fulfill
                           </button>
                         )}

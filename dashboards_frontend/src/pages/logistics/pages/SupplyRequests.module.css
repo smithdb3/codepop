@@ -804,6 +804,77 @@
 /* Form Buttons */
 /* ─────────────────────────────────────────────────────────── */
 
+/* ─────────────────────────────────────────────────────────── */
+/* Action Buttons */
+/* ─────────────────────────────────────────────────────────── */
+
+.approveBtn,
+.denyBtn,
+.fulfillBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-body-small);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 36px;
+}
+
+.approveBtn {
+  background-color: #10B981;
+  color: white;
+  border: 1px solid #059669;
+}
+
+.approveBtn:hover {
+  background-color: #059669;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}
+
+.approveBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+}
+
+.denyBtn {
+  background-color: #EF4444;
+  color: white;
+  border: 1px solid #DC2626;
+}
+
+.denyBtn:hover {
+  background-color: #DC2626;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+.denyBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
+}
+
+.fulfillBtn {
+  background-color: #3B82F6;
+  color: white;
+  border: 1px solid #1D4ED8;
+}
+
+.fulfillBtn:hover {
+  background-color: #1D4ED8;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.fulfillBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.3);
+}
+
 .formButtons {
   display: flex;
   gap: var(--spacing-m);
