@@ -8,6 +8,7 @@ import { UserManagement } from './pages/UserManagement';
 import { AIConfiguration } from './pages/AIConfiguration';
 import { ReportsAnalytics } from './pages/ReportsAnalytics';
 import { AuditLogs } from './pages/AuditLogs';
+import { DistributedSystemTests } from './pages/DistributedSystemTests';
 import { SystemSettings } from './pages/SystemSettings';
 import { HelpDocs } from './pages/HelpDocs';
 import styles from './SuperAdminDashboard.module.css';
@@ -20,6 +21,7 @@ const PAGE_COMPONENTS = {
   ai: AIConfiguration,
   reports: ReportsAnalytics,
   audit: AuditLogs,
+  network: DistributedSystemTests,
   settings: SystemSettings,
   help: HelpDocs,
 };

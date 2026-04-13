@@ -50,6 +50,7 @@ from .views import (
     LogisticsDeliveryListCreateView, LogisticsDeliveryDetailView,
     LogisticsDeliveryKPIView, LogisticsDriverListView
 )
+from .distributed_test_views import DistributedTestListView, DistributedTestRunView
 
 #this ensures that the url calls the right function from the views for each type of request
 preferences_list = PreferencesOperations.as_view({
@@ -433,6 +434,10 @@ urlpatterns = [
 
     # Super Admin — Regional Status
     path('api/admin/regional-status/', RegionalStatusView.as_view(), name='admin_regional_status'),
+
+    # Super Admin — Distributed System Tests
+    path('api/admin/distributed-tests/', DistributedTestListView.as_view(), name='admin_distributed_tests_list'),
+    path('api/admin/distributed-tests/run/', DistributedTestRunView.as_view(), name='admin_distributed_tests_run'),
 
     # Super Admin — Hub Inventory
     path('api/admin/hubs/<int:hub_pk>/inventory/', AdminHubInventoryListView.as_view(), name='admin_hub_inventory_list'),
