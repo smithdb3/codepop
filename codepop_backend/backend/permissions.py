@@ -48,3 +48,29 @@ class IsAdminUser(BasePermission):
 
     def has_permission(self, request, view):
         return bool(request.user and request.user.is_authenticated and (request.user.is_staff or request.user.is_superuser))
+
+
+class IsLogisticsManager(BasePermission):
+    """
+    Allows access to:
+    - Users with LogisticsManagerProfile
+    - Staff and superusers (for admin access)
+
+    Used by logistics dashboard API endpoints.
+    """
+    message = 'Logistics manager access required.'
+
+    def has_permission(self, request, view):
+        if not (request.user and request.user.is_authenticated):
+            return False
+
+        # Allow staff and superusers
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+
+        # Allow logistics managers
+        try:
+            from backend.models import LogisticsManagerProfile
+            return LogisticsManagerProfile.objects.filter(user=request.user).exists()
+        except Exception:
+            return False

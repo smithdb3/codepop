@@ -1523,7 +1523,7 @@ from rest_framework.pagination import PageNumberPagination
 from .serializers import (PermissionSerializer, RoleSerializer, UserListSerializer,
                           UserCreateUpdateSerializer, AuditLogSerializer)
 from .models import Permission, Role, UserProfile, AuditLog
-from .permissions import IsAdminUser
+from .permissions import IsAdminUser, IsLogisticsManager
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -1962,7 +1962,7 @@ class RegionalStatusView(APIView):
 class LogisticsStoreListView(ListAPIView):
     """List stores with filtering (Logistics Manager)."""
     serializer_class = StoreRegistrySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsLogisticsManager]
 
     def get_queryset(self):
         from backend.models import StoreInventoryItem
@@ -2153,7 +2153,7 @@ class ManagerInventoryListView(ListAPIView):
 
 class LogisticsSupplyRequestListView(ListAPIView):
     """List all supply requests with optional filters (status, store, hub, urgency)"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsLogisticsManager]
     serializer_class = SupplyRequestSerializer
 
     def get_queryset(self):
@@ -2245,7 +2245,7 @@ class AdminSupplyRequestListView(ListAPIView):
 
 class LogisticsDeliveryListCreateView(ListCreateAPIView):
     """List all deliveries with filters, or create a new one."""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsLogisticsManager]
     serializer_class = DeliverySerializer
 
     def get_queryset(self):
