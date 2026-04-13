@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { id: 'ai', label: 'AI Configuration', icon: '🤖' },
   { id: 'reports', label: 'Reports & Analytics', icon: '📊' },
   { id: 'audit', label: 'Audit Logs', icon: '📋' },
+  { id: 'network', label: 'Network Tests', icon: '🌐' },
   { id: 'settings', label: 'System Settings', icon: '⚙️' },
   { id: 'help', label: 'Help & Documentation', icon: '❓' },
 ];
