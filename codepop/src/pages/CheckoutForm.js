@@ -111,11 +111,13 @@ export default function CheckoutForm(totalPrice, recurringConfig = null, onPayme
   const addRevenue = async () => {
     try {
       const orderNum = await AsyncStorage.getItem("orderNum");
+      const token = await AsyncStorage.getItem('userToken');
 
       const response = await fetch(`${getBaseURL()}/backend/revenues/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
         },
         body: JSON.stringify({
           OrderID: orderNum,
@@ -139,6 +141,7 @@ export default function CheckoutForm(totalPrice, recurringConfig = null, onPayme
 
     try {
       const userId = await AsyncStorage.getItem('userId');
+      const token = await AsyncStorage.getItem('userToken');
       const currentList = drinks || [];
 
       // Date should already be in YYYY-MM-DD format from PaymentPage
@@ -151,6 +154,7 @@ export default function CheckoutForm(totalPrice, recurringConfig = null, onPayme
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Token ${token}`,
         },
         body: JSON.stringify({
           user: userId,
