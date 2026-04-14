@@ -3,11 +3,11 @@ import { updateMachineStatus } from "../../../api/machines";
 import styles from './Schedule.module.css';
 
 const statusStyles = {
-    'REPAIR_START': '#c4bd08',
+    'REPAIR_START': '#ff00ea',
     'WARNING': '#F97316',        
     'ERROR': '#EF4444',          
     'OUT_OF_ORDER': '#F97316',   
-    'SCHEDULE_SERVICE': '#c4bd08', 
+    'SCHEDULE_SERVICE': '#af00ff', 
 }
 
 export function Schedule(props){

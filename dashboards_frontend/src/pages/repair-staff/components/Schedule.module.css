@@ -34,7 +34,7 @@ width: 100%;
 }
 
 .scheduleRow:nth-child(odd) > td > a{
-    color: #cc1547;
+    color: var(--color-primary);
 }
 
 .scheduleRow:nth-child(odd) > td > a:hover{
@@ -51,4 +51,4 @@ width: 100%;
 .status-out{ color:#F97316}
 .status-status-error{ color:var(--color-error)}
 .status-warning{ color:#b00611}
-.status-repair{ color:#97d408}
+.status-repair{ color:#ff04d5}
