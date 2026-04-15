@@ -323,7 +323,7 @@ urlpatterns = [
 
     # - PATCH: Updates a machines status
     # - GET: Returns a machine with it's associated  store
-    path('machines/<int:pk>/special-operations/', machine_special_operations, name='machine_special_operations'),
+    path('machines/<str:pk>/special-operations/', machine_special_operations, name='machine_special_operations'),
 
     # Schedule related URLs
     # Endpoint to list all schedules or create a new schedule

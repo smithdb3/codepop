@@ -29,7 +29,7 @@ export function Schedule(props){
                 </thead>
                 <tbody>
                     {repairSchedule.map(([schedule, machine, store]) =>
-                    <tr className={styles.scheduleRow} key={machine.machine_id}>
+                    <tr className={styles.scheduleRow} key={`${machine.machine_id}${schedule.id}`}>
                         <td>
                           <a
                             href={`https://www.google.com/maps?q=${store.latitude},${store.longitude}`}
