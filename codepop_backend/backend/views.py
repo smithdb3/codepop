@@ -605,7 +605,7 @@ class DrinkOperations(viewsets.ModelViewSet):
         """
         Modify the basic GET request behavior so it only returns drinks not user created
         """
-        if self.action in ['update', 'retrieve', 'destroy']:
+        if self.action in ['update', 'partial_update', 'retrieve', 'destroy']:
             return Drink.objects.all()
         return Drink.objects.filter(User_Created=False)
 

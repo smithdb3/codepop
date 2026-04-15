@@ -685,7 +685,7 @@ const PostCheckout = ({ onDone }) => {
           <Text style={styles.statusText}>
             {isNearby
               ? 'Your drink is being made!'
-              : 'Head to the store — Bob starts when you\'re within 500 yards'}
+              : 'Head to the store — your drink will be ready when you arrive!'}
           </Text>
         </View>
 

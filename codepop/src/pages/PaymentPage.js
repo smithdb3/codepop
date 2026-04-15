@@ -975,20 +975,6 @@ const PaymentPage = ({ onSuccess, isVisible = true, onClose }) => {
               </View>
             </TouchableOpacity>
 
-            {/* Apple Pay option */}
-            <TouchableOpacity
-              onPress={() => setPaymentMethod('applepay')}
-              style={styles.paymentOption}
-            >
-              <View style={styles.radioOption}>
-                <View style={[styles.radioCircle, paymentMethod === 'applepay' && styles.radioSelected]}>
-                  {paymentMethod === 'applepay' && <View style={styles.radioDot} />}
-                </View>
-                <Icon name="logo-apple" size={20} color={colors.textPrimary} />
-                <Text style={styles.paymentLabel}>Apple Pay / Google Pay</Text>
-              </View>
-            </TouchableOpacity>
-
             {/* Saved cards option */}
             <TouchableOpacity
               onPress={() => setPaymentMethod('saved')}
@@ -1032,7 +1018,10 @@ const PaymentPage = ({ onSuccess, isVisible = true, onClose }) => {
                 <Text style={styles.saveCardLabel}>Save this card for future orders</Text>
                 <Switch
                   value={saveCard}
-                  onValueChange={setSaveCard}
+                  onValueChange={(value) => {
+                    setSaveCard(value);
+                    Alert.alert('Feature Coming Soon', 'Card saving is not yet available.');
+                  }}
                   trackColor={{ false: colors.border, true: colors.secondary }}
                   thumbColor={saveCard ? colors.primary : '#FFFFFF'}
                 />

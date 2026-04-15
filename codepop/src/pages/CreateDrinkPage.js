@@ -183,7 +183,13 @@ const CreateDrinkPage = ({ insideTabContainer = false, isFocused = true, navigat
         headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
         body: JSON.stringify({ action: 'add' }),
       });
-      if (!favRes.ok) throw new Error(`Failed to save drink. Status: ${favRes.status}`);
+      if (!favRes.ok) {
+        if (favRes.status === 403 || favRes.status === 401) {
+          Alert.alert('Session Expired', 'Please sign in again to save drinks.');
+          return;
+        }
+        throw new Error(`Failed to save drink. Status: ${favRes.status}`);
+      }
       Alert.alert('Drink saved!', 'Find it in your Saved Drinks on the home tab.');
     } catch (error) {
       console.error('Error saving drink:', error);

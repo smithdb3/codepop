@@ -118,6 +118,11 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
     }
   };
 
+  const handleNotifToggle = (setter) => (value) => {
+    setter(value);
+    Alert.alert('Feature Coming Soon', 'Notification preferences are not yet available.');
+  };
+
   const fetchRecurringOrders = async () => {
     if (!userId || !userToken) return;
     setRecurringLoading(true);
@@ -1211,7 +1216,7 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
         <Text style={styles.notifLabel}>Order Status Updates</Text>
         <Switch
           value={notifOrderStatus}
-          onValueChange={setNotifOrderStatus}
+          onValueChange={handleNotifToggle(setNotifOrderStatus)}
           trackColor={{ false: '#E5E7EB', true: '#08D9D6' }}
           thumbColor={notifOrderStatus ? '#FF2E63' : '#FFFFFF'}
         />
@@ -1222,7 +1227,7 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
         <Text style={styles.notifLabel}>Promotional Emails</Text>
         <Switch
           value={notifPromo}
-          onValueChange={setNotifPromo}
+          onValueChange={handleNotifToggle(setNotifPromo)}
           trackColor={{ false: '#E5E7EB', true: '#08D9D6' }}
           thumbColor={notifPromo ? '#FF2E63' : '#FFFFFF'}
         />
@@ -1233,7 +1238,7 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
         <Text style={styles.notifLabel}>New Menu Items</Text>
         <Switch
           value={notifNewItems}
-          onValueChange={setNotifNewItems}
+          onValueChange={handleNotifToggle(setNotifNewItems)}
           trackColor={{ false: '#E5E7EB', true: '#08D9D6' }}
           thumbColor={notifNewItems ? '#FF2E63' : '#FFFFFF'}
         />
@@ -1244,7 +1249,7 @@ const PreferencesPage = ({ insideTabContainer = false, isFocused = true, navigat
         <Text style={styles.notifLabel}>Push Notifications</Text>
         <Switch
           value={notifPush}
-          onValueChange={setNotifPush}
+          onValueChange={handleNotifToggle(setNotifPush)}
           trackColor={{ false: '#E5E7EB', true: '#08D9D6' }}
           thumbColor={notifPush ? '#FF2E63' : '#FFFFFF'}
         />
