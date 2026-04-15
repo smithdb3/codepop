@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -284,12 +285,35 @@
             margin-bottom: 12px;
         }
 
-        .badge-customer { background-color: rgba(255, 46, 99, 0.15); color: #FF2E63; }
-        .badge-manager { background-color: rgba(8, 217, 214, 0.15); color: #08D9D6; }
-        .badge-admin { background-color: rgba(245, 158, 11, 0.15); color: #F59E0B; }
-        .badge-super-admin { background-color: rgba(139, 92, 246, 0.15); color: #8B5CF6; }
-        .badge-logistics { background-color: rgba(59, 130, 246, 0.15); color: #3B82F6; }
-        .badge-repair { background-color: rgba(16, 185, 129, 0.15); color: #10B981; }
+        .badge-customer {
+            background-color: rgba(255, 46, 99, 0.15);
+            color: #FF2E63;
+        }
+
+        .badge-manager {
+            background-color: rgba(8, 217, 214, 0.15);
+            color: #08D9D6;
+        }
+
+        .badge-admin {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: #F59E0B;
+        }
+
+        .badge-super-admin {
+            background-color: rgba(139, 92, 246, 0.15);
+            color: #8B5CF6;
+        }
+
+        .badge-logistics {
+            background-color: rgba(59, 130, 246, 0.15);
+            color: #3B82F6;
+        }
+
+        .badge-repair {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #10B981;
+        }
 
         /* Cards */
         .card {
@@ -523,7 +547,7 @@
             transition: max-height 0.3s ease, padding 0.3s ease;
         }
 
-        .faq-question.open + .faq-answer {
+        .faq-question.open+.faq-answer {
             max-height: 500px;
             padding: 16px;
             border-top: 1px solid var(--border);
@@ -653,6 +677,7 @@
 
         /* Print Styles */
         @media print {
+
             .sidebar,
             .hamburger,
             .top-bar,
@@ -690,6 +715,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Top Navigation Bar -->
     <div class="top-bar">
@@ -803,17 +829,24 @@
             </div>
 
             <p>
-                <strong>The Customer Journey:</strong> Customers open the mobile app, browse pre-made or seasonal drinks,
+                <strong>The Customer Journey:</strong> Customers open the mobile app, browse pre-made or seasonal
+                drinks,
                 or build their own custom creation. The AI engine suggests ingredient combinations based on preferences
-                or order history. After adding items to the cart, customers proceed to checkout and pay securely via Stripe.
-                Once payment is confirmed, the app tracks the customer's location (with permission) and notifies the robot
-                at precisely the right moment—the "Golden Window"—to begin drink preparation. When the customer arrives at
+                or order history. After adding items to the cart, customers proceed to checkout and pay securely via
+                Stripe.
+                Once payment is confirmed, the app tracks the customer's location (with permission) and notifies the
+                robot
+                at precisely the right moment—the "Golden Window"—to begin drink preparation. When the customer arrives
+                at
                 the store, they enter a locker code to retrieve their fresh drink.
             </p>
             <p>
-                <strong>Behind the Scenes:</strong> Staff members log into their role-specific dashboards to manage their
-                responsibilities: Managers track store inventory and revenue, Logistics Managers coordinate regional supply delivery,
-                Repair Staff schedule machine maintenance, and Super Admins oversee the entire system across seven regions and dozens
+                <strong>Behind the Scenes:</strong> Staff members log into their role-specific dashboards to manage
+                their
+                responsibilities: Managers track store inventory and revenue, Logistics Managers coordinate regional
+                supply delivery,
+                Repair Staff schedule machine maintenance, and Super Admins oversee the entire system across seven
+                regions and dozens
                 of stores.
             </p>
         </section>
@@ -903,7 +936,8 @@
             <div class="callout callout-info">
                 <strong>👨‍💻 For Developers & IT Staff</strong><br>
                 This section contains setup instructions for installing CodePop on your local machine.
-                If you're a customer or staff member using the already-deployed system, skip to the Getting Started section.
+                If you're a customer or staff member using the already-deployed system, skip to the Getting Started
+                section.
             </div>
 
             <h2>Prerequisites</h2>
@@ -957,7 +991,9 @@ cd codepop</code></pre>
                             <tr>
                                 <td><code>SECRET_KEY</code></td>
                                 <td>Django secret key (any long random string)</td>
-                                <td>Generate yourself (e.g., <code>python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'</code>)</td>
+                                <td>Generate yourself (e.g.,
+                                    <code>python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'</code>)
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -1028,8 +1064,10 @@ npm run dev</code></pre>
             <h1>Customer App Features</h1>
 
             <p>
-                The CodePop mobile app is your gateway to creating and ordering custom drinks. Whether you're a registered
-                user or ordering as a guest, the app guides you through the entire experience from drink selection to pickup.
+                The CodePop mobile app is your gateway to creating and ordering custom drinks. Whether you're a
+                registered
+                user or ordering as a guest, the app guides you through the entire experience from drink selection to
+                pickup.
             </p>
 
             <h2>Creating an Account</h2>
@@ -1091,21 +1129,24 @@ npm run dev</code></pre>
             <div class="step-card">
                 <div class="step-number">5</div>
                 <div class="step-content">
-                    <p>Add <strong>syrups</strong> (vanilla, coconut, mango, etc.) and <strong>add-ins</strong> (cream, purees, whipped topping, etc.)</p>
+                    <p>Add <strong>syrups</strong> (vanilla, coconut, mango, etc.) and <strong>add-ins</strong> (cream,
+                        purees, whipped topping, etc.)</p>
                 </div>
             </div>
 
             <div class="step-card">
                 <div class="step-number">6</div>
                 <div class="step-content">
-                    <p>Tap the <strong>heart icon</strong> to favorite your creation, and give it a custom name in the popup menu.</p>
+                    <p>Tap the <strong>heart icon</strong> to favorite your creation, and give it a custom name in the
+                        popup menu.</p>
                 </div>
             </div>
 
             <div class="step-card">
                 <div class="step-number">7</div>
                 <div class="step-content">
-                    <p>Tap <strong>"Ask Tonic"</strong> for an AI-generated combination, or <strong>"Add to My Order"</strong> to save your creation.</p>
+                    <p>Tap <strong>"Ask Tonic"</strong> for an AI-generated combination, or <strong>"Add to My
+                            Order"</strong> to save your creation.</p>
                 </div>
             </div>
 
@@ -1126,14 +1167,17 @@ npm run dev</code></pre>
             <div class="step-card">
                 <div class="step-number">1.5</div>
                 <div class="step-content">
-                    <p>To edit a drink in your cart, tap the <strong>pencil icon</strong>, then tap <strong>"Save Changes"</strong> once you're done.</p>
+                    <p>To edit a drink in your cart, tap the <strong>pencil icon</strong>, then tap <strong>"Save
+                            Changes"</strong> once you're done.</p>
                 </div>
             </div>
 
             <div class="step-card">
                 <div class="step-number">2</div>
                 <div class="step-content">
-                    <p>If you have a promo code, enter it in the <strong>"Promo Code"</strong> field and tap <strong>"Apply"</strong>.</p>
+                    <p>If you have a promo code, enter it in the <strong>"Promo Code"</strong> field and tap
+                        <strong>"Apply"</strong>.
+                    </p>
                     <div class="callout callout-info">
                         Valid promo codes will show the discount immediately.
                     </div>
@@ -1150,10 +1194,12 @@ npm run dev</code></pre>
             <div class="step-card">
                 <div class="step-number">4</div>
                 <div class="step-content">
-                    <p>Review your <strong>delivery/pickup location</strong> and enter your <strong>payment details</strong>.</p>
+                    <p>Review your <strong>delivery/pickup location</strong> and enter your <strong>payment
+                            details</strong>.</p>
                     <p>CodePop accepts all major credit and debit cards via Stripe.</p>
                     <div class="callout callout-info">
-                        To change your preferred store, navigate to your <strong>Profile</strong> page and select the <strong>Location and Delivery</strong> tab.
+                        To change your preferred store, navigate to your <strong>Profile</strong> page and select the
+                        <strong>Location and Delivery</strong> tab.
                     </div>
                 </div>
             </div>
@@ -1174,14 +1220,16 @@ npm run dev</code></pre>
             <div class="step-card">
                 <div class="step-number">1</div>
                 <div class="step-content">
-                    <p>Toggle the switch next to <strong>"Make this a recurring order"</strong>. A popup window will appear.</p>
+                    <p>Toggle the switch next to <strong>"Make this a recurring order"</strong>. A popup window will
+                        appear.</p>
                 </div>
             </div>
 
             <div class="step-card">
                 <div class="step-number">2</div>
                 <div class="step-content">
-                    <p><strong>Repeat Every:</strong> Select how frequently this order repeats. (Default is every week)</p>
+                    <p><strong>Repeat Every:</strong> Select how frequently this order repeats. (Default is every week)
+                    </p>
                 </div>
             </div>
 
@@ -1202,18 +1250,21 @@ npm run dev</code></pre>
             <div class="step-card">
                 <div class="step-number">5</div>
                 <div class="step-content">
-                    <p>Tap <strong>"Done"</strong> once you've filled out the form to save your recurring order settings.</p>
+                    <p>Tap <strong>"Done"</strong> once you've filled out the form to save your recurring order
+                        settings.</p>
                 </div>
             </div>
 
             <div class="callout callout-info">
-                <strong>View Your Recurring Orders:</strong> To manage or view all your recurring orders, go to the <strong>"Profile"</strong> tab
+                <strong>View Your Recurring Orders:</strong> To manage or view all your recurring orders, go to the
+                <strong>"Profile"</strong> tab
                 and select the <strong>"Recurring Orders"</strong> tab.
             </div>
 
             <h2>Order Pickup (The "Golden Window")</h2>
             <p>
-                After you place your order, CodePop uses advanced timing to start drink preparation at exactly the right moment.
+                After you place your order, CodePop uses advanced timing to start drink preparation at exactly the right
+                moment.
                 This ensures your drink is made fresh and arrives at peak quality.
             </p>
 
@@ -1227,9 +1278,11 @@ npm run dev</code></pre>
             <div class="step-card">
                 <div class="step-number">2</div>
                 <div class="step-content">
-                    <p>The app asks for <strong>location permission</strong>. Allow it so CodePop can track your arrival.</p>
+                    <p>The app asks for <strong>location permission</strong>. Allow it so CodePop can track your
+                        arrival.</p>
                     <div class="callout callout-info">
-                        Don't have location enabled? No problem. Tap the <strong>"Start"</strong> button when you're leaving for the store.
+                        Don't have location enabled? No problem. Tap the <strong>"Start"</strong> button when you're
+                        leaving for the store.
                     </div>
                 </div>
             </div>
@@ -1237,14 +1290,16 @@ npm run dev</code></pre>
             <div class="step-card">
                 <div class="step-number">3</div>
                 <div class="step-content">
-                    <p>A live map shows your distance to the store. When you're close, the robot begins preparing your drink.</p>
+                    <p>A live map shows your distance to the store. When you're close, the robot begins preparing your
+                        drink.</p>
                 </div>
             </div>
 
             <div class="step-card">
                 <div class="step-number">4</div>
                 <div class="step-content">
-                    <p>Arrive at the store and find the CodePop locker. Enter the code shown in your app to unlock your drink.</p>
+                    <p>Arrive at the store and find the CodePop locker. Enter the code shown in your app to unlock your
+                        drink.</p>
                 </div>
             </div>
 
@@ -1284,7 +1339,8 @@ npm run dev</code></pre>
 
             <h2>Getting Help & Support</h2>
             <p>
-                Need assistance? Tap the <strong>"Chat"</strong> tab to access our AI-powered customer support bot, <strong>Tonic</strong>.
+                Need assistance? Tap the <strong>"Chat"</strong> tab to access our AI-powered customer support bot,
+                <strong>Tonic</strong>.
             </p>
             <ul>
                 <li><strong>Report an Issue:</strong> Tell Tonic about problems with your drink or order</li>
@@ -1294,7 +1350,8 @@ npm run dev</code></pre>
             </ul>
 
             <div class="callout callout-info">
-                <strong>Tonic is available 24/7</strong> and responds to natural language. If you need escalation to a human representative,
+                <strong>Tonic is available 24/7</strong> and responds to natural language. If you need escalation to a
+                human representative,
                 Tonic will connect you with the nearest store manager.
             </div>
         </section>
@@ -1305,12 +1362,14 @@ npm run dev</code></pre>
             <h1>Manager Dashboard</h1>
 
             <p>
-                Managers oversee a single CodePop store location. Your dashboard provides visibility into daily operations,
+                Managers oversee a single CodePop store location. Your dashboard provides visibility into daily
+                operations,
                 inventory levels, revenue performance, and supply needs.
             </p>
 
             <div class="callout callout-info">
-                <strong>Access:</strong> Navigate to <code>http://localhost:5173/manager</code> and log in with your credentials.
+                <strong>Access:</strong> Navigate to <code>http://localhost:5173/manager</code> and log in with your
+                credentials.
             </div>
 
             <div class="tabs">
@@ -1327,7 +1386,8 @@ npm run dev</code></pre>
                 <ul>
                     <li><strong>KPI Cards:</strong> Daily revenue, orders today, active users, low inventory count</li>
                     <li><strong>Alerts Panel:</strong> Urgent notices (low stock, pending orders, machine issues)</li>
-                    <li><strong>Quick Links:</strong> Jump directly to inventory, supply requests, or revenue reports</li>
+                    <li><strong>Quick Links:</strong> Jump directly to inventory, supply requests, or revenue reports
+                    </li>
                 </ul>
             </div>
 
@@ -1377,24 +1437,29 @@ npm run dev</code></pre>
                 <div class="step-card">
                     <div class="step-number">2</div>
                     <div class="step-content">
-                        <p>Select your <strong>regional hub</strong> and the <strong>items</strong> you need (syrups, sodas, add-ins)</p>
+                        <p>Select your <strong>regional hub</strong> and the <strong>items</strong> you need (syrups,
+                            sodas, add-ins)</p>
                     </div>
                 </div>
                 <div class="step-card">
                     <div class="step-number">3</div>
                     <div class="step-content">
-                        <p>Enter <strong>quantities</strong>, set <strong>urgency</strong> (normal, high, critical), and make any necessary <strong>notes</strong>.</p>
+                        <p>Enter <strong>quantities</strong>, set <strong>urgency</strong> (normal, high, critical), and
+                            make any necessary <strong>notes</strong>.</p>
                     </div>
                 </div>
                 <div class="step-card">
                     <div class="step-number">4</div>
                     <div class="step-content">
-                        <p>Click the <strong>"Submit Request"</strong> button to send the request to your logistics manager.</p>
+                        <p>Click the <strong>"Submit Request"</strong> button to send the request to your logistics
+                            manager.</p>
                     </div>
                 </div>
                 <ul>
-                    <li><strong>View Requests:</strong> See all pending, approved, and fulfilled requests with status filters</li>
-                    <li><strong>Supply Movement History:</strong> Track when supplies were delivered and when they were consumed</li>
+                    <li><strong>View Requests:</strong> See all pending, approved, and fulfilled requests with status
+                        filters</li>
+                    <li><strong>Supply Movement History:</strong> Track when supplies were delivered and when they were
+                        consumed</li>
                 </ul>
             </div>
         </section>
@@ -1410,7 +1475,8 @@ npm run dev</code></pre>
             </p>
 
             <div class="callout callout-info">
-                <strong>Access:</strong> Navigate to <code>http://localhost:5173/admin</code> and log in with your credentials.
+                <strong>Access:</strong> Navigate to <code>http://localhost:5173/admin</code> and log in with your
+                credentials.
             </div>
 
             <div class="tabs">
@@ -1422,77 +1488,83 @@ npm run dev</code></pre>
             </div>
 
             <div class="tab-pane active" id="admin-home">
-            <h2>Dashboard Home</h2>
-            <p>Quick overview of your store's user population.</p>
-            <ul>
-                <li><strong>Total Users:</strong> All accounts ever created</li>
-                <li><strong>Active Users:</strong> Users who logged in this month</li>
-                <li><strong>Disabled Users:</strong> Accounts currently deactivated</li>
-                <li><strong>Manager Count:</strong> Staff members with manager privileges</li>
-            </ul>
+                <h2>Dashboard Home (Not implemented)</h2>
+                <p>Quick overview of your store's user population.</p>
+                <ul>
+                    <li><strong>Total Users:</strong> All accounts ever created</li>
+                    <li><strong>Active Users:</strong> Users who logged in this month</li>
+                    <li><strong>Disabled Users:</strong> Accounts currently deactivated</li>
+                    <li><strong>Manager Count:</strong> Staff members with manager privileges</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="admin-users">
-            <h2>User Management (Not implemented)</h2>
-            <p>Create, edit, and manage user accounts.</p>
-            <div class="step-card">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                    <p>Click <strong>"Create User"</strong> to add a new account. Enter email, first name, and last name.</p>
+                <h2>User Management (Not implemented)</h2>
+                <p>Create, edit, and manage user accounts.</p>
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <p>Click <strong>"Create User"</strong> to add a new account. Enter email, first name, and last
+                            name.</p>
+                    </div>
                 </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                    <p>Assign a role (customer, manager, admin, logistics, repair staff) and click <strong>"Create"</strong>.</p>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <p>Assign a role (customer, manager, admin, logistics, repair staff) and click
+                            <strong>"Create"</strong>.
+                        </p>
+                    </div>
                 </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                    <p>The user will receive an email with a password reset link. They can set their own password.</p>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <p>The user will receive an email with a password reset link. They can set their own password.
+                        </p>
+                    </div>
                 </div>
-            </div>
-            <ul>
-                <li><strong>Search & Filter:</strong> Find users by email, name, role, or status</li>
-                <li><strong>Edit Users:</strong> Change name, email, or role assignment</li>
-                <li><strong>Disable/Enable:</strong> Temporarily restrict or restore account access</li>
-                <li><strong>Delete Users:</strong> Soft-delete accounts (data is preserved for audit purposes)</li>
-            </ul>
+                <ul>
+                    <li><strong>Search & Filter:</strong> Find users by email, name, role, or status</li>
+                    <li><strong>Edit Users:</strong> Change name, email, or role assignment</li>
+                    <li><strong>Disable/Enable:</strong> Temporarily restrict or restore account access</li>
+                    <li><strong>Delete Users:</strong> Soft-delete accounts (data is preserved for audit purposes)</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="admin-managers">
-            <h2>Manager Accounts (Not implemented)</h2>
-            <p>Promote staff members to manager status.</p>
-            <ul>
-                <li>View all users with manager privileges</li>
-                <li>Promote a customer or staff account to manager (grants access to Manager Dashboard)</li>
-                <li>Revoke manager status</li>
-            </ul>
+                <h2>Manager Accounts (Not implemented)</h2>
+                <p>Promote staff members to manager status.</p>
+                <ul>
+                    <li>View all users with manager privileges</li>
+                    <li>Promote a customer or staff account to manager (grants access to Manager Dashboard)</li>
+                    <li>Revoke manager status</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="admin-roles">
-            <h2>Roles & Permissions (Not implemented)</h2>
-            <p>Create custom roles and assign granular permissions.</p>
-            <ul>
-                <li><strong>View Roles:</strong> List all system roles (built-in and custom)</li>
-                <li><strong>Create Role:</strong> Define a new role with specific permissions</li>
-                <li><strong>Edit Role:</strong> Modify role name and permission grants</li>
-                <li><strong>Permission Categories:</strong> User Management, Roles & Permissions, System Audit</li>
-            </ul>
+                <h2>Roles & Permissions (Not implemented)</h2>
+                <p>Create custom roles and assign granular permissions.</p>
+                <ul>
+                    <li><strong>View Roles:</strong> List all system roles (built-in and custom)</li>
+                    <li><strong>Create Role:</strong> Define a new role with specific permissions</li>
+                    <li><strong>Edit Role:</strong> Modify role name and permission grants</li>
+                    <li><strong>Permission Categories:</strong> User Management, Roles & Permissions, System Audit</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="admin-audit">
-            <h2>Audit Trail (Not implemented)</h2>
-            <p>Review all administrative actions taken by admins and managers.</p>
-            <ul>
-                <li><strong>Paginated Log:</strong> Browse historical actions (newest first)</li>
-                <li><strong>Filter:</strong> Search by user, action type, date range, or outcome (success/failure)</li>
-                <li><strong>Action Details:</strong> See who did what, when, and the result (what changed)</li>
-            </ul>
-            <div class="callout callout-info">
-                Audit logs are immutable and created automatically for every admin action. Use this to investigate incidents or track system changes.
-            </div>
+                <h2>Audit Trail (Not implemented)</h2>
+                <p>Review all administrative actions taken by admins and managers.</p>
+                <ul>
+                    <li><strong>Paginated Log:</strong> Browse historical actions (newest first)</li>
+                    <li><strong>Filter:</strong> Search by user, action type, date range, or outcome (success/failure)
+                    </li>
+                    <li><strong>Action Details:</strong> See who did what, when, and the result (what changed)</li>
+                </ul>
+                <div class="callout callout-info">
+                    Audit logs are immutable and created automatically for every admin action. Use this to investigate
+                    incidents or track system changes.
+                </div>
             </div>
         </section>
 
@@ -1507,7 +1579,8 @@ npm run dev</code></pre>
             </p>
 
             <div class="callout callout-info">
-                <strong>Access:</strong> Navigate to <code>http://localhost:5173/super-admin</code> and log in with your credentials.
+                <strong>Access:</strong> Navigate to <code>http://localhost:5173/super-admin</code> and log in with your
+                credentials.
                 <br><strong>Note:</strong> Only super admin accounts can access this dashboard.
             </div>
 
@@ -1525,127 +1598,151 @@ npm run dev</code></pre>
             </div>
 
             <div class="tab-pane active" id="super-admin-home">
-            <h2>Dashboard Home</h2>
-            <p>System-wide health and performance at a glance.</p>
-            <ul>
-                <li><strong>Regional Status Grid:</strong> Quick health check of all 7 regions (Chicago, NJ, Logan UT, Dallas, Atlanta, Phoenix, Boise)</li>
-                <li><strong>System KPIs:</strong> Active orders, national revenue today, inventory health, machine uptime, API response time, network latency</li>
-                <li><strong>Alerts Panel:</strong> Critical issues across the system</li>
-                <li><strong>Network Health:</strong> Status of database, cache (Redis), task queue (Celery), and external integrations (Stripe, Mapbox, AI services)</li>
-                <li><strong>7-Day Order Volume Chart:</strong> Trend across the entire network</li>
-            </ul>
+                <h2>Dashboard Home (Example data- not implemented)</h2>
+                <p>System-wide health and performance at a glance.</p>
+                <ul>
+                    <li><strong>Regional Status Grid:</strong> Quick health check of all 7 regions (Chicago, NJ, Logan
+                        UT, Dallas, Atlanta, Phoenix, Boise)</li>
+                    <li><strong>System KPIs:</strong> Active orders, national revenue today, inventory health, machine
+                        uptime, API response time, network latency</li>
+                    <li><strong>Alerts Panel:</strong> Critical issues across the system</li>
+                    <li><strong>Network Health:</strong> Status of database, cache (Redis), task queue (Celery), and
+                        external integrations (Stripe, Mapbox, AI services)</li>
+                    <li><strong>7-Day Order Volume Chart:</strong> Trend across the entire network</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="super-admin-regions">
-            <h2>Regions & Stores</h2>
-            <p>Manage the physical CodePop store network.</p>
-            <ul>
-                <li><strong>List All Stores:</strong> Browse stores across all 7 regions with operational status</li>
-                <li><strong>Create Store:</strong> Register a new location (requires region, address, manager assignment)</li>
-                <li><strong>Edit Store:</strong> Update location details, manager, or regional assignment</li>
-                <li><strong>Regional Map View:</strong> Visual representation of store locations by region</li>
-                <li><strong>7 Regions:</strong> A (Chicago), B (NJ), C (Logan UT), D (Dallas), E (Atlanta), F (Phoenix), G (Seattle)</li>
-            </ul>
+                <h2>Regions & Stores (Not implemented)</h2>
+                <p>Manage the physical CodePop store network.</p>
+                <ul>
+                    <li><strong>List All Stores:</strong> Browse stores across all 7 regions with operational status
+                    </li>
+                    <li><strong>Create Store:</strong> Register a new location (requires region, address, manager
+                        assignment)</li>
+                    <li><strong>Edit Store:</strong> Update location details, manager, or regional assignment</li>
+                    <li><strong>Regional Map View:</strong> Visual representation of store locations by region</li>
+                    <li><strong>7 Regions:</strong> A (Chicago), B (NJ), C (Logan UT), D (Dallas), E (Atlanta), F
+                        (Phoenix), G (Seattle)</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="super-admin-hubs">
-            <h2>Supply Hubs</h2>
-            <p>Oversee the 7 regional supply hubs that distribute inventory to stores.</p>
-            <ul>
-                <li><strong>List Hubs:</strong> View all 7 supply hubs with current inventory levels</li>
-                <li><strong>Create/Edit Hub:</strong> Add a new hub or update hub details (region, manager, address)</li>
-                <li><strong>Hub Inventory:</strong> Monitor syrup, soda, and add-in stock at each hub</li>
-                <li><strong>Supply Requests:</strong> Review and approve major requests from hubs or regions</li>
-            </ul>
+                <h2>Supply Hubs (Not implemented)</h2>
+                <p>Oversee the 7 regional supply hubs that distribute inventory to stores.</p>
+                <ul>
+                    <li><strong>List Hubs:</strong> View all 7 supply hubs with current inventory levels</li>
+                    <li><strong>Create/Edit Hub:</strong> Add a new hub or update hub details (region, manager, address)
+                    </li>
+                    <li><strong>Hub Inventory:</strong> Monitor syrup, soda, and add-in stock at each hub</li>
+                    <li><strong>Supply Requests:</strong> Review and approve major requests from hubs or regions</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="super-admin-users">
-            <h2>User Management</h2>
-            <p>Manage all users across the entire system.</p>
-            <ul>
-                <li><strong>Search All Users:</strong> Find any user by email, name, role, or region</li>
-                <li><strong>Bulk Role Assignment:</strong> Assign multiple users to a new role at once</li>
-                <li><strong>Bulk Region Assignment:</strong> Assign users to a region (for logistics and repair roles)</li>
-                <li><strong>Enable/Disable Accounts:</strong> Toggle access for any user</li>
-                <li><strong>Delete Users:</strong> Remove accounts from the system</li>
-            </ul>
+                <h2>User Management (Not implemented)</h2>
+                <p>Manage all users across the entire system.</p>
+                <ul>
+                    <li><strong>Search All Users:</strong> Find any user by email, name, role, or region</li>
+                    <li><strong>Bulk Role Assignment:</strong> Assign multiple users to a new role at once</li>
+                    <li><strong>Bulk Region Assignment:</strong> Assign users to a region (for logistics and repair
+                        roles)</li>
+                    <li><strong>Enable/Disable Accounts:</strong> Toggle access for any user</li>
+                    <li><strong>Delete Users:</strong> Remove accounts from the system</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="super-admin-ai">
-            <h2>AI Configuration</h2>
-            <p>Tune the machine learning models that power CodePop's recommendations and automation.</p>
-            <ul>
-                <li><strong>Recommendation Engine:</strong> Adjust parameters for drink suggestions (frequency, similarity threshold, seasonality weight)</li>
-                <li><strong>Chatbot (Tonic):</strong> Configure response style, escalation rules, and knowledge base</li>
-                <li><strong>Forecasting AI:</strong> Tune supply demand prediction, inventory optimization, machine uptime forecasting</li>
-                <li><strong>Reset to Defaults:</strong> Revert any configuration to factory settings</li>
-            </ul>
+                <h2>AI Configuration (Not implemented)</h2>
+                <p>Tune the machine learning models that power CodePop's recommendations and automation.</p>
+                <ul>
+                    <li><strong>Recommendation Engine:</strong> Adjust parameters for drink suggestions (frequency,
+                        similarity threshold, seasonality weight)</li>
+                    <li><strong>Chatbot (Tonic):</strong> Configure response style, escalation rules, and knowledge base
+                    </li>
+                    <li><strong>Forecasting AI:</strong> Tune supply demand prediction, inventory optimization, machine
+                        uptime forecasting</li>
+                    <li><strong>Reset to Defaults:</strong> Revert any configuration to factory settings</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="super-admin-reports">
-            <h2>Reports & Analytics</h2>
-            <p>Generate comprehensive reports across the entire network.</p>
-            <ul>
-                <li><strong>Revenue Report:</strong> National revenue by date range, store, region, or category</li>
-                <li><strong>Orders Report:</strong> Order volume, average order value, fulfillment time statistics</li>
-                <li><strong>Inventory Report:</strong> Stock levels by region, hub, store, and category</li>
-                <li><strong>Machine Uptime Report:</strong> Repair frequency, downtime duration, maintenance trends</li>
-                <li><strong>Export:</strong> Download reports as CSV or PDF for external analysis</li>
-            </ul>
+                <h2>Reports & Analytics (Example data- not implemented)</h2>
+                <p>Generate comprehensive reports across the entire network.</p>
+                <ul>
+                    <li><strong>Revenue Report:</strong> National revenue by date range, store, region, or category</li>
+                    <li><strong>Orders Report:</strong> Order volume, average order value, fulfillment time statistics
+                    </li>
+                    <li><strong>Inventory Report:</strong> Stock levels by region, hub, store, and category</li>
+                    <li><strong>Machine Uptime Report:</strong> Repair frequency, downtime duration, maintenance trends
+                    </li>
+                    <li><strong>Export:</strong> Download reports as CSV or PDF for external analysis</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="super-admin-audit">
-            <h2>Audit Logs</h2>
-            <p>Full system audit trail with advanced filtering.</p>
-            <ul>
-                <li><strong>All Actions:</strong> Every admin action across all regions and stores</li>
-                <li><strong>Date Range Filter:</strong> Search actions within a specific time period</li>
-                <li><strong>User Filter:</strong> Find all actions by a specific admin</li>
-                <li><strong>Action Type Filter:</strong> Search by category (user management, config changes, deletions, etc.)</li>
-                <li><strong>Export Logs:</strong> Download audit logs for compliance or investigation</li>
-            </ul>
+                <h2>Audit Logs (Not implemented)</h2>
+                <p>Full system audit trail with advanced filtering.</p>
+                <ul>
+                    <li><strong>All Actions:</strong> Every admin action across all regions and stores</li>
+                    <li><strong>Date Range Filter:</strong> Search actions within a specific time period</li>
+                    <li><strong>User Filter:</strong> Find all actions by a specific admin</li>
+                    <li><strong>Action Type Filter:</strong> Search by category (user management, config changes,
+                        deletions, etc.)</li>
+                    <li><strong>Export Logs:</strong> Download audit logs for compliance or investigation</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="super-admin-network">
-            <h2>Network Tests</h2>
-            <p>This lets you run tests across the whole Codepop™ network, all hubs and stores, and checks to make sure all their systems are working.</p>
-            <p>These are the following tests you can run and what they do:</p>
-            <ul>
-                <li><strong>Health Check:</strong> Pings every server on the network to check if they're running</li>
-                <li><strong>Store Registry:</strong> Hubs check to make sure the stores under them can connect</li>
-                <li><strong>Heartbeat:</strong> Hubs ping the stores under them to check their status</li>
-                <li><strong>Cross-Store Login:</strong> Checks the if users can login in from different stores</li>
-                <li><strong>Cross-Region Login:</strong> Checks if users can login in when connecting to a store in a different region</li>
-                <li><strong>P2P User Sync:</strong> Updates user profiles across a hubs network</li>
-                <li><strong>Profile Propagation:</strong> Propagates user profiles across the a hubs network</li>
-                <li><strong>Revenue Aggregation:</strong> Gathers the revenue from every store in the network</li>
-                <li><strong>Auth Rejection:</strong> Makes sure hubs can't get information directly from stores not under them</li>
-            </ul>
-            <p></p>
-            <p>You can run all these tests individual by pushing the buttons with the respective names in the Test section or you can run them sequentially by pushing the <strong>Run All Tests</strong> at the top of the Test section.</p>
-            <p>After you run a test you'll get a report under the network model in the test results section showing everything that passed or failed.</p>
+                <h2>Network Tests</h2>
+                <p>This lets you run tests across the whole Codepop™ network, all hubs and stores, and checks to make
+                    sure all their systems are working.</p>
+                <p>These are the following tests you can run and what they do:</p>
+                <ul>
+                    <li><strong>Health Check:</strong> Pings every server on the network to check if they're running
+                    </li>
+                    <li><strong>Store Registry:</strong> Hubs check to make sure the stores under them can connect</li>
+                    <li><strong>Heartbeat:</strong> Hubs ping the stores under them to check their status</li>
+                    <li><strong>Cross-Store Login:</strong> Checks the if users can login in from different stores</li>
+                    <li><strong>Cross-Region Login:</strong> Checks if users can login in when connecting to a store in
+                        a different region</li>
+                    <li><strong>P2P User Sync:</strong> Updates user profiles across a hubs network</li>
+                    <li><strong>Profile Propagation:</strong> Propagates user profiles across the a hubs network</li>
+                    <li><strong>Revenue Aggregation:</strong> Gathers the revenue from every store in the network</li>
+                    <li><strong>Auth Rejection:</strong> Makes sure hubs can't get information directly from stores not
+                        under them</li>
+                </ul>
+                <p></p>
+                <p>You can run all these tests individual by pushing the buttons with the respective names in the Test
+                    section or you can run them sequentially by pushing the <strong>Run All Tests</strong> at the top of
+                    the Test section.</p>
+                <p>After you run a test you'll get a report under the network model in the test results section showing
+                    everything that passed or failed.</p>
             </div>
 
             <div class="tab-pane" id="super-admin-settings">
-            <h2>System Settings</h2>
-            <p>Global configuration and operational toggles.</p>
-            <ul>
-                <li><strong>Maintenance Mode:</strong> Put the system in maintenance to prevent new orders (staff dashboards remain accessible)</li>
-                <li><strong>System Overrides:</strong> Force-enable features or disable problematic integrations</li>
-                <li><strong>Notification Thresholds:</strong> Set alerts for latency, inventory depletion, machine downtime</li>
-                <li><strong>Backup & Recovery:</strong> Configure automated database backups and restore points</li>
-            </ul>
+                <h2>System Settings (Not implemented)</h2>
+                <p>Global configuration and operational toggles.</p>
+                <ul>
+                    <li><strong>Maintenance Mode:</strong> Put the system in maintenance to prevent new orders (staff
+                        dashboards remain accessible)</li>
+                    <li><strong>System Overrides:</strong> Force-enable features or disable problematic integrations
+                    </li>
+                    <li><strong>Notification Thresholds:</strong> Set alerts for latency, inventory depletion, machine
+                        downtime</li>
+                    <li><strong>Backup & Recovery:</strong> Configure automated database backups and restore points</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="super-admin-help">
-            <h2>Help Docs</h2>
-            <p>Internal documentation and runbooks.</p>
-            <ul>
-                <li>Links to operational guides for each role</li>
-                <li>Incident response procedures</li>
-                <li>API documentation for integrations</li>
-                <li>Troubleshooting guides for common issues</li>
-            </ul>
+                <h2>Help Docs</h2>
+                <p>Internal documentation and runbooks.</p>
+                <ul>
+                    <li>Links to operational guides for each role</li>
+                    <li>Incident response procedures</li>
+                    <li>API documentation for integrations</li>
+                    <li>Troubleshooting guides for common issues</li>
+                </ul>
             </div>
         </section>
 
@@ -1660,7 +1757,8 @@ npm run dev</code></pre>
             </p>
 
             <div class="callout callout-info">
-                <strong>Access:</strong> Navigate to <code>http://localhost:5173/logistics</code> and log in with your credentials.
+                <strong>Access:</strong> Navigate to <code>http://localhost:5173/logistics</code> and log in with your
+                credentials.
                 <br><strong>Scope:</strong> You can only view and manage your assigned regional hub.
             </div>
 
@@ -1676,9 +1774,11 @@ npm run dev</code></pre>
                 <h2>Overview</h2>
                 <p>Dashboard summary of your hub's current state.</p>
                 <ul>
-                    <li><strong>KPI Cards:</strong> Stores at critical inventory level, deliveries in transit, pending requests, trending ingredient, forecast accuracy</li>
+                    <li><strong>KPI Cards:</strong> Stores at critical inventory level, deliveries in transit, pending
+                        requests, trending ingredient, forecast accuracy</li>
                     <li><strong>Hub Status Section:</strong> Current inventory levels and hub health</li>
-                    <li><strong>Critical Stores List:</strong> Top 5 stores with 3 days or less of supply remaining (requires immediate attention)</li>
+                    <li><strong>Critical Stores List:</strong> Top 5 stores with 3 days or less of supply remaining
+                        (requires immediate attention)</li>
                     <li><strong>Alerts Panel:</strong> Urgent notices</li>
                 </ul>
             </div>
@@ -1707,7 +1807,8 @@ npm run dev</code></pre>
                     <li><strong>Hub Inventory Levels:</strong> Current stock of all items by category</li>
                     <li><strong>Usage Trends Chart:</strong> Consumption rates (weekly, monthly, 30-day views)</li>
                     <li><strong>AI Insights Panel:</strong> Recommendations on reordering and optimal stock levels</li>
-                    <li><strong>Regional Consumption Patterns:</strong> Which items are most consumed across your region</li>
+                    <li><strong>Regional Consumption Patterns:</strong> Which items are most consumed across your region
+                    </li>
                     <li><strong>Seasonal Patterns Chart:</strong> How demand shifts throughout the year</li>
                 </ul>
             </div>
@@ -1740,13 +1841,16 @@ npm run dev</code></pre>
                     </div>
                 </div>
                 <ul>
-                    <li><strong>Delivery List:</strong> View all deliveries with status (scheduled, in-transit, completed)</li>
+                    <li><strong>Delivery List:</strong> View all deliveries with status (scheduled, in-transit,
+                        completed)</li>
                     <li><strong>Filters:</strong> Search by date, driver, or store</li>
-                    <li><strong>Delivery Detail View:</strong> Route map, driver contact, ETA, items being delivered</li>
+                    <li><strong>Delivery Detail View:</strong> Route map, driver contact, ETA, items being delivered
+                    </li>
                     <li><strong>Recurring Routes:</strong> Set up weekly or monthly delivery schedules</li>
                     <li><strong>CSV Upload:</strong> Import historical delivery data
                         <div class="callout callout-info">
-                            <strong>CSV Format:</strong> Columns must include <code>store_location, machine_type, operational_date, machine_status, status_date</code>
+                            <strong>CSV Format:</strong> Columns must include
+                            <code>store_location, machine_type, operational_date, machine_status, status_date</code>
                         </div>
                     </li>
                 </ul>
@@ -1758,36 +1862,42 @@ npm run dev</code></pre>
                 <div class="step-card">
                     <div class="step-number">1</div>
                     <div class="step-content">
-                        <p>Navigate to the <strong>"Supply Requests"</strong> tab. Pending requests appear at the top.</p>
+                        <p>Navigate to the <strong>"Supply Requests"</strong> tab. Pending requests appear at the top.
+                        </p>
                     </div>
                 </div>
                 <div class="step-card">
                     <div class="step-number">2</div>
                     <div class="step-content">
-                        <p>Click a request to view details: requested items, quantities, urgency level, and any notes from the store manager.</p>
+                        <p>Click a request to view details: requested items, quantities, urgency level, and any notes
+                            from the store manager.</p>
                     </div>
                 </div>
                 <div class="step-card">
                     <div class="step-number">3</div>
                     <div class="step-content">
-                        <p>Click <strong>"Approve"</strong> to authorize the delivery, or <strong>"Deny"</strong> if quantities are unavailable or the request is not valid.</p>
+                        <p>Click <strong>"Approve"</strong> to authorize the delivery, or <strong>"Deny"</strong> if
+                            quantities are unavailable or the request is not valid.</p>
                     </div>
                 </div>
                 <div class="step-card">
                     <div class="step-number">4</div>
                     <div class="step-content">
-                        <p>If approved, click the <strong>"Fulfill"</strong> button to create a delivery route for the request.</p>
+                        <p>If approved, click the <strong>"Fulfill"</strong> button to create a delivery route for the
+                            request.</p>
                     </div>
                 </div>
                 <div class="step-card">
                     <div class="step-number">5</div>
                     <div class="step-content">
-                        <p>The store manager is notified automatically. Approved requests are queued for the next available delivery.</p>
+                        <p>The store manager is notified automatically. Approved requests are queued for the next
+                            available delivery.</p>
                     </div>
                 </div>
                 <ul>
                     <li><strong>Filters:</strong> Search by status (pending, approved, denied), store, or item type</li>
-                    <li><strong>AI-Suggested Quantities:</strong> The system recommends order quantities based on forecasting</li>
+                    <li><strong>AI-Suggested Quantities:</strong> The system recommends order quantities based on
+                        forecasting</li>
                     <li><strong>Approval Timeline:</strong> View the history of request status changes</li>
                 </ul>
             </div>
@@ -1804,7 +1914,8 @@ npm run dev</code></pre>
             </p>
 
             <div class="callout callout-info">
-                <strong>Access:</strong> Navigate to <code>http://localhost:5173/repair</code> and log in with your credentials.
+                <strong>Access:</strong> Navigate to <code>http://localhost:5173/repair</code> and log in with your
+                credentials.
                 <br><strong>Scope:</strong> You can only manage machines in your assigned region.
             </div>
 
@@ -1817,158 +1928,174 @@ npm run dev</code></pre>
             </div>
 
             <div class="tab-pane active" id="repair-overview">
-            <h2>Overview</h2>
-            <p>Quick snapshot of your regional repair workload.</p>
-            <ul>
-                <li><strong>KPI Cards:</strong> Machines currently down, repairs scheduled for today, parts pending delivery, estimated revenue impact of downtime</li>
-                <li><strong>Today's Schedule:</strong> Jobs due today with start times and estimated duration</li>
-                <li><strong>Region Summary:</strong> Total stores in region, machines by status, parts on order</li>
-                <li><strong>Alerts Panel:</strong> Urgent repairs needed, overdue jobs, critical parts shortages</li>
-            </ul>
+                <h2>Overview</h2>
+                <p>Quick snapshot of your regional repair workload.</p>
+                <ul>
+                    <li><strong>KPI Cards:</strong> Machines currently down, repairs scheduled for today, parts pending
+                        delivery, estimated revenue impact of downtime</li>
+                    <li><strong>Today's Schedule:</strong> Jobs due today with start times and estimated duration</li>
+                    <li><strong>Region Summary:</strong> Total stores in region, machines by status, parts on order</li>
+                    <li><strong>Alerts Panel:</strong> Urgent repairs needed, overdue jobs, critical parts shortages
+                    </li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="repair-machines">
-            <h2>Machines</h2>
-            <p>Track the status and history of all machines in your region.</p>
-            <ul>
-                <li><strong>Machine List:</strong> All machines with current status</li>
-                <li><strong>Status Filter:</strong> Filter by operational state (see Machine Status Reference below)</li>
-                <li><strong>Machine Detail View:</strong> Click any machine to see:
-                    <ul>
-                        <li>Installation date, warranty expiration, serial number</li>
-                        <li>Current repair state and estimated completion date</li>
-                        <li><strong>Repair History Tab:</strong> Last 10 repairs with dates, technician, and work notes</li>
-                        <li><strong>Compatible Parts Tab:</strong> List of parts that fit this machine, current stock status, ETAs</li>
-                        <li><strong>Notes Tab:</strong> Add repair notes and view history</li>
-                    </ul>
-                </li>
-                <li><strong>Update Repair Status:</strong> Mark a repair as started, completed, or waiting on parts</li>
-                <li><strong>Request Parts:</strong> Order needed parts from inventory</li>
-                <li><strong>Photo Upload/Delete:</strong> Attach photos of damage or repairs</li>
-            </ul>
+                <h2>Machines</h2>
+                <p>Track the status and history of all machines in your region.</p>
+                <ul>
+                    <li><strong>Machine List:</strong> All machines with current status</li>
+                    <li><strong>Status Filter:</strong> Filter by operational state (see Machine Status Reference below)
+                    </li>
+                    <li><strong>Machine Detail View:</strong> Click any machine to see:
+                        <ul>
+                            <li>Installation date, warranty expiration, serial number</li>
+                            <li>Current repair state and estimated completion date</li>
+                            <li><strong>Repair History Tab:</strong> Last 10 repairs with dates, technician, and work
+                                notes</li>
+                            <li><strong>Compatible Parts Tab:</strong> List of parts that fit this machine, current
+                                stock status, ETAs</li>
+                            <li><strong>Notes Tab:</strong> Add repair notes and view history</li>
+                        </ul>
+                    </li>
+                    <li><strong>Update Repair Status:</strong> Mark a repair as started, completed, or waiting on parts
+                    </li>
+                    <li><strong>Request Parts:</strong> Order needed parts from inventory</li>
+                    <li><strong>Photo Upload/Delete:</strong> Attach photos of damage or repairs</li>
+                </ul>
 
-            <h3>Machine Status Reference</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Status</th>
-                        <th>Meaning</th>
-                        <th>Action Required</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><code>NORMAL</code></td>
-                        <td>Operating normally</td>
-                        <td>None</td>
-                    </tr>
-                    <tr>
-                        <td><code>WARNING</code></td>
-                        <td>Non-critical issue detected</td>
-                        <td>Schedule repair within 1 month</td>
-                    </tr>
-                    <tr>
-                        <td><code>ERROR</code></td>
-                        <td>Critical issue, operational but degraded</td>
-                        <td>Repair within 1 week</td>
-                    </tr>
-                    <tr>
-                        <td><code>OUT_OF_ORDER</code></td>
-                        <td>Machine not operational</td>
-                        <td>Immediate repair required</td>
-                    </tr>
-                    <tr>
-                        <td><code>SCHEDULE_SERVICE</code></td>
-                        <td>Routine maintenance needed</td>
-                        <td>Schedule within 1 month</td>
-                    </tr>
-                    <tr>
-                        <td><code>REPAIR_START</code></td>
-                        <td>Repair/servicing in progress</td>
-                        <td>Machine is offline — complete repair</td>
-                    </tr>
-                    <tr>
-                        <td><code>REPAIR_END</code></td>
-                        <td>Servicing complete, in testing</td>
-                        <td>Verify operation and mark as NORMAL</td>
-                    </tr>
-                </tbody>
-            </table>
+                <h3>Machine Status Reference</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Meaning</th>
+                            <th>Action Required</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>NORMAL</code></td>
+                            <td>Operating normally</td>
+                            <td>None</td>
+                        </tr>
+                        <tr>
+                            <td><code>WARNING</code></td>
+                            <td>Non-critical issue detected</td>
+                            <td>Schedule repair within 1 month</td>
+                        </tr>
+                        <tr>
+                            <td><code>ERROR</code></td>
+                            <td>Critical issue, operational but degraded</td>
+                            <td>Repair within 1 week</td>
+                        </tr>
+                        <tr>
+                            <td><code>OUT_OF_ORDER</code></td>
+                            <td>Machine not operational</td>
+                            <td>Immediate repair required</td>
+                        </tr>
+                        <tr>
+                            <td><code>SCHEDULE_SERVICE</code></td>
+                            <td>Routine maintenance needed</td>
+                            <td>Schedule within 1 month</td>
+                        </tr>
+                        <tr>
+                            <td><code>REPAIR_START</code></td>
+                            <td>Repair/servicing in progress</td>
+                            <td>Machine is offline — complete repair</td>
+                        </tr>
+                        <tr>
+                            <td><code>REPAIR_END</code></td>
+                            <td>Servicing complete, in testing</td>
+                            <td>Verify operation and mark as NORMAL</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <div class="tab-pane" id="repair-schedule">
-            <h2>Schedule</h2>
-            <p>This section lets you view repair schedule</p>
-            <p>You can also:</p>
-            <ul>
-                <li><strong>Upload schedule:</strong> Click the upload button and you'll be able to set your schedule</li>
-                <li><strong>Start repairs:</strong> With a click of a button you can start and finish repairs</li>
-                <li><strong>Get store location:</strong> Don't know where to go? Click the store name and you'll be given the exact location</li>
-            </ul>
+                <h2>Schedule</h2>
+                <p>This section lets you view repair schedule</p>
+                <p>You can also:</p>
+                <ul>
+                    <li><strong>Upload schedule:</strong> Click the upload button and you'll be able to set your
+                        schedule</li>
+                    <li><strong>Start repairs:</strong> With a click of a button you can start and finish repairs</li>
+                    <li><strong>Get store location:</strong> Don't know where to go? Click the store name and you'll be
+                        given the exact location</li>
+                </ul>
 
-            <h3>Uploading a Repair Schedule (CSV Import)</h3>
-            <div class="step-card">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                    <p>To make a schedule you only need 2 fields for a csv file.</p>
-                    <pre><code>machine_id,machine_notes</code></pre>
-                    <p>Remember, don't use commas in your notes.</p>
+                <h3>Uploading a Repair Schedule (CSV Import)</h3>
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <p>To make a schedule you only need 2 fields for a csv file.</p>
+                        <pre><code>machine_id,machine_notes</code></pre>
+                        <p>Remember, don't use commas in your notes.</p>
+                    </div>
                 </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                    <p>Navigate to the <strong>"Schedule"</strong> tab and click <strong>"Upload Schedule"</strong>Button.</p>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <p>Navigate to the <strong>"Schedule"</strong> tab and click <strong>"Upload
+                                Schedule"</strong>Button.</p>
+                    </div>
                 </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                    <p>Select your file from the pop up.</p>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <p>Select your file from the pop up.</p>
+                    </div>
                 </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">4</div>
-                <div class="step-content">
-                    <p>After a few short moments your schedule will appear below.</p>
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <p>After a few short moments your schedule will appear below.</p>
+                    </div>
                 </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">5</div>
-                <div class="step-content">
-                    <p>Click the <button class="status-button-example">Start Repair</button> button to tell the server you're starting the repair.</p>
+                <div class="step-card">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <p>Click the <button class="status-button-example">Start Repair</button> button to tell the
+                            server you're starting the repair.</p>
+                    </div>
                 </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">6</div>
-                <div class="step-content">
-                    <p>Click the <button class="status-button-example">Finish Repair</button> button to tell the server the machine is operational.</p>
+                <div class="step-card">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <p>Click the <button class="status-button-example">Finish Repair</button> button to tell the
+                            server the machine is operational.</p>
+                    </div>
                 </div>
-            </div>
             </div>
 
             <div class="tab-pane" id="repair-parts">
-            <h2>Parts</h2>
-            <p>Manage spare parts inventory.</p>
-            <ul>
-                <li><strong>Parts Inventory:</strong> All parts currently in stock with compatibility info</li>
-                <li><strong>Filters:</strong> Search by machine type, part name, part number, or status</li>
-                <li><strong>Open Part Orders:</strong> Parts on order with expected arrival dates</li>
-                <li><strong>Mark as Received:</strong> Confirm when a part order arrives and update inventory</li>
-                <li><strong>Low Stock Alerts:</strong> Automatically flag parts below minimum threshold</li>
-            </ul>
+                <h2>Parts</h2>
+                <p>Manage spare parts inventory.</p>
+                <ul>
+                    <li><strong>Parts Inventory:</strong> All parts currently in stock with compatibility info</li>
+                    <li><strong>Filters:</strong> Search by machine type, part name, part number, or status</li>
+                    <li><strong>Open Part Orders:</strong> Parts on order with expected arrival dates</li>
+                    <li><strong>Mark as Received:</strong> Confirm when a part order arrives and update inventory</li>
+                    <li><strong>Low Stock Alerts:</strong> Automatically flag parts below minimum threshold</li>
+                </ul>
             </div>
 
             <div class="tab-pane" id="repair-performance">
-            <h2>Performance</h2>
-            <p>Track your team's repair efficiency and quality metrics.</p>
-            <ul>
-                <li><strong>KPI Cards:</strong> Repairs completed (this month), average repair time, on-time percentage, team ranking</li>
-                <li><strong>Repairs Over Time Chart:</strong> Line chart of completed repairs per week (trend analysis)</li>
-                <li><strong>Repair Types Donut Chart:</strong> Breakdown of repairs by category (preventive vs. emergency)</li>
-                <li><strong>Repair History Table:</strong> Detailed log of all completed repairs with dates and technicians</li>
-                <li><strong>Team Ranking Section:</strong> Compare your team's performance to other regional teams</li>
-            </ul>
+                <h2>Performance</h2>
+                <p>Track your team's repair efficiency and quality metrics.</p>
+                <ul>
+                    <li><strong>KPI Cards:</strong> Repairs completed (this month), average repair time, on-time
+                        percentage, team ranking</li>
+                    <li><strong>Repairs Over Time Chart:</strong> Line chart of completed repairs per week (trend
+                        analysis)</li>
+                    <li><strong>Repair Types Donut Chart:</strong> Breakdown of repairs by category (preventive vs.
+                        emergency)</li>
+                    <li><strong>Repair History Table:</strong> Detailed log of all completed repairs with dates and
+                        technicians</li>
+                    <li><strong>Team Ranking Section:</strong> Compare your team's performance to other regional teams
+                    </li>
+                </ul>
             </div>
         </section>
 
@@ -2028,7 +2155,8 @@ npm run dev</code></pre>
                     <ul>
                         <li>Check phone Settings → Location to ensure GPS is <strong>On</strong></li>
                         <li>Grant CodePop permission to access location (allow "While Using App" or "Always")</li>
-                        <li>No GPS? Tap the blue <strong>"Start"</strong> button manually when leaving for the store</li>
+                        <li>No GPS? Tap the blue <strong>"Start"</strong> button manually when leaving for the store
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -2044,7 +2172,8 @@ npm run dev</code></pre>
                     <ul>
                         <li>Wait up to 30 minutes. The machine may be rebooting or restocking</li>
                         <li>Check the in-app chat (Help tab) for status updates</li>
-                        <li>If still stuck after 30 minutes, contact support via chat → <strong>"Report an issue"</strong></li>
+                        <li>If still stuck after 30 minutes, contact support via chat → <strong>"Report an
+                                issue"</strong></li>
                         <li>The store will issue a refund or remake if the order fails</li>
                     </ul>
                 </div>
@@ -2201,7 +2330,8 @@ npm run dev</code></pre>
                         <li>Create the <code>.env</code> file:
                             <pre><code>cp .env.example .env</code></pre>
                         </li>
-                        <li>Fill in required keys (STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, MAPBOX_ACCESS_TOKEN, SECRET_KEY)</li>
+                        <li>Fill in required keys (STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, MAPBOX_ACCESS_TOKEN,
+                            SECRET_KEY)</li>
                         <li>Try again: <code>docker compose up</code></li>
                     </ul>
                 </div>
@@ -2272,8 +2402,10 @@ npm run dev</code></pre>
                     <ul>
                         <li>Open <code>codepop_backend/.env</code></li>
                         <li>Verify STRIPE_SECRET_KEY starts with <code>sk_test_</code> (not <code>sk_live_</code>)</li>
-                        <li>Verify STRIPE_PUBLISHABLE_KEY starts with <code>pk_test_</code> (not <code>pk_live_</code>)</li>
-                        <li>Get test keys from <a href="https://dashboard.stripe.com/test/apikeys" target="_blank">Stripe Dashboard</a></li>
+                        <li>Verify STRIPE_PUBLISHABLE_KEY starts with <code>pk_test_</code> (not <code>pk_live_</code>)
+                        </li>
+                        <li>Get test keys from <a href="https://dashboard.stripe.com/test/apikeys"
+                                target="_blank">Stripe Dashboard</a></li>
                         <li>Restart the backend: <code>docker compose down && docker compose up</code></li>
                     </ul>
                 </div>
@@ -2293,8 +2425,10 @@ npm run dev</code></pre>
                 </div>
                 <div class="faq-answer">
                     <p>
-                        No! You can order as a guest without creating an account. However, guest ordering has a limitation:
-                        you won't have access to saved favorites, preferences, or order history. We recommend creating an account
+                        No! You can order as a guest without creating an account. However, guest ordering has a
+                        limitation:
+                        you won't have access to saved favorites, preferences, or order history. We recommend creating
+                        an account
                         to unlock the full CodePop experience.
                     </p>
                 </div>
@@ -2309,8 +2443,10 @@ npm run dev</code></pre>
                     <p>
                         The Golden Window is the perfect moment to start making your drink—when you're close enough to
                         arrive shortly after it's finished. After you pay, we track your location (with your permission)
-                        and notify the robot to begin preparation at precisely the right time. This ensures your drink is
-                        made fresh and is ready the moment you arrive. If you don't allow location access, just tap "Start"
+                        and notify the robot to begin preparation at precisely the right time. This ensures your drink
+                        is
+                        made fresh and is ready the moment you arrive. If you don't allow location access, just tap
+                        "Start"
                         when you're heading to the store.
                     </p>
                 </div>
@@ -2324,7 +2460,8 @@ npm run dev</code></pre>
                 <div class="faq-answer">
                     <p>
                         Yes, you can cancel anytime before the drink is finished being made. Cancellations result in a
-                        full refund processed back to your original payment method within 3-5 business days. Once the robot
+                        full refund processed back to your original payment method within 3-5 business days. Once the
+                        robot
                         starts making your drink, cancellation is no longer available.
                     </p>
                 </div>
@@ -2337,8 +2474,10 @@ npm run dev</code></pre>
                 </div>
                 <div class="faq-answer">
                     <p>
-                        On the cart screen, look for the <strong>"Promo Code"</strong> field. Enter your code and tap <strong>"Apply"</strong>.
-                        If the code is valid, the discount will be shown immediately. You can remove the code by tapping <strong>"Remove"</strong>
+                        On the cart screen, look for the <strong>"Promo Code"</strong> field. Enter your code and tap
+                        <strong>"Apply"</strong>.
+                        If the code is valid, the discount will be shown immediately. You can remove the code by tapping
+                        <strong>"Remove"</strong>
                         next to the discount.
                     </p>
                 </div>
@@ -2380,7 +2519,8 @@ npm run dev</code></pre>
                 <div class="faq-answer">
                     <p>
                         Absolutely! Each drink screen has a share button. Tap it to send your drink creation to friends
-                        via text, email, or social media. Your friends can tap the link to view your recipe and order the
+                        via text, email, or social media. Your friends can tap the link to view your recipe and order
+                        the
                         same drink.
                     </p>
                 </div>
@@ -2393,8 +2533,10 @@ npm run dev</code></pre>
                 </div>
                 <div class="faq-answer">
                     <p>
-                        Earn 1 point for every dollar you spend. Points are awarded automatically after your order is picked up.
-                        Accumulated points can be redeemed for discounts or free drinks—keep an eye on your account for redemption offers.
+                        Earn 1 point for every dollar you spend. Points are awarded automatically after your order is
+                        picked up.
+                        Accumulated points can be redeemed for discounts or free drinks—keep an eye on your account for
+                        redemption offers.
                         Note: Points expire 1 year after being earned.
                     </p>
                 </div>
@@ -2407,7 +2549,8 @@ npm run dev</code></pre>
                 </div>
                 <div class="faq-answer">
                     <p>
-                        The app automatically routes your order to the nearest available CodePop location. Your drink will
+                        The app automatically routes your order to the nearest available CodePop location. Your drink
+                        will
                         be made at that store instead. Allow location access so the app can find the best alternative.
                     </p>
                 </div>
@@ -2421,7 +2564,8 @@ npm run dev</code></pre>
                 <div class="faq-answer">
                     <p>
                         Yes. CodePop requires all users to be 18 years or older. This requirement is stated in our
-                        <strong><a href="docs/misc/TERMS_AND_CONDITIONS.md" target="_blank">Terms & Conditions</a></strong>
+                        <strong><a href="docs/misc/TERMS_AND_CONDITIONS.md" target="_blank">Terms &
+                                Conditions</a></strong>
                         (effective February 22, 2026). You may be asked to provide proof of age during account creation.
                     </p>
                 </div>
@@ -2436,11 +2580,13 @@ npm run dev</code></pre>
                 </div>
                 <div class="faq-answer">
                     <p>
-                        <strong>For Manager, Logistics, or Repair Staff:</strong> Contact your <strong>Admin</strong> to request a password reset.
+                        <strong>For Manager, Logistics, or Repair Staff:</strong> Contact your <strong>Admin</strong> to
+                        request a password reset.
                         They can issue you a reset link.
                     </p>
                     <p>
-                        <strong>For Admin users:</strong> Contact your <strong>Super Admin</strong> to request a password reset.
+                        <strong>For Admin users:</strong> Contact your <strong>Super Admin</strong> to request a
+                        password reset.
                     </p>
                     <p>
                         <strong>For Super Admin:</strong> Contact your system administrator or IT department.
@@ -2455,8 +2601,10 @@ npm run dev</code></pre>
                 </div>
                 <div class="faq-answer">
                     <p>
-                        The dashboard pulls live data from the API whenever you load a page or tab. For real-time updates,
-                        refresh your browser (F5 or Cmd+R). Most dashboards auto-refresh inventory and KPI data every 30 seconds
+                        The dashboard pulls live data from the API whenever you load a page or tab. For real-time
+                        updates,
+                        refresh your browser (F5 or Cmd+R). Most dashboards auto-refresh inventory and KPI data every 30
+                        seconds
                         while the page is open.
                     </p>
                 </div>
@@ -2470,7 +2618,8 @@ npm run dev</code></pre>
                 <div class="faq-answer">
                     <p>
                         No. Managers are scoped to their assigned store only. You can only view inventory, revenue, and
-                        orders for your store. To access another store's dashboard, contact your Admin to be assigned there.
+                        orders for your store. To access another store's dashboard, contact your Admin to be assigned
+                        there.
                     </p>
                 </div>
             </div>
@@ -2482,11 +2631,13 @@ npm run dev</code></pre>
                 </div>
                 <div class="faq-answer">
                     <p>
-                        <strong>Admin:</strong> Manages user accounts and roles for a single store. No visibility into regional
+                        <strong>Admin:</strong> Manages user accounts and roles for a single store. No visibility into
+                        regional
                         or system-wide data.
                     </p>
                     <p>
-                        <strong>Super Admin:</strong> Has global, system-wide access. Can manage all users, stores, regions, hubs,
+                        <strong>Super Admin:</strong> Has global, system-wide access. Can manage all users, stores,
+                        regions, hubs,
                         and system settings across the entire CodePop network.
                     </p>
                 </div>
@@ -2525,7 +2676,8 @@ npm run dev</code></pre>
                         <li>Navigate to the <strong>"Supply Requests"</strong> tab on your dashboard</li>
                         <li>Pending requests appear at the top of the list</li>
                         <li>Click a request to view details: items, quantities, store, and urgency</li>
-                        <li>Click <strong>"Approve"</strong> to authorize the delivery, or <strong>"Deny"</strong> if quantities are unavailable</li>
+                        <li>Click <strong>"Approve"</strong> to authorize the delivery, or <strong>"Deny"</strong> if
+                            quantities are unavailable</li>
                         <li>The store manager is notified automatically via the app</li>
                         <li>Approved requests are queued for the next available delivery route</li>
                     </ol>
@@ -2576,7 +2728,8 @@ npm run dev</code></pre>
                         <li>Screenshots (optional but helpful)</li>
                     </ul>
                     <p>
-                        Your report is automatically routed to the CodePop development team for investigation and fixing.
+                        Your report is automatically routed to the CodePop development team for investigation and
+                        fixing.
                     </p>
                 </div>
 
@@ -2658,7 +2811,7 @@ npm run dev</code></pre>
 
         // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
+            anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
@@ -2705,4 +2858,5 @@ npm run dev</code></pre>
         });
     </script>
 </body>
+
 </html>
