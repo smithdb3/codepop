@@ -1413,6 +1413,15 @@ npm run dev</code></pre>
                 <strong>Access:</strong> Navigate to <code>http://localhost:5173/admin</code> and log in with your credentials.
             </div>
 
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="admin-home">Dashboard Home</button>
+                <button class="tab-btn" data-tab="admin-users">User Management</button>
+                <button class="tab-btn" data-tab="admin-managers">Manager Accounts</button>
+                <button class="tab-btn" data-tab="admin-roles">Roles & Permissions</button>
+                <button class="tab-btn" data-tab="admin-audit">Audit Trail</button>
+            </div>
+
+            <div class="tab-pane active" id="admin-home">
             <h2>Dashboard Home</h2>
             <p>Quick overview of your store's user population.</p>
             <ul>
@@ -1421,8 +1430,10 @@ npm run dev</code></pre>
                 <li><strong>Disabled Users:</strong> Accounts currently deactivated</li>
                 <li><strong>Manager Count:</strong> Staff members with manager privileges</li>
             </ul>
+            </div>
 
-            <h2>User Management</h2>
+            <div class="tab-pane" id="admin-users">
+            <h2>User Management (Not implemented)</h2>
             <p>Create, edit, and manage user accounts.</p>
             <div class="step-card">
                 <div class="step-number">1</div>
@@ -1448,16 +1459,20 @@ npm run dev</code></pre>
                 <li><strong>Disable/Enable:</strong> Temporarily restrict or restore account access</li>
                 <li><strong>Delete Users:</strong> Soft-delete accounts (data is preserved for audit purposes)</li>
             </ul>
+            </div>
 
-            <h2>Manager Accounts</h2>
+            <div class="tab-pane" id="admin-managers">
+            <h2>Manager Accounts (Not implemented)</h2>
             <p>Promote staff members to manager status.</p>
             <ul>
                 <li>View all users with manager privileges</li>
                 <li>Promote a customer or staff account to manager (grants access to Manager Dashboard)</li>
                 <li>Revoke manager status</li>
             </ul>
+            </div>
 
-            <h2>Roles & Permissions</h2>
+            <div class="tab-pane" id="admin-roles">
+            <h2>Roles & Permissions (Not implemented)</h2>
             <p>Create custom roles and assign granular permissions.</p>
             <ul>
                 <li><strong>View Roles:</strong> List all system roles (built-in and custom)</li>
@@ -1465,8 +1480,10 @@ npm run dev</code></pre>
                 <li><strong>Edit Role:</strong> Modify role name and permission grants</li>
                 <li><strong>Permission Categories:</strong> User Management, Roles & Permissions, System Audit</li>
             </ul>
+            </div>
 
-            <h2>Audit Trail</h2>
+            <div class="tab-pane" id="admin-audit">
+            <h2>Audit Trail (Not implemented)</h2>
             <p>Review all administrative actions taken by admins and managers.</p>
             <ul>
                 <li><strong>Paginated Log:</strong> Browse historical actions (newest first)</li>
@@ -1475,6 +1492,7 @@ npm run dev</code></pre>
             </ul>
             <div class="callout callout-info">
                 Audit logs are immutable and created automatically for every admin action. Use this to investigate incidents or track system changes.
+            </div>
             </div>
         </section>
 
