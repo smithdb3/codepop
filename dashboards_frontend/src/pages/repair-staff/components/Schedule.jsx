@@ -42,9 +42,8 @@ export function Schedule(props){
                         <td style={{ color: statusStyles[machine.status]}}>{machine.status}</td>
                         <td>{machine.name}</td>
                         <td>{schedule.scheduled_at}</td>
-                        <td>{machine.notes}</td>
-                        <td>{schedule.description}</td>
-                        <td>TEST</td>
+                        <td className={styles.notesRow}>{machine.notes.trim() == "" ? "No Notes":machine.notes.trim()}</td>
+                        <td>{schedule.description.trim()}</td>
                         <td className={styles.buttonElement}>
                             <button className={styles.statusButton} onClick={() => {
                                 const newStatus = machine.status == 'REPAIR_START'? 'NORMAL': 'REPAIR_START';

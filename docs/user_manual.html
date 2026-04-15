@@ -1681,6 +1681,15 @@ npm run dev</code></pre>
                 <br><strong>Scope:</strong> You can only manage machines in your assigned region.
             </div>
 
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="repair-overview">Overview</button>
+                <button class="tab-btn" data-tab="repair-machines">Machines</button>
+                <button class="tab-btn" data-tab="repair-schedule">Schedule</button>
+                <button class="tab-btn" data-tab="repair-parts">Parts</button>
+                <button class="tab-btn" data-tab="repair-performance">Performance</button>
+            </div>
+
+            <div class="tab-pane active" id="repair-overview">
             <h2>Overview</h2>
             <p>Quick snapshot of your regional repair workload.</p>
             <ul>
@@ -1689,7 +1698,9 @@ npm run dev</code></pre>
                 <li><strong>Region Summary:</strong> Total stores in region, machines by status, parts on order</li>
                 <li><strong>Alerts Panel:</strong> Urgent repairs needed, overdue jobs, critical parts shortages</li>
             </ul>
+            </div>
 
+            <div class="tab-pane" id="repair-machines">
             <h2>Machines</h2>
             <p>Track the status and history of all machines in your region.</p>
             <ul>
@@ -1709,7 +1720,7 @@ npm run dev</code></pre>
                 <li><strong>Photo Upload/Delete:</strong> Attach photos of damage or repairs</li>
             </ul>
 
-            <h2>Machine Status Reference</h2>
+            <h3>Machine Status Reference</h3>
             <table>
                 <thead>
                     <tr>
@@ -1756,25 +1767,60 @@ npm run dev</code></pre>
                     </tr>
                 </tbody>
             </table>
+            </div>
 
+            <div class="tab-pane" id="repair-schedule">
             <h2>Schedule</h2>
-            <p>View and manage your repair jobs.</p>
+            <p>This section lets you view repair schedule</p>
+            <p>You can also:</p>
             <ul>
-                <li><strong>Timeline View:</strong> Chronological list of all upcoming jobs</li>
-                <li><strong>Calendar View:</strong> Month view with jobs highlighted</li>
-                <li><strong>Job Categories:</strong>
-                    <ul>
-                        <li><strong>Today:</strong> Jobs due now (start immediately)</li>
-                        <li><strong>Upcoming:</strong> Scheduled repairs with future dates</li>
-                        <li><strong>Overdue:</strong> Jobs past their scheduled date (requires priority)</li>
-                        <li><strong>Waiting on Parts:</strong> Jobs halted until parts arrive</li>
-                    </ul>
-                </li>
-                <li><strong>Drag to Reschedule:</strong> Click and drag a job to a new time slot (for timeline view)</li>
-                <li><strong>Start/Cancel Job:</strong> Begin work or cancel a scheduled repair</li>
-                <li><strong>Optimize Schedule:</strong> AI-generated optimal route for today's jobs (by geography and priority)</li>
+                <li><strong>Upload schedule:</strong> Click the upload button and you'll be able to set your schedule</li>
+                <li><strong>Start repairs:</strong> With a click of a button you can start and finish repairs</li>
+                <li><strong>Get store location:</strong> Don't know where to go? Click the store name and you'll be given the exact location</li>
             </ul>
 
+            <h3>Uploading a Repair Schedule (CSV Import)</h3>
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p>To make a schedule you only need 2 fields for a csv file.</p>
+                    <pre><code>machine_id,machine_notes</code></pre>
+                    <p>Remember, don't use commas in your notes.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p>Navigate to the <strong>"Schedule"</strong> tab and click <strong>"Upload Schedule"</strong>Button.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <p>Select your file from the pop up.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <p>After a few short moments your schedule will appear below.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <p>Click the <button class="status-button-example">Start Repair</button> button to tell the server you're starting the repair.</p>
+                </div>
+            </div>
+            <div class="step-card">
+                <div class="step-number">6</div>
+                <div class="step-content">
+                    <p>Click the <button class="status-button-example">Finish Repair</button> button to tell the server the machine is operational.</p>
+                </div>
+            </div>
+            </div>
+
+            <div class="tab-pane" id="repair-parts">
             <h2>Parts</h2>
             <p>Manage spare parts inventory.</p>
             <ul>
@@ -1784,7 +1830,9 @@ npm run dev</code></pre>
                 <li><strong>Mark as Received:</strong> Confirm when a part order arrives and update inventory</li>
                 <li><strong>Low Stock Alerts:</strong> Automatically flag parts below minimum threshold</li>
             </ul>
+            </div>
 
+            <div class="tab-pane" id="repair-performance">
             <h2>Performance</h2>
             <p>Track your team's repair efficiency and quality metrics.</p>
             <ul>
@@ -1794,44 +1842,6 @@ npm run dev</code></pre>
                 <li><strong>Repair History Table:</strong> Detailed log of all completed repairs with dates and technicians</li>
                 <li><strong>Team Ranking Section:</strong> Compare your team's performance to other regional teams</li>
             </ul>
-
-            <h2>Uploading a Repair Schedule (CSV Import)</h2>
-            <div class="step-card">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                    <p>To make a schedule you only need 2 fields for a csv file</p>
-                    <pre><code>machine_id,machine_notes</code></pre>
-                </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                    <p>Navigate to the <strong>"Schedule"</strong> tab and click <strong>"Upload Schedule"</strong>Button</p>
-                </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                    <p>Select your file from the pop up</p>
-                </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">4</div>
-                <div class="step-content">
-                    <p>After a few short moments your schedule will appear below the button.</p>
-                </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">5</div>
-                <div class="step-content">
-                    <p>Click the <button class="status-button-example">Start Repair</button> button to tell the server you're starting the repair</p>
-                </div>
-            </div>
-            <div class="step-card">
-                <div class="step-number">6</div>
-                <div class="step-content">
-                    <p>Click the <button class="status-button-example">Finish Repair</button> button to tell the server the machine is operational</p>
-                </div>
             </div>
         </section>
 
