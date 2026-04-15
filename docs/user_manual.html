@@ -1493,6 +1493,20 @@ npm run dev</code></pre>
                 <br><strong>Note:</strong> Only super admin accounts can access this dashboard.
             </div>
 
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="super-admin-home">Dashboard Home</button>
+                <button class="tab-btn" data-tab="super-admin-regions">Regions & Stores</button>
+                <button class="tab-btn" data-tab="super-admin-hubs">Supply Hubs</button>
+                <button class="tab-btn" data-tab="super-admin-users">User Management</button>
+                <button class="tab-btn" data-tab="super-admin-ai">AI Configuration</button>
+                <button class="tab-btn" data-tab="super-admin-reports">Reports & Analytics</button>
+                <button class="tab-btn" data-tab="super-admin-audit">Audit Logs</button>
+                <button class="tab-btn" data-tab="super-admin-network">Network Tests</button>
+                <button class="tab-btn" data-tab="super-admin-settings">System Settings</button>
+                <button class="tab-btn" data-tab="super-admin-help">Help Docs</button>
+            </div>
+
+            <div class="tab-pane active" id="super-admin-home">
             <h2>Dashboard Home</h2>
             <p>System-wide health and performance at a glance.</p>
             <ul>
@@ -1502,7 +1516,9 @@ npm run dev</code></pre>
                 <li><strong>Network Health:</strong> Status of database, cache (Redis), task queue (Celery), and external integrations (Stripe, Mapbox, AI services)</li>
                 <li><strong>7-Day Order Volume Chart:</strong> Trend across the entire network</li>
             </ul>
+            </div>
 
+            <div class="tab-pane" id="super-admin-regions">
             <h2>Regions & Stores</h2>
             <p>Manage the physical CodePop store network.</p>
             <ul>
@@ -1512,7 +1528,9 @@ npm run dev</code></pre>
                 <li><strong>Regional Map View:</strong> Visual representation of store locations by region</li>
                 <li><strong>7 Regions:</strong> A (Chicago), B (NJ), C (Logan UT), D (Dallas), E (Atlanta), F (Phoenix), G (Seattle)</li>
             </ul>
+            </div>
 
+            <div class="tab-pane" id="super-admin-hubs">
             <h2>Supply Hubs</h2>
             <p>Oversee the 7 regional supply hubs that distribute inventory to stores.</p>
             <ul>
@@ -1521,7 +1539,9 @@ npm run dev</code></pre>
                 <li><strong>Hub Inventory:</strong> Monitor syrup, soda, and add-in stock at each hub</li>
                 <li><strong>Supply Requests:</strong> Review and approve major requests from hubs or regions</li>
             </ul>
+            </div>
 
+            <div class="tab-pane" id="super-admin-users">
             <h2>User Management</h2>
             <p>Manage all users across the entire system.</p>
             <ul>
@@ -1531,7 +1551,9 @@ npm run dev</code></pre>
                 <li><strong>Enable/Disable Accounts:</strong> Toggle access for any user</li>
                 <li><strong>Delete Users:</strong> Remove accounts from the system</li>
             </ul>
+            </div>
 
+            <div class="tab-pane" id="super-admin-ai">
             <h2>AI Configuration</h2>
             <p>Tune the machine learning models that power CodePop's recommendations and automation.</p>
             <ul>
@@ -1540,7 +1562,9 @@ npm run dev</code></pre>
                 <li><strong>Forecasting AI:</strong> Tune supply demand prediction, inventory optimization, machine uptime forecasting</li>
                 <li><strong>Reset to Defaults:</strong> Revert any configuration to factory settings</li>
             </ul>
+            </div>
 
+            <div class="tab-pane" id="super-admin-reports">
             <h2>Reports & Analytics</h2>
             <p>Generate comprehensive reports across the entire network.</p>
             <ul>
@@ -1550,7 +1574,9 @@ npm run dev</code></pre>
                 <li><strong>Machine Uptime Report:</strong> Repair frequency, downtime duration, maintenance trends</li>
                 <li><strong>Export:</strong> Download reports as CSV or PDF for external analysis</li>
             </ul>
+            </div>
 
+            <div class="tab-pane" id="super-admin-audit">
             <h2>Audit Logs</h2>
             <p>Full system audit trail with advanced filtering.</p>
             <ul>
@@ -1560,7 +1586,29 @@ npm run dev</code></pre>
                 <li><strong>Action Type Filter:</strong> Search by category (user management, config changes, deletions, etc.)</li>
                 <li><strong>Export Logs:</strong> Download audit logs for compliance or investigation</li>
             </ul>
+            </div>
 
+            <div class="tab-pane" id="super-admin-network">
+            <h2>Network Tests</h2>
+            <p>This lets you run tests across the whole Codepop™ network, all hubs and stores, and checks to make sure all their systems are working.</p>
+            <p>These are the following tests you can run and what they do:</p>
+            <ul>
+                <li><strong>Health Check:</strong> Pings every server on the network to check if they're running</li>
+                <li><strong>Store Registry:</strong> Hubs check to make sure the stores under them can connect</li>
+                <li><strong>Heartbeat:</strong> Hubs ping the stores under them to check their status</li>
+                <li><strong>Cross-Store Login:</strong> Checks the if users can login in from different stores</li>
+                <li><strong>Cross-Region Login:</strong> Checks if users can login in when connecting to a store in a different region</li>
+                <li><strong>P2P User Sync:</strong> Updates user profiles across a hubs network</li>
+                <li><strong>Profile Propagation:</strong> Propagates user profiles across the a hubs network</li>
+                <li><strong>Revenue Aggregation:</strong> Gathers the revenue from every store in the network</li>
+                <li><strong>Auth Rejection:</strong> Makes sure hubs can't get information directly from stores not under them</li>
+            </ul>
+            <p></p>
+            <p>You can run all these tests individual by pushing the buttons with the respective names in the Test section or you can run them sequentially by pushing the <strong>Run All Tests</strong> at the top of the Test section.</p>
+            <p>After you run a test you'll get a report under the network model in the test results section showing everything that passed or failed.</p>
+            </div>
+
+            <div class="tab-pane" id="super-admin-settings">
             <h2>System Settings</h2>
             <p>Global configuration and operational toggles.</p>
             <ul>
@@ -1569,7 +1617,9 @@ npm run dev</code></pre>
                 <li><strong>Notification Thresholds:</strong> Set alerts for latency, inventory depletion, machine downtime</li>
                 <li><strong>Backup & Recovery:</strong> Configure automated database backups and restore points</li>
             </ul>
+            </div>
 
+            <div class="tab-pane" id="super-admin-help">
             <h2>Help Docs</h2>
             <p>Internal documentation and runbooks.</p>
             <ul>
@@ -1578,6 +1628,7 @@ npm run dev</code></pre>
                 <li>API documentation for integrations</li>
                 <li>Troubleshooting guides for common issues</li>
             </ul>
+            </div>
         </section>
 
         <!-- Logistics Manager Dashboard Section -->
