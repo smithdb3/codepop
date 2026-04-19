@@ -10,13 +10,13 @@ This report documents our testing strategy, implementation, and findings for the
 
 ## 1. Testing Philosophy
 
-We believe that effective testing must be **pragmatic and proportional**. We prioritize automated testing where deterministic behavior can be verified repeatedly without brittleness—particularly for unit tests of models, views, and permissions. Equally, we recognize that some testing scenarios—visual consistency, real-device compatibility, full user workflows—are better verified through manual testing and real device trials. Our goal is to maximize automation and reproducibility without over-engineering; a test should be written if it catches real bugs early, not to hit an arbitrary coverage percentage. We write tests incrementally as features are developed, allowing us to verify each piece before integration, reducing the cost of late-stage bug discovery.
+We believe that effective testing must be **pragmatic and proportional**. We prioritize automated testing where deterministic behavior can be verified repeatedly without brittleness—particularly for unit tests of models, views, and permissions. Equally, we recognize that some testing scenarios—visual consistency, real-device compatibility, full user workflows—are better verified through manual testing. Our goal is to maximize automation and reproducibility without over-engineering.
 
 ---
 
 ## 2. Testing Frameworks & Tools
 
-We employ a layered testing architecture using industry-standard frameworks chosen for their maturity, ease of integration, and our familiarity with them.
+We employ a layered testing architecture using industry-standard frameworks chosen for their maturity and ease of integration.
 
 
 | Testing Level                    | Framework / Tool                    | Language            | Scope                                              | Status                |
@@ -126,26 +126,76 @@ Frontend unit tests have **not been written** for either the mobile app (`codepo
 
 ---
 
-## 5. Integration Tests — Planned
+## 5. Integration Tests
 
-Integration tests verify that multiple components work together correctly across API, database, and external service boundaries. These tests are **planned but not yet implemented**.
+Integration tests verify that multiple components work together correctly across API, database, and external service boundaries. These tests simulate realistic multi-step workflows by hitting real API endpoints against a transactional test database, with external HTTP calls mocked.
 
-### Planned Integration Test Scenarios
+### Implementation Status
 
-**Auth Flow Integration:**  
-Register a new user → login → receive token → access protected endpoints with token → attempt access without token (should be denied).
+| Scenario | Test File | Status | Notes |
+|----------|-----------|--------|-------|
+| **Auth Flow Integration** | (planned) | ❌ Not implemented | Register → login → token → protected endpoint access |
+| **Order Lifecycle Integration** | (planned) | ❌ Not implemented | Create order → add drinks → payment intent creation |
+| **Celery Task Integration** | `test_tasks.py` | ✅ Implemented | `CeleryTaskTests`: cleanup, retry, heartbeat tasks tested |
+| **Visiting User Distributed Flow** | `test_distributed.py` | ✅ Implemented | `UserReplicationTests`: multi-store login with hub queries |
+| **Stripe Payment Integration** | `test_stripe.py` | ✅ Implemented | `StripePaymentTests`: payment intent flow with mocked Stripe SDK |
+| **Inter-Node Authentication** | `test_distributed.py` | ✅ Implemented | `InterNodeAuthTests`: shared-secret auth for store-hub communication |
 
-**Order Lifecycle Integration:**  
-Create an order → add drink to order → compute total → create Stripe payment intent → verify payment intent returned to frontend.
+### Implemented Integration Tests
 
-**Celery Task Integration:**  
-Create an expired `VisitingUserCache` entry → run `cleanup_expired_visiting_cache()` task → verify old entry removed from database.
+#### 1. Celery Task Integration (test_tasks.py — CeleryTaskTests)
+Tests async tasks in a synchronous context using `@override_settings(CELERY_TASK_ALWAYS_EAGER=True)`:
+- `test_cleanup_deletes_expired_cache()` — Verifies expired visiting user cache entries are removed
+- `test_cleanup_keeps_fresh_cache()` — Verifies active cache entries survive cleanup
+- `test_process_pending_success()` — Profile updates successfully sync to home store
+- `test_process_pending_retry_on_failure()` — Failed syncs trigger exponential backoff retry
+- `test_check_missed_heartbeats_marks_unreachable()` — Hub marks silent stores as unreachable
 
-**Visiting User Distributed Flow:**  
-User exists in Logan hub → user logs in at Atlanta store → Atlanta store queries Logan hub for profile → Atlanta store caches profile locally → user can order drinks using cached data.
+#### 2. Visiting User Distributed Flow (test_distributed.py — UserReplicationTests)
+Tests multi-store login with mocked inter-node HTTP calls:
+- `test_visiting_user_triggers_hub_lookup()` — Unknown user at store triggers hub query, caches profile, returns token
+- `test_home_store_unreachable_no_cache_returns_503()` — Hub reachable but home store down returns 503
 
-**Stripe Payment Integration:**  
-Mock Stripe API → create payment intent → verify response includes `client_secret` → verify Stripe SDK called with correct amount.
+#### 3. Stripe Payment Integration (test_stripe.py — StripePaymentTests)
+Tests payment intent creation with mocked Stripe SDK:
+- `test_stripe_config_returns_publishable_key()` — Public key endpoint accessible
+- `test_create_payment_intent()` — Payment intent creation returns `client_secret`
+- Mocks `stripe.PaymentIntent.create()` to avoid real API calls
+
+### Planned Integration Tests (To Be Implemented)
+
+#### Auth Flow Integration
+**Goal:** Register a new user → login → receive token → access protected endpoints
+
+**Test steps:**
+1. POST to `/backend/auth/register/` with email, password, preferences
+2. POST to `/backend/auth/login/` with credentials
+3. Extract token from response
+4. GET `/backend/users/me/` with token — should succeed (200)
+5. GET `/backend/users/me/` without token — should fail (401)
+
+**Expected outcomes:**
+- User created in database
+- Token generated and returned
+- Token grants access to protected endpoints
+- Missing token returns 401 Unauthorized
+
+#### Order Lifecycle Integration
+**Goal:** Create order → add drinks → compute total → create payment intent → verify response
+
+**Test steps:**
+1. Create authenticated user
+2. POST to `/backend/orders/` to create empty order
+3. POST to `/backend/orders/{id}/add_drink/` with drink_id to add item
+4. GET `/backend/orders/{id}/` — verify total price updated
+5. POST to `/backend/create-payment-intent/` with order_id and amount
+6. Verify response includes Stripe `client_secret`
+
+**Expected outcomes:**
+- Order created with `status='pending'`
+- Drink added; order total recalculated
+- Payment intent created via mocked Stripe
+- Frontend receives `client_secret` for client-side payment processing
 
 ---
 
