@@ -90,6 +90,60 @@ The following tables list the tasks each team member accomplished individually (
 | Drafted new Risks/Mitigation section of HLD                  | Brayden      | 30                |
 | Reviewed completed HLD and made edits where appropriate      | Brayden      | 120               |
 
+
+## **Sprint 3 Summary**
+
+#### Braden's Accomplishments (25 hours)
+Braden spent the majority of this sprint setting up and implementing the distributed system. It was definitely some of the most technically intensive but also most rewarding. I spent many hours setting up GCP VMs and a CI/CD pipeline that automatically ran unit tests and deployed to these VMs. I built a first implementation of the distributed system, which I then scrapped, took what I had learned from that, and built a new, better system. Once that was all complete and working, I built an HTML demo showing off its functionality. 
+
+| Task Description                                | Completed By | Time Taken (mins) |
+|-------------------------------------------------|--------------|-------------------|
+| Setting up GCP VMs                              | Braden       | 480               |
+| First implementation of distributed system      | Braden       | 480               |
+| Final implementation of distributed system      | Braden       | 480               |
+| Creating demo for distributed system            | Braden       | 60                |
+
+#### Barrett's Accomplishments (10.75 hours)
+
+Barrett took on the brunt of the UI design. He started by just doing some research on best UI design and working with Claude to design some guidelines for our app to follow. After having those guidelines, he designed the main homepage. He went through the rest of the app and made an abundant amount of UI changes to make it fit the style we were going for. 
+
+| Task Description                                | Completed By | Time Taken (mins) |
+|-------------------------------------------------|--------------|-------------------|
+| Make UI docs/research                           | Barrett      | 120               |
+| Make UI homepage                                | Barrett      | 195               |
+| All other UI changes                            | Barrett      | 330               |
+
+#### Brayden's Accomplishments (3 hours)
+
+Brayden worked on the database side of things for this sprint. He researched some of the existing models in the database and edited them to make the database more in line for what we were designing for the app. He also created some test data that we will use in the future. 
+
+| Task Description                                | Completed By | Time Taken (mins) |
+|-------------------------------------------------|--------------|-------------------|
+| Research existing CodePop backend database models | Brayden    | 60                |
+| Edit existing models                            | Brayden      | 60                |
+| Create test data propagation                    | Brayden      | 60                |
+
+#### Jordan's Accomplishments (11.5 hours)
+
+Jordan spent much of the sprint just trying to get the app runnable on his device. It was just roadblock after roadblock for him. However, he took on the implementation of Stripe and begun figuring that entire system out. He also worked on the customer service chatbot but did not finish that. 
+
+| Task Description                                | Completed By | Time Taken (mins) |
+|-------------------------------------------------|--------------|-------------------|
+| Begun implementation for Stripe API             | Jordan       | 180               |
+| Worked on customer service AI                   | Jordan       | 180               |
+| Worked on getting the app runnable on his device | Jordan      | 330               |
+
+#### Nathan's Accomplishments (8 hours)
+    
+Nathan focused heavily on the backend for this sprint, with his main priority being the schedule upload for the repair staff. In doing this, he adjusted some of the basic configurations of the backend. He moved on to other areas of the backend before completely finishing the CSV upload functionality. Communication was limited with Nathan this sprint and difficult to contact at times. 
+
+| Task Description                                | Completed By | Time Taken (mins) |
+|-------------------------------------------------|--------------|-------------------|
+| Project configurations                          | Nathan       | 120               |
+| Work on schedule upload                         | Nathan       | 180               |
+| Work on backend                                 | Nathan       | 180               |
+
+
 ## **CodePop Sprint 4 Summary & Meeting Minutes**
 
 **Sprint Dates:** March 25 – April 3
