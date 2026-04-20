@@ -568,10 +568,8 @@ stateDiagram-v2
 
 #### External Services
 - **Stripe**: Payment processing (PCI-DSS compliant; no raw card data stored)
-- **Mapbox**: Geolocation and proximity tracking
-- **Firebase Cloud Messaging (FCM)**: Cross-platform push notifications
-- **Dialogflow ES**: NLP-based customer service chatbot
-- **Gemini API**: AI-generated decorative graphics for app loading screens
+- **Google Maps**: Geolocation and proximity tracking
+- **Groq**: Customer service chatbot and AI drink creation
 
 ---
 
@@ -1029,9 +1027,9 @@ The CodePop interface is carefully designed to support both usability and access
 * Sign-Up Link
 * Error Messages - red error message at top of the screen
 
-  Additional Features (C): 
+  Additional Features (C): *(NOT IMPLEMENTED)*
 * Social Login (Google, Apple sign-in) 
-* "Remember Me" Checkbox
+* "Remember Me" Checkbox 
 * Biometric Login (Face ID / Fingerprint on mobile)
   * (React Native supports this)
 * Two-Factor Authentication (2FA)- accounts with saved payment info
@@ -1048,7 +1046,7 @@ The CodePop interface is carefully designed to support both usability and access
   * Error message if password weak: "Password must include uppercase, lowercase, number, and special character"
 * Confirm Password Input with Toggle
   * Error message if passwords don't match: "Passwords do not match"
-* Terms & Conditions Checkbox (Required to proceed)
+* Terms & Conditions Checkbox (Required to proceed) *(NOT IMPLEMENTED)*
   * Error message if unchecked: "You must accept the Terms & Conditions to continue"
   * Link to Terms and Privacy Policy (policy found in codepop/misc)
 * Error Messages
@@ -1056,13 +1054,13 @@ The CodePop interface is carefully designed to support both usability and access
 * Create Account Button
 * Sign-In Link ("Already have an account? Sign in")
 
-  Additional Features (C):
-* Social Login (Google, Apple sign-in)
-* Store Selection during Signup
+  Additional Features (C): 
+* Social Login (Google, Apple sign-in) *(NOT IMPLEMENTED)*
+* Store Selection during app load-up
   * Allows user to set home store for preferences and lazy replication
-* Preference Onboarding (skippable)
+* Preference Onboarding (skippable) *(NOT IMPLEMENTED)*
   * Ask simple preference questions (favorite flavors) to bootstrap AI recommendations
-* Email Verification Flow
+* Email Verification Flow *(NOT IMPLEMENTED)*
   * Send verification email post-signup
   * Show: "Check your email to verify your account"
   * "Resend verification email" button if not received
@@ -1070,9 +1068,9 @@ The CodePop interface is carefully designed to support both usability and access
 * Geolocation Permission Prompt
   * Ask post-signup, not during (reduces friction)
   * Explain: "We'll use this to find nearby CodePop locations"
-* Tutorial/Onboarding (skip button optional)
+* Tutorial/Onboarding (skip button optional) *(NOT IMPLEMENTED)*
   * Goes to a tutorial of how to use app after account verified and signed in
-* Password Requirements Display
+* Password Requirements Display *(NOT IMPLEMENTED)*
   * Show as user types: checkmarks next to each requirement as they're met
 
 **(M) Drink design page**
@@ -1120,7 +1118,7 @@ The CodePop interface is carefully designed to support both usability and access
     * Show estimated pickup time
     * Show total amount to be charged
   * (M) Payment Method Selection
-    * Stripe API used to take user payment information *(BACKEND NOT IMPLEMENTED)*
+    * Stripe API used to take user payment information
     * Radio buttons or tabs:
       - Credit/Debit Card
       - Apple Pay / Google Pay *(BACKEND NOT IMPLEMENTED)*
@@ -1143,11 +1141,11 @@ The CodePop interface is carefully designed to support both usability and access
   * (C) Input that says "make this order recurring"
   ---
   Geolocation/Timing
-  * (M) Visual Store Location *(BACKEND NOT IMPLEMENTED)*
+  * (M) Visual Store Location
     * Show selected store name prominently
     * (C) Small map preview showing store location
     * Store hours display
-  * (M) ETA/Timing Summary *(BACKEND NOT IMPLEMENTED)*
+  * (M) ETA/Timing Summary
     * If geolocation selected:
       * "Estimated pickup: 8 minutes from now"
       * Real-time ETA updates as user location changes
@@ -1279,9 +1277,9 @@ The CodePop interface is carefully designed to support both usability and access
 * (M) Update preferences
   * Soda, syrups, ice quantity.
 * (M) Settings
-  * (M) Set location for geolocation. *(BACKEND NOT IMPLEMENTED)*
+  * (M) Set location for geolocation.
   * (S) account settings
-    * (S) change email/password. *(BACKEND NOT IMPLEMENTED)*
+    * (S) change email/password.
     * (C) dark mode/light mode.
   * (C) Manage Recurring Orders
     * View all active recurring orders
@@ -1320,7 +1318,7 @@ Update Preferences
 ---
 Settings
 * (M) Settings organized in sections (tabs or accordion):
-* TAB 1: LOCATION & DELIVERY *(BACKEND NOT IMPLEMENTED)*
+* TAB 1: LOCATION & DELIVERY
   * (M) Primary Store Location
     - Map picker or address search
     - Shows store name, hours, address
@@ -1403,7 +1401,7 @@ Visual Design & UX
   * "Saved!" confirmation with checkmark
   * Error messages with retry button
   
-**(C) Rewards page**
+**(C) Rewards page** *(NOT IMPLEMENTED)*
 
 * Should this be included, there will be a section added to the nav bar called "Rewards":
   - "Home | Order | Cart | Rewards | Chat | Account"
@@ -1703,7 +1701,7 @@ Global Navigation & Context
   * Current user: "Technician Name" with region assignment
   * Quick support: Help icon, Manager contact button
   * Logout
-* (M) Regional Filter/Selector (Sticky)
+* (M) Regional Filter/Selector (Sticky) 
   * Assigned region display: "Assigned to: [Chicago]"
   * Shows: "X stores, Y machines" in selected region
 * (M) Breadcrumb Navigation
