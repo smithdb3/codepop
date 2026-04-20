@@ -84,11 +84,139 @@ The following tables list the tasks each team member accomplished individually (
 | Summarized requirements / decided on formatting for new HLD  | Brayden      | 60                |
 | Made five roles that covered HLD sections                    | Brayden      | 60                |
 | Researched extent of CodePop's testing strategy              | Brayden      | 30                |
-| Developed new testing stragegy that covers new features      | Brayden      | 30                |
+| Developed new testing strategy that covers new features      | Brayden      | 30                |
 | Drafted new testing strategy for HLD                         | Brayden      | 45                |
 | Reviewed the Risks/Mitigations section of HLD                | Brayden      | 40                |
 | Drafted new Risks/Mitigation section of HLD                  | Brayden      | 30                |
 | Reviewed completed HLD and made edits where appropriate      | Brayden      | 120               |
+
+
+# **Sprint 2**
+
+## Meetings 
+
+**Feb 20.** 
+- All members were present.
+- We talked about the plan for writing the LLD doc. Drafts by Wednesday complete your section by Friday.
+
+**Feb 25.** 
+- All members were present.
+- We talked about the prototype for Monday and what we were going to do. We decide to keep it small and do the geolocation feature. 
+
+**Feb 27.**
+- All members were present.
+- Ironed out the tasks we needed to do for the next 2 sprints.
+
+
+## Work Split
+We fist needed to break up the work in a way that played into everyone's strengths from the last sprint. Then we figured out how much the expected workload would be for each task and split the work up based on that.
+
+<table>
+  <tr>
+   <td>Team Member
+   </td>
+   <td>Previous Role
+   </td>
+   <td>Sections
+   </td>
+   <td>Reasoning
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Barrett</strong>
+   </td>
+   <td>Frontend/UI Lead
+   </td>
+   <td>User interfaces + Introduction
+   </td>
+   <td>UI section is his heaviest expertise area; Introduction is light and balances it
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Braden</strong>
+   </td>
+   <td>Database & Infrastructure Lead
+   </td>
+   <td>Database tables + System architecture
+   </td>
+   <td>Both align directly with his DB and infrastructure background
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Nathan</strong>
+   </td>
+   <td>Backend/Business Logic Lead
+   </td>
+   <td>Subsystems & UML + Security risks
+   </td>
+   <td>Modules documentation and security both map to his backend/logic expertise
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Jordan</strong>
+   </td>
+   <td>API/Integration Lead
+   </td>
+   <td>Programming languages/frameworks/APIs + Deployment plan
+   </td>
+   <td>API section is his core expertise; deployment involves integration concerns
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Brayden</strong>
+   </td>
+   <td>AI & QA Lead
+   </td>
+   <td>System performance + All Tasks Outline compilation
+   </td>
+   <td>Performance fits QA thinking; Brayden compiles and organizes everyone's task contributions into the All Tasks Outline
+   </td>
+  </tr>
+</table>
+
+## Tasks Done by Each Member
+
+Barret made sure that we would have a good plan going into the development sprints on how to update the UI. He also added to the geolocation prototype to make in line with the new UI.
+
+**Barrett:** 
+- Low level design doc- add suggestions/go deeper from HLD (8 hrs)
+    - 2 hours Feb 22
+    - .5 hours Feb 23
+    - 5.5 hours Feb 24
+- Create geolocation prototype Feb 25 (2.5 hrs)
+- Create geolocation prototype Feb 26 (1 hr)
+
+Braden wrote a detailed plan for how we would implement the decentralized network with the help of Claude. He also created the geolocation prototype we showed off at the end of sprint.
+
+**Braden:**
+- Wrote low level doc (7 hrs)
+- Made geolocation prototype (4 hrs)
+- Researched decentralized system and Google Could (3.5 hrs)
+
+Brayden did most of our testing research this sprint. He made sure we would have a plan heading into the final sprints of this project.
+
+**Brayden:**
+- Studied previous LLD (1 hr)
+- Researched/wrote system performance section (1hr)
+- Researched/wrote testing section (1hr)
+- Worked on prototype (1hr)
+
+Jordan figured out how we would implement our APIs in the development sprints. He also worked on own prototype that we didn't go with.
+
+**Jordan:** 
+- Looked at the previous LLD (1.25 hr)
+- Researched/ API like stripe mapbox dialogflow (2.5hr)
+- Wrote LLD API section (2.5hr)
+- Worked on a prototype that got scrap (1hr)
+- meeting (1hr)
+
+Nathan worked with Cluade to update the security and the modules sections of the low level doc. He also worked on a prototype that got scrapped.
+
+**Nathan**
+- Update sections of the LLD (7 hrs)
+- Worked on prototype (2 hrs)
+- sprint planning (4 hrs)
+- LLD setup (1 hr)
 
 
 ## **Sprint 3 Summary**
@@ -221,7 +349,7 @@ Nathan focused heavily on the backend for this sprint, with his main priority be
 
 **Setbacks & Blockers**
 
-* **Cross-Platform Discrepancies:** The most significant setback involved the Google Maps integration. While functional on iOS, geo locaton issues persisted on the Android build.  
+* **Cross-Platform Discrepancies:** The most significant setback involved the Google Maps integration. While functional on iOS, geo location issues persisted on the Android build.  
 * **Payment Gateway Issues:** Stripe integration encountered unexpected bugs on iOS. While the team successfully resolved this, the debugging process consumed a substantial amount of development time.
 
 **Tasks Pushed to Next Sprint**
@@ -231,71 +359,4 @@ Nathan focused heavily on the backend for this sprint, with his main priority be
 
 ---
 
-# **Sprint 2**
 
-## Summary
-We fist needed to break up the work in a way that played into everyones strengths from the last sprint. Then we figured out how much the expected workload would be for each task and 
-The work was split up based on what someone worked on in the previous sprint.
-
-<table>
-  <tr>
-   <td>Team Member
-   </td>
-   <td>Previous Role
-   </td>
-   <td>Sections
-   </td>
-   <td>Reasoning
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Barrett</strong>
-   </td>
-   <td>Frontend/UI Lead
-   </td>
-   <td>User interfaces + Introduction
-   </td>
-   <td>UI section is his heaviest expertise area; Introduction is light and balances it
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Braden</strong>
-   </td>
-   <td>Database & Infrastructure Lead
-   </td>
-   <td>Database tables + System architecture
-   </td>
-   <td>Both align directly with his DB and infrastructure background
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Nathan</strong>
-   </td>
-   <td>Backend/Business Logic Lead
-   </td>
-   <td>Subsystems & UML + Security risks
-   </td>
-   <td>Modules documentation and security both map to his backend/logic expertise
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Jordan</strong>
-   </td>
-   <td>API/Integration Lead
-   </td>
-   <td>Programming languages/frameworks/APIs + Deployment plan
-   </td>
-   <td>API section is his core expertise; deployment involves integration concerns
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Brayden</strong>
-   </td>
-   <td>AI & QA Lead
-   </td>
-   <td>System performance + All Tasks Outline compilation
-   </td>
-   <td>Performance fits QA thinking; Brayden compiles and organizes everyone's task contributions into the All Tasks Outline
-   </td>
-  </tr>
-</table>
