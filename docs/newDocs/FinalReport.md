@@ -299,6 +299,10 @@ Nathan focused heavily on the backend for this sprint, with his main priority be
 
 ### **Part 4.2: Sprint Worklog & Contributions**
 
+### How the Sprint Was Tackled
+
+To kick off the sprint, we outlined our deliverables and identified our primary objectives: integrating Stripe and Google Maps, enhancing the user app's front-end, and overhauling the dashboards. Since our previous sprint focused heavily on the backend and customer app, getting the dashboards fully functional and visually appealing was our largest undertaking this week. We divided the workload among our five team members, assigning sections based on prior experience with the codebase, individual skill sets, and time availability. A breakdown of each member's tasks and logged hours for this sprint is detailed below.
+
 **Barrett Smith (Total: 9 hrs)**
 
 * Stripe Integration (2 hrs) – **Completed**  
