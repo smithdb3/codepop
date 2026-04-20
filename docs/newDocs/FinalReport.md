@@ -90,3 +90,72 @@ The following tables list the tasks each team member accomplished individually (
 | Drafted new Risks/Mitigation section of HLD                  | Brayden      | 30                |
 | Reviewed completed HLD and made edits where appropriate      | Brayden      | 120               |
 
+
+# **Sprint 2**
+
+## Summary
+We fist needed to break up the work in a way that played into everyones strengths from the last sprint. Then we figured out how much the expected workload would be for each task and 
+The work was split up based on what someone worked on in the previous sprint.
+
+<table>
+  <tr>
+   <td>Team Member
+   </td>
+   <td>Previous Role
+   </td>
+   <td>Sections
+   </td>
+   <td>Reasoning
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Barrett</strong>
+   </td>
+   <td>Frontend/UI Lead
+   </td>
+   <td>User interfaces + Introduction
+   </td>
+   <td>UI section is his heaviest expertise area; Introduction is light and balances it
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Braden</strong>
+   </td>
+   <td>Database & Infrastructure Lead
+   </td>
+   <td>Database tables + System architecture
+   </td>
+   <td>Both align directly with his DB and infrastructure background
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Nathan</strong>
+   </td>
+   <td>Backend/Business Logic Lead
+   </td>
+   <td>Subsystems & UML + Security risks
+   </td>
+   <td>Modules documentation and security both map to his backend/logic expertise
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Jordan</strong>
+   </td>
+   <td>API/Integration Lead
+   </td>
+   <td>Programming languages/frameworks/APIs + Deployment plan
+   </td>
+   <td>API section is his core expertise; deployment involves integration concerns
+   </td>
+  </tr>
+  <tr>
+   <td><strong>Brayden</strong>
+   </td>
+   <td>AI & QA Lead
+   </td>
+   <td>System performance + All Tasks Outline compilation
+   </td>
+   <td>Performance fits QA thinking; Brayden compiles and organizes everyone's task contributions into the All Tasks Outline
+   </td>
+  </tr>
+</table>
