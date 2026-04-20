@@ -2,9 +2,9 @@
 
 
 
-# **Sprint 1 Summary**
+## **Sprint 1 Summary**
 
-## How The Sprint Was Tackled
+### How The Sprint Was Tackled
 
 We first discussed the format for the new HLD. We decided to divide it into 11 sections, similar to the previous exising HLD in the codebase made by the previous team. After breifly going over the previous HLD in a meeting, the team leader made five different roles, one for each team member, each covering 2-3 sections of the HLD:
 
@@ -18,12 +18,12 @@ We first discussed the format for the new HLD. We decided to divide it into 11 s
 
 Each team member then reviewed the existing content in their assigned sections of the previous HLD. We then all came together and discussed content and features that we wanted to keep, change, or get rid of in each section. The drafting process then begun. Once we began putting the finishing touches on the HLD, we came together to plan our prototype presentation using Figma. The team lead then reviewed the final HLD and submitted it. 
 
-## Tasks
+### Tasks
 
 The following tables list the tasks each team member accomplished individually (unless stated otherwise) throughout the sprint. There were no planned tasks that didn't get done because we only targeted the necessary challenges (getting each section of the HLD written out and planning our presentation). Any challenge tackled outside of that could be considered "extra work". The team accomplished everything we planned to do.
 
 
-### Barret's Accomplishments
+#### Barret's Accomplishments
 
 | Task Description                                     | Completed By | Time Taken (mins) |
 |------------------------------------------------------|--------------|-------------------|
@@ -38,7 +38,7 @@ The following tables list the tasks each team member accomplished individually (
 
 
 
-### Jordan's Accomplishments
+#### Jordan's Accomplishments
 
 
 | Task Description                                     | Completed By | Time Taken (mins) |
@@ -52,7 +52,7 @@ The following tables list the tasks each team member accomplished individually (
 
 
 
-### Nathan's Accomplishments
+#### Nathan's Accomplishments
 
 | Task Description                                     | Completed By | Time Taken (mins) |
 |------------------------------------------------------|--------------|-------------------|
@@ -65,7 +65,7 @@ The following tables list the tasks each team member accomplished individually (
 
 
 
-### Braden's Accomplishments
+#### Braden's Accomplishments
 
 | Task Description                                     | Completed By | Time Taken (mins) |
 |------------------------------------------------------|--------------|-------------------|
@@ -77,7 +77,7 @@ The following tables list the tasks each team member accomplished individually (
 
 
 
-### Brayden's Accomplishments
+#### Brayden's Accomplishments
 
 | Task Description                                             | Completed By | Time Taken (mins) |
 |--------------------------------------------------------------|--------------|-------------------|
