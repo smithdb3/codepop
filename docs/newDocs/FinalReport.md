@@ -90,7 +90,7 @@ The following tables list the tasks each team member accomplished individually (
 | Drafted new Risks/Mitigation section of HLD                  | Brayden      | 30                |
 | Reviewed completed HLD and made edits where appropriate      | Brayden      | 120               |
 
-**CodePop Sprint 4 Summary & Meeting Minutes**
+## **CodePop Sprint 4 Summary & Meeting Minutes**
 
 **Sprint Dates:** March 25 – April 3
 ---
