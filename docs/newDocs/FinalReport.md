@@ -90,3 +90,89 @@ The following tables list the tasks each team member accomplished individually (
 | Drafted new Risks/Mitigation section of HLD                  | Brayden      | 30                |
 | Reviewed completed HLD and made edits where appropriate      | Brayden      | 120               |
 
+**CodePop Sprint 4 Summary & Meeting Minutes**
+
+**Sprint Dates:** March 25 – April 3
+---
+
+### **Part 4.1: Meeting Minutes**
+
+* **March 25**  
+  * **Attendees:** Barrett Smith, Braden Peterson, Nathan Haight  
+  * **Topics Covered:** Stripe integration, Google Maps implementation, and Dashboard UI planning.  
+* **March 27**  
+  * **Attendees:** Barrett Smith, Braden Peterson, Nathan Haight, Brayden Brimhall  
+  * **Topics Covered:** Dashboard logic and UI refinement, Stripe, and Google Maps progress.  
+* **March 30**  
+  * **Attendees:** Barrett Smith, Braden Peterson, Nathan Haight, Brayden Brimhall  
+  * **Topics Covered:** User post-checkout flow, continued work on Dashboard logic/UI, Stripe, and Google Maps.  
+* **April 1**  
+  * **Attendees:** Barrett Smith, Braden Peterson, Nathan Haight, Brayden Brimhall  
+  * **Topics Covered:** Drink naming conventions, active debugging sessions, and test data propagation.  
+* **April 3**  
+  * **Attendees:** Barrett Smith, Braden Peterson, Nathan Haight  
+  * **Topics Covered:** App and dashboard presentation strategy, bug tracking, Dashboard UI, seasonal offerings, and recurring orders.
+
+---
+
+### **Part 4.2: Sprint Worklog & Contributions**
+
+**Barrett Smith (Total: 9 hrs)**
+
+* Stripe Integration (2 hrs) – **Completed**  
+* Admin/Super Admin User Management (1 hr) – **Completed**  
+* Seasonal Drinks Logic (1 hr) – **Completed**  
+* Recurring Orders (1.5 hrs) – **Completed**  
+* Order Convenience Features (1 hr) – **Completed**  
+* Drink Feedback UI (1.5 hrs) – **Completed**  
+* Minor App Improvements (1 hr) – **Completed**  
+* Drink Naming Conventions (1 hr) – **Completed**
+
+**Braden Peterson (Total: 10.5 hrs)**
+
+* Integrated Drink Suggestion AI (2 hrs) – **Completed**  
+* Integrated Chatbot with AI (1 hr) – **Completed**  
+* Created Saved Drinks Functionality (3 hrs) – **Completed**  
+* Fixed Token Exchange between VMs (1 hr) – **Completed**  
+* Adjusted User Post-Checkout Flow (2 hrs) – **Completed**  
+* Improved UI Between Tabs (1.5 hrs) – **Completed**
+
+**Nathan Haight (Total: 9.5 hrs)**
+
+* Creating Endpoints (1.5 hrs) – **Completed**  
+* Project Setup & Debugging (2 hrs) – **Completed**  
+* Scheduling Frontend (2.5 hrs) – **Completed**  
+* Scheduling Backend (2 hrs) – **Completed**  
+* Frontend API Setup (1.5 hrs) – **Completed**
+
+**Brayden Brimhall (Total: 7.5 hrs)**
+
+* Test Data Propagation & Debugging (1.5 hrs) – **Completed**  
+* Chatbot AI Dependency Experimentation (1.5 hrs) – **Completed**  
+* Repair Staff Dashboard Models (1 hr) – **Completed**  
+* Connecting Repair Staff to Backend (1.5 hrs) – **Completed**  
+* Addressing Merge Conflicts (2 hrs) – **Completed**
+
+**Jordan (Total: 8 hrs)**
+
+* Stripe Integration (2 hrs) – **Completed**  
+* Google Maps Integration (2 hrs) – **Completed**  
+* Manager Dashboard (2 hrs) – **Completed**  
+* Logistics Dashboard (1 hr) – **Completed**  
+* Android App Bug Fixing (1 hr) – **Not Completed** *(Pushed to next sprint)*
+
+---
+
+### **Part 4.3: Sprint Retrospective**
+
+**Setbacks & Blockers**
+
+* **Cross-Platform Discrepancies:** The most significant setback involved the Google Maps integration. While functional on iOS, geo locaton issues persisted on the Android build.  
+* **Payment Gateway Issues:** Stripe integration encountered unexpected bugs on iOS. While the team successfully resolved this, the debugging process consumed a substantial amount of development time.
+
+**Tasks Pushed to Next Sprint**
+
+* **Android Google Maps Integration:** Pushed back due to time constraints.  
+* **Process Improvement Note:** The primary root cause for running out of time was delaying our testing phase until the end of the sprint. Moving forward, the team will implement continuous "test-as-we-go" practices to catch cross-platform bugs earlier in the pipeline.
+
+---
