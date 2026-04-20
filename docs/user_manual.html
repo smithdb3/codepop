@@ -583,6 +583,18 @@
             display: flex;
         }
 
+        /* Feature Presentation Links */
+        .feature-link {
+            color: var(--secondary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .feature-link:hover {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+
         /* Footer */
         footer {
             background-color: var(--text);
@@ -747,6 +759,7 @@
             <a href="#troubleshooting" class="nav-link">Troubleshooting</a>
             <a href="#faq" class="nav-link">FAQs</a>
             <a href="#contact" class="nav-link">Contact</a>
+            <a href="#feature-presentation" class="nav-link">Feature Presentation</a>
         </div>
     </aside>
 
@@ -1092,7 +1105,7 @@ npm run dev</code></pre>
                 </div>
             </div>
 
-            <h2>Building a Custom Drink</h2>
+            <h2 id="customer-build-drink">Building a Custom Drink</h2>
             <p>
                 The drink builder is where creativity meets technology. Choose your base, add flavors and mix-ins,
                 and let AI suggest unexpected combinations.
@@ -1211,7 +1224,7 @@ npm run dev</code></pre>
                 </div>
             </div>
 
-            <h2>Recurring Orders</h2>
+            <h2 id="customer-recurring">Recurring Orders</h2>
             <p>
                 Set up recurring orders to have your favorite drinks automatically delivered on a schedule.
                 Before you pay, toggle the <strong>"Make this a recurring order"</strong> option to get started.
@@ -1319,7 +1332,7 @@ npm run dev</code></pre>
                 <li>Use the edit or delete buttons to rename or delete a saved drink</li>
             </ul>
 
-            <h2>Preferences & Account Settings</h2>
+            <h2 id="customer-preferences">Preferences & Account Settings</h2>
             <p>Customize your CodePop experience in the <strong>"Profile"</strong> tab.</p>
             <ul>
                 <li><strong>Store Location:</strong> Set your preferred CodePop location</li>
@@ -2761,6 +2774,55 @@ npm run dev</code></pre>
                 Use the in-app chat or contact your administrator instead.
             </div>
         </section>
+
+        <!-- Feature Presentation Section -->
+        <section id="feature-presentation">
+            <h1>Feature Presentation</h1>
+            <p>Quick links to key feature walkthroughs for each role.</p>
+
+            <div class="grid-2">
+                <!-- Customer card -->
+                <div class="card">
+                    <span class="badge badge-customer">Customer</span>
+                    <h2>Customer Tasks</h2>
+                    <ul>
+                        <li><a href="#customer-preferences" class="feature-link">Change store to non-default location</a></li>
+                        <li><a href="#customer-build-drink" class="feature-link">Create and order a drink with the AI</a></li>
+                        <li><a href="#customer-recurring" class="feature-link">Set up a recurring order</a></li>
+                    </ul>
+                </div>
+
+                <!-- Super Admin card -->
+                <div class="card">
+                    <span class="badge badge-super-admin">Super Admin</span>
+                    <h2>Super Admin Tasks</h2>
+                    <ul>
+                        <li><a href="#super-admin-network" class="feature-link tab-link" data-section="super-admin">Check network health via Network Tests dashboard</a></li>
+                    </ul>
+                </div>
+
+                <!-- Manager / Logistics card -->
+                <div class="card">
+                    <span class="badge badge-manager">Manager</span>
+                    <span class="badge badge-logistics">Logistics Manager</span>
+                    <h2>Manager & Logistics Tasks</h2>
+                    <ul>
+                        <li><a href="#manager-supply" class="feature-link tab-link" data-section="manager">Make a supply request (Manager)</a></li>
+                        <li><a href="#logistics-supply" class="feature-link tab-link" data-section="logistics">Approve a supply request (Logistics Manager)</a></li>
+                    </ul>
+                </div>
+
+                <!-- Repair Staff card -->
+                <div class="card">
+                    <span class="badge badge-repair">Repair Staff</span>
+                    <h2>Repair Staff Tasks</h2>
+                    <ul>
+                        <li><a href="#repair-schedule" class="feature-link tab-link" data-section="repair">Upload CSV schedule (codepop_schedule.csv)</a></li>
+                        <li><a href="#repair-machines" class="feature-link tab-link" data-section="repair">Start and finish a machine repair</a></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- Back to Top Button -->
@@ -2854,6 +2916,31 @@ npm run dev</code></pre>
                 // Add active to clicked button and corresponding pane
                 btn.classList.add('active');
                 document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Feature Presentation: activate tab and scroll to section when clicking tab-links
+        document.querySelectorAll('.tab-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const tabId = this.getAttribute('href').substring(1); // e.g. "manager-supply"
+                const sectionId = this.getAttribute('data-section');  // e.g. "manager"
+                const section = document.getElementById(sectionId);
+                const tabBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+                const tabPane = document.getElementById(tabId);
+
+                if (tabBtn && tabPane && section) {
+                    // Deactivate all tabs in that section
+                    section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    section.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                    // Activate target tab
+                    tabBtn.classList.add('active');
+                    tabPane.classList.add('active');
+                }
+                // Scroll to section
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             });
         });
     </script>
