@@ -46,12 +46,11 @@ CodePop operates as a nationwide franchise using a **federated mesh architecture
 
 * **Core Platform:** Initial development focuses on **Android** due to ease of testing, followed by iOS.  
 * **UX Design:** Optimized for **Portrait Mode** for one-handed use.  
-* **Accessibility:** Large touchscreen targets and buttons to eliminate the need for zooming. Gestures are excluded from v1 to ensure reliability.
+* **Accessibility:** Large touchscreen targets and buttons to eliminate the need for zooming.
 
 #### **Web & Desktop**
 
-* **Mobile Web (M):** A responsive version of the app for browser-based access.  
-* **Laptop/Desktop (M):** A responsive website that booth customers and administrators can use..
+* **Laptop/Desktop (M):** A responsive website that administrators can use.
 
 ## **3. Architecture Design**
 
@@ -76,8 +75,6 @@ CodePop will employ a **federated mesh architecture** where each physical store 
   - **Hub for Discovery**: When a store needs to locate a user's home store, it queries its regional hub. For same-region users, the hub finds them directly. For cross-region users, the hub broadcasts to all other hubs to locate the user.
   - **Direct Store-to-Store Communication**: Once a store locates a user's home store, it communicates directly with the home store (peer-to-peer) to fetch or update user data, bypassing the hub
   - **Hub for Logistics**: Supply requests, revenue aggregation, and machine status reporting flow through the hub
-
-* **Fault Isolation**: Failures or outages at one store or hub do not prevent other stores from continuing normal operations. The system gracefully handles network partitions and temporary connectivity loss.
 
 * **Local-First Data**: Each store maintains its own operational data (orders, inventory, revenue, machine status) in its local database. Only user-related data (accounts, preferences, favorites) synchronizes across the network on-demand.
 
@@ -166,8 +163,6 @@ The React Native mobile app uses device geolocation to discover and connect to n
 │ selected store endpoint  │
 └──────────────────────────┘
 ```
-
-If the selected store becomes unavailable (health check fails), the app automatically switches to another nearby operational store.
 
 **Lazy Replication Model for User Data:**
 
@@ -326,7 +321,7 @@ When a user visits a store within the same region as their home store:
 
 ### **Profile Update Propagation**
 
-When a user updates their profile (preferences, favorites, account details) at a visiting store:
+When a user updates their profile (favorites, account details) at a visiting store:
 
 1. **Optimistic UI Update**: The change is applied and shown immediately in the app's UI
 2. **Propagation to Home Store**: The update is sent directly to the user's home store (peer-to-peer) for permanent storage
@@ -335,8 +330,7 @@ When a user updates their profile (preferences, favorites, account details) at a
    - The change is queued locally in encrypted storage on the visiting store
    - The visiting store retries delivery with exponential backoff (1s, 2s, 4s, 8s, ...)
    - The queue persists across container restarts
-5. **Notification on Failure**: If delivery ultimately fails after the maximum retry period, the user is notified in the app
-6. **Cache Consistency**: Once the home store confirms the change, the visiting store updates its local cache with the confirmed values
+5. **Cache Consistency**: Once the home store confirms the change, the visiting store updates its local cache with the confirmed values
 
 ---
 
@@ -459,8 +453,8 @@ Each robotic drink machine tracks its operational status through a state machine
 
 **Frontend: React Native with Expo**
 - Cross-platform mobile app for iOS and Android
+- Web application for administrator dashboards
 - Geolocation-based store discovery
-- Offline capability for menu browsing
 - Stripe SDK integration for payments
 
 **Backend: Django + Django REST Framework**
@@ -472,7 +466,6 @@ Each robotic drink machine tracks its operational status through a state machine
 **Database: PostgreSQL (Database-per-Store Architecture)**
 - Independent PostgreSQL instance at each location
 - Local data ownership with fault isolation
-- JSONB support for flexible data structures
 - Eventual consistency for cross-store data
 
 **Asynchronous Processing: Celery + Redis**
@@ -482,11 +475,8 @@ Each robotic drink machine tracks its operational status through a state machine
 - Built-in retry logic for transient network failures
 
 **Artificial Intelligence:**
-- **Drink Recommendations**: Machine learning using scikit-learn for personalized suggestions
-- **Inventory Forecasting**: Time-series prediction for automated restocking
-- **Repair Scheduling**: Optimization algorithms for technician routing
-- **Customer Service Chatbot**: NLP conversational AI using HuggingFace transformers
-- **Image Generation**: Gemini API for decorative app graphics
+- **Drink Recommendations**: Drink suggestions generated using Groq AI
+- **Customer Service Chatbot**: Conversational AI using Groq AI
 
 **Deployment**
 
@@ -501,13 +491,12 @@ CodePop will be deployed using **Google Cloud Platform (GCP)** to support the fe
 * **User Management Module:** Manages customer profiles, authentication, and user interactions.  
   * Responsibilities  
     * User registration and login  
-      * Email confirmation (Django)  
     * Profile management  
-    * Preferences and order history  
+    * Order history  
   * Components  
     * User service: Handles user data storage and retrieval  
     * Authentication service: Manages login, sessions, and secure password management  
-    * Recommendation service: Manages preferences and order history  
+    * Recommendation service: Manages order history  
 
 * **Soda Catalog Module:** Manages the inventory of soda products and custom drink options.  
   * Responsibilities  
@@ -536,18 +525,17 @@ CodePop will be deployed using **Google Cloud Platform (GCP)** to support the fe
     * Improve recommendations over time  
     * Generate random product suggestions  
   * Components  
-    * Data Analysis Service: Analyzes user data and preferences for insights  
-    * AI Model: Generates recommendations based on past behavior and trends
+    * AI Model: Generates drink recommendations
 
 * **Supply Chain module:** Helps the admins and logistic managers keep track of supplies both in their area and the entire country
 
 - Responsibilities
     - Supplies requests
-    - Optimal routing
+    - Routing
     - Report creation
 - Components
     - Supply request: Creates and Handles requests for products
-    - Routing: Ensures that products are shipped in an optimal way
+    - Routing: Ensures that products are shipped
     - Reporting: Creates a report for users so they can hav a at a glance view of their region
     - Order conformation: Lets admins approve or deny orders
 
@@ -561,14 +549,12 @@ CodePop will be deployed using **Google Cloud Platform (GCP)** to support the fe
     - Status updater: Changes a machines status to reflect how operational it is
     - Machine database: Holds every machine the company need to keep track of
 
-* **Logistics AI module:** The AI that identifies patterns in teh supply chain
+* **Logistics module:** 
 
 - Responsibilities
     - Read CSV files
-    - Analyze supply chain
 - Components
     - CSV upload: A way to upload a CSV file 
-    - AI analyze: Looks at the CSV file to try and find patterns
 
 * **Inter-Node Communication Module (P2P)** Handle how servers communicate to each other to coordinate
 
@@ -618,7 +604,6 @@ The CodePop data model supports distributed operations across multiple stores wi
 - **UserProfile**: Replication metadata and preferred store tracking
 - **UserRole**: Role-based access control with store/region scope
   - Roles: Customer, Manager, Admin, Logistics Manager, Repair Staff, Super Admin
-- **Preference**: User flavor preferences for AI drink recommendations (replicated with user)
 
 **Product & Ordering:**
 - **Drink**: Customizable drink recipes with syrups, sodas, and add-ins
@@ -679,19 +664,14 @@ The CodePop data model supports distributed operations across multiple stores wi
                 │                ▼            │
                 │         ┌──────────┐        │
                 └─────────┤   User   ├────────┘
-                          └────┬─────┘
-                               │ 1:N
-                               ▼
-                         ┌──────────────┐
-                         │  Preference  │
-                         └──────────────┘
+                          └──────────┘
+
 ```
 
 **Key Relationships:**
 
 | Relationship | Type | Description |
 |--------------|------|-------------|
-| User → Preference | One-to-Many | User has multiple flavor preferences |
 | User → Order | One-to-Many | User can place multiple orders |
 | User → UserRole | One-to-Many | User can have multiple roles (e.g., manager of Store A, admin of Store B) |
 | User → MaintenanceLog | One-to-Many | Repair staff logs multiple service activities |
@@ -752,10 +732,6 @@ CodePop uses a **database-per-store architecture** where each store and hub oper
   - In transit: HTTPS/TLS 1.3 for all client and inter-node communication
 - **Payment Security**: No raw credit card storage; Stripe handles all payment data (PCI-DSS compliant)
 
-**Backup Strategy:**
-- Daily full backups + hourly incrementals
-- 30-day retention with off-site storage
-- Recovery: Restore from backup + re-sync replicated data from peer nodes
 
 ## **6\. Integration Points (External Interfaces)**
 
@@ -789,12 +765,11 @@ This section describes how CodePop integrates with external services and APIs to
 
 #### **Geolocation and Fulfillment**
 
-This subsystem uses Mapbox Geolocation API to track customer proximity and optimize drink preparation timing, ensuring beverages are freshly made when customers arrive.
+This subsystem uses Google Maps API to track customer proximity and optimize drink preparation timing, ensuring beverages are freshly made when customers arrive.
 
 * **User Location Prompt (M):** Requests GPS permission post-payment to share user location with Mapbox for tracking.
-* **Proximity Calculation (M):** Sends user's real-time location to Mapbox, which calculates distance and ETA to the store. Backend uses this data to determine when to trigger drink preparation.
 * **Manual Override (M):** Allows users without GPS access to manually signal arrival, triggering preparation immediately instead of relying on Mapbox tracking.
-* **Scheduled Orders (M):** Bypasses Mapbox proximity tracking; preparation is scheduled for a specific time rather than triggered by user location.
+* **Scheduled Orders (M):** Preparation is scheduled for a specific time.
 
 #### **Machine & Inventory Management**
 
@@ -802,16 +777,14 @@ Internal system that monitors inventory levels and machine health using AI inter
 
 * **Real-Time Monitoring (M):** Tracks ingredient depletion and alerts when thresholds are reached.
 * **Maintenance Logs (M):** Digital record of machine service history accessible to managers for maintenance scheduling.
-* **Automated Resupply (M):** Triggers restock orders when inventory falls below thresholds.
-* **AI Forecasting (M):** Analyzes inventory trends to predict future demand and optimize restocking schedules proactively.
 
 #### **AI & Engagement**
 
 AI-powered recommendation and support features integrated with customer-facing systems.
 
 * **"Surprise Me" (M):** AI generates drink recommendations based on user preferences and order history, displayed in the mobile app for user selection.
-* **Estimated Time (ETA) Engine (M):** Calculates drink prep time and displays it to users; integrates with Mapbox proximity data to optimize start time.
-* **CSV Ingestion (M):** Allows logistics managers to upload supply and machine data via the admin portal for AI analysis of patterns and forecasting.
+* **Estimated Time (ETA) Engine (M):** Calculates drink prep time and displays it to users; integrates with Google Maps proximity data to optimize start time.
+* **CSV Ingestion (M):** Allows logistics managers to upload supply and machine data via the admin portal.
 
 
 ## **7. User Interface (UI) Design Overview**
@@ -851,8 +824,8 @@ High-level wireframes will define layout and hierarchy for key screens, includin
 - **Background:** `#F9FAFB`  
 - **Surface:** `#FFFFFF`  
 - **Text:** `#222831`  
-<img src="misc/UI_color_palette.jpeg" width="600px" />
-<img src="misc/color_palette_UI_example.jpeg" width="600px" />
+<img src="/misc/UI_color_palette.jpeg" width="600px" />
+<img src="/misc/color_palette_UI_example.jpeg" width="600px" />
 
 The palette supports strong contrast, readability, and a cohesive visual identity.
 
@@ -1050,17 +1023,17 @@ Overview of how users will navigate the app. Pages will not be more than 2-3 cli
         <img src="misc/tonic.png" width="300px"/>
 
   * UI diagrams:  
-  <img src="misc/UI_diagram_1.jpeg" width="200px"/>
-  <img src="misc/UI_diagram_2.jpeg" width="200px"/>
-  <img src="misc/UI_diagram_3.jpeg" width="200px"/>
-  <img src="misc/UI_diagram_4.jpeg" width="200px"/>
-  <img src="misc/UI_diagram_5.jpeg" width="200px"/>
-  <img src="misc/UI_diagram_6.jpeg" width="200px"/>
-  <img src="misc/UI_diagram_7.jpeg" width="200px"/>
-  <img src="misc/UI_diagram_8.jpeg" width="200px"/>
-  <img src="misc/UI_diagram_9.jpeg" width="200px"/>
-  <img src="misc/UI_diagram_10.jpeg" width="200px"/>
-  <img src="misc/UI_diagram_11.jpeg" width="200px"/>
+  <img src="../misc/UI_diagram_1.jpeg" width="200px"/>
+  <img src="../misc/UI_diagram_2.jpeg" width="200px"/>
+  <img src="../misc/UI_diagram_3.jpeg" width="200px"/>
+  <img src="../misc/UI_diagram_4.jpeg" width="200px"/>
+  <img src="../misc/UI_diagram_5.jpeg" width="200px"/>
+  <img src="../misc/UI_diagram_6.jpeg" width="200px"/>
+  <img src="../misc/UI_diagram_7.jpeg" width="200px"/>
+  <img src="../misc/UI_diagram_8.jpeg" width="200px"/>
+  <img src="../misc/UI_diagram_9.jpeg" width="200px"/>
+  <img src="../misc/UI_diagram_10.jpeg" width="200px"/>
+  <img src="../misc/UI_diagram_11.jpeg" width="200px"/>
 
 ##  **8\. Input and Output (I/O)**
 
@@ -1076,7 +1049,7 @@ Note: Much of this section may be a repeat of what has already been documented, 
   * Payment Method
   * Customer Complaints
 
-* **Geolocation (Mapbox)**
+* **Geolocation (Google Maps)**
   * Distance to store location
   * User location data when opted in
   * If user does not consent to geolocation, an "I'm ready" button or a set time will be input by the user instead
@@ -1086,7 +1059,6 @@ Note: Much of this section may be a repeat of what has already been documented, 
   * Confirmation that payment transaction was successful
 
 * **AI Inputs**
-  * User preferences sent to recommendation engine
   * Customer complaints sent to chatbot
   * AI drink results with user confirmation or regeneration requests
   * User ratings and feedback
@@ -1102,13 +1074,8 @@ Note: Much of this section may be a repeat of what has already been documented, 
 
 ### **Output**
 
-* **Notifications**
-  * Push notifications for order status updates
-  * Email notifications for sign-up confirmation
-  * "Drink Ready" alerts when order is prepared
-  * Event notifications (holiday, seasonal menu changes, birthday offers, etc.)
 
-* **Geolocation (Mapbox)**
+* **Geolocation (Google Maps)**
   * Real-time location tracking once user has given consent
   * Distance calculations to nearby CodePop stores
   * Store location data for user ordering
@@ -1118,10 +1085,9 @@ Note: Much of this section may be a repeat of what has already been documented, 
   * Order processing trigger upon successful payment
 
 * **AI Outputs**
-  * Personalized drink recommendations based on user preferences
+  * AI-generated drink recommendations
   * AI-generated chatbot responses to customer complaints
   * AI drink suggestions with option to confirm or regenerate
-  * AI-powered supply forecasts and analytics for repair staff and logistics managers
 
 * **UI Output**
   * Visual display of app pages and screens based on user navigation
@@ -1138,8 +1104,8 @@ Note: Much of this section may be a repeat of what has already been documented, 
 
 | Category | Inputs | Outputs |
 | :---- | :---- | :---- |
-| **User Flow** | **Preferences, Payment, GPS Data, Complaints.** | **Push Notifications, "Drink Ready" alerts, AI Suggestions.** |
-| **Logistics** | **CSV Supply Files, Regional Sales, Threshold Alerts.** | **Automated Supply Requests, Hub Email Alerts.** |
+| **User Flow** | **Payment, GPS Data, Complaints.** | **"Drink Ready" alerts, AI Suggestions.** |
+| **Logistics** | **CSV Supply Files, Regional Sales, Threshold Alerts.** | **Supply Requests, Hub Email Alerts.** |
 | **Maintenance** | **Repair Logs, Machine Status Updates, CSV Seeds.** | **Maintenance Dashboards, Fault Alerts to Hubs.** |
 
 ## **9\. Security and Privacy**
@@ -1208,7 +1174,6 @@ Unit tests provide automated, repeatable verification of individual components. 
 
 | Test Suite | What's Tested | Key Test Cases |
 |------------|---------------|----------------|
-| **PreferenceTests** | User preference CRUD operations | Get/create/delete preferences, validate invalid values |
 | **DrinkTests** | Drink catalog and custom drinks | CRUD operations, Ice/Size validation, user favorites |
 | **InventoryTests** | Stock management | Update quantities, out-of-stock handling, low-stock warnings |
 | **NotificationTests** | User notifications | Create/filter/delete notifications, time-based filtering, user isolation |
@@ -1305,10 +1270,8 @@ This section identifies potential risks across technical, security, operational,
   - Encrypt geolocation data in transit (HTTPS/TLS 1.3)
   - Hash/encrypt geolocation data at rest in database
   - Access geolocation data only during active order tracking (not continuous background tracking)
-  - Implement strict access controls (only order service can read location)
   - Users can opt out of geolocation entirely (fallback to manual time selection)
   - Display clear privacy notice explaining geolocation usage
-  - Delete geolocation data after order completion (retention: 1 hour max)
 
 #### **Payment Information Security**
 - **Risk:** Payment data breach could result in financial loss for customers and legal liability for CodePop.
@@ -1340,11 +1303,6 @@ This section identifies potential risks across technical, security, operational,
     - Limit input length (max 500 chars for chatbot, max 20 preferences)
   - **Output Validation:**
     - Ensure chatbot responses don't leak user data or internal system information
-  - **Model Isolation:**
-    - Run AI models in isolated environment (separate process or container)
-    - Limit AI model access to database (read-only access to preferences and drinks)
-  - **Monitoring:**
-    - Log all AI interactions for audit trail
 
 #### **Allergen Information Accuracy**
 - **Risk:** Incorrect or missing allergen information could cause allergic reactions, resulting in bodily harm, legal liability, and reputational damage.
@@ -1366,6 +1324,5 @@ This section identifies potential risks across technical, security, operational,
     - Display prominent warning for AI-generated drinks: "This drink was created by artificial intelligence. Please review all ingredients and allergen information before ordering. CodePop is not responsible for allergic reactions or dissatisfaction with AI-generated drinks."
   - **Human Oversight:**
     - Implement "flag for review" feature (users can report dangerous AI recommendations)
-
 
 This testing and risk management strategy ensures CodePop is reliable, secure, and resilient as it scales from a single-store prototype to a nationwide distributed system.
