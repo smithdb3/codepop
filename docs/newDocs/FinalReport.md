@@ -1,5 +1,121 @@
 # Final Report
 
+## **Sprint 0 Summary**
+
+### How The Sprint Was Tackled
+
+- Make group chat/coordinate days to meet  
+- Setting expectations/making plans to meet them  
+- Timeline of when we want to accomplish tasks  
+- Set goals of having our own requirements doc, understanding the code base very well, understanding the project requirements very well, and having the app running  
+- Split up the work  
+- Progress/clean/organized repo  
+- Format the requirements document  
+- Use case diagrams  
+- Fix their git repos  
+
+---
+
+### Tasks
+
+The following tables list the tasks each team member accomplished throughout the sprint.
+
+---
+
+#### Understanding the Code Base
+
+| Team Member | Time Spent | Completed |
+|------------|-----------|----------|
+| Barrett    | 30 mins   | ✅ |
+| Braden     | 1.5 hrs   | ✅ |
+| Brayden    | 1 hr      | ✅ |
+| Nathan     | 2 hrs     | ✅ |
+| Jordan     | 1.5 hours | ✅ |
+
+---
+
+#### Understanding the Project Requirements
+
+| Team Member | Time Spent | Completed |
+|------------|-----------|----------|
+| Barrett    | 1 hour    | ✅ |
+| Braden     | 1.5 hrs   | ✅ |
+| Brayden    | 1 hr      | ✅ |
+| Nathan     | 1.5 hrs   | ✅ |
+| Jordan     | 1.5 hours | ✅ |
+
+---
+
+#### Having the App Running
+
+| Team Member | Time Spent | Completed |
+|------------|-----------|----------|
+| Barrett    | 2 hours    | ✅ |
+| Braden     | 2 hrs      | ✅ |
+| Brayden    | 2 hrs      | ✅ |
+| Nathan     | 2 hrs      | ✅ |
+| Jordan     | 2.25 hours | ✅ |
+
+---
+
+#### Summarizing the Original Requirements
+
+| Team Member | Time Spent | Completed |
+|------------|-----------|----------|
+| Barrett    | 1.5 hours | ✅ |
+| Braden     | 1 hrs     | ✅ |
+| Brayden    | 1 hr      | ✅ |
+| Nathan     | 1 hr      | ✅ |
+| Jordan     | 1.5 hours | ✅ |
+
+---
+
+#### Implementing the New Requirements into the Requirements Doc
+
+| Team Member | Time Spent | Completed |
+|------------|-----------|----------|
+| Barrett    | 30 mins   | ✅ |
+| Braden     | 2 hrs     | ✅ |
+| Brayden    | 1 hr      | ✅ |
+| Nathan     | 1 hr      | ✅ |
+| Jordan     | 1 hours   | ✅ |
+
+---
+
+#### Other Tasks
+
+| Task Description                           | Team Member | Time Spent | Completed |
+|-------------------------------------------|------------|-----------|----------|
+| Review Use Case Diagrams                  | Jordan     | 1 hour    | ✅ |
+| Make Logistics Manager Use Case Diagram   | Brayden    | 30 mins   | ✅ |
+| Make Super Admin Use Case Diagram         | Barrett    | 2 hours   | ✅ |
+| Make Repair Staff Use Case Diagram        | Nathan     | 30 mins   | ✅ |
+
+---
+
+### Rejected Tasks
+
+N/A  
+
+**Explain why these tasks were not chosen for this sprint**  
+N/A  
+
+---
+
+### Incomplete Tasks
+
+N/A  
+
+- **Were any broken down into smaller tasks?** N/A  
+- **Were any pushed off to the next sprint?** N/A  
+- **Were any canceled as unnecessary?** N/A  
+
+---
+
+### Notes / Reflections
+
+- I think a large setback for many of us were the many small hurdles we had to jump through to get the app running. It took everyone a pretty large chunk of time to get it to work.
+
 
 
 ## **Sprint 1 Summary**
@@ -272,95 +388,171 @@ Nathan focused heavily on the backend for this sprint, with his main priority be
 | Work on backend                                 | Nathan       | 180               |
 
 
-## **CodePop Sprint 4 Summary & Meeting Minutes**
+## **CodePop Sprint 4 Summary**
 
-**Sprint Dates:** March 25 – April 3
----
+### How The Sprint Was Tackled
 
-### **Part 4.1: Meeting Minutes**
-
-* **March 25**  
-  * **Attendees:** Barrett Smith, Braden Peterson, Nathan Haight  
-  * **Topics Covered:** Stripe integration, Google Maps implementation, and Dashboard UI planning.  
-* **March 27**  
-  * **Attendees:** Barrett Smith, Braden Peterson, Nathan Haight, Brayden Brimhall  
-  * **Topics Covered:** Dashboard logic and UI refinement, Stripe, and Google Maps progress.  
-* **March 30**  
-  * **Attendees:** Barrett Smith, Braden Peterson, Nathan Haight, Brayden Brimhall  
-  * **Topics Covered:** User post-checkout flow, continued work on Dashboard logic/UI, Stripe, and Google Maps.  
-* **April 1**  
-  * **Attendees:** Barrett Smith, Braden Peterson, Nathan Haight, Brayden Brimhall  
-  * **Topics Covered:** Drink naming conventions, active debugging sessions, and test data propagation.  
-* **April 3**  
-  * **Attendees:** Barrett Smith, Braden Peterson, Nathan Haight  
-  * **Topics Covered:** App and dashboard presentation strategy, bug tracking, Dashboard UI, seasonal offerings, and recurring orders.
+The team met multiple times throughout the sprint to coordinate progress on major features including Stripe integration, Google Maps, and Dashboard UI. Early meetings focused on planning and initial implementation, while later meetings emphasized debugging, refining user flows, and preparing for presentation. Work was distributed across team members, with each focusing on specific features such as backend endpoints, AI integrations, UI improvements, and infrastructure fixes. As the sprint progressed, more time was spent resolving cross-platform issues and stabilizing integrations.
 
 ---
 
-### **Part 4.2: Sprint Worklog & Contributions**
+### Tasks
 
-### How the Sprint Was Tackled
-
-To kick off the sprint, we outlined our deliverables and identified our primary objectives: integrating Stripe and Google Maps, enhancing the user app's front-end, and overhauling the dashboards. Since our previous sprint focused heavily on the backend and customer app, getting the dashboards fully functional and visually appealing was our largest undertaking this week. We divided the workload among our five team members, assigning sections based on prior experience with the codebase, individual skill sets, and time availability. A breakdown of each member's tasks and logged hours for this sprint is detailed below.
-
-**Barrett Smith (Total: 9 hrs)**
-
-* Stripe Integration (2 hrs) – **Completed**  
-* Admin/Super Admin User Management (1 hr) – **Completed**  
-* Seasonal Drinks Logic (1 hr) – **Completed**  
-* Recurring Orders (1.5 hrs) – **Completed**  
-* Order Convenience Features (1 hr) – **Completed**  
-* Drink Feedback UI (1.5 hrs) – **Completed**  
-* Minor App Improvements (1 hr) – **Completed**  
-* Drink Naming Conventions (1 hr) – **Completed**
-
-**Braden Peterson (Total: 10.5 hrs)**
-
-* Integrated Drink Suggestion AI (2 hrs) – **Completed**  
-* Integrated Chatbot with AI (1 hr) – **Completed**  
-* Created Saved Drinks Functionality (3 hrs) – **Completed**  
-* Fixed Token Exchange between VMs (1 hr) – **Completed**  
-* Adjusted User Post-Checkout Flow (2 hrs) – **Completed**  
-* Improved UI Between Tabs (1.5 hrs) – **Completed**
-
-**Nathan Haight (Total: 9.5 hrs)**
-
-* Creating Endpoints (1.5 hrs) – **Completed**  
-* Project Setup & Debugging (2 hrs) – **Completed**  
-* Scheduling Frontend (2.5 hrs) – **Completed**  
-* Scheduling Backend (2 hrs) – **Completed**  
-* Frontend API Setup (1.5 hrs) – **Completed**
-
-**Brayden Brimhall (Total: 7.5 hrs)**
-
-* Test Data Propagation & Debugging (1.5 hrs) – **Completed**  
-* Chatbot AI Dependency Experimentation (1.5 hrs) – **Completed**  
-* Repair Staff Dashboard Models (1 hr) – **Completed**  
-* Connecting Repair Staff to Backend (1.5 hrs) – **Completed**  
-* Addressing Merge Conflicts (2 hrs) – **Completed**
-
-**Jordan (Total: 8 hrs)**
-
-* Stripe Integration (2 hrs) – **Completed**  
-* Google Maps Integration (2 hrs) – **Completed**  
-* Manager Dashboard (2 hrs) – **Completed**  
-* Logistics Dashboard (1 hr) – **Completed**  
-* Android App Bug Fixing (1 hr) – **Not Completed** *(Pushed to next sprint)*
+The following tables list the tasks each team member accomplished individually throughout the sprint.
 
 ---
 
-### **Part 4.3: Sprint Retrospective**
+#### Barrett Smith's Accomplishments (Total: 9 hrs)
+
+| Task Description                  | Time Taken | Completed |
+|----------------------------------|-----------|----------|
+| Stripe Integration               | 2 hrs     | Completed |
+| Admin/Super Admin User Management| 1 hr      | Completed |
+| Seasonal Drinks Logic            | 1 hr      | Completed |
+| Recurring Orders                 | 1.5 hrs   | Completed |
+| Order Convenience Features       | 1 hr      | Completed |
+| Drink Feedback UI                | 1.5 hrs   | Completed |
+| Minor App Improvements           | 1 hr      | Completed |
+| Drink Naming Conventions         | 1 hr      | Completed |
+
+---
+
+#### Braden Peterson's Accomplishments (Total: 10.5 hrs)
+
+| Task Description                          | Time Taken | Completed |
+|------------------------------------------|-----------|----------|
+| Integrated Drink Suggestion AI           | 2 hrs     | Completed |
+| Integrated Chatbot with AI               | 1 hr      | Completed |
+| Created Saved Drinks Functionality       | 3 hrs     | Completed |
+| Fixed Token Exchange between VMs         | 1 hr      | Completed |
+| Adjusted User Post-Checkout Flow         | 2 hrs     | Completed |
+| Improved UI Between Tabs                 | 1.5 hrs   | Completed |
+
+---
+
+#### Nathan Haight's Accomplishments (Total: 9.5 hrs)
+
+| Task Description            | Time Taken | Completed |
+|-----------------------------|-----------|----------|
+| Creating Endpoints          | 1.5 hrs   | Completed |
+| Project Setup & Debugging   | 2 hrs     | Completed |
+| Scheduling Frontend         | 2.5 hrs   | Completed |
+| Scheduling Backend          | 2 hrs     | Completed |
+| Frontend API Setup          | 1.5 hrs   | Completed |
+
+---
+
+#### Brayden Brimhall's Accomplishments (Total: 7.5 hrs)
+
+| Task Description                           | Time Taken | Completed |
+|-------------------------------------------|-----------|----------|
+| Test Data Propagation & Debugging         | 1.5 hrs   | Completed |
+| Chatbot AI Dependency Experimentation     | 1.5 hrs   | Completed |
+| Repair Staff Dashboard Models             | 1 hr      | Completed |
+| Connecting Repair Staff to Backend        | 1.5 hrs   | Completed |
+| Addressing Merge Conflicts                | 2 hrs     | Completed |
+
+---
+
+#### Jordan's Accomplishments (Total: 8 hrs)
+
+| Task Description                 | Time Taken | Completed |
+|---------------------------------|-----------|----------|
+| Stripe Integration              | 2 hrs     | Completed |
+| Google Maps Integration         | 2 hrs     | Completed |
+| Manager Dashboard               | 2 hrs     | Completed |
+| Logistics Dashboard             | 1 hr      | Completed |
+| Android App Bug Fixing          | 1 hr      | Not Completed (Pushed to next sprint) |
+
+---
+
+### Incomplete Tasks
+
+- Android App Bug Fixing (Jordan) – Pushed to next sprint  
+- Android Google Maps Integration – Pushed back due to time constraints  
+
+---
+
+### Notes / Retrospective
 
 **Setbacks & Blockers**
 
-* **Cross-Platform Discrepancies:** The most significant setback involved the Google Maps integration. While functional on iOS, geo location issues persisted on the Android build.  
-* **Payment Gateway Issues:** Stripe integration encountered unexpected bugs on iOS. While the team successfully resolved this, the debugging process consumed a substantial amount of development time.
+- Cross-Platform Discrepancies: The most significant setback involved the Google Maps integration. While functional on iOS, geo locaton issues persisted on the Android build.  
+- Payment Gateway Issues: Stripe integration encountered unexpected bugs on iOS. While the team successfully resolved this, the debugging process consumed a substantial amount of development time.  
 
-**Tasks Pushed to Next Sprint**
+**Process Improvement Note**
 
-* **Android Google Maps Integration:** Pushed back due to time constraints.  
-* **Process Improvement Note:** The primary root cause for running out of time was delaying our testing phase until the end of the sprint. Moving forward, the team will implement continuous "test-as-we-go" practices to catch cross-platform bugs earlier in the pipeline.
+- The primary root cause for running out of time was delaying our testing phase until the end of the sprint. Moving forward, the team will implement continuous "test-as-we-go" practices to catch cross-platform bugs earlier in the pipeline.
+
+
+## **Sprint 5 Summary**
+
+### How The Sprint Was Tackled
+
+We structured this sprint by implementing the multi-level testing strategy we learned in class. We divided responsibility across five levels: unit (backend/frontend), integration, regression (CI/CD), system/E2E, and acceptance testing. Each team member focused on a specific testing level.
+
+### Tasks
+
+We were not able to finish integration testing. It was broken down into smaller tasks, each representing a specific integration scenario. Of the six total tests that were planned and implemented, four were fully completed, and two were only partially completed. These partially completed tests still cover important portions of the system but are not yet end-to-end test cases.
+
+We did not reject any tasks during this sprint, and all work contributed toward the broader goal of integration testing the application. The tests that were finished as partially complete are described in the table below.
+
+| Scenario                          | Test File                          | Status                | Notes |
+|----------------------------------|------------------------------------|------------------------|-------|
+| Auth Flow Integration            | `test_customer_api.py`             | Partially implemented | Token-protected endpoint behavior is covered; full register-login-me standalone flow is not yet isolated in a dedicated class |
+| Order Lifecycle Integration      | `test_customer_api.py`, `test_stripe.py` | Partially implemented | Order creation/update and payment-intent path are covered, but not as one consolidated end-to-end integration case |
+
+The following tables list the tasks each team member accomplished individually throughout the sprint.
+---
+
+#### Jordan Caldwell's Accomplishments
+
+| Task Description                                              | Time Taken | Completed |
+|--------------------------------------------------------------|-----------|----------|
+| Created the Google Slides presentation for class             | 2.5 hr    | Completed |
+| Functional Testing on what was being presented in class      | 1 hr      | Completed |
+| Worked on testing the APIs, Stripe, Google Maps, etc.        | 1 hr      | Completed |
 
 ---
 
+#### Nathan Haight's Accomplishments
+
+| Task Description          | Time Taken | Completed |
+|---------------------------|-----------|----------|
+| Debugging                 | 2.5 hrs   | Completed |
+| Writing Tests             | 3.5 hrs   | Completed |
+| Updating User manual      | 2 hrs     | Completed |
+
+---
+
+#### Brayden Brimhall's Accomplishments
+
+| Task Description                                   | Time Taken | Completed |
+|---------------------------------------------------|-----------|----------|
+| Hooked up repair staff dashboard to backend       | 2 hr      | Completed |
+| Extended backend unit tests                       | 2 hr      | Completed |
+| Edited user’s manual sections                     | 1.5 hr    | Completed |
+| Finalized sections of testing document            | 1 hr      | Completed |
+| Reviewed requirements and HLD documents           | 1 hr      | Completed |
+
+---
+
+#### Braden Peterson's Accomplishments
+
+| Task Description                     | Time Taken | Completed |
+|-------------------------------------|-----------|----------|
+| Testing and debugging               | 1.5 hrs   | Completed |
+| Preparing prototype demo            | 2 hrs     | Completed |
+| Updating testing document           | 2 hrs     | Completed |
+
+---
+
+#### Barrett Smith's Accomplishments
+
+| Task Description                                      | Time Taken | Completed |
+|------------------------------------------------------|-----------|----------|
+| Black box testing of the app prior to presentation    | 3 hrs     | Completed |
+| Test division/research                               | 1 hr      | Completed |
+| User manual                                          | 1 hr      | Completed |
+| Frontend unit testing                                | 2 hrs     | Completed |
 
