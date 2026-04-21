@@ -207,132 +207,93 @@ The following tables list the tasks each team member accomplished individually (
 | Reviewed completed HLD and made edits where appropriate      | Brayden      | 120               |
 
 
-# **Sprint 2**
+# **Sprint 2 Summary**
 
-## Meetings 
+### How The Sprint Was Tackled
 
-**Feb 20.** 
-- All members were present.
-- We talked about the plan for writing the LLD doc. Drafts by Wednesday complete your section by Friday.
-
-**Feb 25.** 
-- All members were present.
-- We talked about the prototype for Monday and what we were going to do. We decide to keep it small and do the geolocation feature. 
-
-**Feb 27.**
-- All members were present.
-- Ironed out the tasks we needed to do for the next 2 sprints.
-
-
-## Work Split
 We fist needed to break up the work in a way that played into everyone's strengths from the last sprint. Then we figured out how much the expected workload would be for each task and split the work up based on that.
 
-<table>
-  <tr>
-   <td>Team Member
-   </td>
-   <td>Previous Role
-   </td>
-   <td>Sections
-   </td>
-   <td>Reasoning
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Barrett</strong>
-   </td>
-   <td>Frontend/UI Lead
-   </td>
-   <td>User interfaces + Introduction
-   </td>
-   <td>UI section is his heaviest expertise area; Introduction is light and balances it
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Braden</strong>
-   </td>
-   <td>Database & Infrastructure Lead
-   </td>
-   <td>Database tables + System architecture
-   </td>
-   <td>Both align directly with his DB and infrastructure background
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Nathan</strong>
-   </td>
-   <td>Backend/Business Logic Lead
-   </td>
-   <td>Subsystems & UML + Security risks
-   </td>
-   <td>Modules documentation and security both map to his backend/logic expertise
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Jordan</strong>
-   </td>
-   <td>API/Integration Lead
-   </td>
-   <td>Programming languages/frameworks/APIs + Deployment plan
-   </td>
-   <td>API section is his core expertise; deployment involves integration concerns
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Brayden</strong>
-   </td>
-   <td>AI & QA Lead
-   </td>
-   <td>System performance + All Tasks Outline compilation
-   </td>
-   <td>Performance fits QA thinking; Brayden compiles and organizes everyone's task contributions into the All Tasks Outline
-   </td>
-  </tr>
-</table>
+---
 
-## Tasks Done by Each Member
+### Work Split
+
+| Team Member | Previous Role | Sections | Reasoning |
+|------------|--------------|----------|----------|
+| **Barrett** | Frontend/UI Lead | User interfaces + Introduction | UI section is his heaviest expertise area; Introduction is light and balances it |
+| **Braden**  | Database & Infrastructure Lead | Database tables + System architecture | Both align directly with his DB and infrastructure background |
+| **Nathan**  | Backend/Business Logic Lead | Subsystems & UML + Security risks | Modules documentation and security both map to his backend/logic expertise |
+| **Jordan**  | API/Integration Lead | Programming languages/frameworks/APIs + Deployment plan | API section is his core expertise; deployment involves integration concerns |
+| **Brayden** | AI & QA Lead | System performance + All Tasks Outline compilation | Performance fits QA thinking; Brayden compiles and organizes everyone's task contributions into the All Tasks Outline |
+
+---
+
+### Tasks
+
+The following tables list the tasks each team member accomplished throughout the sprint.
+
+---
+
+#### Barrett's Accomplishments
 
 Barret made sure that we would have a good plan going into the development sprints on how to update the UI. He also added to the geolocation prototype to make in line with the new UI.
 
-**Barrett:** 
-- Low level design doc- add suggestions/go deeper from HLD (8 hrs)
-    - 2 hours Feb 22
-    - .5 hours Feb 23
-    - 5.5 hours Feb 24
-- Create geolocation prototype Feb 25 (2.5 hrs)
-- Create geolocation prototype Feb 26 (1 hr)
+| Task Description                                      | Time Taken | Completed |
+|-------------------------------------------------------|-----------|----------|
+| Low level design doc - add suggestions/go deeper from HLD (Feb 22–24) | 8 hrs | Completed |
+| Create geolocation prototype (Feb 25)                  | 2.5 hrs | Completed |
+| Create geolocation prototype (Feb 26)                  | 1 hr | Completed |
+
+---
+
+#### Braden's Accomplishments
 
 Braden wrote a detailed plan for how we would implement the decentralized network with the help of Claude. He also created the geolocation prototype we showed off at the end of sprint.
 
-**Braden:**
-- Wrote low level doc (7 hrs)
-- Made geolocation prototype (4 hrs)
-- Researched decentralized system and Google Could (3.5 hrs)
+| Task Description                                      | Time Taken | Completed |
+|-------------------------------------------------------|-----------|----------|
+| Wrote low level doc                                   | 7 hrs | Completed |
+| Made geolocation prototype                            | 4 hrs | Completed |
+| Researched decentralized system and Google Could      | 3.5 hrs | Completed |
+
+---
+
+#### Brayden's Accomplishments
 
 Brayden did most of our testing research this sprint. He made sure we would have a plan heading into the final sprints of this project.
 
-**Brayden:**
-- Studied previous LLD (1 hr)
-- Researched/wrote system performance section (1hr)
-- Researched/wrote testing section (1hr)
-- Worked on prototype (1hr)
+| Task Description                                      | Time Taken | Completed |
+|-------------------------------------------------------|-----------|----------|
+| Studied previous LLD                                  | 1 hr | Completed |
+| Researched/wrote system performance section           | 1 hr | Completed |
+| Researched/wrote testing section                      | 1 hr | Completed |
+| Worked on prototype                                   | 1 hr | Completed |
+
+---
+
+#### Jordan's Accomplishments
 
 Jordan figured out how we would implement our APIs in the development sprints. He also worked on own prototype that we didn't go with.
 
-**Jordan:** 
-- Looked at the previous LLD (1.25 hr)
-- Researched/ API like stripe mapbox dialogflow (2.5hr)
-- Wrote LLD API section (2.5hr)
-- Worked on a prototype that got scrap (1hr)
-- meeting (1hr)
+| Task Description                                      | Time Taken | Completed |
+|-------------------------------------------------------|-----------|----------|
+| Looked at the previous LLD                            | 1.25 hr | Completed |
+| Researched API like stripe mapbox dialogflow          | 2.5 hr | Completed |
+| Wrote LLD API section                                 | 2.5 hr | Completed |
+| Worked on a prototype that got scrap                  | 1 hr | Completed |
+| Meeting                                               | 1 hr | Completed |
+
+---
+
+#### Nathan's Accomplishments
 
 Nathan worked with Cluade to update the security and the modules sections of the low level doc. He also worked on a prototype that got scrapped.
 
-**Nathan**
-- Update sections of the LLD (7 hrs)
-- Worked on prototype (2 hrs)
-- sprint planning (4 hrs)
-- LLD setup (1 hr)
+| Task Description                                      | Time Taken | Completed |
+|-------------------------------------------------------|-----------|----------|
+| Update sections of the LLD                            | 7 hrs | Completed |
+| Worked on prototype                                   | 2 hrs | Completed |
+| Sprint planning                                       | 4 hrs | Completed |
+| LLD setup                                             | 1 hr | Completed |
 
 
 ## **Sprint 3 Summary**
@@ -503,6 +464,7 @@ We did not reject any tasks during this sprint, and all work contributed toward 
 | Order Lifecycle Integration      | `test_customer_api.py`, `test_stripe.py` | Partially implemented | Order creation/update and payment-intent path are covered, but not as one consolidated end-to-end integration case |
 
 The following tables list the tasks each team member accomplished individually throughout the sprint.
+
 ---
 
 #### Jordan Caldwell's Accomplishments
@@ -555,4 +517,3 @@ The following tables list the tasks each team member accomplished individually t
 | Test division/research                               | 1 hr      | Completed |
 | User manual                                          | 1 hr      | Completed |
 | Frontend unit testing                                | 2 hrs     | Completed |
-
